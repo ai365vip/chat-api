@@ -71,9 +71,11 @@ const LogsTable = () => {
             render: (text, record, index) => {
                 return (
                     isAdminUser ?
-                        record.type === 0 || record.type === 2 ?
+                        (record.type === 0 || record.type === 2) ?
                             <div>
-                                {<Tag color={colors[parseInt(text) % colors.length]} size='large'> {text} </Tag>}
+                                <Tag color={colors[parseInt(text) % colors.length]} size='large' onClick={()=>{
+                                    copyText(text); // 假设copyText是用于文本复制的函数
+                                }}> {text} </Tag>
                             </div>
                             :
                             <></>

@@ -1,10 +1,7 @@
 export const CHANNEL_OPTIONS = [
   { key: 1, text: 'OpenAI', value: 1, color: 'green' },
-<<<<<<< HEAD
   { key: 24, text: 'ChatBOT', value: 24, color: 'orange' },
-=======
   { key: 99, text: 'Midjourney-Proxy', value: 99, color: 'green' },
->>>>>>> 07d653aedbd074cf6cadb7cf18aa5a06ec9b14ed
   { key: 14, text: 'Anthropic Claude', value: 14, color: 'black' },
   { key: 3, text: 'Azure OpenAI', value: 3, color: 'olive' },
   { key: 11, text: 'Google PaLM2', value: 11, color: 'orange' },

@@ -110,33 +110,6 @@ const LogsTable = () => {
     setShowModal(true);
   };
 
-  const handleInputChange = (e, { name, value }) => {
-    setInputs((inputs) => ({ ...inputs, [name]: value }));
-  };
-
-  const getLogSelfStat = async () => {
-    let localStartTimestamp = Date.parse(start_timestamp) / 1000;
-    let localEndTimestamp = Date.parse(end_timestamp) / 1000;
-    let res = await API.get(`/api/log/self/stat?type=${logType}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`);
-    const { success, message, data } = res.data;
-    if (success) {
-      setStat(data);
-    } else {
-      showError(message);
-    }
-  };
-
-  const getLogStat = async () => {
-    let localStartTimestamp = Date.parse(start_timestamp) / 1000;
-    let localEndTimestamp = Date.parse(end_timestamp) / 1000;
-    let res = await API.get(`/api/log/stat?type=${logType}&username=${username}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`);
-    const { success, message, data } = res.data;
-    if (success) {
-      setStat(data);
-    } else {
-      showError(message);
-    }
-  };
 
   const loadLogs = async (startIdx) => {
     let url = '';
@@ -314,6 +287,15 @@ const LogsTable = () => {
               <Table.HeaderCell
                   style={{ cursor: 'pointer' }}
                   onClick={() => {
+                    sortLog('prompt_en');
+                  }}
+                  width={3}
+              >
+                PromptEn
+              </Table.HeaderCell>
+              <Table.HeaderCell
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
                     sortLog('fail_reason');
                   }}
                   width={1}
@@ -359,6 +341,15 @@ const LogsTable = () => {
                             <a onClick={() => showFullContent(log.prompt)}>查看全部</a>
                           </div>
                           : log.prompt
+                      }
+                    </Table.Cell>
+                    <Table.Cell>
+                      {log.prompt_en.length > 10
+                          ? <div>
+                            {log.prompt_en.slice(0, 10)}
+                            <a onClick={() => showFullContent(log.prompt_en)}>查看全部</a>
+                          </div>
+                          : log.prompt_en
                       }
                     </Table.Cell>
                     <Table.Cell>
