@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Header, Label, Pagination, Segment, Select, Table } from 'semantic-ui-react';
+import { Button, Form, Header, Label, Pagination, Segment, Select, Table,Modal } from 'semantic-ui-react';
 import { API, isAdmin, showError, timestamp2string } from '../helpers';
 
 import { ITEMS_PER_PAGE } from '../constants';
@@ -85,6 +85,8 @@ const LogsTable = () => {
   const [searching, setSearching] = useState(false);
   const [logType, setLogType] = useState(0);
   const isAdminUser = isAdmin();
+
+
   let now = new Date();
   const [inputs, setInputs] = useState({
     username: '',
@@ -99,6 +101,14 @@ const LogsTable = () => {
     quota: 0,
     token: 0
   });
+
+  const [modalContent, setModalContent] = useState('');
+  const [showModal, setShowModal] = useState(false);
+
+  const showFullContent = (content) => {
+    setModalContent(content);
+    setShowModal(true);
+  };
 
   const handleInputChange = (e, { name, value }) => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
@@ -342,8 +352,24 @@ const LogsTable = () => {
                         ) : '暂未生成图片'
                       }
                     </Table.Cell>
-                    <Table.Cell>{log.prompt}</Table.Cell>
-                    <Table.Cell>{log.fail_reason ? log.fail_reason : '无'}</Table.Cell>
+                    <Table.Cell>
+                      {log.prompt.length > 10
+                          ? <div>
+                            {log.prompt.slice(0, 10)}
+                            <a onClick={() => showFullContent(log.prompt)}>查看全部</a>
+                          </div>
+                          : log.prompt
+                      }
+                    </Table.Cell>
+                    <Table.Cell>
+                      {log.fail_reason && log.fail_reason.length > 10
+                          ? <div>
+                            {log.fail_reason.slice(0, 10)}
+                            <a onClick={() => showFullContent(log.fail_reason)}>查看全部</a>
+                          </div>
+                          : log.fail_reason || '无'
+                      }
+                    </Table.Cell>
                   </Table.Row>
                 );
               })}
@@ -379,6 +405,12 @@ const LogsTable = () => {
           </Table.Footer>
         </Table>
       </Segment>
+      {/*Modal component goes here*/}
+      <Modal open={showModal} onClose={() => setShowModal(false)} centered>
+        <Modal.Content>
+          <pre style={{whiteSpace: "pre-wrap"}}>{modalContent}</pre>
+        </Modal.Content>
+      </Modal>
     </>
   );
 };

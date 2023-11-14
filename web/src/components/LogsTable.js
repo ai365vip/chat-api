@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {Label} from 'semantic-ui-react';
 import {API, copy, isAdmin, showError, showSuccess, timestamp2string} from '../helpers';
 
-import {Table, Avatar, Tag, Form, Button, Layout, Select, Popover, Modal} from '@douyinfe/semi-ui';
+import {Table, Avatar, Tag, Form, Button, Layout, Select, Popover, Modal } from '@douyinfe/semi-ui';
 import {ITEMS_PER_PAGE} from '../constants';
 import {renderNumber, renderQuota, stringToColor} from '../helpers/render';
 import {
@@ -57,6 +57,8 @@ function renderType(type) {
 }
 
 const LogsTable = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalContent, setModalContent] = useState('');
     const columns = [
         {
             title: '时间',
@@ -189,7 +191,25 @@ const LogsTable = () => {
         {
             title: '详情',
             dataIndex: 'content',
+            render: (text, record, index) => {
+                return (
+                    text.length > 10 ?
+                        <>
+                            {text.slice(0, 10)}
+                            <Button
+                                onClick={() => {
+                                    setModalContent(text);
+                                    setIsModalOpen(true);
+                                }}
+                            >
+                                查看全部
+                            </Button>
+                        </>
+                        : text
+                );
+            },
         }
+
     ];
 
     const [logs, setLogs] = useState([]);
@@ -454,6 +474,16 @@ const LogsTable = () => {
                     <Select.Option value="3">管理</Select.Option>
                     <Select.Option value="4">系统</Select.Option>
                 </Select>
+                <Modal
+                    visible={isModalOpen}
+                    onOk={() => setIsModalOpen(false)}
+                    onCancel={() => setIsModalOpen(false)}
+                    closable={null}
+                    bodyStyle={{ height: '400px', overflow: 'auto' }} // 设置模态框内容区域样式
+                    width={800} // 设置模态框宽度
+                >
+                    <p style={{ whiteSpace: 'pre-line' }}>{modalContent}</p>
+                </Modal>
             </Layout>
         </>
     );

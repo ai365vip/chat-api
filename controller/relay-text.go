@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/model"
@@ -26,6 +27,7 @@ const (
 	APITypeXunfei
 	APITypeAIProxyLibrary
 	APITypeTencent
+	APITypeChatBot
 )
 
 var httpClient *http.Client
@@ -39,7 +41,6 @@ func init() {
 			Timeout: time.Duration(common.RelayTimeout) * time.Second,
 		}
 	}
-
 	impatientHTTPClient = &http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -53,6 +54,9 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	consumeQuota := c.GetBool("consume_quota")
 	group := c.GetString("group")
 	var textRequest GeneralOpenAIRequest
+
+	usertext := ""
+
 	if consumeQuota || channelType == common.ChannelTypeAzure || channelType == common.ChannelTypePaLM {
 		err := common.UnmarshalBodyReusable(c, &textRequest)
 		if err != nil {
@@ -120,6 +124,8 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 		apiType = APITypeAIProxyLibrary
 	case common.ChannelTypeTencent:
 		apiType = APITypeTencent
+	case common.ChannelTypeChatBot:
+		apiType = APITypeChatBot
 	}
 	baseURL := common.ChannelBaseURLs[channelType]
 	requestURL := c.Request.URL.String()
@@ -148,6 +154,9 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			model_ = strings.TrimSuffix(model_, "-0613")
 			fullRequestURL = fmt.Sprintf("%s/openai/deployments/%s/%s", baseURL, model_, task)
 		}
+	case APITypeChatBot:
+		fullRequestURL = baseURL
+
 	case APITypeClaude:
 		fullRequestURL = "https://api.anthropic.com/v1/complete"
 		if baseURL != "" {
@@ -159,8 +168,6 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			fullRequestURL = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions"
 		case "ERNIE-Bot-turbo":
 			fullRequestURL = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant"
-		case "ERNIE-Bot-4":
-			fullRequestURL = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro"
 		case "BLOOMZ-7B":
 			fullRequestURL = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/bloomz_7b1"
 		case "Embedding-V1":
@@ -199,6 +206,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	}
 	var promptTokens int
 	var completionTokens int
+
 	switch relayMode {
 	case RelayModeChatCompletions:
 		promptTokens = countTokenMessages(textRequest.Messages, textRequest.Model)
@@ -211,6 +219,10 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	if textRequest.MaxTokens != 0 {
 		preConsumedTokens = promptTokens + textRequest.MaxTokens
 	}
+	for _, message := range textRequest.Messages {
+		usertext = message.Content
+	}
+
 	modelRatio := common.GetModelRatio(textRequest.Model)
 	groupRatio := common.GetGroupRatio(group)
 	ratio := modelRatio * groupRatio
@@ -241,6 +253,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	var requestBody io.Reader
 	if isModelMapped {
 		jsonStr, err := json.Marshal(textRequest)
+
 		if err != nil {
 			return errorWrapper(err, "marshal_text_request_failed", http.StatusInternalServerError)
 		}
@@ -248,6 +261,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	} else {
 		requestBody = c.Request.Body
 	}
+
 	switch apiType {
 	case APITypeClaude:
 		claudeRequest := requestOpenAI2Claude(textRequest)
@@ -256,6 +270,36 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			return errorWrapper(err, "marshal_text_request_failed", http.StatusInternalServerError)
 		}
 		requestBody = bytes.NewBuffer(jsonStr)
+
+	case APITypeChatBot:
+
+		var modelID struct {
+			ID string `json:"id"`
+		}
+
+		if textRequest.Model == "gpt-3.5-turbo" {
+			modelID.ID = "gpt-3.5-turbo"
+		} else {
+			modelID.ID = textRequest.Model
+		}
+
+		// 创建一个临时的结构，使得 json 包含 model 的 id
+		var tempRequest struct {
+			Model    interface{} `json:"model"`
+			Messages []Message   `json:"messages"`
+		}
+		tempRequest.Model = modelID
+		tempRequest.Messages = textRequest.Messages
+
+		jsonStr, err := json.MarshalIndent(tempRequest, "", "  ")
+		if err != nil {
+			log.Fatalf("Failed to marshal textRequest: %v", err)
+		}
+		requestBody = bytes.NewBuffer(jsonStr)
+
+		//fmt.Println("textRequest.Model value:", textRequest.Model)
+		//fmt.Println("requestBody value:", requestBody.String())
+
 	case APITypeBaidu:
 		var jsonData []byte
 		var err error
@@ -346,16 +390,12 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 		case APITypeOpenAI:
 			if channelType == common.ChannelTypeAzure {
 				req.Header.Set("api-key", apiKey)
-			} else {
-				req.Header.Set("Authorization", c.Request.Header.Get("Authorization"))
-				if c.Request.Header.Get("OpenAI-Organization") != "" {
-					req.Header.Set("OpenAI-Organization", c.Request.Header.Get("OpenAI-Organization"))
-				}
-				if channelType == common.ChannelTypeOpenRouter {
-					req.Header.Set("HTTP-Referer", "https://github.com/songquanpeng/one-api")
-					req.Header.Set("X-Title", "One API")
-				}
+			} else if channelType == common.ChannelTypeOpenAI && apiKey != "" {
+				req.Header.Set("Authorization", "Bearer "+apiKey)
 			}
+		case APITypeChatBot:
+			req.Header.Set("Cache-Control", "no-cache")
+			req.Header.Set("Proxy-Connection", "keep-alive")
 		case APITypeClaude:
 			req.Header.Set("x-api-key", apiKey)
 			anthropicVersion := c.Request.Header.Get("anthropic-version")
@@ -381,8 +421,9 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 		if isStream && c.Request.Header.Get("Accept") == "" {
 			req.Header.Set("Accept", "text/event-stream")
 		}
-		//req.HeaderBar.Set("Connection", c.Request.HeaderBar.Get("Connection"))
+		//req.Header.Set("Connection", c.Request.Header.Get("Connection"))
 		resp, err = httpClient.Do(req)
+
 		if err != nil {
 			return errorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 		}
@@ -394,6 +435,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 		if err != nil {
 			return errorWrapper(err, "close_request_body_failed", http.StatusInternalServerError)
 		}
+
 		isStream = isStream || strings.HasPrefix(resp.Header.Get("Content-Type"), "text/event-stream")
 
 		if resp.StatusCode != http.StatusOK {
@@ -412,6 +454,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 
 	var textResponse TextResponse
 	tokenName := c.GetString("token_name")
+	var aitext string
 
 	defer func(ctx context.Context) {
 		// c.Writer.Flush()
@@ -443,7 +486,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 					common.LogError(ctx, "error update user quota cache: "+err.Error())
 				}
 				if quota != 0 {
-					logContent := fmt.Sprintf("模型倍率 %.2f，分组倍率 %.2f", modelRatio, groupRatio)
+					logContent := fmt.Sprintf("用户: %s \nAI: %s", usertext, aitext)
 					model.RecordConsumeLog(ctx, userId, channelId, promptTokens, completionTokens, textRequest.Model, tokenName, quota, logContent, tokenId)
 					model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 					model.UpdateChannelUsedQuota(channelId, quota)
@@ -453,11 +496,13 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	}(c.Request.Context())
 	switch apiType {
 	case APITypeOpenAI:
+
 		if isStream {
 			err, responseText := openaiStreamHandler(c, resp, relayMode)
 			if err != nil {
 				return err
 			}
+			aitext = responseText
 			textResponse.Usage.PromptTokens = promptTokens
 			textResponse.Usage.CompletionTokens = countTokenText(responseText, textRequest.Model)
 			return nil
@@ -471,14 +516,37 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			}
 			return nil
 		}
+	case APITypeChatBot:
+		if isStream {
+			err, responseText := chatbotStreamHandler(c, resp, promptTokens, textRequest.Model)
+			if err != nil {
+				return err
+			}
+			aitext = responseText
+			textResponse.Usage.PromptTokens = promptTokens
+			textResponse.Usage.CompletionTokens = countTokenText(responseText, textRequest.Model)
+			return nil
+		} else {
+			err, usage := botHandler(c, resp, consumeQuota, promptTokens, textRequest.Model)
+			if err != nil {
+				return err
+			}
+			if usage != nil {
+				textResponse.Usage = *usage
+				fmt.Println(*usage)
+			}
+			return nil
+		}
 	case APITypeClaude:
 		if isStream {
 			err, responseText := claudeStreamHandler(c, resp)
 			if err != nil {
 				return err
 			}
+			aitext = responseText
 			textResponse.Usage.PromptTokens = promptTokens
 			textResponse.Usage.CompletionTokens = countTokenText(responseText, textRequest.Model)
+
 			return nil
 		} else {
 			err, usage := claudeHandler(c, resp, promptTokens, textRequest.Model)
@@ -523,6 +591,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			if err != nil {
 				return err
 			}
+			aitext = responseText
 			textResponse.Usage.PromptTokens = promptTokens
 			textResponse.Usage.CompletionTokens = countTokenText(responseText, textRequest.Model)
 			return nil
@@ -634,6 +703,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			if err != nil {
 				return err
 			}
+			aitext = responseText
 			textResponse.Usage.PromptTokens = promptTokens
 			textResponse.Usage.CompletionTokens = countTokenText(responseText, textRequest.Model)
 			return nil

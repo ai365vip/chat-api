@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"math/rand"
 	"net/http"
 	"one-api/common"
 	"one-api/model"
@@ -15,21 +17,56 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func testChannel(channel *model.Channel, request ChatRequest) (err error, openaiErr *OpenAIError) {
+type BotResponse struct {
+	ID      string        `json:"id"`
+	Created int64         `json:"created"`
+	Object  string        `json:"object"`
+	Choices []interface{} `json:"choices"`
+	Usage   BotUsage      `json:"usage"`
+	Model   string        `json:"model"`
+	// added Error field here
+	Error        OpenAIError `json:"error"`
+	FinishReason interface{} `json:"finish_reason,omitempty"`
+}
+
+type BotUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
+func calculatePromptTokens(str string) int {
+	return len([]rune(str))
+}
+
+func calculateCompletionTokens(messagesMap []map[string]string) int {
+	// adjust the calculation according to your requirements
+	return len(messagesMap)
+}
+
+func calculateTotalTokens(promptTokens int, completionTokens int) int {
+	return promptTokens + completionTokens
+}
+func testChannel(channel *model.Channel, request ChatRequest, gptVersion string) (err error, openaiErr *OpenAIError) {
+	type RequestType struct {
+		Model     string
+		Messages  []map[string]string
+		MaxTokens int
+	}
+
+	type RequestTypeChatBot struct {
+		Model    json.RawMessage     `json:"model"`
+		Messages []map[string]string `json:"messages"`
+	}
+
 	switch channel.Type {
-	case common.ChannelTypePaLM:
-		fallthrough
-	case common.ChannelTypeAnthropic:
-		fallthrough
-	case common.ChannelTypeBaidu:
-		fallthrough
-	case common.ChannelTypeZhipu:
-		fallthrough
-	case common.ChannelTypeAli:
-		fallthrough
-	case common.ChannelType360:
-		fallthrough
-	case common.ChannelTypeXunfei:
+	case common.ChannelTypePaLM,
+		common.ChannelTypeAnthropic,
+		common.ChannelTypeBaidu,
+		common.ChannelTypeZhipu,
+		common.ChannelTypeAli,
+		common.ChannelType360,
+		common.ChannelTypeXunfei:
 		return errors.New("该渠道类型当前版本不支持测试，请手动测试"), nil
 	case common.ChannelTypeAzure:
 		request.Model = "gpt-35-turbo"
@@ -39,46 +76,115 @@ func testChannel(channel *model.Channel, request ChatRequest) (err error, openai
 			}
 		}()
 	default:
-		request.Model = "gpt-3.5-turbo"
+		if gptVersion == "gpt-3.5-turbo" {
+			request.Model = "gpt-3.5-turbo"
+		} else {
+			request.Model = gptVersion
+		}
+
 	}
+
+	var jsonData []byte
+
 	requestURL := common.ChannelBaseURLs[channel.Type]
 	if channel.Type == common.ChannelTypeAzure {
 		requestURL = fmt.Sprintf("%s/openai/deployments/%s/chat/completions?api-version=2023-03-15-preview", channel.GetBaseURL(), request.Model)
-	} else {
-		if channel.GetBaseURL() != "" {
-			requestURL = channel.GetBaseURL()
+	} else if channel.Type == common.ChannelTypeChatBot {
+		requestURL = channel.GetBaseURL()
+		messagesMap := make([]map[string]string, len(request.Messages))
+		for i, msg := range request.Messages {
+			messagesMap[i] = map[string]string{
+				"role":    msg.Role,
+				"content": msg.Content,
+			}
+
 		}
-		requestURL += "/v1/chat/completions"
+		requestChatbot := RequestTypeChatBot{
+			Model:    json.RawMessage(`{"id":"gpt-3.5-turbo"}`),
+			Messages: messagesMap,
+		}
+		jsonData, err = json.Marshal(requestChatbot) // 使用新的 struct 的内容进行序列化
+
+	} else {
+		requestURL = channel.GetBaseURL() + "/v1/chat/completions"
+		jsonData, err = json.Marshal(request)
 	}
 
-	jsonData, err := json.Marshal(request)
 	if err != nil {
 		return err, nil
 	}
+	// 打印JSON数据
+	//fmt.Println(string(jsonData))
+
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
+	messagesMap := make([]map[string]string, len(request.Messages))
 	if err != nil {
 		return err, nil
 	}
-	if channel.Type == common.ChannelTypeAzure {
-		req.Header.Set("api-key", channel.Key)
-	} else {
-		req.Header.Set("Authorization", "Bearer "+channel.Key)
+	if channel.Key != "" {
+		if channel.Type == common.ChannelTypeAzure {
+			req.Header.Set("api-key", channel.Key)
+		} else if channel.Type == common.ChannelTypeOpenAI {
+			req.Header.Set("Authorization", "Bearer "+channel.Key)
+		} else if channel.Type == common.ChannelTypeChatBot {
+			req.Header.Set("Cache-Control", "no-cache")
+			req.Header.Set("Proxy-Connection", "keep-alive")
+		} else {
+			req.Header.Set("Authorization", "Bearer "+channel.Key)
+		}
 	}
+	completionTokens := calculateCompletionTokens(messagesMap)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err, nil
 	}
+
+	var response BotResponse
+
+	if channel.Type == common.ChannelTypeChatBot {
+		if resp.StatusCode == http.StatusOK {
+			responseBody, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err, nil
+			}
+			bodyStr := string(responseBody)
+			//fmt.Println(bodyStr)
+
+			promptTokens := calculatePromptTokens(bodyStr) // 根据bodyStr的值计算
+			completionTokens += promptTokens
+			totalTokens := calculateTotalTokens(promptTokens, completionTokens) // 这两个值相加
+
+			response.Usage = BotUsage{
+				PromptTokens:     promptTokens,
+				CompletionTokens: completionTokens,
+				TotalTokens:      totalTokens,
+			}
+		}
+	} else {
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		if err != nil {
+			return err, nil
+		}
+	}
 	defer resp.Body.Close()
-	var response TextResponse
-	err = json.NewDecoder(resp.Body).Decode(&response)
-	if err != nil {
-		return err, nil
+
+	if resp.StatusCode != http.StatusOK {
+		if response.Usage.CompletionTokens == 0 {
+			return errors.New(fmt.Sprintf("type %s, code %v, message %s", response.Error.Type, response.Error.Code, response.Error.Message)), &response.Error
+		}
 	}
-	if response.Usage.CompletionTokens == 0 {
-		return errors.New(fmt.Sprintf("type %s, code %v, message %s", response.Error.Type, response.Error.Code, response.Error.Message)), &response.Error
-	}
+
 	return nil, nil
+}
+func randomID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, 10)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return "chatcmpl-" + string(b)
 }
 
 func buildTestRequest() *ChatRequest {
@@ -112,8 +218,9 @@ func TestChannel(c *gin.Context) {
 		return
 	}
 	testRequest := buildTestRequest()
+	gptVersion := c.DefaultQuery("version", "gpt-3.5-turbo")
 	tik := time.Now()
-	err, _ = testChannel(channel, *testRequest)
+	err, _ = testChannel(channel, *testRequest, gptVersion)
 	tok := time.Now()
 	milliseconds := tok.Sub(tik).Milliseconds()
 	go channel.UpdateResponseTime(milliseconds)
@@ -151,7 +258,7 @@ func disableChannel(channelId int, channelName string, reason string) {
 	}
 }
 
-func testAllChannels(notify bool) error {
+func testAllChannels(gptVersion string, notify bool) error {
 	if common.RootUserEmail == "" {
 		common.RootUserEmail = model.GetRootUserEmail()
 	}
@@ -177,7 +284,7 @@ func testAllChannels(notify bool) error {
 				continue
 			}
 			tik := time.Now()
-			err, openaiErr := testChannel(channel, *testRequest)
+			err, openaiErr := testChannel(channel, *testRequest, gptVersion)
 			tok := time.Now()
 			milliseconds := tok.Sub(tik).Milliseconds()
 			if milliseconds > disableThreshold {
@@ -209,7 +316,8 @@ func testAllChannels(notify bool) error {
 }
 
 func TestAllChannels(c *gin.Context) {
-	err := testAllChannels(true)
+	gptVersion := c.DefaultQuery("version", "gpt-3.5-turbo")
+	err := testAllChannels(gptVersion, true)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -224,11 +332,11 @@ func TestAllChannels(c *gin.Context) {
 	return
 }
 
-func AutomaticallyTestChannels(frequency int) {
+func AutomaticallyTestChannels(frequency int, gptVersion string) {
 	for {
 		time.Sleep(time.Duration(frequency) * time.Minute)
 		common.SysLog("testing all channels")
-		_ = testAllChannels(false)
+		_ = testAllChannels(gptVersion, false)
 		common.SysLog("channel test finished")
 	}
 }

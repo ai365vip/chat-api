@@ -91,9 +91,9 @@ func AddChannel(c *gin.Context) {
 	keys := strings.Split(channel.Key, "\n")
 	channels := make([]model.Channel, 0, len(keys))
 	for _, key := range keys {
-		if key == "" {
-			continue
-		}
+		//if key == "" {
+		//	continue
+		//}
 		localChannel := channel
 		localChannel.Key = key
 		channels = append(channels, localChannel)

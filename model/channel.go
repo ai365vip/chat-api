@@ -8,7 +8,7 @@ import (
 type Channel struct {
 	Id                 int     `json:"id"`
 	Type               int     `json:"type" gorm:"default:0"`
-	Key                string  `json:"key" gorm:"not null;index"`
+	Key                string  `json:"key" gorm:"index"`
 	OpenAIOrganization *string `json:"openai_organization"`
 	Status             int     `json:"status" gorm:"default:1"`
 	Name               string  `json:"name" gorm:"index"`
@@ -32,9 +32,9 @@ func GetAllChannels(startIdx int, num int, selectAll bool) ([]*Channel, error) {
 	var channels []*Channel
 	var err error
 	if selectAll {
-		err = DB.Order("priority desc").Find(&channels).Error
+		err = DB.Order("id desc").Find(&channels).Error
 	} else {
-		err = DB.Order("priority desc").Limit(num).Offset(startIdx).Omit("key").Find(&channels).Error
+		err = DB.Order("id desc").Limit(num).Offset(startIdx).Omit("key").Find(&channels).Error
 	}
 	return channels, err
 }
@@ -55,6 +55,17 @@ func GetChannelById(id int, selectAll bool) (*Channel, error) {
 		err = DB.First(&channel, "id = ?", id).Error
 	} else {
 		err = DB.Omit("key").First(&channel, "id = ?", id).Error
+	}
+	return &channel, err
+}
+
+func GetRandomChannel() (*Channel, error) {
+	channel := Channel{}
+	var err error = nil
+	if common.UsingSQLite {
+		err = DB.Where("status = ? and `group` = ?", common.ChannelStatusEnabled, "default").Order("RANDOM()").Limit(1).First(&channel).Error
+	} else {
+		err = DB.Where("status = ? and `group` = ?", common.ChannelStatusEnabled, "default").Order("RAND()").Limit(1).First(&channel).Error
 	}
 	return &channel, err
 }

@@ -26,14 +26,14 @@ function type2secretPrompt(type) {
   }
 }
 
-const EditChannel = () => {
+const EditChannel = ({ channelId, onClose }) => {
   const params = useParams();
   const navigate = useNavigate();
-  const channelId = params.id;
+  //const channelId = params.id;
   const isEdit = channelId !== undefined;
   const [loading, setLoading] = useState(isEdit);
   const handleCancel = () => {
-    navigate('/channel');
+    onClose();
   };
 
   const originInputs = {
@@ -58,6 +58,7 @@ const EditChannel = () => {
   const [basicModels, setBasicModels] = useState([]);
   const [fullModels, setFullModels] = useState([]);
   const [customModel, setCustomModel] = useState('');
+
   const handleInputChange = (e, { name, value }) => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
     if (name === 'type' && inputs.models.length === 0) {
@@ -168,13 +169,14 @@ const EditChannel = () => {
     setModelOptions(localModelOptions);
   }, [originModelOptions, inputs.models]);
 
+  // 调整 useEffect，移除路由相关的逻辑，并且调用传入的 channelId
   useEffect(() => {
     if (isEdit) {
-      loadChannel().then();
+      loadChannel(channelId).then(); // 调整加载渠道信息的方式
     }
     fetchModels().then();
     fetchGroups().then();
-  }, []);
+  }, [channelId]); // 当 channelId 改变时重新执行
 
   useEffect(() => {
     setInputs((inputs) => ({ ...inputs, auto_ban: autoBan ? 1 : 0 }));
@@ -182,8 +184,8 @@ const EditChannel = () => {
   }, [autoBan]);
 
   const submit = async () => {
-    if (!isEdit && (inputs.name === '' || inputs.key === '')) {
-      showInfo('请填写渠道名称和渠道密钥！');
+    if (!isEdit && (inputs.name === '')) {
+      showInfo('请填写渠道名称！');
       return;
     }
     if (inputs.models.length === 0) {
@@ -206,12 +208,13 @@ const EditChannel = () => {
     }
     let res;
     if (!Array.isArray(localInputs.models)) {
-        showError('提交失败，请勿重复提交！');
-        handleCancel();
-        return;
+      showError('提交失败，请勿重复提交！');
+      handleCancel();
+      return;
     }
     localInputs.models = localInputs.models.join(',');
     localInputs.group = localInputs.groups.join(',');
+
     if (isEdit) {
       res = await API.put(`/api/channel/`, { ...localInputs, id: parseInt(channelId) });
     } else {
@@ -223,8 +226,9 @@ const EditChannel = () => {
         showSuccess('渠道更新成功！');
       } else {
         showSuccess('渠道创建成功！');
-        setInputs(originInputs);
       }
+      // 成功后调用 onClose 关闭模态框，并告诉父组件需要刷新
+      onClose(true);
     } else {
       showError(message);
     }
@@ -249,264 +253,262 @@ const EditChannel = () => {
   };
 
   return (
-    <>
-      <Segment loading={loading}>
-        <Header as='h3'>{isEdit ? '更新渠道信息' : '创建新的渠道'}</Header>
-        <Form autoComplete='new-password'>
-          <Form.Field>
-            <Form.Select
-              label='类型'
-              name='type'
-              required
-              options={CHANNEL_OPTIONS}
-              value={inputs.type}
-              onChange={handleInputChange}
-            />
-          </Form.Field>
-          {
-            inputs.type === 3 && (
-              <>
-                <Message>
-                  注意，<strong>模型部署名称必须和模型名称保持一致</strong>，因为 One API 会把请求体中的 model
-                  参数替换为你的部署名称（模型名称中的点会被剔除），<a target='_blank'
-                                                                    href='https://github.com/songquanpeng/one-api/issues/133?notification_referrer_id=NT_kwDOAmJSYrM2NjIwMzI3NDgyOjM5OTk4MDUw#issuecomment-1571602271'>图片演示</a>。
-                </Message>
-                <Form.Field>
-                  <Form.Input
-                    label='AZURE_OPENAI_ENDPOINT'
-                    name='base_url'
-                    placeholder={'请输入 AZURE_OPENAI_ENDPOINT，例如：https://docs-test-001.openai.azure.com'}
-                    onChange={handleInputChange}
-                    value={inputs.base_url}
-                    autoComplete='new-password'
-                  />
-                </Form.Field>
-                <Form.Field>
-                  <Form.Input
-                    label='默认 API 版本'
-                    name='other'
-                    placeholder={'请输入默认 API 版本，例如：2023-06-01-preview，该配置可以被实际的请求查询参数所覆盖'}
-                    onChange={handleInputChange}
-                    value={inputs.other}
-                    autoComplete='new-password'
-                  />
-                </Form.Field>
-              </>
-            )
-          }
-          {
-            inputs.type === 8 && (
-              <Form.Field>
-                <Form.Input
-                  label='Base URL'
-                  name='base_url'
-                  placeholder={'请输入自定义渠道的 Base URL，例如：https://openai.justsong.cn'}
+      <>
+        <Segment loading={loading}>
+          <Header as='h3'>{isEdit ? '更新渠道信息' : '创建新的渠道'}</Header>
+          <Form autoComplete='new-password'>
+            <Form.Field>
+              <Form.Select
+                  label='类型'
+                  name='type'
+                  required
+                  options={CHANNEL_OPTIONS}
+                  value={inputs.type}
                   onChange={handleInputChange}
-                  value={inputs.base_url}
-                  autoComplete='new-password'
-                />
-              </Form.Field>
-            )
-          }
-          <Form.Field>
-            <Form.Input
-              label='名称'
-              required
-              name='name'
-              placeholder={'请为渠道命名'}
-              onChange={handleInputChange}
-              value={inputs.name}
-              autoComplete='new-password'
-            />
-          </Form.Field>
-          <Form.Field>
-            <Form.Dropdown
-              label='分组'
-              placeholder={'请选择可以使用该渠道的分组'}
-              name='groups'
-              required
-              fluid
-              multiple
-              selection
-              allowAdditions
-              additionLabel={'请在系统设置页面编辑分组倍率以添加新的分组：'}
-              onChange={handleInputChange}
-              value={inputs.groups}
-              autoComplete='new-password'
-              options={groupOptions}
-            />
-          </Form.Field>
-          {
-            inputs.type === 18 && (
-              <Form.Field>
-                <Form.Input
-                  label='模型版本'
-                  name='other'
-                  placeholder={'请输入星火大模型版本，注意是接口地址中的版本号，例如：v2.1'}
-                  onChange={handleInputChange}
-                  value={inputs.other}
-                  autoComplete='new-password'
-                />
-              </Form.Field>
-            )
-          }
-          {
-            inputs.type === 21 && (
-              <Form.Field>
-                <Form.Input
-                  label='知识库 ID'
-                  name='other'
-                  placeholder={'请输入知识库 ID，例如：123456'}
-                  onChange={handleInputChange}
-                  value={inputs.other}
-                  autoComplete='new-password'
-                />
-              </Form.Field>
-            )
-          }
-          <Form.Field>
-            <Form.Dropdown
-              label='模型'
-              placeholder={'请选择该渠道所支持的模型'}
-              name='models'
-              required
-              fluid
-              multiple
-              selection
-              onChange={handleInputChange}
-              value={inputs.models}
-              autoComplete='new-password'
-              options={modelOptions}
-            />
-          </Form.Field>
-          <div style={{ lineHeight: '40px', marginBottom: '12px' }}>
-            <Button type={'button'} onClick={() => {
-              handleInputChange(null, { name: 'models', value: basicModels });
-            }}>填入基础模型</Button>
-            <Button type={'button'} onClick={() => {
-              handleInputChange(null, { name: 'models', value: fullModels });
-            }}>填入所有模型</Button>
-            <Button type={'button'} onClick={() => {
-              handleInputChange(null, { name: 'models', value: [] });
-            }}>清除所有模型</Button>
-            <Input
-              action={
-                <Button type={'button'} onClick={addCustomModel}>填入</Button>
-              }
-              placeholder='输入自定义模型名称'
-              value={customModel}
-              onChange={(e, { value }) => {
-                setCustomModel(value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  addCustomModel();
-                  e.preventDefault();
-                }
-              }}
-            />
-          </div>
-          <Form.Field>
-            <Form.TextArea
-              label='模型重定向'
-              placeholder={`此项可选，用于修改请求体中的模型名称，为一个 JSON 字符串，键为请求中模型名称，值为要替换的模型名称，例如：\n${JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2)}`}
-              name='model_mapping'
-              onChange={handleInputChange}
-              value={inputs.model_mapping}
-              style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
-              autoComplete='new-password'
-            />
-          </Form.Field>
-          {
-            batch ? <Form.Field>
-              <Form.TextArea
-                label='密钥'
-                name='key'
-                required
-                placeholder={'请输入密钥，一行一个'}
-                onChange={handleInputChange}
-                value={inputs.key}
-                style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
-                autoComplete='new-password'
-              />
-            </Form.Field> : <Form.Field>
-              <Form.Input
-                label='密钥'
-                name='key'
-                required
-                placeholder={type2secretPrompt(inputs.type)}
-                onChange={handleInputChange}
-                value={inputs.key}
-                autoComplete='new-password'
               />
             </Form.Field>
-          }
-          <Form.Field>
-            <Form.Input
-                label='组织，可选，不填则为默认组织'
-                name='openai_organization'
-                placeholder='请输入组织org-xxx'
-                onChange={handleInputChange}
-                value={inputs.openai_organization}
-            />
-          </Form.Field>
-          <Form.Field>
-            <Form.Checkbox
-                label='是否自动禁用（仅当自动禁用开启时有效），关闭后不会自动禁用该渠道'
-                name='auto_ban'
-                checked={autoBan}
-                onChange={
+            {
+                inputs.type === 3 && (
+                    <>
+                      <Message>
+                        注意，<strong>模型部署名称必须和模型名称保持一致</strong>，因为 One API 会把请求体中的 model
+                        参数替换为你的部署名称（模型名称中的点会被剔除），<a target='_blank'
+                                                                          href='https://github.com/songquanpeng/one-api/issues/133?notification_referrer_id=NT_kwDOAmJSYrM2NjIwMzI3NDgyOjM5OTk4MDUw#issuecomment-1571602271'>图片演示</a>。
+                      </Message>
+                      <Form.Field>
+                        <Form.Input
+                            label='AZURE_OPENAI_ENDPOINT'
+                            name='base_url'
+                            placeholder={'请输入 AZURE_OPENAI_ENDPOINT，例如：https://docs-test-001.openai.azure.com'}
+                            onChange={handleInputChange}
+                            value={inputs.base_url}
+                            autoComplete='new-password'
+                        />
+                      </Form.Field>
+                      <Form.Field>
+                        <Form.Input
+                            label='默认 API 版本'
+                            name='other'
+                            placeholder={'请输入默认 API 版本，例如：2023-06-01-preview，该配置可以被实际的请求查询参数所覆盖'}
+                            onChange={handleInputChange}
+                            value={inputs.other}
+                            autoComplete='new-password'
+                        />
+                      </Form.Field>
+                    </>
+                )
+            }
+            {
+                inputs.type === 8 && (
+                    <Form.Field>
+                      <Form.Input
+                          label='Base URL'
+                          name='base_url'
+                          placeholder={'请输入自定义渠道的 Base URL，例如：https://openai.justsong.cn'}
+                          onChange={handleInputChange}
+                          value={inputs.base_url}
+                          autoComplete='new-password'
+                      />
+                    </Form.Field>
+                )
+            }
+            <Form.Field>
+              <Form.Input
+                  label='名称'
+                  required
+                  name='name'
+                  placeholder={'请为渠道命名'}
+                  onChange={handleInputChange}
+                  value={inputs.name}
+                  autoComplete='new-password'
+              />
+            </Form.Field>
+            <Form.Field>
+              <Form.Dropdown
+                  label='分组'
+                  placeholder={'请选择可以使用该渠道的分组'}
+                  name='groups'
+                  required
+                  fluid
+                  multiple
+                  selection
+                  allowAdditions
+                  additionLabel={'请在系统设置页面编辑分组倍率以添加新的分组：'}
+                  onChange={handleInputChange}
+                  value={inputs.groups}
+                  autoComplete='new-password'
+                  options={groupOptions}
+              />
+            </Form.Field>
+            {
+                inputs.type === 18 && (
+                    <Form.Field>
+                      <Form.Input
+                          label='模型版本'
+                          name='other'
+                          placeholder={'请输入星火大模型版本，注意是接口地址中的版本号，例如：v2.1'}
+                          onChange={handleInputChange}
+                          value={inputs.other}
+                          autoComplete='new-password'
+                      />
+                    </Form.Field>
+                )
+            }
+            {
+                inputs.type === 21 && (
+                    <Form.Field>
+                      <Form.Input
+                          label='知识库 ID'
+                          name='other'
+                          placeholder={'请输入知识库 ID，例如：123456'}
+                          onChange={handleInputChange}
+                          value={inputs.other}
+                          autoComplete='new-password'
+                      />
+                    </Form.Field>
+                )
+            }
+            <Form.Field>
+              <Form.Dropdown
+                  label='模型'
+                  placeholder={'请选择该渠道所支持的模型'}
+                  name='models'
+                  required
+                  fluid
+                  multiple
+                  selection
+                  onChange={handleInputChange}
+                  value={inputs.models}
+                  autoComplete='new-password'
+                  options={modelOptions}
+              />
+            </Form.Field>
+            <div style={{ lineHeight: '40px', marginBottom: '12px' }}>
+              <Button type={'button'} onClick={() => {
+                handleInputChange(null, { name: 'models', value: basicModels });
+              }}>填入基础模型</Button>
+              <Button type={'button'} onClick={() => {
+                handleInputChange(null, { name: 'models', value: fullModels });
+              }}>填入所有模型</Button>
+              <Button type={'button'} onClick={() => {
+                handleInputChange(null, { name: 'models', value: [] });
+              }}>清除所有模型</Button>
+              <Input
+                  action={
+                    <Button type={'button'} onClick={addCustomModel}>填入</Button>
+                  }
+                  placeholder='输入自定义模型名称'
+                  value={customModel}
+                  onChange={(e, { value }) => {
+                    setCustomModel(value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      addCustomModel();
+                      e.preventDefault();
+                    }
+                  }}
+              />
+            </div>
+            <Form.Field>
+              <Form.TextArea
+                  label='模型重定向'
+                  placeholder={`此项可选，用于修改请求体中的模型名称，为一个 JSON 字符串，键为请求中模型名称，值为要替换的模型名称，例如：\n${JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2)}`}
+                  name='model_mapping'
+                  onChange={handleInputChange}
+                  value={inputs.model_mapping}
+                  style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
+                  autoComplete='new-password'
+              />
+            </Form.Field>
+            {
+              batch ? <Form.Field>
+                <Form.TextArea
+                    label='密钥'
+                    name='key'
+                    placeholder={'请输入密钥，一行一个'}
+                    onChange={handleInputChange}
+                    value={inputs.key}
+                    style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
+                    autoComplete='new-password'
+                />
+              </Form.Field> : <Form.Field>
+                <Form.Input
+                    label='密钥'
+                    name='key'
+                    placeholder={type2secretPrompt(inputs.type)}
+                    onChange={handleInputChange}
+                    value={inputs.key}
+                    autoComplete='new-password'
+                />
+              </Form.Field>
+            }
+            <Form.Field>
+              <Form.Input
+                  label='组织，可选，不填则为默认组织'
+                  name='openai_organization'
+                  placeholder='请输入组织org-xxx'
+                  onChange={handleInputChange}
+                  value={inputs.openai_organization}
+              />
+            </Form.Field>
+            <Form.Field>
+              <Form.Checkbox
+                  label='是否自动禁用（仅当自动禁用开启时有效），关闭后不会自动禁用该渠道'
+                  name='auto_ban'
+                  checked={autoBan}
+                  onChange={
                     () => {
-                        setAutoBan(!autoBan);
+                      setAutoBan(!autoBan);
 
                     }
-                }
-                // onChange={handleInputChange}
-            />
-          </Form.Field>
-          {
-            !isEdit && (
-              <Form.Checkbox
-                checked={batch}
-                label='批量创建'
-                name='batch'
-                onChange={() => setBatch(!batch)}
+                  }
+                  // onChange={handleInputChange}
               />
-            )
-          }
-          {
-            inputs.type !== 3 && inputs.type !== 8 && inputs.type !== 22 && (
-              <Form.Field>
-                <Form.Input
-                  label='代理'
-                  name='base_url'
-                  placeholder={'此项可选，用于通过代理站来进行 API 调用，请输入代理站地址，格式为：https://domain.com'}
-                  onChange={handleInputChange}
-                  value={inputs.base_url}
-                  autoComplete='new-password'
-                />
-              </Form.Field>
-            )
-          }
-          {
-            inputs.type === 22 && (
-              <Form.Field>
-                <Form.Input
-                  label='私有部署地址'
-                  name='base_url'
-                  placeholder={'请输入私有部署地址，格式为：https://fastgpt.run/api/openapi'}
-                  onChange={handleInputChange}
-                  value={inputs.base_url}
-                  autoComplete='new-password'
-                />
-              </Form.Field>
-            )
-          }
-          <Button onClick={handleCancel}>取消</Button>
-          <Button type={isEdit ? 'button' : 'submit'} positive onClick={submit}>提交</Button>
-        </Form>
-      </Segment>
-    </>
+            </Form.Field>
+            {
+                !isEdit && (
+                    <Form.Checkbox
+                        checked={batch}
+                        label='批量创建'
+                        name='batch'
+                        onChange={() => setBatch(!batch)}
+                    />
+                )
+            }
+            {
+                inputs.type !== 3 && inputs.type !== 8 && inputs.type !== 22 && (
+                    <Form.Field>
+                      <Form.Input
+                          label='代理'
+                          name='base_url'
+                          placeholder={'此项可选，用于通过代理站来进行 API 调用，请输入代理站地址，格式为：https://domain.com'}
+                          onChange={handleInputChange}
+                          value={inputs.base_url}
+                          autoComplete='new-password'
+                      />
+                    </Form.Field>
+                )
+            }
+            {
+                inputs.type === 22 && (
+                    <Form.Field>
+                      <Form.Input
+                          label='私有部署地址'
+                          name='base_url'
+                          placeholder={'请输入私有部署地址，格式为：https://fastgpt.run/api/openapi'}
+                          onChange={handleInputChange}
+                          value={inputs.base_url}
+                          autoComplete='new-password'
+                      />
+                    </Form.Field>
+                )
+            }
+            <Button onClick={handleCancel}>取消</Button>
+            <Button type={isEdit ? 'button' : 'submit'} positive onClick={submit}>提交</Button>
+          </Form>
+        </Segment>
+      </>
   );
 };
 

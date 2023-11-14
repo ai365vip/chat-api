@@ -3,9 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
+	"log"
 	"one-api/common"
 	"one-api/controller"
 	"one-api/middleware"
@@ -13,6 +11,11 @@ import (
 	"one-api/router"
 	"os"
 	"strconv"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 //go:embed web/build
@@ -23,6 +26,10 @@ var indexPage []byte
 
 func main() {
 	common.SetupLogger()
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
 	common.SysLog("One API " + common.Version + " started")
 	if os.Getenv("GIN_MODE") != "debug" {
 		gin.SetMode(gin.ReleaseMode)
@@ -31,7 +38,7 @@ func main() {
 		common.SysLog("running in debug mode")
 	}
 	// Initialize SQL Database
-	err := model.InitDB()
+	err = model.InitDB()
 	if err != nil {
 		common.FatalLog("failed to initialize database: " + err.Error())
 	}
@@ -75,8 +82,15 @@ func main() {
 		if err != nil {
 			common.FatalLog("failed to parse CHANNEL_TEST_FREQUENCY: " + err.Error())
 		}
-		go controller.AutomaticallyTestChannels(frequency)
+
+		gptVersion := os.Getenv("GPT_VERSION") // 获取 GPT 版本环境变量
+		if gptVersion == "" {
+			gptVersion = "gpt-3.5-turbo" // 如果没有设置环境变量，默认为 "gpt-3.5-turbo"
+		}
+
+		go controller.AutomaticallyTestChannels(frequency, gptVersion)
 	}
+
 	go controller.UpdateMidjourneyTask()
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
 		common.BatchUpdateEnabled = true

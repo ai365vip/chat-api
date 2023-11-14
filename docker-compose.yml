@@ -1,34 +1,21 @@
-version: '3.4'
-
+version: '3'
 services:
-  one-api:
-    image: justsong/one-api:latest
-    container_name: one-api
+  new-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: new-api
     restart: always
-    command: --log-dir /app/logs
+    network_mode: host
     ports:
       - "3000:3000"
-    volumes:
-      - ./data:/data
-      - ./logs:/app/logs
     environment:
-      - SQL_DSN=root:123456@tcp(host.docker.internal:3306)/one-api  # 修改此行，或注释掉以使用 SQLite 作为数据库
-      - REDIS_CONN_STRING=redis://redis
-      - SESSION_SECRET=random_string  # 修改为随机字符串
       - TZ=Asia/Shanghai
-#      - NODE_TYPE=slave  # 多机部署时从节点取消注释该行
-#      - SYNC_FREQUENCY=60  # 需要定期从数据库加载数据时取消注释该行
-#      - FRONTEND_BASE_URL=https://openai.justsong.cn  # 多机部署时从节点取消注释该行
-
-    depends_on:
-      - redis
-    healthcheck:
-      test: [ "CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' | awk -F: '{print $2}'" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  redis:
-    image: redis:latest
-    container_name: redis
-    restart: always
+      - REDIS_CONN_STRING=redis://default:luxl1379@localhost:6379
+      - SQL_DSN=oneapi:sTCDH4SWeNTtKF3T@tcp(localhost:3306)/oneapi
+      - SYNC_FREQUENCY=60
+      - CHANNEL_UPDATE_FREQUENCY=1440
+      - GLOBAL_API_RATE_LIMIT=180
+      - GLOBAL_WEB_RATE_LIMIT=60
+    volumes:
+      - /data/one-api1:/data
