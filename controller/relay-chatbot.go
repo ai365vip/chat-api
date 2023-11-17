@@ -5,12 +5,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ChatbotMessage struct {
@@ -196,7 +197,7 @@ func botHandler(c *gin.Context, resp *http.Response, consumeQuota bool, promptTo
 	if textResponse.Usage.TotalTokens == 0 {
 		completionTokens := 0
 		for _, choice := range textResponse.Choices {
-			completionTokens += countTokenText(choice.Message.Content, model)
+			completionTokens += countTokenText(string(choice.Message.Content), model)
 		}
 		textResponse.Usage = Usage{
 			PromptTokens:     promptTokens,

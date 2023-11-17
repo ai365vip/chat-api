@@ -95,7 +95,7 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 		for i, msg := range request.Messages {
 			messagesMap[i] = map[string]string{
 				"role":    msg.Role,
-				"content": msg.Content,
+				"content": string(msg.Content),
 			}
 
 		}

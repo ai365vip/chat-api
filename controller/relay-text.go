@@ -224,7 +224,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 		preConsumedTokens = promptTokens + textRequest.MaxTokens
 	}
 	for _, message := range textRequest.Messages {
-		usertext = message.Content
+		usertext = string(message.Content)
 	}
 
 	modelRatio := common.GetModelRatio(textRequest.Model)
