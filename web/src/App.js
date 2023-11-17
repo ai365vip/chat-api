@@ -23,6 +23,7 @@ import Redemption from './pages/Redemption';
 import EditRedemption from './pages/Redemption/EditRedemption';
 import TopUp from './pages/TopUp';
 import Log from './pages/Log';
+import LogAll from './pages/LogAll';
 import Chat from './pages/Chat';
 import {Layout} from "@douyinfe/semi-ui";
 import Midjourney from "./pages/Midjourney";
@@ -268,6 +269,14 @@ function App() {
                     element={
                         <PrivateRoute>
                             <Log />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path='/logall'
+                    element={
+                        <PrivateRoute>
+                            <LogAll />
                         </PrivateRoute>
                     }
                 />

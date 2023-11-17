@@ -3,9 +3,10 @@ package model
 import (
 	"context"
 	"fmt"
-	"gorm.io/gorm"
 	"one-api/common"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 type Log struct {
@@ -22,6 +23,23 @@ type Log struct {
 	CompletionTokens int    `json:"completion_tokens" gorm:"default:0"`
 	ChannelId        int    `json:"channel" gorm:"index"`
 	TokenId          int    `json:"token_id" gorm:"default:0;index"`
+}
+
+type Logs struct {
+	Id               int    `json:"id;index:idx_created_at_id,priority:1"`
+	UserId           int    `json:"user_id" gorm:"index"`
+	CreatedAt        int64  `json:"created_at" gorm:"bigint;index:idx_created_at_id,priority:2;index:idx_created_at_type"`
+	Type             int    `json:"type" gorm:"index:idx_created_at_type"`
+	Username         string `json:"username" gorm:"index:index_username_model_name,priority:2;default:''"`
+	TokenName        string `json:"token_name" gorm:"index;default:''"`
+	ModelName        string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
+	ChannelId        int    `json:"channel" gorm:"index"`
+	TokenId          int    `json:"token_id" gorm:"default:0;index"`
+	CreatedData      string `json:"created_data"`      // 匹配 DATE(datetime(created_at, 'unixepoch')) AS created_data
+	Cishu            int    `json:"cishu"`             // 匹配 COUNT(id) AS cishu
+	PromptTokens     int    `json:"prompt_tokens"`     // 匹配 SUM(prompt_tokens) AS prompt_tokens
+	CompletionTokens int    `json:"completion_tokens"` // 匹配 SUM(completion_tokens) AS completion_tokens
+	Quota            int    `json:"quota"`             // 匹配 SUM(quota/500000) AS quota
 }
 
 const (
@@ -108,6 +126,94 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	return logs, err
 }
 
+func GetProLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (logs []*Logs, total int64, err error) {
+	// 构建原始查询基础...
+	var queryBase = `
+        FROM
+            logs
+        WHERE
+            1=1
+    `
+
+	var queryParams []interface{}
+	var groupByFields []string // 使用一个切片来存储需要分组的字段列表
+
+	if logType != LogTypeUnknown {
+		queryBase += " AND type = ?"
+		queryParams = append(queryParams, logType)
+	}
+	if modelName != "" {
+		queryBase += " AND model_name = ?"
+		queryParams = append(queryParams, modelName)
+		groupByFields = append(groupByFields, "model_name") // 分组字段
+	}
+	if username != "" {
+		queryBase += " AND username = ?"
+		queryParams = append(queryParams, username)
+		groupByFields = append(groupByFields, "username") // 分组字段
+	}
+	if tokenName != "" {
+		queryBase += " AND token_name = ?"
+		queryParams = append(queryParams, tokenName)
+		groupByFields = append(groupByFields, "token_name") // 分组字段
+	}
+	if startTimestamp != 0 {
+		queryBase += " AND created_at >= ?"
+		queryParams = append(queryParams, startTimestamp)
+	}
+	if endTimestamp != 0 {
+		queryBase += " AND created_at <= ?"
+		queryParams = append(queryParams, endTimestamp)
+	}
+	if channel != 0 {
+		queryBase += " AND channel_id = ?"
+		queryParams = append(queryParams, channel)
+		groupByFields = append(groupByFields, "channel_id") // 分组字段
+	}
+
+	// 构建 SELECT 和 GROUP BY 子句
+	selectClause := "SELECT DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL 12 HOUR), '%Y-%m-%d') AS created_data,"
+	groupByClause := "GROUP BY created_data"
+	for _, field := range groupByFields {
+		selectClause += fmt.Sprintf(" %s,", field)
+		groupByClause += fmt.Sprintf(", %s", field)
+	}
+
+	// 查询日志数据...
+	dataQuery := selectClause + `
+        COUNT(id) AS cishu,
+        SUM(prompt_tokens) AS prompt_tokens,
+        SUM(completion_tokens) AS completion_tokens,
+        SUM(quota) AS quota
+    ` + queryBase + `
+    ` + groupByClause + `
+    ORDER BY created_data DESC, quota DESC
+    `
+
+	tx := DB.Raw(dataQuery, queryParams...).Scan(&logs)
+	err = tx.Error
+	if err != nil {
+		fmt.Printf("查询日志出错: %+v\n", err)
+		return nil, 0, err
+	}
+
+	// 查询 dataQuery 结果的总条数
+	totalQuery := `SELECT COUNT(*) AS count FROM (` + dataQuery + `) AS a`
+
+	var totalResult struct {
+		Count int64
+	}
+	err = DB.Raw(totalQuery, queryParams...).Scan(&totalResult).Error
+	if err != nil {
+		fmt.Printf("查询 dataQuery 结果的总条数出错: %+v\n", err)
+		return nil, 0, err
+	}
+	total = totalResult.Count
+
+	return logs, total, nil
+
+}
+
 func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int) (logs []*Log, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
@@ -136,6 +242,11 @@ func SearchAllLogs(keyword string) (logs []*Log, err error) {
 	return logs, err
 }
 
+func SearchProLogs(keyword string) (logs []*Log, err error) {
+	err = DB.Where("type = ? or content LIKE ?", keyword, keyword+"%").Order("id desc").Limit(common.MaxRecentItems).Find(&logs).Error
+	return logs, err
+}
+
 func SearchUserLogs(userId int, keyword string) (logs []*Log, err error) {
 	err = DB.Where("user_id = ? and type = ?", userId, keyword).Order("id desc").Limit(common.MaxRecentItems).Omit("id").Find(&logs).Error
 	return logs, err
@@ -148,6 +259,30 @@ type Stat struct {
 }
 
 func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (stat Stat) {
+	tx := DB.Table("logs").Select("sum(quota) quota, count(*) rpm, sum(prompt_tokens) + sum(completion_tokens) tpm")
+	if username != "" {
+		tx = tx.Where("username = ?", username)
+	}
+	if tokenName != "" {
+		tx = tx.Where("token_name = ?", tokenName)
+	}
+	if startTimestamp != 0 {
+		tx = tx.Where("created_at >= ?", startTimestamp)
+	}
+	if endTimestamp != 0 {
+		tx = tx.Where("created_at <= ?", endTimestamp)
+	}
+	if modelName != "" {
+		tx = tx.Where("model_name = ?", modelName)
+	}
+	if channel != 0 {
+		tx = tx.Where("channel_id = ?", channel)
+	}
+	tx.Where("type = ?", LogTypeConsume).Scan(&stat)
+	return stat
+}
+
+func SumUsedProQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (stat Stat) {
 	tx := DB.Table("logs").Select("sum(quota) quota, count(*) rpm, sum(prompt_tokens) + sum(completion_tokens) tpm")
 	if username != "" {
 		tx = tx.Where("username = ?", username)
