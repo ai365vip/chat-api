@@ -1,8 +1,9 @@
 package model
 
 import (
-	"gorm.io/gorm"
 	"one-api/common"
+
+	"gorm.io/gorm"
 )
 
 type Channel struct {
@@ -44,7 +45,7 @@ func SearchChannels(keyword string) (channels []*Channel, err error) {
 	if common.UsingPostgreSQL {
 		keyCol = `"key"`
 	}
-	err = DB.Omit("key").Where("id = ? or name LIKE ? or "+keyCol+" = ?", common.String2Int(keyword), keyword+"%", keyword).Find(&channels).Error
+	err = DB.Omit("key").Where("id = ? or name LIKE ? or "+keyCol+" = ? or `group` LIKE ?", common.String2Int(keyword), "%"+keyword+"%", keyword, "%"+keyword+"%").Find(&channels).Error
 	return channels, err
 }
 

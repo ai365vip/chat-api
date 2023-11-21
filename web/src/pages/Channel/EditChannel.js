@@ -58,6 +58,9 @@ const EditChannel = ({ channelId, onClose }) => {
   const [basicModels, setBasicModels] = useState([]);
   const [fullModels, setFullModels] = useState([]);
   const [customModel, setCustomModel] = useState('');
+  const [proxies, setProxies] = useState('');
+  const [batchProxy, setBatchProxy] = useState(false);
+
 
   const handleInputChange = (e, { name, value }) => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
@@ -184,7 +187,7 @@ const EditChannel = ({ channelId, onClose }) => {
   }, [autoBan]);
 
   const submit = async () => {
-    if (!isEdit && (inputs.name === '')) {
+    if (!isEdit && !batchProxy && (inputs.name === '')) {
       showInfo('请填写渠道名称！');
       return;
     }
@@ -206,6 +209,47 @@ const EditChannel = ({ channelId, onClose }) => {
     if (localInputs.type === 18 && localInputs.other === '') {
       localInputs.other = 'v2.1';
     }
+
+  
+    let channelsToCreate = [];
+
+    // 处理批量添加代理的逻辑
+    if (batchProxy) {
+      const proxyEntries = proxies.split('\n').filter(proxy => proxy.trim()); // 过滤空行
+
+      channelsToCreate = proxyEntries.map(proxyEntry => {
+        const [address, name] = proxyEntry.split(',').map(part => part.trim()); // 获取代理地址和名称
+        if (!address) {
+          throw new Error('代理地址格式无效。');
+        }
+        return {
+          ...inputs, // 复制当前输入作为基础
+          base_url: address,
+          name: name || address, // 如果没有指定名称，则使用地址作为名称
+          models: inputs.models.join(','), // 将模型数组转换为字符串
+          group: inputs.groups.join(','), // 将群组数组转换为字符串
+        };
+      });
+
+      // 批量创建渠道
+      for (const channelData of channelsToCreate) {
+        try {
+          let res = await API.post(`/api/channel/`, channelData);
+          const { success, message } = res.data;
+          if (success) {
+            showSuccess(`渠道 ${channelData.name} 创建成功！`);
+          } else {
+            showError(`渠道 ${channelData.name} 创建失败：${message}`);
+          }
+        } catch (error) {
+          showError(`渠道 ${channelData.name} 创建异常：${error.message}`);
+        }
+      }
+
+      onClose(true); // 关闭模态框
+      return; // 结束函数执行，因为批量创建不需要进一步处理
+    }
+    
     let res;
     if (!Array.isArray(localInputs.models)) {
       showError('提交失败，请勿重复提交！');
@@ -270,11 +314,6 @@ const EditChannel = ({ channelId, onClose }) => {
             {
                 inputs.type === 3 && (
                     <>
-                      <Message>
-                        注意，<strong>模型部署名称必须和模型名称保持一致</strong>，因为 One API 会把请求体中的 model
-                        参数替换为你的部署名称（模型名称中的点会被剔除），<a target='_blank'
-                                                                          href='https://github.com/songquanpeng/one-api/issues/133?notification_referrer_id=NT_kwDOAmJSYrM2NjIwMzI3NDgyOjM5OTk4MDUw#issuecomment-1571602271'>图片演示</a>。
-                      </Message>
                       <Form.Field>
                         <Form.Input
                             label='AZURE_OPENAI_ENDPOINT'
@@ -315,7 +354,6 @@ const EditChannel = ({ channelId, onClose }) => {
             <Form.Field>
               <Form.Input
                   label='名称'
-                  required
                   name='name'
                   placeholder={'请为渠道命名'}
                   onChange={handleInputChange}
@@ -489,6 +527,29 @@ const EditChannel = ({ channelId, onClose }) => {
                       />
                     </Form.Field>
                 )
+            }
+             <Form.Field>
+              <Form.Checkbox
+                checked={batchProxy}
+                label='批量添加代理'
+                name='batch_proxy'
+                onChange={() => setBatchProxy(!batchProxy)}
+              />
+            </Form.Field>
+            {
+              batchProxy && (
+                <Form.Field>
+                  <Form.TextArea
+                      label='批量代理地址'
+                      name='proxies'
+                      placeholder={'请输入代理地址和名称，格式为 "http://proxyaddress.com,proxyName"，每行一个'}
+                      onChange={(e, { value }) => setProxies(value)}
+                      value={proxies}
+                      style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
+                      autoComplete='new-password'
+                  />
+                </Form.Field>
+              )
             }
             {
                 inputs.type === 22 && (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Input, Label, Message, Pagination, Popup, Table , Dropdown,Segment,Modal } from 'semantic-ui-react';
+import { Button, Form, Input, Label, Message, Pagination, Popup, Table , Dropdown,Segment,Modal ,Checkbox} from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 import { API, setPromptShown, shouldShowPrompt, showError, showInfo, showSuccess, timestamp2string } from '../helpers';
 
@@ -68,12 +68,30 @@ const ChannelsTable = () => {
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [showPrompt, setShowPrompt] = useState(shouldShowPrompt("channel-test"))
   const [gptVersion, setGptVersion] = useState('gpt-3.5-turbo');  // 新增状态变量来记录GPT版本选项
+  const [selectedGroup, setSelectedGroup] = useState(null); // 当前选中的分组
+  // 初始化空集合来保存选中的渠道ID
+ const [selectedChannels, setSelectedChannels] = useState(new Set());
 
-  const gptOptions = [     // GPT版本选项
+
+  const [groupOptions, setGroupOptions] = useState([
+    { key: '3.5', text: '3.5', value: '3.5' },
+    { key: 'default', text: 'default', value: 'default' },
+    { key: 'vip', text: 'vip', value: 'vip' },
+    { key: 'svip', text: 'svip', value: 'svip' },
+  ]); // 分组选项列表
+
+  // 分组下拉框值改变时的处理函数
+  const onGroupChange = (e, {value}) => {
+    setSelectedGroup(value);
+  };
+
+  const [gptOptions, setGptOptions] = useState([
+    // 初始的GPT选项列表
     { key: 'gpt-3.5-turbo', text: 'GPT-3.5', value: 'gpt-3.5-turbo' },
     { key: 'gpt-4', text: 'GPT-4', value: 'gpt-4' },
     { key: 'gpt-4-1106-preview', text: 'GPT-4-1106-preview', value: 'gpt-4-1106-preview' },
-  ];
+    // ...其他初始选项...
+  ]);
 
   const onGptVersionChange = (e, {value}) => {   // GPT版本选择的处理函数
     setGptVersion(value);
@@ -98,7 +116,27 @@ const ChannelsTable = () => {
     }
   };
 
-
+  const handleSelectAll = (e, { checked }) => {
+    // 如果复选框是选中的，则将所有渠道ID加入selectedChannels
+    // 否则清空selectedChannels
+    if (checked) {
+      const newSelectedChannels = new Set(channels.map(channel => channel.id));
+      setSelectedChannels(newSelectedChannels);
+    } else {
+      setSelectedChannels(new Set());
+    }
+  };
+  
+  const handleSelectOne = (channelId) => {
+    const newSelectedChannels = new Set(selectedChannels);
+    if (newSelectedChannels.has(channelId)) {
+      newSelectedChannels.delete(channelId);
+    } else {
+      newSelectedChannels.add(channelId);
+    }
+    setSelectedChannels(newSelectedChannels);
+  };
+  
 
   const loadChannels = async (startIdx) => {
     const res = await API.get(`/api/channel/?p=${startIdx}&page_size=${pageSize}`);
@@ -148,6 +186,7 @@ const ChannelsTable = () => {
   const manageChannel = async (id, action, idx, value) => {
     let data = { id };
     let res;
+    // eslint-disable-next-line default-case
     switch (action) {
       case 'delete':
         res = await API.delete(`/api/channel/${id}/`, {params: {version: gptVersion}});
@@ -194,6 +233,57 @@ const ChannelsTable = () => {
       showError(message);
     }
   };
+
+  // 批量删除
+  const deleteSelectedChannels = async () => {
+    if (selectedChannels.size === 0) {
+      showError("没有选中的渠道");
+      return;
+    }
+  
+    setLoading(true);
+  
+    // 用于存储所有成功的操作
+    let successfulDeletions = [];
+    
+    // 用于存储所有失败的操作信息
+    let errors = [];
+    
+    for (const channelId of selectedChannels) {
+      try {
+        const res = await API.delete(`/api/channel/${channelId}/`);
+        const { success } = res.data;
+        if (success) {
+            successfulDeletions.push(channelId);
+        } else {
+          errors.push(`ID ${channelId}: 删除失败`);
+        }
+      } catch (error) {
+        errors.push(`ID ${channelId}: ${error.message}`);
+      }
+    }
+  
+    // 成功删除后，从channels列表中移除相关渠道
+    if (successfulDeletions.length > 0) {
+      setChannels(channels.filter(channel => !successfulDeletions.includes(channel.id)));
+    }
+  
+    setLoading(false);
+  
+    // 清空已选中渠道列表
+    setSelectedChannels(new Set());
+  
+    if (errors.length > 0) {
+      showError(errors[0]);
+    } else if (successfulDeletions.length > 0) {
+      showSuccess(`成功删除了 ${successfulDeletions.length} 个渠道。`);
+    }
+  
+    // 在这里可以选择再次刷新列表，也可以不刷新，因为上面的代码已经更新了本地状态
+    // refresh();
+  };
+  
+
 
   const renderStatus = (status) => {
     switch (status) {
@@ -262,6 +352,12 @@ const ChannelsTable = () => {
     }
     setSearching(false);
   };
+  
+  // 添加到useEffect中以监听页面加载时的初始搜索
+  useEffect(() => {
+    searchChannels();
+  }, [searchKeyword]);
+  
 
   const testChannel = async (id, name, idx) => {
     const res = await API.get(`/api/channel/test/${id}/`, {params: {version: gptVersion}});
@@ -356,11 +452,16 @@ const ChannelsTable = () => {
   const onPageSizeChange = (e, { value }) => {
     setPageSize(value);
     loadChannels(0);
-  };
+  }; 
+
 
   return (
       <>
-        <Form onSubmit={searchChannels} style={{ display: 'flex', alignItems: 'center' }}>
+        <Form onSubmit={(e) => {
+            e.preventDefault();
+            searchChannels();
+        }} style={{ display: 'flex', alignItems: 'center' }}>
+
           <div style={{ display: 'flex', flex: 1, marginRight: '10px', alignItems: 'center'}}>
             <Form.Input
                 icon='search'
@@ -369,26 +470,52 @@ const ChannelsTable = () => {
                 value={searchKeyword}
                 loading={searching}
                 onChange={handleKeywordChange}
-                style={{ width: '700px' }} // 输入框填满容器宽度
+                style={{ width: '600px' }} // 输入框填满容器宽度
+            />
+          </div>
+          {/* 新增分组下拉框 */}
+          <div style={{ display: 'flex', flex: 1, marginRight: '10px', alignItems: 'center'}}>
+            <Dropdown
+              placeholder='选择分组'
+              fluid
+              selection
+              search
+              options={groupOptions}
+              value={selectedGroup} // 当前选中的分组
+              onChange={handleKeywordChange} // 处理分组变化
+              style={{ width: '200px' }} // 下拉框的最小宽度
             />
           </div>
           <Dropdown
               selection
+              search
               options={gptOptions}
               onChange={onGptVersionChange}
-              defaultValue='gpt-3.5-turbo' // 设置默认值为 'gpt-3.5-turbo'
-              style={{  alignItems: 'center', display: 'inline-flex', height: '38px'}} // 调整下拉菜单的样式以匹配其他元素
+              defaultValue='gpt-3.5-turbo'
+              allowAdditions
+              onAddItem={(e, { value }) => {
+                // 这里更新 gptOptions 状态，包含新增加的选项
+                setGptOptions(prevOptions => [...prevOptions, { key: value, text: value, value }]);
+              }}
+              style={{ alignItems: 'center', display: 'inline-flex', height: '38px' }} // 调整下拉菜单的样式以匹配其他元素
           />
           <span
               style={{ display: 'flex', marginRight: '250px', alignItems: 'center', fontSize: '18px', lineHeight: '38px', height: '38px' }} // 统一高度和行高
           >
-    测试模型
-  </span>
+            测试模型
+          </span>
         </Form>
 
         <Table basic compact size='small'>
           <Table.Header>
             <Table.Row>
+            <Table.HeaderCell>
+              <Checkbox
+                indeterminate={selectedChannels.size > 0 && selectedChannels.size < channels.length}
+                checked={selectedChannels.size === channels.length}
+                onChange={handleSelectAll}
+              />
+             </Table.HeaderCell>
               <Table.HeaderCell
                   style={{ cursor: 'pointer' }}
                   onClick={() => {
@@ -410,7 +537,7 @@ const ChannelsTable = () => {
                   onClick={() => {
                     sortChannel('group');
                   }}
-                  width={1}
+                  width={3}
               >
                 分组
               </Table.HeaderCell>
@@ -419,7 +546,7 @@ const ChannelsTable = () => {
                   onClick={() => {
                     sortChannel('type');
                   }}
-                  width={2}
+                  width={1}
               >
                 类型
               </Table.HeaderCell>
@@ -428,7 +555,7 @@ const ChannelsTable = () => {
                   onClick={() => {
                     sortChannel('status');
                   }}
-                  width={2}
+                  width={1}
               >
                 状态
               </Table.HeaderCell>
@@ -479,6 +606,12 @@ const ChannelsTable = () => {
                   if (channel.deleted) return <></>;
                   return (
                       <Table.Row key={channel.id}>
+                        <Table.Cell>
+                          <Checkbox
+                            checked={selectedChannels.has(channel.id)}
+                            onChange={() => handleSelectOne(channel.id)}
+                          />
+                        </Table.Cell>
                         <Table.Cell>{channel.id}</Table.Cell>
                         <Table.Cell>{channel.name ? channel.name : '无'}</Table.Cell>
                         <Table.Cell>{renderGroup(channel.group)}</Table.Cell>
@@ -614,6 +747,14 @@ const ChannelsTable = () => {
                         确认删除
                       </Button>
                     </Popup>
+                    <Button
+                    size='small'
+                    negative
+                    onClick={deleteSelectedChannels}
+                  >
+                    删除选中
+                  </Button>
+
 
                     <Button size='small' onClick={refresh} loading={loading}>刷新</Button>
                   </div>

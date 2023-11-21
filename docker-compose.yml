@@ -8,7 +8,7 @@ services:
     restart: always
     network_mode: host
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - TZ=Asia/Shanghai
       - REDIS_CONN_STRING=redis://default:123@localhost:6379
