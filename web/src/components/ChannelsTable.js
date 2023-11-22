@@ -537,7 +537,7 @@ const ChannelsTable = () => {
                   onClick={() => {
                     sortChannel('group');
                   }}
-                  width={3}
+                  width={2}
               >
                 分组
               </Table.HeaderCell>
@@ -730,8 +730,10 @@ const ChannelsTable = () => {
                     <Button size='small' loading={loading} onClick={testAllChannels}>
                       测试已启用通道
                     </Button>
+                   {/*
                     <Button size='small' onClick={updateAllChannelsBalance}
                             loading={loading || updatingBalance}>更新已启用通道余额</Button>
+                  */}   
 
                     <Popup
                         trigger={

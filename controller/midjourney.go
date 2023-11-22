@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net/http"
@@ -14,17 +13,19 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func UpdateMidjourneyTask() {
 	//revocer
 	imageModel := "midjourney"
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("UpdateMidjourneyTask panic: %v", err)
+		}
+	}()
 	for {
-		defer func() {
-			if err := recover(); err != nil {
-				log.Printf("UpdateMidjourneyTask panic: %v", err)
-			}
-		}()
 		time.Sleep(time.Duration(15) * time.Second)
 		tasks := model.GetAllUnFinishTasks()
 		if len(tasks) != 0 {
@@ -184,7 +185,6 @@ func UpdateMidjourneyTask() {
 					log.Printf("UpdateMidjourneyTask success: %v", task)
 
 				}
-
 			}
 		}
 	}
