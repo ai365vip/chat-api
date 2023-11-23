@@ -7,18 +7,6 @@ import {renderQuota, stringToColor} from '../helpers/render';
 import {Avatar, Tag, Table, Button, Popover, Form, Modal, Popconfirm} from "@douyinfe/semi-ui";
 import EditToken from "../pages/Token/EditToken";
 
-const {Column} = Table;
-
-const COPY_OPTIONS = [
-    {key: 'next', text: 'ChatGPT Next Web', value: 'next'},
-    {key: 'ama', text: 'AMA 问天', value: 'ama'},
-    {key: 'opencat', text: 'OpenCat', value: 'opencat'},
-];
-
-const OPEN_LINK_OPTIONS = [
-    {key: 'ama', text: 'AMA 问天', value: 'ama'},
-    {key: 'opencat', text: 'OpenCat', value: 'opencat'},
-];
 
 function renderTimestamp(timestamp) {
     return (
@@ -187,6 +175,7 @@ const TokensTable = () => {
         id: undefined,
     });
 
+
     const closeEdit = () => {
         setShowEdit(false);
     }
@@ -219,61 +208,12 @@ const TokensTable = () => {
         setLoading(false);
     };
 
-    const onPaginationChange = (e, {activePage}) => {
-        (async () => {
-            if (activePage === Math.ceil(tokens.length / pageSize) + 1) {
-                // In this case we have to load more data and then append them.
-                await loadTokens(activePage - 1);
-            }
-            setActivePage(activePage);
-        })();
-    };
+
 
     const refresh = async () => {
         await loadTokens(activePage - 1);
     };
 
-    const onCopy = async (type, key) => {
-        let status = localStorage.getItem('status');
-        let serverAddress = '';
-        if (status) {
-            status = JSON.parse(status);
-            serverAddress = status.server_address;
-        }
-        if (serverAddress === '') {
-            serverAddress = window.location.origin;
-        }
-        let encodedServerAddress = encodeURIComponent(serverAddress);
-        const nextLink = localStorage.getItem('chat_link');
-        let nextUrl;
-
-        if (nextLink) {
-            nextUrl = nextLink + `/#/?settings={"key":"sk-${key}","url":"${serverAddress}"}`;
-        } else {
-            nextUrl = `https://chat.oneapi.pro/#/?settings={"key":"sk-${key}","url":"${serverAddress}"}`;
-        }
-
-        let url;
-        switch (type) {
-            case 'ama':
-                url = `ama://set-api-key?server=${encodedServerAddress}&key=sk-${key}`;
-                break;
-            case 'opencat':
-                url = `opencat://team/join?domain=${encodedServerAddress}&token=sk-${key}`;
-                break;
-            case 'next':
-                url = nextUrl;
-                break;
-            default:
-                url = `sk-${key}`;
-        }
-        // if (await copy(url)) {
-        //     showSuccess('已复制到剪贴板！');
-        // } else {
-        //     showWarning('无法复制到剪贴板，请手动复制，已将令牌填入搜索框。');
-        //     setSearchKeyword(url);
-        // }
-    };
 
     const copyText = async (text) => {
         if (await copy(text)) {
@@ -284,41 +224,6 @@ const TokensTable = () => {
         }
     }
 
-    const onOpenLink = async (type, key) => {
-        let status = localStorage.getItem('status');
-        let serverAddress = '';
-        if (status) {
-            status = JSON.parse(status);
-            serverAddress = status.server_address;
-        }
-        if (serverAddress === '') {
-            serverAddress = window.location.origin;
-        }
-        let encodedServerAddress = encodeURIComponent(serverAddress);
-        const chatLink = localStorage.getItem('chat_link');
-        let defaultUrl;
-
-        if (chatLink) {
-            defaultUrl = chatLink + `/#/?settings={"key":"sk-${key}","url":"${serverAddress}"}`;
-        } else {
-            defaultUrl = `https://chat.oneapi.pro/#/?settings={"key":"sk-${key}","url":"${serverAddress}"}`;
-        }
-        let url;
-        switch (type) {
-            case 'ama':
-                url = `ama://set-api-key?server=${encodedServerAddress}&key=sk-${key}`;
-                break;
-
-            case 'opencat':
-                url = `opencat://team/join?domain=${encodedServerAddress}&token=sk-${key}`;
-                break;
-
-            default:
-                url = defaultUrl;
-        }
-
-        window.open(url, '_blank');
-    }
 
     useEffect(() => {
         loadTokens(0)
@@ -344,6 +249,7 @@ const TokensTable = () => {
         setLoading(true);
         let data = {id};
         let res;
+        // eslint-disable-next-line default-case
         switch (action) {
             case 'delete':
                 res = await API.delete(`/api/token/${id}/`);
@@ -427,6 +333,35 @@ const TokensTable = () => {
         }
     };
 
+    // 新增一个函数用于删除所选token
+    const deleteSelectedTokens = async () => {
+        if (selectedKeys.length === 0) {
+        showError('请至少选择一个令牌！');
+        return;
+        }
+
+        setLoading(true);
+        try {
+        // 这里注释掉了原有代码是为了集中展示删除逻辑
+        // let newTokens = [...tokens];
+
+        // 使用Promise.all同时开始所有删除请求
+        await Promise.all(selectedKeys.map(async (record) => {
+            await API.delete(`/api/token/${record.id}/`);
+        }));
+
+        // 过滤掉已被删除的token
+        let remainingTokens = tokens.filter(token => !selectedKeys.includes(token));
+        setTokens(remainingTokens);
+        setSelectedKeys([]); // 清空选择
+        showSuccess('所选令牌已成功删除。');
+        } catch (error) {
+        showError('删除失败: ' + error.message);
+        }
+        setLoading(false);
+    };
+
+
     const rowSelection = {
         onSelect: (record, selected) => {
         },
@@ -496,6 +431,8 @@ const TokensTable = () => {
                     await copyText(keys);
                 }
             }>复制所选令牌到剪贴板</Button>
+            {/* 新增删除按钮 */}
+            <Button theme='light' type='danger' style={{ marginLeft: '8px' }} onClick={deleteSelectedTokens}>删除所选令牌</Button>
         </>
     );
 };
