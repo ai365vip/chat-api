@@ -114,79 +114,78 @@ func chatbotStreamHandler(c *gin.Context, resp *http.Response, promptTokens int,
 
 }
 
-func botHandler(c *gin.Context, resp *http.Response, consumeQuota bool, promptTokens int, model string) (*OpenAIErrorWithStatusCode, *Usage) {
+func botHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*OpenAIErrorWithStatusCode, *Usage) {
 	var textResponse TextResponse
 
-	if consumeQuota {
-		responseBody, err := io.ReadAll(resp.Body)
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		return errorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+	}
+	err = json.Unmarshal(responseBody, &textResponse)
+	if err != nil {
+		return errorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+	}
+	if textResponse.Error.Type != "" {
+		return &OpenAIErrorWithStatusCode{
+			OpenAIError: textResponse.Error,
+			StatusCode:  resp.StatusCode,
+		}, nil
+	}
+	// Reset response body
+	fmt.Println(string(responseBody))
+	usage := &Usage{
+		PromptTokens:     promptTokens,
+		CompletionTokens: calculatePromptTokens(string(responseBody)),
+		TotalTokens:      promptTokens + calculatePromptTokens(string(responseBody)),
+	}
 
-		if err != nil {
-			return errorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
-		}
-		err = resp.Body.Close()
-		if err != nil {
-			return errorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-		}
-
-		if textResponse.Error.Type != "" {
-			return &OpenAIErrorWithStatusCode{
-				OpenAIError: textResponse.Error,
-				StatusCode:  resp.StatusCode,
-			}, nil
-		}
-		// Reset response body
-		fmt.Println(string(responseBody))
-		usage := &Usage{
-			PromptTokens:     promptTokens,
-			CompletionTokens: calculatePromptTokens(string(responseBody)),
-			TotalTokens:      promptTokens + calculatePromptTokens(string(responseBody)),
-		}
-
-		jsonResponse := map[string]interface{}{
-			"id":      randomID(),
-			"object":  "chat.completion",
-			"created": int(time.Now().Unix()),
-			"model":   model,
-			"usage":   usage,
-			"choices": []map[string]interface{}{
-				{
-					"index": 0,
-					"message": map[string]string{
-						"role":    "assistant",
-						"content": string(responseBody),
-					},
-					"finish_reason": "stop",
+	jsonResponse := map[string]interface{}{
+		"id":      randomID(),
+		"object":  "chat.completion",
+		"created": int(time.Now().Unix()),
+		"model":   model,
+		"usage":   usage,
+		"choices": []map[string]interface{}{
+			{
+				"index": 0,
+				"message": map[string]string{
+					"role":    "assistant",
+					"content": string(responseBody),
 				},
+				"finish_reason": "stop",
 			},
-		}
-		if err != nil {
-			return errorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
-		}
-		err = resp.Body.Close()
-		if err != nil {
-			return errorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-		}
+		},
+	}
+	if err != nil {
+		return errorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		return errorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+	}
 
-		jsonData, err := json.Marshal(jsonResponse)
-		if err != nil {
-			return errorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
-		}
+	jsonData, err := json.Marshal(jsonResponse)
+	if err != nil {
+		return errorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
+	}
 
-		// Reset response body
-		resp.Body = io.NopCloser(bytes.NewBuffer(jsonData))
+	// Reset response body
+	resp.Body = io.NopCloser(bytes.NewBuffer(jsonData))
 
-		err = json.Unmarshal(jsonData, &textResponse)
-		if err != nil {
-			return errorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
-		}
-
+	err = json.Unmarshal(jsonData, &textResponse)
+	if err != nil {
+		return errorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
 
 	for k, v := range resp.Header {
 		c.Writer.Header().Set(k, v[0])
 	}
 	c.Writer.WriteHeader(resp.StatusCode)
-	_, err := io.Copy(c.Writer, resp.Body)
+	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
 		return errorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil
 	}
