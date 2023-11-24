@@ -14,13 +14,9 @@ type Ability struct {
 }
 
 func GetGroupModels(group string) []string {
-	var abilities []Ability
-	//去重 enabled = true
-	DB.Where("`group` = ?", group).Distinct("model").Find(&abilities)
-	models := make([]string, 0, len(abilities))
-	for _, ability := range abilities {
-		models = append(models, ability.Model)
-	}
+	var models []string
+	// Find distinct models
+	DB.Table("abilities").Where("`group` = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models)
 	return models
 }
 

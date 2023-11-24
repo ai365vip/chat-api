@@ -40,7 +40,7 @@ type Midjourney struct {
 	ChannelId   int    `json:"channel_id"`
 }
 
-// 用于包含所有搜索条件的结构体，可以根据需求添加更多字段
+// TaskQueryParams 用于包含所有搜索条件的结构体，可以根据需求添加更多字段
 type TaskQueryParams struct {
 	ChannelID      string
 	MjID           string

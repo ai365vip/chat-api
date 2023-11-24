@@ -373,13 +373,26 @@ const LogsTable = () => {
             <Layout>
                 <Form layout='horizontal' style={{marginTop: 10}}>
                     <>
-                        <Form.Input field="channel_id" label='渠道 ID' style={{width: 176}} value={channel_id}
-                                    placeholder={'可选值'} name='channel_id'
-                                    onChange={value => handleInputChange(value, 'channel_id')}/>
-                        <Form.Input field="mj_id" label='任务 ID' style={{width: 176}} value={mj_id}
-                                    placeholder='可选值'
-                                    name='mj_id'
-                                    onChange={value => handleInputChange(value, 'mj_id')}/>
+                    {isAdminUser && (
+                          <Form.Input
+                            field="channel_id"
+                            label="渠道 ID"
+                            style={{ width: 176 }}
+                            value={channel_id}
+                            placeholder="可选值"
+                            name="channel_id"
+                            onChange={value => handleInputChange(value, 'channel_id')}
+                          />
+                        )}
+                        <Form.Input
+                          field="mj_id"
+                          label="任务 ID"
+                          style={{ width: 176 }}
+                          value={mj_id}
+                          placeholder="可选值"
+                          name="mj_id"
+                          onChange={value => handleInputChange(value, 'mj_id')}
+                        />
                         <Form.DatePicker field="start_timestamp" label='起始时间' style={{width: 272}}
                                          initValue={start_timestamp}
                                          value={start_timestamp} type='dateTime'

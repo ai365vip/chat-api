@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"log"
+	"net/http"
 	"one-api/common"
 	"one-api/controller"
 	"one-api/middleware"
@@ -99,6 +100,9 @@ func main() {
 	}
 
 	if os.Getenv("ENABLE_PPROF") == "true" {
+		go func() {
+			log.Println(http.ListenAndServe("0.0.0.0:3000", nil))
+		}()
 		go common.Monitor()
 		common.SysLog("pprof enabled")
 	}
