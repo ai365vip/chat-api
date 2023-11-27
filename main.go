@@ -16,6 +16,8 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+
+	_ "net/http/pprof"
 )
 
 //go:embed web/build

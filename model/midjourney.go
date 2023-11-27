@@ -71,7 +71,6 @@ func GetAllUserTask(userId int, startIdx int, num int, queryParams TaskQueryPara
 	if err != nil {
 		return nil
 	}
-
 	return tasks
 }
 
@@ -101,7 +100,6 @@ func GetAllTasks(startIdx int, num int, queryParams TaskQueryParams) []*Midjourn
 	if err != nil {
 		return nil
 	}
-
 	return tasks
 }
 

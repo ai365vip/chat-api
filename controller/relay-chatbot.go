@@ -118,6 +118,7 @@ func botHandler(c *gin.Context, resp *http.Response, promptTokens int, model str
 	var textResponse TextResponse
 
 	responseBody, err := io.ReadAll(resp.Body)
+
 	if err != nil {
 		return errorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
@@ -125,10 +126,7 @@ func botHandler(c *gin.Context, resp *http.Response, promptTokens int, model str
 	if err != nil {
 		return errorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = json.Unmarshal(responseBody, &textResponse)
-	if err != nil {
-		return errorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
-	}
+
 	if textResponse.Error.Type != "" {
 		return &OpenAIErrorWithStatusCode{
 			OpenAIError: textResponse.Error,
