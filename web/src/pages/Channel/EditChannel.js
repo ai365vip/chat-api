@@ -218,14 +218,14 @@ const EditChannel = ({ channelId, onClose }) => {
       const proxyEntries = proxies.split('\n').filter(proxy => proxy.trim()); // 过滤空行
 
       channelsToCreate = proxyEntries.map(proxyEntry => {
-        const [address, name] = proxyEntry.split(',').map(part => part.trim()); // 获取代理地址和名称
+        const [name, address] = proxyEntry.split(',').map(part => part.trim()); // 获取名称和代理地址
         if (!address) {
           throw new Error('代理地址格式无效。');
         }
         return {
           ...inputs, // 复制当前输入作为基础
           base_url: address,
-          name: name || address, // 如果没有指定名称，则使用地址作为名称
+          name: name || `Channel for ${address}`, // 如果没有指定名称，则使用默认名称
           models: inputs.models.join(','), // 将模型数组转换为字符串
           group: inputs.groups.join(','), // 将群组数组转换为字符串
         };

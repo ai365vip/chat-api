@@ -286,13 +286,12 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		// 将 midjRequest 转为一个 map
 		inrec, _ := json.Marshal(midjRequest)
 		json.Unmarshal(inrec, &m)
-		// 如果 notifyHook 已存在，则打印其当前值
-		if _, exists := m["notifyHook"]; exists {
-			log.Printf("notifyHook exists, current value: %s", m["notifyHook"])
+		// 如果 notifyHook 已存在，则保留其当前值，否则设置新值
+		if _, exists := m["notifyHook"]; !exists {
+			m["notifyHook"] = "http://142.171.123.86:3002/hook"
+		} else {
+			log.Printf("notifyHook exists, keeping the original value: %s", m["notifyHook"])
 		}
-
-		// 修改 notifyHook 的值
-		m["notifyHook"] = "http://142.171.123.86:3002/hook"
 
 		// 将修改后的 map 再转为 json
 		jsonStr, err := json.Marshal(m)
@@ -313,13 +312,12 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		// 将原始请求体的内容反序列化为一个 map
 		json.Unmarshal(bodyBytes, &m)
 
-		// 如果 notifyHook 已存在，则打印其当前值
-		if _, exists := m["notifyHook"]; exists {
-			log.Printf("notifyHook exists, current value: %s", m["notifyHook"])
+		// 如果 notifyHook 已存在，则保留其当前值，否则设置新值
+		if _, exists := m["notifyHook"]; !exists {
+			m["notifyHook"] = "http://142.171.123.86:3002/hook"
+		} else {
+			log.Printf("notifyHook exists, keeping the original value: %s", m["notifyHook"])
 		}
-
-		// 修改 notifyHook 的值
-		m["notifyHook"] = "http://142.171.123.86:3002/hook"
 
 		// 将修改后的 map 再转为 json
 		updatedBodyBytes, err := json.Marshal(m)
@@ -414,7 +412,7 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
 				//logContent := fmt.Sprintf("模型倍率 %.2f，分组倍率 %.2f", modelRatio, groupRatio)
-				model.RecordConsumeLog(ctx, userId, channelId, 0, 0, imageModel, tokenName, quota, midjResponse.Result, tokenId)				
+				model.RecordConsumeLog(ctx, userId, channelId, 0, 0, imageModel, tokenName, quota, midjResponse.Result, tokenId)
 				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 				channelId := c.GetInt("channel_id")
 				model.UpdateChannelUsedQuota(channelId, quota)
