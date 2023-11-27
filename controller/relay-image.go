@@ -36,6 +36,9 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 	if imageRequest.Size == "" {
 		imageRequest.Size = "1024x1024"
 	}
+	if imageRequest.N == 0 {
+		imageRequest.N = 1
+	}
 	// Prompt validation
 	if imageRequest.Prompt == "" {
 		return errorWrapper(errors.New("prompt is required"), "required_field_missing", http.StatusBadRequest)
@@ -147,7 +150,7 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 	var textResponse ImageResponse
 	defer func(ctx context.Context) {
 		if consumeQuota {
-			err := model.PostConsumeTokenQuota(tokenId, userId, quota, 0, true)
+			err := model.PostConsumeTokenQuota(tokenId, userQuota, quota, 0, true)
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}

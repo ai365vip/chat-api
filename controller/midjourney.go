@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net/http"
@@ -14,17 +13,19 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func UpdateMidjourneyTask() {
 	//revocer
 	imageModel := "midjourney"
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("UpdateMidjourneyTask panic: %v", err)
+		}
+	}()
 	for {
-		defer func() {
-			if err := recover(); err != nil {
-				log.Printf("UpdateMidjourneyTask panic: %v", err)
-			}
-		}()
 		time.Sleep(time.Duration(15) * time.Second)
 		tasks := model.GetAllUnFinishTasks()
 		if len(tasks) != 0 {
@@ -184,7 +185,6 @@ func UpdateMidjourneyTask() {
 					log.Printf("UpdateMidjourneyTask success: %v", task)
 
 				}
-
 			}
 		}
 	}
@@ -195,7 +195,16 @@ func GetAllMidjourney(c *gin.Context) {
 	if p < 0 {
 		p = 0
 	}
-	logs := model.GetAllTasks(p*common.ItemsPerPage, common.ItemsPerPage)
+
+	// 解析其他查询参数
+	queryParams := model.TaskQueryParams{
+		ChannelID:      c.Query("channel_id"),
+		MjID:           c.Query("mj_id"),
+		StartTimestamp: c.Query("start_timestamp"),
+		EndTimestamp:   c.Query("end_timestamp"),
+	}
+
+	logs := model.GetAllTasks(p*common.ItemsPerPage, common.ItemsPerPage, queryParams)
 	if logs == nil {
 		logs = make([]*model.Midjourney, 0)
 	}
@@ -211,9 +220,17 @@ func GetUserMidjourney(c *gin.Context) {
 	if p < 0 {
 		p = 0
 	}
+
 	userId := c.GetInt("id")
 	log.Printf("userId = %d \n", userId)
-	logs := model.GetAllUserTask(userId, p*common.ItemsPerPage, common.ItemsPerPage)
+
+	queryParams := model.TaskQueryParams{
+		MjID:           c.Query("mj_id"),
+		StartTimestamp: c.Query("start_timestamp"),
+		EndTimestamp:   c.Query("end_timestamp"),
+	}
+
+	logs := model.GetAllUserTask(userId, p*common.ItemsPerPage, common.ItemsPerPage, queryParams)
 	if logs == nil {
 		logs = make([]*model.Midjourney, 0)
 	}
