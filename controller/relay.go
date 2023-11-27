@@ -188,6 +188,9 @@ type ChatCompletionsStreamResponse struct {
 	Model   string                                `json:"model"`
 	Choices []ChatCompletionsStreamResponseChoice `json:"choices"`
 }
+type ChatCompletionsStreamResponseSimple struct {
+	Choices []ChatCompletionsStreamResponseChoice `json:"choices"`
+}
 
 type CompletionsStreamResponse struct {
 	Choices []struct {
