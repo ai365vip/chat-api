@@ -72,13 +72,23 @@ const ChannelsTable = () => {
   // 初始化空集合来保存选中的渠道ID
  const [selectedChannels, setSelectedChannels] = useState(new Set());
 
+ const fetchGroups = async () => {
+    try {
+      let res = await API.get(`/api/group/`);
+      setSelectedGroup(res.data.data.map((group) => ({
+        key: group,
+        text: group,
+        value: group
+      })));
+    } catch (error) {
+      showError(error.message);
+    }
+  }; 
 
-  const [groupOptions, setGroupOptions] = useState([
-    { key: '3.5', text: '3.5', value: '3.5' },
-    { key: 'default', text: 'default', value: 'default' },
-    { key: 'vip', text: 'vip', value: 'vip' },
-    { key: 'svip', text: 'svip', value: 'svip' },
-  ]); // 分组选项列表
+  useEffect(() => {
+    fetchGroups();
+  }, []);
+
 
   // 分组下拉框值改变时的处理函数
   const onGroupChange = (e, {value}) => {
@@ -480,7 +490,7 @@ const ChannelsTable = () => {
               fluid
               selection
               search
-              options={groupOptions}
+              options={selectedGroup}
               value={selectedGroup} // 当前选中的分组
               onChange={handleKeywordChange} // 处理分组变化
               style={{ width: '200px' }} // 下拉框的最小宽度

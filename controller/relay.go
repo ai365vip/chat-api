@@ -29,6 +29,23 @@ type MessageImageUrl struct {
 	Detail string `json:"detail"`
 }
 
+// MediaMessageBase 只包含Type字段，用于初始类型检查
+type MediaMessageBase struct {
+	Type string `json:"type"`
+}
+
+// MediaMessageText 包含文本信息
+type MediaMessageText struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+// MediaMessageImage 包含图像URL
+type MediaMessageImage struct {
+	Type     string `json:"type"`
+	ImageUrl string `json:"image_url"`
+}
+
 const (
 	RelayModeUnknown = iota
 	RelayModeChatCompletions
