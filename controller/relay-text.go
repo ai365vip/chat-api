@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/model"
+	"regexp"
 	"strings"
 	"time"
 
@@ -204,6 +205,47 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	var completionTokens int
 	switch relayMode {
 	case RelayModeChatCompletions:
+		// 在发送请求之前，检查模型并对 gpt-4-vision-completions 模型特殊处理
+		if textRequest.Model == "gpt-4-vision" {
+			for i, msg := range textRequest.Messages {
+				contentStr := string(msg.Content)
+
+				// 尝试使用正则表达式查找URL
+				re := regexp.MustCompile(`(http[s]?:\/\/[^\s]+)`)
+				matches := re.FindStringSubmatch(contentStr)
+
+				url := ""
+				description := ""
+
+				if len(matches) > 1 { // 如果找到了URL
+					url = matches[1]                                                     // URL部分
+					description = strings.TrimSpace(re.ReplaceAllString(contentStr, "")) // 删除URL后的描述文本
+				} else {
+					description = strings.TrimSpace(contentStr) // 如果没有URL，整个字符串都是描述
+				}
+
+				// 构建新的消息内容
+				newContent := []interface{}{
+					MediaMessageText{Type: "text", Text: description},
+				}
+
+				// 如果确实找到了URL，才添加image_url类型的结构体
+				if url != "" {
+					newContent = append(newContent, MediaMessageImage{Type: "image_url", ImageUrl: url})
+				}
+
+				// 序列化新的消息内容
+				newContentBytes, err := json.Marshal(newContent)
+				if err != nil {
+					log.Printf("无法序列化新的消息内容: %v\n", err)
+					continue
+				}
+
+				// 更新 textRequest 中的消息内容
+				textRequest.Messages[i].Content = json.RawMessage(newContentBytes)
+			}
+
+		}
 		promptTokens, err = countTokenMessages(textRequest.Messages, textRequest.Model)
 		if err != nil {
 			return errorWrapper(err, "count_token_messages_failed", http.StatusInternalServerError)
@@ -268,6 +310,21 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			return errorWrapper(err, "marshal_text_request_failed", http.StatusInternalServerError)
 		}
 		requestBody = bytes.NewBuffer(jsonStr)
+
+	case APITypeOpenAI:
+		// 在发送请求之前，检查模型并对 gpt-4-vision-completions 模型特殊处理
+		if textRequest.Model == "gpt-4-vision" {
+
+			textRequest.Model = "gpt-4-vision-preview"
+			textRequest.MaxTokens = 4096
+
+			requestBodyBytes, err := json.Marshal(textRequest)
+			if err != nil {
+				log.Printf("无法序列化 textRequest: %v\n", err)
+				return errorWrapper(err, "marshal_text_request_failed", http.StatusInternalServerError)
+			}
+			requestBody = bytes.NewBuffer(requestBodyBytes)
+		}
 
 	case APITypeChatBot:
 
