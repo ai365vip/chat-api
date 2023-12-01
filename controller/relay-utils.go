@@ -76,7 +76,7 @@ func getImageToken(imageUrl string, detail string) (int, error) {
 	var config image.Config
 	var err error
 	// 如果detail为空，则默认为"low"
-	if detail == "" {
+	if detail == "" || detail == "auto" {
 		detail = "high"
 	}
 	if detail == "high" {

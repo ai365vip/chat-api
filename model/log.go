@@ -23,6 +23,7 @@ type Log struct {
 	CompletionTokens int    `json:"completion_tokens" gorm:"default:0"`
 	ChannelId        int    `json:"channel" gorm:"index"`
 	TokenId          int    `json:"token_id" gorm:"default:0;index"`
+	Multiplier       string `json:"multiplier"`
 }
 
 type Logs struct {
@@ -40,6 +41,7 @@ type Logs struct {
 	PromptTokens     int    `json:"prompt_tokens"`     // 匹配 SUM(prompt_tokens) AS prompt_tokens
 	CompletionTokens int    `json:"completion_tokens"` // 匹配 SUM(completion_tokens) AS completion_tokens
 	Quota            int    `json:"quota"`             // 匹配 SUM(quota/500000) AS quota
+	Multiplier       string `json:"multiplier"`
 }
 
 const (
@@ -72,8 +74,8 @@ func RecordLog(userId int, logType int, content string) {
 	}
 }
 
-func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int) {
-	common.LogInfo(ctx, fmt.Sprintf("record consume log: userId=%d, channelId=%d, promptTokens=%d, completionTokens=%d, modelName=%s, tokenName=%s, quota=%d", userId, channelId, promptTokens, completionTokens, modelName, tokenName, quota))
+func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int, multiplier string) {
+	common.LogInfo(ctx, fmt.Sprintf("record consume log: userId=%d, channelId=%d, promptTokens=%d, completionTokens=%d, modelName=%s, tokenName=%s, quota=%d,multiplier=%s", userId, channelId, promptTokens, completionTokens, modelName, tokenName, quota, multiplier))
 	if !common.LogConsumeEnabled {
 		return
 	}
@@ -90,6 +92,7 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptToke
 		Quota:            quota,
 		ChannelId:        channelId,
 		TokenId:          tokenId,
+		Multiplier:       multiplier,
 	}
 	err := DB.Create(log).Error
 	if err != nil {

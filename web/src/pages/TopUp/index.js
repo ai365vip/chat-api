@@ -178,7 +178,7 @@ const TopUp = () => {
                         size={'small'}
                         centered={true}
                     >
-                        <p>充值数量：{topUpCount}$</p>
+                        <p>充值金额：{topUpCount}$</p>
                         <p>实付金额：{renderAmount()}</p>
                         <p>是否确认充值？</p>
                     </Modal>
@@ -224,7 +224,7 @@ const TopUp = () => {
                                     <Form.Input
                                         field={'redemptionCount'}
                                         label={'实付金额：' + renderAmount()}
-                                        placeholder='充值数量'
+                                        placeholder='充值金额'
                                         name='redemptionCount'
                                         type={'number'}
                                         value={topUpCount}

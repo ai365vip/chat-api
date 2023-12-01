@@ -191,6 +191,15 @@ const LogsTable = () => {
             }
         },
         {
+            title: '倍率',
+            dataIndex: 'multiplier',
+            render: (text, record, index) => {
+                return (
+                    text
+                );
+            },
+        },
+        {
             title: '详情',
             dataIndex: 'content',
             render: (text, record, index) => {

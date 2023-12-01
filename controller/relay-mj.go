@@ -411,8 +411,8 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
-				//logContent := fmt.Sprintf("模型倍率 %.2f，分组倍率 %.2f", modelRatio, groupRatio)
-				model.RecordConsumeLog(ctx, userId, channelId, 0, 0, imageModel, tokenName, quota, midjResponse.Result, tokenId)
+				multiplier := fmt.Sprintf("模型倍率 %.2f，分组倍率 %.2f", modelRatio, groupRatio)
+				model.RecordConsumeLog(ctx, userId, channelId, 0, 0, imageModel, tokenName, quota, midjResponse.Result, tokenId, multiplier)
 				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 				channelId := c.GetInt("channel_id")
 				model.UpdateChannelUsedQuota(channelId, quota)
