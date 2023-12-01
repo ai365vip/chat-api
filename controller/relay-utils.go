@@ -271,13 +271,14 @@ func errorWrapper(err error, code string, statusCode int) *OpenAIErrorWithStatus
 	text := err.Error()
 	// 定义一个正则表达式匹配URL
 	if strings.Contains(text, "Post") {
+		common.SysLog(fmt.Sprintf("error: %s", text))
 		text = "请求上游地址失败"
 	}
 	//避免暴露内部错误
 
 	openAIError := OpenAIError{
 		Message: text,
-		Type:    "one_api_error",
+		Type:    "new_api_error",
 		Code:    code,
 	}
 	return &OpenAIErrorWithStatusCode{
