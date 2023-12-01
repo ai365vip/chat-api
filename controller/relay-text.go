@@ -210,28 +210,23 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			for i, msg := range textRequest.Messages {
 				contentStr := string(msg.Content)
 
-				// 尝试使用正则表达式查找URL
-				re := regexp.MustCompile(`(http[s]?:\/\/[^\s]+)`)
-				matches := re.FindStringSubmatch(contentStr)
+				// 使用正则表达式查找所有URL
+				re := regexp.MustCompile(`http[s]?:\/\/[^\s]+`)
+				matches := re.FindAllString(contentStr, -1)
 
-				url := ""
-				description := ""
-
-				if len(matches) > 1 { // 如果找到了URL
-					url = matches[1]                                                     // URL部分
-					description = strings.TrimSpace(re.ReplaceAllString(contentStr, "")) // 删除URL后的描述文本
-				} else {
-					description = strings.TrimSpace(contentStr) // 如果没有URL，整个字符串都是描述
-				}
+				description := re.ReplaceAllString(contentStr, "") // 删除所有URL后的描述文本
 
 				// 构建新的消息内容
 				newContent := []interface{}{
-					MediaMessageText{Type: "text", Text: description},
+					MediaMessageText{Type: "text", Text: strings.TrimSpace(description)},
 				}
 
-				// 如果确实找到了URL，才添加image_url类型的结构体
-				if url != "" {
-					newContent = append(newContent, MediaMessageImage{Type: "image_url", ImageUrl: url})
+				// 如果找到了URL
+				for _, url := range matches {
+					newContent = append(newContent, MediaMessageImage{
+						Type:     "image_url",
+						ImageUrl: MessageImageUrl{Url: url}, // 使用MessageImageUrl结构体
+					})
 				}
 
 				// 序列化新的消息内容
@@ -244,7 +239,6 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 				// 更新 textRequest 中的消息内容
 				textRequest.Messages[i].Content = json.RawMessage(newContentBytes)
 			}
-
 		}
 		promptTokens, err = countTokenMessages(textRequest.Messages, textRequest.Model)
 		if err != nil {

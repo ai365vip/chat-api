@@ -26,7 +26,7 @@ type MediaMessage struct {
 
 type MessageImageUrl struct {
 	Url    string `json:"url"`
-	Detail string `json:"detail"`
+	Detail string `json:"detail,omitempty"`
 }
 
 // MediaMessageBase 只包含Type字段，用于初始类型检查
@@ -40,10 +40,10 @@ type MediaMessageText struct {
 	Text string `json:"text"`
 }
 
-// MediaMessageImage 包含图像URL
+// MediaMessageImage 包含图像信息，包括URL和可选的Detail字段
 type MediaMessageImage struct {
-	Type     string `json:"type"`
-	ImageUrl string `json:"image_url"`
+	Type     string          `json:"type"`
+	ImageUrl MessageImageUrl `json:"image_url"`
 }
 
 const (

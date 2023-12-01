@@ -72,48 +72,55 @@ func getTokenNum(tokenEncoder *tiktoken.Tiktoken, text string) int {
 	return len(tokenEncoder.Encode(text, nil, nil))
 }
 
-func getImageToken(imageUrl string) (int, error) {
+func getImageToken(imageUrl string, detail string) (int, error) {
 	var config image.Config
 	var err error
-
-	// 检查图片URL是否为Base64编码数据
-	if strings.HasPrefix(imageUrl, "data:image/") {
-		log.Println("正在解码Base64图像数据")
-		config, err = common.DecodeBase64ImageData(imageUrl)
-		if err != nil {
-			return 0, fmt.Errorf("解码Base64图像数据失败: %w", err)
-		}
-	} else if strings.HasPrefix(imageUrl, "http") {
-		// 对于HTTP/HTTPS URLs下载图片
-		log.Printf("正在下载图片: %s", imageUrl)
-		response, err := http.Get(imageUrl)
-		if err != nil {
-			return 0, fmt.Errorf("获取图片URL失败: %w", err)
-		}
-		defer response.Body.Close()
-
-		// 如果状态码不是200 OK，则返回错误
-		if response.StatusCode != http.StatusOK {
-			return 0, fmt.Errorf("服务器返回非200状态码: %d", response.StatusCode)
-		}
-
-		// 获取完整的图片数据
-		data, err := io.ReadAll(response.Body)
-		if err != nil {
-			return 0, fmt.Errorf("读取图片数据失败: %w", err)
-		}
-
-		// 尝试使用标准库解码图像配置信息
-		config, _, err = image.DecodeConfig(bytes.NewReader(data))
-		if err != nil {
-			// 标准库解码失败，尝试WebP格式
-			config, err = webp.DecodeConfig(bytes.NewReader(data))
+	// 如果detail为空，则默认为"low"
+	if detail == "" {
+		detail = "high"
+	}
+	if detail == "high" {
+		// 检查图片URL是否为Base64编码数据
+		if strings.HasPrefix(imageUrl, "data:image/") {
+			log.Println("正在解码Base64图像数据")
+			config, err = common.DecodeBase64ImageData(imageUrl)
 			if err != nil {
-				return 0, fmt.Errorf("解码WebP图像配置失败: %w", err)
+				return 0, fmt.Errorf("解码Base64图像数据失败: %w", err)
 			}
+		} else if strings.HasPrefix(imageUrl, "http") {
+			// 对于HTTP/HTTPS URLs下载图片
+			log.Printf("正在下载图片: %s", imageUrl)
+			response, err := http.Get(imageUrl)
+			if err != nil {
+				return 0, fmt.Errorf("获取图片URL失败: %w", err)
+			}
+			defer response.Body.Close()
+
+			// 如果状态码不是200 OK，则返回错误
+			if response.StatusCode != http.StatusOK {
+				return 0, fmt.Errorf("服务器返回非200状态码: %d", response.StatusCode)
+			}
+
+			// 获取完整的图片数据
+			data, err := io.ReadAll(response.Body)
+			if err != nil {
+				return 0, fmt.Errorf("读取图片数据失败: %w", err)
+			}
+
+			// 尝试使用标准库解码图像配置信息
+			config, _, err = image.DecodeConfig(bytes.NewReader(data))
+			if err != nil {
+				// 标准库解码失败，尝试WebP格式
+				config, err = webp.DecodeConfig(bytes.NewReader(data))
+				if err != nil {
+					return 0, fmt.Errorf("解码WebP图像配置失败: %w", err)
+				}
+			}
+		} else {
+			return 0, errors.New("不支持的图片URL格式")
 		}
-	} else {
-		return 0, errors.New("不支持的图片URL格式")
+	} else if detail == "low" {
+		return 85, nil
 	}
 
 	// 确保config中的Width和Height是有效的
@@ -149,6 +156,7 @@ func getImageToken(imageUrl string) (int, error) {
 	log.Printf("计算得到的图片token数: %d", tokenCount)
 
 	return tokenCount, nil
+
 }
 
 func countTokenMessages(messages []Message, model string) (int, error) {
@@ -177,7 +185,6 @@ func countTokenMessages(messages []Message, model string) (int, error) {
 		}
 
 		if len(message.Content) > 0 && message.Content[0] == '[' {
-			// 内容是JSON数组格式的消息处理逻辑
 			var contentItems []json.RawMessage
 			err := json.Unmarshal(message.Content, &contentItems)
 			if err != nil {
@@ -205,7 +212,8 @@ func countTokenMessages(messages []Message, model string) (int, error) {
 					if err != nil {
 						return 0, fmt.Errorf("解析图像消息失败: %w", err)
 					}
-					imageTokens, err := getImageToken(imageItem.ImageUrl)
+
+					imageTokens, err := getImageToken(imageItem.ImageUrl.Url, imageItem.ImageUrl.Detail)
 					if err != nil {
 						return 0, fmt.Errorf("获取图像token失败: %w", err)
 					}
@@ -215,7 +223,6 @@ func countTokenMessages(messages []Message, model string) (int, error) {
 				}
 			}
 		} else {
-			// 内容是文本格式的消息处理逻辑
 			var textContent string
 			err := json.Unmarshal(message.Content, &textContent)
 			if err != nil {
