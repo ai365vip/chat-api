@@ -164,11 +164,24 @@ const RedemptionsTable = () => {
         setShowEdit(false);
     }
 
-    const setCount = (data) => {
-        if (data.length >= (activePage) * ITEMS_PER_PAGE) {
-            setTokenCount(data.length + 1);
+    // const setCount = (data) => {
+    //     if (data.length >= (activePage) * ITEMS_PER_PAGE) {
+    //         setTokenCount(data.length + 1);
+    //     } else {
+    //         setTokenCount(data.length);
+    //     }
+    // }
+
+    const setRedemptionFormat = (redeptions) => {
+        // for (let i = 0; i < redeptions.length; i++) {
+        //     redeptions[i].key = '' + redeptions[i].id;
+        // }
+        // data.key = '' + data.id
+        setRedemptions(redeptions);
+        if (redeptions.length >= (activePage) * ITEMS_PER_PAGE) {
+            setTokenCount(redeptions.length + 1);
         } else {
-            setTokenCount(data.length);
+            setTokenCount(redeptions.length);
         }
     }
 
@@ -177,13 +190,11 @@ const RedemptionsTable = () => {
         const {success, message, data} = res.data;
         if (success) {
             if (startIdx === 0) {
-                setRedemptions(data);
-                setCount(data);
+                setRedemptionFormat(data);
             } else {
                 let newRedemptions = redemptions;
                 newRedemptions.push(...data);
-                setRedemptions(newRedemptions);
-                setCount(newRedemptions);
+                setRedemptionFormat(newRedemptions);
             }
         } else {
             showError(message);
@@ -265,6 +276,38 @@ const RedemptionsTable = () => {
         } else {
             showError(message);
         }
+    };
+
+    const handleDeletion = async () => {
+        // 检查是否有选中的兑换码
+        if (selectedKeys.length === 0) {
+            showError('请至少选择一个兑换码进行删除！');
+            return;
+        }
+        // 弹出确认框防止误操作
+        Modal.confirm({
+            title: '确认删除',
+            content: '确定删除所选兑换码吗？此操作无法撤销。',
+            onOk: async () => {
+                const promises = selectedKeys.map(record =>
+                    API.delete(`/api/redemption/${record.id}/`).catch(e => ({e, record}))
+                );
+                const results = await Promise.all(promises);
+    
+                const failedDeletions = results.filter(result => result.e);
+                failedDeletions.forEach(({record}) => {
+                    showError(`兑换码ID: ${record.id} 删除失败。`);
+                });
+    
+                if (failedDeletions.length < selectedKeys.length) {
+                    showSuccess(`成功删除了 ${selectedKeys.length - failedDeletions.length} 个兑换码。`);
+                }
+    
+                // 重新加载兑换码清单
+                await refresh();
+                setSelectedKeys([]); // 清空选择
+            },
+        });
     };
 
     const searchRedemptions = async () => {
@@ -388,6 +431,8 @@ const RedemptionsTable = () => {
                     await copyText(keys);
                 }
             }>复制所选兑换码到剪贴板</Button>
+            <Button theme='light' type='danger' style={{ marginLeft: '8px' }}
+            onClick={handleDeletion}>删除选中兑换码</Button>
         </>
     );
 };

@@ -1,18 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import { Button, Form, Input, Label, Message, Pagination, Popup, Table , Dropdown,Segment,Modal ,Checkbox} from 'semantic-ui-react';
-import { Link } from 'react-router-dom';
-import { API, setPromptShown, shouldShowPrompt, showError, showInfo, showSuccess, timestamp2string } from '../helpers';
+import React, {useEffect, useState} from 'react';
+import {Input, Label, Message, Popup,Dropdown} from 'semantic-ui-react';
 
-import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../constants';
-import {renderGroup, renderNumber, renderQuota} from '../helpers/render';
-import EditChannel from '../pages/Channel/EditChannel';
+import {Link} from 'react-router-dom';
+import {API, setPromptShown, shouldShowPrompt, showError, showInfo, showSuccess, timestamp2string} from '../helpers';
+import {CHANNEL_OPTIONS, ITEMS_PER_PAGE} from '../constants';
+import {renderGroup, renderNumber, renderQuota, renderQuotaWithPrompt} from '../helpers/render';
+import {
+    Avatar,
+    Tag,
+    Table,
+    Button,
+    Popover,
+    Form,
+    Modal,
+    Popconfirm,
+    Space,
+    Tooltip,
+    Switch,
+    Typography, 
+    InputNumber,
+    Select
+    
+} from "@douyinfe/semi-ui";
+import EditChannel from "../pages/Channel/EditChannel";
 
 function renderTimestamp(timestamp) {
-  return (
-      <>
-        {timestamp2string(timestamp)}
-      </>
-  );
+    return (
+        <>
+            {timestamp2string(timestamp)}
+        </>
+    );
 }
 
 let type2label = undefined;
@@ -27,789 +44,743 @@ const ITEMS_PER_PAGE_OPTIONS = [
 
 
 function renderType(type) {
-  if (!type2label) {
-    type2label = new Map;
-    for (let i = 0; i < CHANNEL_OPTIONS.length; i++) {
-      type2label[CHANNEL_OPTIONS[i].value] = CHANNEL_OPTIONS[i];
+    if (!type2label) {
+        type2label = new Map;
+        for (let i = 0; i < CHANNEL_OPTIONS.length; i++) {
+            type2label[CHANNEL_OPTIONS[i].value] = CHANNEL_OPTIONS[i];
+        }
+        type2label[0] = {value: 0, text: '未知类型', color: 'grey'};
     }
-    type2label[0] = { value: 0, text: '未知类型', color: 'grey' };
-  }
-  return <Label basic color={type2label[type]?.color}>{type2label[type]?.text}</Label>;
+    return <Tag size='large' color={type2label[type]?.color}>{type2label[type]?.text}</Tag>;
 }
 
 function renderBalance(type, balance) {
-  switch (type) {
-    case 1: // OpenAI
-      return <span>${balance.toFixed(2)}</span>;
-    case 4: // CloseAI
-      return <span>¥{balance.toFixed(2)}</span>;
-    case 8: // 自定义
-      return <span>${balance.toFixed(2)}</span>;
-    case 5: // OpenAI-SB
-      return <span>¥{(balance / 10000).toFixed(2)}</span>;
-    case 10: // AI Proxy
-      return <span>{renderNumber(balance)}</span>;
-    case 12: // API2GPT
-      return <span>¥{balance.toFixed(2)}</span>;
-    case 13: // AIGC2D
-      return <span>{renderNumber(balance)}</span>;
-    default:
-      return <span>不支持</span>;
-  }
+    switch (type) {
+        case 1: // OpenAI
+            return <span>${balance.toFixed(2)}</span>;
+        case 4: // CloseAI
+            return <span>¥{balance.toFixed(2)}</span>;
+        case 8: // 自定义
+            return <span>${balance.toFixed(2)}</span>;
+        case 5: // OpenAI-SB
+            return <span>¥{(balance / 10000).toFixed(2)}</span>;
+        case 10: // AI Proxy
+            return <span>{renderNumber(balance)}</span>;
+        case 12: // API2GPT
+            return <span>¥{balance.toFixed(2)}</span>;
+        case 13: // AIGC2D
+            return <span>{renderNumber(balance)}</span>;
+        default:
+            return <span>不支持</span>;
+    }
 }
 
 const ChannelsTable = () => {
-  const [channels, setChannels] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activePage, setActivePage] = useState(1);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [updatingBalance, setUpdatingBalance] = useState(false);
-  const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
-  const [showPrompt, setShowPrompt] = useState(shouldShowPrompt("channel-test"))
-  const [gptVersion, setGptVersion] = useState('gpt-3.5-turbo');  // 新增状态变量来记录GPT版本选项
-  const [selectedGroup, setSelectedGroup] = useState(null); // 当前选中的分组
-  // 初始化空集合来保存选中的渠道ID
- const [selectedChannels, setSelectedChannels] = useState(new Set());
-
- const fetchGroups = async () => {
-    try {
-      let res = await API.get(`/api/group/`);
-      setSelectedGroup(res.data.data.map((group) => ({
-        key: group,
-        text: group,
-        value: group
-      })));
-    } catch (error) {
-      showError(error.message);
-    }
-  }; 
-
-  useEffect(() => {
-    fetchGroups();
-  }, []);
-
-
-  // 分组下拉框值改变时的处理函数
-  const onGroupChange = (e, {value}) => {
-    setSelectedGroup(value);
-  };
-
-  const [gptOptions, setGptOptions] = useState([
-    // 初始的GPT选项列表
-    { key: 'gpt-3.5-turbo', text: 'GPT-3.5', value: 'gpt-3.5-turbo' },
-    { key: 'gpt-4', text: 'GPT-4', value: 'gpt-4' },
-    { key: 'gpt-4-1106-preview', text: 'GPT-4-1106-preview', value: 'gpt-4-1106-preview' },
-    // ...其他初始选项...
-  ]);
-
-  const onGptVersionChange = (e, {value}) => {   // GPT版本选择的处理函数
-    setGptVersion(value);
-  };
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentChannelId, setCurrentChannelId] = useState(null);
-
-  const handleEditClick = (channelId, refreshNeeded = false) => {
-    setCurrentChannelId(channelId);
-    setIsModalOpen(true);
-    if (refreshNeeded) {
-      refresh(); // 如果 refreshNeeded 为 true，则刷新渠道列表
-    }
-  };
-
-  // 定义用于关闭模态框的函数
-  const handleModalClose = (refreshNeeded = false) => {
-    setIsModalOpen(false); // 设置状态以关闭模态框
-    if (refreshNeeded) {
-      refresh(); // 如果 refreshNeeded 为 true，则刷新渠道列表
-    }
-  };
-
-  const handleSelectAll = (e, { checked }) => {
-    // 如果复选框是选中的，则将所有渠道ID加入selectedChannels
-    // 否则清空selectedChannels
-    if (checked) {
-      const newSelectedChannels = new Set(channels.map(channel => channel.id));
-      setSelectedChannels(newSelectedChannels);
-    } else {
-      setSelectedChannels(new Set());
-    }
-  };
   
-  const handleSelectOne = (channelId) => {
-    const newSelectedChannels = new Set(selectedChannels);
-    if (newSelectedChannels.has(channelId)) {
-      newSelectedChannels.delete(channelId);
-    } else {
-      newSelectedChannels.add(channelId);
-    }
-    setSelectedChannels(newSelectedChannels);
-  };
-  
-
-  const loadChannels = async (startIdx) => {
-    const res = await API.get(`/api/channel/?p=${startIdx}&page_size=${pageSize}`);
-    const { success, message, data } = res.data;
-    if (success) {
-      if (startIdx === 0) {
-        setChannels(data);
-      } else {
-        let newChannels = [...channels];
-        newChannels.splice(startIdx * pageSize, data.length, ...data);
-        setChannels(newChannels);
-      }
-    } else {
-      showError(message);
-    }
-    setLoading(false);
-  };
-
-  const onPaginationChange = (e, { activePage }) => {
-    (async () => {
-      if (activePage === Math.ceil(channels.length / pageSize) + 1) {
-        // In this case we have to load more data and then append them.
-        await loadChannels(activePage - 1, pageSize);
-      }
-      setActivePage(activePage);
-    })();
-  };
-
-  const setItemsPerPage = (e) => {
-    e.preventDefault(); // prevent default form submission
-    const newPageSize = parseInt(e.target.elements[0].value); // get input value
-    console.log(newPageSize);
-    setPageSize(newPageSize);
-    loadChannels(0);
-  }
-
-  const refresh = async () => {
-    setLoading(true);
-    await loadChannels(activePage - 1);
-  };
-
-  useEffect(() => {
-    loadChannels(0);
-  }, [pageSize]);
-
-
-  const manageChannel = async (id, action, idx, value) => {
-    let data = { id };
-    let res;
-    // eslint-disable-next-line default-case
-    switch (action) {
-      case 'delete':
-        res = await API.delete(`/api/channel/${id}/`, {params: {version: gptVersion}});
-        break;
-      case 'enable':
-        data.status = 1;
-        res = await API.put('/api/channel/', data);
-        break;
-      case 'disable':
-        data.status = 2;
-        res = await API.put('/api/channel/', data);
-        break;
-      case 'priority':
-        if (value === '') {
-          return;
-        }
-        data.priority = parseInt(value);
-        res = await API.put('/api/channel/', data);
-        break;
-      case 'weight':
-        if (value === '') {
-          return;
-        }
-        data.weight = parseInt(value);
-        if (data.weight < 0) {
-          data.weight = 0;
-        }
-        res = await API.put('/api/channel/', data);
-        break;
-    }
-    const { success, message } = res.data;
-    if (success) {
-      showSuccess('操作成功完成！');
-      let channel = res.data.data;
-      let newChannels = [...channels];
-      let realIdx = (activePage - 1) * pageSize + idx;
-      if (action === 'delete') {
-        newChannels[realIdx].deleted = true;
-      } else {
-        newChannels[realIdx].status = channel.status;
-      }
-      setChannels(newChannels);
-    } else {
-      showError(message);
-    }
-  };
-
-  // 批量删除
-  const deleteSelectedChannels = async () => {
-    if (selectedChannels.size === 0) {
-      showError("没有选中的渠道");
-      return;
-    }
-  
-    setLoading(true);
-  
-    // 用于存储所有成功的操作
-    let successfulDeletions = [];
-    
-    // 用于存储所有失败的操作信息
-    let errors = [];
-    
-    for (const channelId of selectedChannels) {
-      try {
-        const res = await API.delete(`/api/channel/${channelId}/`);
-        const { success } = res.data;
-        if (success) {
-            successfulDeletions.push(channelId);
-        } else {
-          errors.push(`ID ${channelId}: 删除失败`);
-        }
-      } catch (error) {
-        errors.push(`ID ${channelId}: ${error.message}`);
-      }
-    }
-  
-    // 成功删除后，从channels列表中移除相关渠道
-    if (successfulDeletions.length > 0) {
-      setChannels(channels.filter(channel => !successfulDeletions.includes(channel.id)));
-    }
-  
-    setLoading(false);
-  
-    // 清空已选中渠道列表
-    setSelectedChannels(new Set());
-  
-    if (errors.length > 0) {
-      showError(errors[0]);
-    } else if (successfulDeletions.length > 0) {
-      showSuccess(`成功删除了 ${successfulDeletions.length} 个渠道。`);
-    }
-  
-    // 在这里可以选择再次刷新列表，也可以不刷新，因为上面的代码已经更新了本地状态
-    // refresh();
-  };
-  
-
-
-  const renderStatus = (status) => {
-    switch (status) {
-      case 1:
-        return <Label basic color='green'>已启用</Label>;
-      case 2:
-        return (
-            <Popup
-                trigger={<Label basic color='red'>
-                  已禁用
-                </Label>}
-                content='本渠道被手动禁用'
-                basic
-            />
-        );
-      case 3:
-        return (
-            <Popup
-                trigger={<Label basic color='yellow'>
-                  已禁用
-                </Label>}
-                content='本渠道被程序自动禁用'
-                basic
-            />
-        );
-      default:
-        return (
-            <Label basic color='grey'>
-              未知状态
-            </Label>
-        );
-    }
-  };
-
-  const renderResponseTime = (responseTime) => {
-    let time = responseTime / 1000;
-    time = time.toFixed(2) + ' 秒';
-    if (responseTime === 0) {
-      return <Label basic color='grey'>未测试</Label>;
-    } else if (responseTime <= 1000) {
-      return <Label basic color='green'>{time}</Label>;
-    } else if (responseTime <= 3000) {
-      return <Label basic color='olive'>{time}</Label>;
-    } else if (responseTime <= 5000) {
-      return <Label basic color='yellow'>{time}</Label>;
-    } else {
-      return <Label basic color='red'>{time}</Label>;
-    }
-  };
-
-  const searchChannels = async () => {
-    if (searchKeyword === '') {
-      // if keyword is blank, load files instead.
-      await loadChannels(0);
-      setActivePage(1);
-      return;
-    }
-    setSearching(true);
-    const res = await API.get(`/api/channel/search?keyword=${searchKeyword}`);
-    const { success, message, data } = res.data;
-    if (success) {
-      setChannels(data);
-      setActivePage(1);
-    } else {
-      showError(message);
-    }
-    setSearching(false);
-  };
-  
-  // 添加到useEffect中以监听页面加载时的初始搜索
-  useEffect(() => {
-    searchChannels();
-  }, [searchKeyword]);
-  
-
-  const testChannel = async (id, name, idx) => {
-    const res = await API.get(`/api/channel/test/${id}/`, {params: {version: gptVersion}});
-    const { success, message, time } = res.data;
-    if (success) {
-      let newChannels = [...channels];
-      let realIdx = (activePage - 1) * pageSize + idx;
-      newChannels[realIdx].response_time = time * 1000;
-      newChannels[realIdx].test_time = Date.now() / 1000;
-      setChannels(newChannels);
-      showInfo(`通道 ${name} 测试成功，耗时 ${time.toFixed(2)} 秒。`);
-    } else {
-      showError(message);
-    }
-  };
-
-  const testAllChannels = async () => {
-    const res = await API.get(`/api/channel/test`, {params: {version: gptVersion}});
-    const { success, message } = res.data;
-    if (success) {
-      showInfo('已成功开始测试所有已启用通道，请刷新页面查看结果。');
-    } else {
-      showError(message);
-    }
-  };
-
-  const deleteAllDisabledChannels = async () => {
-    const res = await API.delete(`/api/channel/disabled`);
-    const { success, message, data } = res.data;
-    if (success) {
-      showSuccess(`已删除所有禁用渠道，共计 ${data} 个`);
-      await refresh();
-    } else {
-      showError(message);
-    }
-  };
-
-  const updateChannelBalance = async (id, name, idx) => {
-    const res = await API.get(`/api/channel/update_balance/${id}/`);
-    const { success, message, balance } = res.data;
-    if (success) {
-      let newChannels = [...channels];
-      let realIdx = (activePage - 1) * pageSize + idx;
-      newChannels[realIdx].balance = balance;
-      newChannels[realIdx].balance_updated_time = Date.now() / 1000;
-      setChannels(newChannels);
-      showInfo(`通道 ${name} 余额更新成功！`);
-    } else {
-      showError(message);
-    }
-  };
-
-  const updateAllChannelsBalance = async () => {
-    setUpdatingBalance(true);
-    const res = await API.get(`/api/channel/update_balance`);
-    const { success, message } = res.data;
-    if (success) {
-      showInfo('已更新完毕所有已启用通道余额！');
-    } else {
-      showError(message);
-    }
-    setUpdatingBalance(false);
-  };
-
-  const handleKeywordChange = async (e, { value }) => {
-    setSearchKeyword(value.trim());
-  };
-
-  const sortChannel = (key) => {
-    if (channels.length === 0) return;
-    setLoading(true);
-    let sortedChannels = [...channels];
-    if (typeof sortedChannels[0][key] === 'string') {
-      sortedChannels.sort((a, b) => {
-        return ('' + a[key]).localeCompare(b[key]);
-      });
-    } else {
-      sortedChannels.sort((a, b) => {
-        if (a[key] === b[key]) return 0;
-        if (a[key] > b[key]) return -1;
-        if (a[key] < b[key]) return 1;
-      });
-    }
-    if (sortedChannels[0].id === channels[0].id) {
-      sortedChannels.reverse();
-    }
-    setChannels(sortedChannels);
-    setLoading(false);
-  };
-
-  // 更新函数用于处理下拉菜单的值改变
-  const onPageSizeChange = (e, { value }) => {
-    setPageSize(value);
-    loadChannels(0);
-  }; 
-
-
-  return (
-      <>
-        <Form onSubmit={(e) => {
-            e.preventDefault();
-            searchChannels();
-        }} style={{ display: 'flex', alignItems: 'center' }}>
-
-          <div style={{ display: 'flex', flex: 1, marginRight: '10px', alignItems: 'center'}}>
-            <Form.Input
-                icon='search'
-                iconPosition='left'
-                placeholder='搜索渠道的 ID，名称和密钥 ...'
-                value={searchKeyword}
-                loading={searching}
-                onChange={handleKeywordChange}
-                style={{ width: '600px' }} // 输入框填满容器宽度
-            />
-          </div>
-          {/* 新增分组下拉框 */}
-          <div style={{ display: 'flex', flex: 1, marginRight: '10px', alignItems: 'center'}}>
-            <Dropdown
-              placeholder='选择分组'
-              fluid
-              selection
-              search
-              options={selectedGroup}
-              value={selectedGroup} // 当前选中的分组
-              onChange={handleKeywordChange} // 处理分组变化
-              style={{ width: '200px' }} // 下拉框的最小宽度
-            />
-          </div>
-          <Dropdown
-              selection
-              search
-              options={gptOptions}
-              onChange={onGptVersionChange}
-              defaultValue='gpt-3.5-turbo'
-              allowAdditions
-              onAddItem={(e, { value }) => {
-                // 这里更新 gptOptions 状态，包含新增加的选项
-                setGptOptions(prevOptions => [...prevOptions, { key: value, text: value, value }]);
-              }}
-              style={{ alignItems: 'center', display: 'inline-flex', height: '38px' }} // 调整下拉菜单的样式以匹配其他元素
-          />
-          <span
-              style={{ display: 'flex', marginRight: '250px', alignItems: 'center', fontSize: '18px', lineHeight: '38px', height: '38px' }} // 统一高度和行高
-          >
-            测试模型
-          </span>
-        </Form>
-
-        <Table basic compact size='small'>
-          <Table.Header>
-            <Table.Row>
-            <Table.HeaderCell>
-              <Checkbox
-                indeterminate={selectedChannels.size > 0 && selectedChannels.size < channels.length}
-                checked={selectedChannels.size === channels.length}
-                onChange={handleSelectAll}
-              />
-             </Table.HeaderCell>
-              <Table.HeaderCell
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    sortChannel('id');
-                  }}
-              >
-                ID
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    sortChannel('name');
-                  }}
-              >
-                名称
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    sortChannel('group');
-                  }}
-                  width={2}
-              >
-                分组
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    sortChannel('type');
-                  }}
-                  width={1}
-              >
-                类型
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    sortChannel('status');
-                  }}
-                  width={1}
-              >
-                状态
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    sortChannel('response_time');
-                  }}
-              >
-                响应时间
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    sortChannel('used_quota');
-                  }}
-                  width={1}
-              >
-                已使用
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    sortChannel('balance');
-                  }}
-              >
-                余额
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    sortChannel('priority');
-                  }}
-              >
-                优先级
-              </Table.HeaderCell>
-              <Table.HeaderCell>操作</Table.HeaderCell>
-            </Table.Row>
-          </Table.Header>
-
-          <Table.Body>
-            {channels
-                .slice(
-                    (activePage - 1) * pageSize,
-                    activePage * pageSize
-                )
-                .map((channel, idx) => {
-                  if (channel.deleted) return <></>;
-                  return (
-                      <Table.Row key={channel.id}>
-                        <Table.Cell>
-                          <Checkbox
-                            checked={selectedChannels.has(channel.id)}
-                            onChange={() => handleSelectOne(channel.id)}
-                          />
-                        </Table.Cell>
-                        <Table.Cell>{channel.id}</Table.Cell>
-                        <Table.Cell>{channel.name ? channel.name : '无'}</Table.Cell>
-                        <Table.Cell>{renderGroup(channel.group)}</Table.Cell>
-                        <Table.Cell>{renderType(channel.type)}</Table.Cell>
-                        <Table.Cell>{renderStatus(channel.status)}</Table.Cell>
-                        <Table.Cell>
-                          <Popup
-                              content={channel.test_time ? renderTimestamp(channel.test_time) : '未测试'}
-                              key={channel.id}
-                              trigger={renderResponseTime(channel.response_time)}
-                              basic
-                          />
-                        </Table.Cell>
-                        <Table.Cell>{renderQuota(channel.used_quota)}</Table.Cell>
-                        <Table.Cell>
-                          <Popup
-                              trigger={<span onClick={() => {
-                                updateChannelBalance(channel.id, channel.name, idx);
-                              }} style={{ cursor: 'pointer' }}>
-                      {renderBalance(channel.type, channel.balance)}
-                    </span>}
-                              content='点击更新'
-                              basic
-                          />
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Popup
-                              trigger={<Input type='number' defaultValue={channel.priority} onBlur={(event) => {
-                                manageChannel(
-                                    channel.id,
-                                    'priority',
-                                    idx,
-                                    event.target.value
-                                );
-                              }}>
-                                <input style={{ maxWidth: '60px' }} />
-                              </Input>}
-                              content='渠道选择优先级，越高越优先'
-                              basic
-                          />
-                        </Table.Cell>
-                        <Table.Cell>
-                          <div>
-                            <Button
-                                size={'small'}
-                                positive
-                                onClick={() => {
-                                  testChannel(channel.id, channel.name, idx);
-                                }}
-                            >
-                              测试
-                            </Button>
-                            {/*<Button*/}
-                            {/*  size={'small'}*/}
-                            {/*  positive*/}
-                            {/*  loading={updatingBalance}*/}
-                            {/*  onClick={() => {*/}
-                            {/*    updateChannelBalance(channel.id, channel.name, idx);*/}
-                            {/*  }}*/}
-                            {/*>*/}
-                            {/*  更新余额*/}
-                            {/*</Button>*/}
-                            <Popup
-                                trigger={
-                                  <Button size='small' negative>
-                                    删除
-                                  </Button>
+    const columns = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+        },
+        {
+            title: '名称',
+            dataIndex: 'name',
+        },
+        {
+            title: '分组',
+            dataIndex: 'group',
+            render: (text, record, index) => {
+                return (
+                    <div>
+                        <Space spacing={2}>
+                            {
+                                text.split(',').map((item, index) => {
+                                    return (renderGroup(item))
+                                })
+                            }
+                        </Space>
+                    </div>
+                );
+            },
+        },
+        {
+            title: '类型',
+            dataIndex: 'type',
+            render: (text, record, index) => {
+                return (
+                    <div>
+                        {renderType(text)}
+                    </div>
+                );
+            },
+        },
+        {
+            title: '状态',
+            dataIndex: 'status',
+            render: (text, record, index) => {
+                return (
+                    <div>
+                        {renderStatus(text)}
+                    </div>
+                );
+            },
+        },
+        {
+            title: '响应时间',
+            dataIndex: 'response_time',
+            render: (text, record, index) => {
+                return (
+                    <div>
+                        {renderResponseTime(text)}
+                    </div>
+                );
+            },
+        },
+        {
+            title: '已用/剩余',
+            dataIndex: 'expired_time',
+            render: (text, record, index) => {
+                return (
+                    <div>
+                        <Space spacing={1}>
+                            <Tooltip content={'已用额度'}>
+                                <Tag color='white' type='ghost' size='large'>{renderQuota(record.used_quota)}</Tag>
+                            </Tooltip>
+                            <Tooltip content={'剩余额度，点击更新'}>
+                                <Tag color='white' type='ghost' size='large' onClick={() => {updateChannelBalance(record)}}>{renderQuota(record.balance)}</Tag>
+                            </Tooltip>
+                        </Space>
+                    </div>
+                );
+            },
+        },
+        {
+            title: '优先级',
+            dataIndex: 'priority',
+            render: (text, record, index) => {
+                return (
+                    <div>
+                        <InputNumber
+                            style={{width: 70}}
+                            name='name'
+                            onChange={value => {
+                                manageChannel(record.id, 'priority', record, value);
+                            }}
+                            defaultValue={record.priority}
+                            min={0}
+                        />
+                    </div>
+                );
+            },
+        },
+        {
+            title: '',
+            dataIndex: 'operate',
+            render: (text, record, index) => (
+                <div>
+                    <Button theme='light' type='primary' style={{marginRight: 1}} onClick={()=>testChannel(record)}>测试</Button>
+                    <Popconfirm
+                        title="确定是否要删除此渠道？"
+                        content="此修改将不可逆"
+                        okType={'danger'}
+                        position={'left'}
+                        onConfirm={() => {
+                            manageChannel(record.id, 'delete', record).then(
+                                () => {
+                                    removeRecord(record.id);
                                 }
-                                on='click'
-                                flowing
-                                hoverable
-                            >
-                              <Button
-                                  negative
-                                  onClick={() => {
-                                    manageChannel(channel.id, 'delete', idx);
-                                  }}
-                              >
-                                删除渠道 {channel.name}
-                              </Button>
-                            </Popup>
-                            <Button
-                                size={'small'}
-                                onClick={() => {
-                                  manageChannel(
-                                      channel.id,
-                                      channel.status === 1 ? 'disable' : 'enable',
-                                      idx
-                                  );
-                                }}
-                            >
-                              {channel.status === 1 ? '禁用' : '启用'}
-                            </Button>
-                            <Button
-                                size={'small'}
-                                onClick={() => handleEditClick(channel.id)}
-                            >
-                              编辑
-                            </Button>
-                          </div>
-                        </Table.Cell>
-                      </Table.Row>
-                  );
-                })}
-          </Table.Body>
-
-          <Table.Footer>
-            <Table.Row>
-              <Table.HeaderCell colSpan='10'>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    {/* 其他按钮 */}
-                    <Button size='small' onClick={() => handleEditClick()}>
-                      添加新的渠道
-                    </Button>
-                    <Button size='small' loading={loading} onClick={testAllChannels}>
-                      测试已启用通道
-                    </Button>
-                   {/*
-                    <Button size='small' onClick={updateAllChannelsBalance}
-                            loading={loading || updatingBalance}>更新已启用通道余额</Button>
-                  */}   
-
-                    <Popup
-                        trigger={
-                          <Button size='small' loading={loading}>
-                            删除禁用渠道
-                          </Button>
-                        }
-                        on='click'
-                        flowing
-                        hoverable
+                            )
+                        }}
                     >
-                      <Button size='small' loading={loading} negative onClick={deleteAllDisabledChannels}>
-                        确认删除
-                      </Button>
-                    </Popup>
-                    <Button
-                    size='small'
-                    negative
-                    onClick={deleteSelectedChannels}
-                  >
-                    删除选中
-                  </Button>
-
-
-                    <Button size='small' onClick={refresh} loading={loading}>刷新</Button>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center' , marginRight: '200px' }}>
-                    <label style={{ marginRight: '5px' }}>每页</label> {/* 加入标签 "每页" */}
-                    <Dropdown
-                        selection
-                        compact
-                        options={ITEMS_PER_PAGE_OPTIONS}
-                        onChange={onPageSizeChange}
-                        value={pageSize} // 使用 state 中的 pageSize 作为当前值
-                        style={{marginRight: '10px'}}
-                    />
-                    <Pagination
-                        activePage={activePage}
-                        onPageChange={onPaginationChange}
-                        size='small'
-                        siblingRange={1}
-                        totalPages={
-                            Math.ceil(channels.length / pageSize) + (channels.length % pageSize === 0 ? 1 : 0)
+                        <Button theme='light' type='danger' style={{marginRight: 1}}>删除</Button>
+                    </Popconfirm>
+                    {
+                        record.status === 1 ?
+                            <Button theme='light' type='warning' style={{marginRight: 1}} onClick={
+                                async () => {
+                                    manageChannel(
+                                        record.id,
+                                        'disable',
+                                        record
+                                    )
+                                }
+                            }>禁用</Button> :
+                            <Button theme='light' type='secondary' style={{marginRight: 1}} onClick={
+                                async () => {
+                                    manageChannel(
+                                        record.id,
+                                        'enable',
+                                        record
+                                    );
+                                }
+                            }>启用</Button>
+                    }
+                    <Button theme='light' type='tertiary' style={{marginRight: 1}} onClick={
+                        () => {
+                            setEditingChannel(record);
+                            setShowEdit(true);
                         }
-                    />
-                  </div>
-                  <Modal
-                      open={isModalOpen}
-                      onClose={() => setIsModalOpen(false)}
-                      size='large'
-                  >
-                    <Modal.Header>编辑渠道</Modal.Header>
-                    <Modal.Content>
-                      {/* 将 EditChannel 组件放在 Modal 中 */}
-                      <EditChannel channelId={currentChannelId} onClose={handleModalClose} />
-                    </Modal.Content>
-                  </Modal>
+                    }>编辑</Button>
                 </div>
-              </Table.HeaderCell>
-            </Table.Row>
-          </Table.Footer>
+            ),
+        },
+    ];
 
-        </Table>
-      </>
-  );
+    const [channels, setChannels] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [activePage, setActivePage] = useState(1);
+    const [idSort, setIdSort] = useState(false);
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [searchGroup, setSearchGroup] = useState('');
+    const [searching, setSearching] = useState(false);
+    const [updatingBalance, setUpdatingBalance] = useState(false);
+    const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
+    const [showPrompt, setShowPrompt] = useState(shouldShowPrompt("channel-test"));
+    const [channelCount, setChannelCount] = useState(pageSize);
+    const [groupOptions, setGroupOptions] = useState([]);
+    const [showEdit, setShowEdit] = useState(false);
+    const [selectedChannels, setSelectedChannels] = useState(new Set());
+    const [gptVersion, setGptVersion] = useState('gpt-3.5-turbo');
+    const [editingChannel, setEditingChannel] = useState({
+        id: undefined,
+    });
+
+
+    const [gptOptions, setGptOptions] = useState([
+      // 初始的GPT选项列表
+      { key: 'gpt-3.5-turbo', text: 'GPT-3.5', value: 'gpt-3.5-turbo' },
+      { key: 'gpt-4', text: 'GPT-4', value: 'gpt-4' },
+      { key: 'gpt-4-1106-preview', text: 'GPT-4-1106-preview', value: 'gpt-4-1106-preview' },
+      // ...其他初始选项...
+    ]);
+  
+    
+    const onGptVersionChange = (e, { value }) => {
+        setGptVersion(value); // 更新当前选中的GPT版本
+    };
+
+    const removeRecord = id => {
+        let newDataSource = [...channels];
+        if (id != null) {
+            let idx = newDataSource.findIndex(data => data.id === id);
+
+            if (idx > -1) {
+                newDataSource.splice(idx, 1);
+                setChannels(newDataSource);
+            }
+        }
+    };
+
+    const setChannelFormat = (channels) => {
+        for (let i = 0; i < channels.length; i++) {
+            channels[i].key = '' + channels[i].id;
+        }
+        // data.key = '' + data.id
+        setChannels(channels);
+        if (channels.length >= pageSize) {
+            setChannelCount(channels.length + pageSize);
+        } else {
+            setChannelCount(channels.length);
+        }
+    }
+
+    const loadChannels = async (startIdx, pageSize, idSort) => {
+        setLoading(true);
+        const res = await API.get(`/api/channel/?p=${startIdx}&page_size=${pageSize}&id_sort=${idSort}`);
+        const {success, message, data} = res.data;
+        if (success) {
+            if (startIdx === 0) {
+                setChannelFormat(data);
+            } else {
+                let newChannels = [...channels];
+                newChannels.splice(startIdx * pageSize, data.length, ...data);
+                setChannelFormat(newChannels);
+            }
+        } else {
+            showError(message);
+        }
+        setLoading(false);
+    };
+
+    const refresh = async () => {
+        await loadChannels(activePage - 1, pageSize, idSort);
+    };
+
+    useEffect(() => {
+        // console.log('default effect')
+        const localIdSort = localStorage.getItem('id-sort') === 'true';
+        setIdSort(localIdSort)
+        loadChannels(0, pageSize, localIdSort)
+            .then()
+            .catch((reason) => {
+                showError(reason);
+            });
+        fetchGroups().then();
+    }, []);
+
+
+    const manageChannel = async (id, action, record, value) => {
+        let data = {id};
+        let res;
+        switch (action) {
+            case 'delete':
+                res = await API.delete(`/api/channel/${id}/`);
+                break;
+            case 'enable':
+                data.status = 1;
+                res = await API.put('/api/channel/', data);
+                break;
+            case 'disable':
+                data.status = 2;
+                res = await API.put('/api/channel/', data);
+                break;
+            case 'priority':
+                if (value === '') {
+                    return;
+                }
+                data.priority = parseInt(value);
+                res = await API.put('/api/channel/', data);
+                break;
+            case 'weight':
+                if (value === '') {
+                    return;
+                }
+                data.weight = parseInt(value);
+                if (data.weight < 0) {
+                    data.weight = 0;
+                }
+                res = await API.put('/api/channel/', data);
+                break;
+        }
+        const {success, message} = res.data;
+        if (success) {
+            showSuccess('操作成功完成！');
+            let channel = res.data.data;
+            let newChannels = [...channels];
+            if (action === 'delete') {
+
+            } else {
+                record.status = channel.status;
+            }
+            setChannels(newChannels);
+        } else {
+            showError(message);
+        }
+    };
+
+    const renderStatus = (status) => {
+        switch (status) {
+            case 1:
+                return <Tag size='large' color='green'>已启用</Tag>;
+            case 2:
+                return (
+                    <Popup
+                        trigger={<Tag size='large' color='red'>
+                            已禁用
+                        </Tag>}
+                        content='本渠道被手动禁用'
+                        basic
+                    />
+                );
+            case 3:
+                return (
+                    <Popup
+                        trigger={<Tag size='large' color='yellow'>
+                            已禁用
+                        </Tag>}
+                        content='本渠道被程序自动禁用'
+                        basic
+                    />
+                );
+            default:
+                return (
+                    <Tag size='large' color='grey'>
+                        未知状态
+                    </Tag>
+                );
+        }
+    };
+
+    const renderResponseTime = (responseTime) => {
+        let time = responseTime / 1000;
+        time = time.toFixed(2) + ' 秒';
+        if (responseTime === 0) {
+            return <Tag size='large' color='grey'>未测试</Tag>;
+        } else if (responseTime <= 1000) {
+            return <Tag size='large' color='green'>{time}</Tag>;
+        } else if (responseTime <= 3000) {
+            return <Tag size='large' color='lime'>{time}</Tag>;
+        } else if (responseTime <= 5000) {
+            return <Tag size='large' color='yellow'>{time}</Tag>;
+        } else {
+            return <Tag size='large' color='red'>{time}</Tag>;
+        }
+    };
+
+    const searchChannels = async (searchKeyword, searchGroup) => {
+        if (searchKeyword === '' && searchGroup === '') {
+            // 如果关键词为空，则载入全部渠道
+            await loadChannels(0, pageSize, idSort);
+            setActivePage(1);
+            return;
+        }
+        setSearching(true);
+    
+        // 动态构建查询参数字符串
+        let queryParameters = `?keyword=${encodeURIComponent(searchKeyword)}`;
+        if (searchGroup) {
+            queryParameters += `&group=${encodeURIComponent(searchGroup)}`;
+        }
+    
+        // 使用动态构建的查询参数字符串发起 API 请求
+        const res = await API.get(`/api/channel/search${queryParameters}`);
+        const {success, message, data} = res.data;
+    
+        if (success) {
+            setChannels(data);  // 设置检索到的渠道
+            setActivePage(1);  // 重置为第一页
+        } else {
+            showError(message);
+        }
+    
+        setSearching(false);
+    };
+  
+
+    const testChannel = async (record) => {
+        const res = await API.get(`/api/channel/test/${record.id}/`, {params: {version: gptVersion}});
+        const {success, message, time} = res.data;
+        if (success) {
+            let newChannels = [...channels];
+            record.response_time = time * 1000;
+            record.test_time = Date.now() / 1000;
+            setChannels(newChannels);
+            showInfo(`通道 ${record.name} 测试成功，耗时 ${time.toFixed(2)} 秒。`);
+        } else {
+            showError(message);
+        }
+    };
+
+    const testAllChannels = async () => {
+        const res = await API.get(`/api/channel/test`);
+        const {success, message} = res.data;
+        if (success) {
+            showInfo('已成功开始测试所有已启用通道，请刷新页面查看结果。');
+        } else {
+            showError(message);
+        }
+    };
+
+    const deleteAllDisabledChannels = async () => {
+        const res = await API.delete(`/api/channel/disabled`);
+        const {success, message, data} = res.data;
+        if (success) {
+            showSuccess(`已删除所有禁用渠道，共计 ${data} 个`);
+            await refresh();
+        } else {
+            showError(message);
+        }
+    };
+
+    
+    // 使用异步函数删除选中的渠道
+    const deleteSelectedChannels = async () => {
+      if (selectedChannels.size === 0) {
+          showError("没有选中的渠道");
+          return;
+      }
+  
+      Modal.confirm({
+          title: '确认删除',
+          content: '确定删除所选渠道吗？此操作无法撤销。',
+          onOk: async () => {
+              const promises = Array.from(selectedChannels).map(channelId =>
+                  API.delete(`/api/channel/${channelId}/`).catch(e => ({e, channelId}))
+              );
+              const results = await Promise.all(promises);
+  
+              const failedDeletions = results.filter(result => result.e);
+              failedDeletions.forEach(({channelId}) => {
+                  showError(`通道ID: ${channelId} 删除失败。`);
+              });
+  
+              if (failedDeletions.length < selectedChannels.size) {
+                  showSuccess(`成功删除了 ${selectedChannels.size - failedDeletions.length} 个通道。`);
+              }
+  
+              await refresh();
+              setSelectedChannels(new Set());
+          },
+      });
+  };
+  
+
+    
+    
+  
+    const testSelectedChannels = async () => {
+        if (selectedChannels.size === 0) {
+            showError("没有选中的渠道");
+            return;
+        }
+
+        setLoading(true);
+        let errors = [];
+        let updatedChannels = [...channels];
+
+        for (const channelId of selectedChannels) {
+            try {
+                const res = await API.get(`/api/channel/test/${channelId}/`);
+                const { success, time } = res.data;
+                if (success) {
+                    // 更新相应渠道的测试时间和响应时间
+                    const indexToUpdate = updatedChannels.findIndex(channel => channel.id === channelId);
+                    if (indexToUpdate !== -1) {
+                        updatedChannels[indexToUpdate].response_time = time * 1000;
+                        updatedChannels[indexToUpdate].test_time = Date.now() / 1000;
+                    }
+                } else {
+                    errors.push(`ID ${channelId}: 测试失败`);
+                }
+            } catch (error) {
+                errors.push(`ID ${channelId}: ${error.message}`);
+            }
+        }
+
+        setChannels(updatedChannels);
+        setLoading(false);
+
+        if (errors.length > 0) {
+            showError(errors.join(", "));
+        } else {
+            showSuccess(`成功测试了 ${selectedChannels.size} 个渠道`);
+        }
+    };
+
+
+    const updateChannelBalance = async (record) => {
+        const res = await API.get(`/api/channel/update_balance/${record.id}/`);
+        const {success, message, balance} = res.data;
+        if (success) {
+            record.balance = balance;
+            record.balance_updated_time = Date.now() / 1000;
+            showInfo(`通道 ${record.name} 余额更新成功！`);
+        } else {
+            showError(message);
+        }
+    };
+
+    const updateAllChannelsBalance = async () => {
+        setUpdatingBalance(true);
+        const res = await API.get(`/api/channel/update_balance`);
+        const {success, message} = res.data;
+        if (success) {
+            showInfo('已更新完毕所有已启用通道余额！');
+        } else {
+            showError(message);
+        }
+        setUpdatingBalance(false);
+    };
+
+    const sortChannel = (key) => {
+        if (channels.length === 0) return;
+        setLoading(true);
+        let sortedChannels = [...channels];
+        if (typeof sortedChannels[0][key] === 'string') {
+            sortedChannels.sort((a, b) => {
+                return ('' + a[key]).localeCompare(b[key]);
+            });
+        } else {
+            sortedChannels.sort((a, b) => {
+                if (a[key] === b[key]) return 0;
+                if (a[key] > b[key]) return -1;
+                if (a[key] < b[key]) return 1;
+            });
+        }
+        if (sortedChannels[0].id === channels[0].id) {
+            sortedChannels.reverse();
+        }
+        setChannels(sortedChannels);
+        setLoading(false);
+    };
+
+    let pageData = channels.slice((activePage - 1) * pageSize, activePage * pageSize);
+
+    const handlePageChange = page => {
+        setActivePage(page);
+        if (page === Math.ceil(channels.length / pageSize) + 1) {
+            // In this case we have to load more data and then append them.
+            loadChannels(page - 1, pageSize, idSort).then(r => {
+            });
+        }
+    };
+
+    const handlePageSizeChange = async(size) => {
+        setPageSize(size)
+        setActivePage(1)
+        loadChannels(0, size, idSort)
+            .then()
+            .catch((reason) => {
+                showError(reason);
+            })
+    };
+
+    const fetchGroups = async () => {
+        try {
+            let res = await API.get(`/api/group/`);
+            // add 'all' option
+            // res.data.data.unshift('all');
+            setGroupOptions(res.data.data.map((group) => ({
+                label: group,
+                value: group,
+            })));
+        } catch (error) {
+            showError(error.message);
+        }
+    };
+
+    const closeEdit = () => {
+        setShowEdit(false);
+    }
+
+    const handleRow = (record, index) => {
+        if (record.status !== 1) {
+            return {
+                style: {
+                    background: 'var(--semi-color-disabled-border)',
+                },
+            };
+        } else {
+            return {};
+        }
+    };
+
+    return (
+        <>
+            <EditChannel refresh={refresh} visible={showEdit} handleClose={closeEdit} editingChannel={editingChannel}/>
+            <Form onSubmit={() => {searchChannels(searchKeyword, searchGroup)}} labelPosition='left'>
+                <div style={{display: 'flex'}}>
+                    <Space>
+                    <Form.Input
+                      field='search'
+                      label='关键词'
+                      placeholder='ID，名称和密钥 ...'
+                      value={searchKeyword}
+                      loading={searching}
+                      onChange={(value) => {
+                          setSearchKeyword(value.trim());
+                      }}
+                      onKeyDown={(e) => {
+                          // 当用户按下 Enter 键时开始搜索
+                          if (e.key === 'Enter') {
+                              e.preventDefault();  // 阻止表单默认行为
+                              searchChannels(searchKeyword, searchGroup);
+                          }
+                      }}
+                  />
+
+                        <Form.Select field="group" label='分组' optionList={groupOptions} onChange={(v) => {
+                            setSearchGroup(v)
+                            searchChannels(searchKeyword, v)
+                        }}/>
+                        <Dropdown
+                            selection
+                            search
+                            options={gptOptions}
+                            value={gptVersion} // 使用 value 而不是 defaultValue 来确保 Dropdown 反映当前状态
+                            onChange={onGptVersionChange}
+                            allowAdditions
+                            onAddItem={(e, { value }) => {
+                                const newOption = { key: value, text: value, value };
+                                setGptOptions(prevOptions => [...prevOptions, newOption]);
+                                setGptVersion(value); // 添加项时也更新当前选中的GPT版本
+                            }}
+                            style={{ alignItems: 'center', display: 'inline-flex', height: '38px' }}
+                        />
+
+                    </Space>
+                </div>
+            </Form>
+            
+            {/*
+            <div style={{marginTop: 10, display: 'flex'}}>
+                <Space>
+                    <Typography.Text strong>使用ID排序</Typography.Text>
+                    <Switch checked={idSort} label='使用ID排序' uncheckedText="关" aria-label="是否用ID排序" onChange={(v) => {
+                        localStorage.setItem('id-sort', v + '')
+                        setIdSort(v)
+                        loadChannels(0, pageSize, v)
+                            .then()
+                            .catch((reason) => {
+                                showError(reason);
+                            })
+                    }}></Switch>
+                </Space>
+            </div>
+           */}
+            <Table
+              rowSelection={{
+                  onChange: (selectedRowKeys) => {
+                      setSelectedChannels(new Set(selectedRowKeys));
+                  },
+                  selectedRowKeys: Array.from(selectedChannels),
+              }}
+              columns={columns}
+              dataSource={pageData}
+              pagination={{
+                  currentPage: activePage,
+                  pageSize: pageSize,
+                  total: channelCount,
+                  pageSizeOpts: [10, 20, 50, 100, 200],
+                  showSizeChanger: true,
+                  onPageSizeChange: (size) => {
+                      handlePageSizeChange(size).then()
+                  },
+                  onPageChange: handlePageChange,
+              }} 
+              loading={loading}
+              onRow={handleRow}
+            />
+            <div style={{display: 'flex'}}>
+                <Space>
+                    <Button theme='light' type='primary' style={{marginRight: 8}} onClick={
+                        () => {
+                            setEditingChannel({
+                                id: undefined,
+                            });
+                            setShowEdit(true)
+                        }
+                    }>添加渠道</Button>
+                    <Popconfirm
+                        title="确定？"
+                        okType={'warning'}
+                        onConfirm={testAllChannels}
+                    >
+                        <Button theme='light' type='warning' style={{marginRight: 8}}>测试已启用通道</Button>
+                    </Popconfirm>
+                    <Popconfirm
+                        title="确定？"
+                        okType={'secondary'}
+                        onConfirm={updateAllChannelsBalance}
+                    >
+                        <Button theme='light' type='secondary' style={{marginRight: 8}}>更新已启用通道余额</Button>
+                    </Popconfirm>
+                    <Popconfirm
+                        title="确定是否要删除禁用通道？"
+                        content="此修改将不可逆"
+                        okType={'danger'}
+                        onConfirm={deleteAllDisabledChannels}
+                    >
+                        <Button theme='light' type='danger' style={{marginRight: 8}}>删除禁用通道</Button>
+                    </Popconfirm>
+                    <Button theme='light' type='danger' style={{marginRight: 8}} onClick={deleteSelectedChannels} >删除选中</Button>
+
+                    <Button theme='light' type='primary' style={{marginRight: 8}} onClick={testSelectedChannels}>测试选中</Button>
+                    <Button theme='light' type='primary' style={{marginRight: 8}} onClick={refresh}>刷新</Button>
+                </Space>
+            </div>
+        </>
+    );
 };
 
 export default ChannelsTable;
