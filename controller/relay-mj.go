@@ -277,24 +277,11 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	//midjRequest.NotifyHook = "http://127.0.0.1:3000/mj/notify"
 
 	fullRequestURL := fmt.Sprintf("%s%s", baseURL, requestURL)
-	//log.Printf("fullRequestURL: %s", fullRequestURL)
+	log.Printf("fullRequestURL: %s", fullRequestURL)
 
-	var m map[string]interface{}
 	var requestBody io.Reader
-
 	if isModelMapped {
-		// 将 midjRequest 转为一个 map
-		inrec, _ := json.Marshal(midjRequest)
-		json.Unmarshal(inrec, &m)
-		// 如果 notifyHook 已存在，则保留其当前值，否则设置新值
-		if _, exists := m["notifyHook"]; !exists {
-			m["notifyHook"] = "http://142.171.123.86:3002/hook"
-		} else {
-			log.Printf("notifyHook exists, keeping the original value: %s", m["notifyHook"])
-		}
-
-		// 将修改后的 map 再转为 json
-		jsonStr, err := json.Marshal(m)
+		jsonStr, err := json.Marshal(midjRequest)
 		if err != nil {
 			return &MidjourneyResponse{
 				Code:        4,
@@ -303,36 +290,7 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		}
 		requestBody = bytes.NewBuffer(jsonStr)
 	} else {
-		// 读取原始请求体
-		bodyBytes, err := io.ReadAll(c.Request.Body)
-		if err != nil {
-			// handle error
-		}
-
-		// 将原始请求体的内容反序列化为一个 map
-		json.Unmarshal(bodyBytes, &m)
-
-		// 如果 notifyHook 已存在，则保留其当前值，否则设置新值
-		if _, exists := m["notifyHook"]; !exists {
-			m["notifyHook"] = "http://142.171.123.86:3002/hook"
-		} else {
-			log.Printf("notifyHook exists, keeping the original value: %s", m["notifyHook"])
-		}
-
-		// 将修改后的 map 再转为 json
-		updatedBodyBytes, err := json.Marshal(m)
-		if err != nil {
-			return &MidjourneyResponse{
-				Code:        4,
-				Description: "marshal_text_request_failed",
-			}
-		}
-
-		// 创建一个新的请求体
-		requestBody = bytes.NewBuffer(updatedBodyBytes)
-
-		// 重置原始请求体以供后续处理
-		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		requestBody = c.Request.Body
 	}
 
 	modelRatio := common.GetModelRatio(imageModel)
