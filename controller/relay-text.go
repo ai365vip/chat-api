@@ -537,7 +537,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			useTimeSeconds := time.Now().Unix() - startTime.Unix()
 			multiplier := fmt.Sprintf("模型倍率 %.2f，分组倍率 %.2f，用时 %d秒", modelRatio, groupRatio, useTimeSeconds)
 			logContent := fmt.Sprintf("用户: %s \n 用时：%d秒\nAI: %s", usertext, useTimeSeconds, aitext)
-			model.RecordConsumeLog(ctx, userId, channelId, promptTokens, completionTokens, textRequest.Model, tokenName, quota, logContent, tokenId, multiplier)
+			model.RecordConsumeLog(ctx, userId, channelId, promptTokens, completionTokens, textRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota)
 			model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 			model.UpdateChannelUsedQuota(channelId, quota)
 			//if quota != 0 {
