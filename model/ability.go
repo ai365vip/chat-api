@@ -16,7 +16,11 @@ type Ability struct {
 func GetGroupModels(group string) []string {
 	var models []string
 	// Find distinct models
-	DB.Table("abilities").Where("`group` = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models)
+	groupCol := "`group`"
+	if common.UsingPostgreSQL {
+		groupCol = `"group"`
+	}
+	DB.Table("abilities").Where(groupCol+" = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models)
 	return models
 }
 

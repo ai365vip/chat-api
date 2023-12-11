@@ -98,7 +98,7 @@ func RequestEpay(c *gin.Context) {
 	topUp := &model.TopUp{
 		UserId:     id,
 		Amount:     req.Amount,
-		Money:      int(amount),
+		Money:      payMoney,
 		TradeNo:    "A" + tradeNo,
 		CreateTime: time.Now().Unix(),
 		Status:     "pending",
@@ -155,7 +155,7 @@ func EpayNotify(c *gin.Context) {
 				return
 			}
 			log.Printf("易支付回调更新用户成功 %v", topUp)
-			model.RecordLog(topUp.UserId, model.LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", common.LogQuota(topUp.Amount*500000), topUp.Money))
+			model.RecordLog(topUp.UserId, model.LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", common.LogQuota(topUp.Amount*500000), topUp.Money))
 		}
 	} else {
 		log.Printf("易支付异常回调: %v", verifyInfo)
@@ -175,5 +175,6 @@ func RequestAmount(c *gin.Context) {
 	}
 	id := c.GetInt("id")
 	user, _ := model.GetUserById(id, false)
-	c.JSON(200, gin.H{"message": "success", "data": GetAmount(float64(req.Amount), *user)})
+	payMoney := GetAmount(float64(req.Amount), *user)
+	c.JSON(200, gin.H{"message": "success", "data": strconv.FormatFloat(payMoney, 'f', 2, 64)})
 }

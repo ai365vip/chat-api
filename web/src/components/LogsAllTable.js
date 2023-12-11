@@ -176,12 +176,14 @@ const LogsTable = () => {
     const [logType, setLogType] = useState(0);
     const isAdminUser = isAdmin();
     let now = new Date();
+    let sevenDaysAgo = new Date(); // 创建一个新的日期对象表示七天前
+    sevenDaysAgo.setDate(now.getDate() - 7); // 将这个日期设置为七天前
     const [inputs, setInputs] = useState({
         username: '',
         token_name: '',
         model_name: '',
-        start_timestamp: timestamp2string(0),
-        end_timestamp: timestamp2string(now.getTime() / 1000 + 3600),
+        start_timestamp: timestamp2string(sevenDaysAgo.getTime() / 1000), // 设定为七天前
+        end_timestamp: timestamp2string(now.getTime() / 1000), // 设定为当前时间
         channel: ''
     });
     const {username, token_name, model_name, start_timestamp, end_timestamp, channel} = inputs;
