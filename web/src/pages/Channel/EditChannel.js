@@ -299,6 +299,7 @@ const EditChannel = (props) => {
     return (
         <>
             <SideSheet
+                maskClosable={false}
                 placement={isEdit ? 'right' : 'left'}
                 title={<Title level={3}>{isEdit ? '更新渠道信息' : '创建新的渠道'}</Title>}
                 headerStyle={{borderBottom: '1px solid var(--semi-color-border)'}}
