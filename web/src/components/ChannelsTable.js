@@ -729,7 +729,14 @@ const ChannelsTable = () => {
             </div>
                 */}
 
-            <Table columns={columns} dataSource={pageData} pagination={{
+            <Table
+              rowSelection={{
+                  onChange: (selectedRowKeys) => {
+                      setSelectedChannels(new Set(selectedRowKeys));
+                  },
+                  selectedRowKeys: Array.from(selectedChannels),
+              }}
+              columns={columns} dataSource={pageData} pagination={{
                 currentPage: activePage,
                 pageSize: pageSize,
                 total: channelCount,

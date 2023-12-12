@@ -28,10 +28,10 @@ var indexPage []byte
 
 func main() {
 	common.SetupLogger()
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: .env file not found or error loading")
 	}
+
 	common.SysLog("One API " + common.Version + " started")
 	if os.Getenv("GIN_MODE") != "debug" {
 		gin.SetMode(gin.ReleaseMode)
@@ -40,20 +40,18 @@ func main() {
 		common.SysLog("running in debug mode")
 	}
 	// Initialize SQL Database
-	err = model.InitDB()
-	if err != nil {
+	// 初始化 SQL 数据库，并在结束时关闭它。
+	if err := model.InitDB(); err != nil { // 使用 := 声明和初始化 err
 		common.FatalLog("failed to initialize database: " + err.Error())
 	}
 	defer func() {
-		err := model.CloseDB()
-		if err != nil {
+		if err := model.CloseDB(); err != nil { // defer 中又一个新的作用域和局部变量 err
 			common.FatalLog("failed to close database: " + err.Error())
 		}
 	}()
 
 	// Initialize Redis
-	err = common.InitRedisClient()
-	if err != nil {
+	if err := common.InitRedisClient(); err != nil { // 再次使用 := 声明和初始化 err
 		common.FatalLog("failed to initialize Redis: " + err.Error())
 	}
 
@@ -123,8 +121,8 @@ func main() {
 	if port == "" {
 		port = strconv.Itoa(*common.Port)
 	}
-	err = server.Run(":" + port)
-	if err != nil {
+	// 启动 HTTP 服务器。
+	if err := server.Run(":" + port); err != nil { // 再次使用 := 声明和初始化 err
 		common.FatalLog("failed to start HTTP server: " + err.Error())
 	}
 }
