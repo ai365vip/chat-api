@@ -14,15 +14,19 @@ import (
 // 1 === $0.002 / 1K tokens
 // 1 === ￥0.014 / 1k tokens
 var ModelRatio = map[string]float64{
-	"midjourney":                50,
+	"midjourney":                75,
+	"gpt-4-gizmo-*":             15,
+	"gpt-4-all":                 15,
 	"gpt-4":                     15,
 	"gpt-4-0314":                15,
 	"gpt-4-0613":                15,
 	"gpt-4-32k":                 30,
 	"gpt-4-32k-0314":            30,
 	"gpt-4-32k-0613":            30,
-	"gpt-4-1106-preview":        5,    // $0.01 / 1K tokens
-	"gpt-4-vision-preview":      5,    // $0.01 / 1K tokens
+	"gpt-4-1106-preview":        10, // $0.01 / 1K tokens
+	"gpt-4-vision":              10,
+	"gpt-4-vision-preview":      10,   // $0.01 / 1K tokens
+	"gpt-4-1106-vision-preview": 10,   // $0.01 / 1K tokens
 	"gpt-3.5-turbo":             0.75, // $0.0015 / 1K tokens
 	"gpt-3.5-turbo-0301":        0.75,
 	"gpt-3.5-turbo-0613":        0.75,
@@ -88,6 +92,9 @@ func UpdateModelRatioByJSONString(jsonStr string) error {
 }
 
 func GetModelRatio(name string) float64 {
+	if strings.HasPrefix(name, "gpt-4-gizmo") {
+		name = "gpt-4-gizmo-*"
+	}
 	ratio, ok := ModelRatio[name]
 	if !ok {
 		SysError("model ratio not found: " + name)
