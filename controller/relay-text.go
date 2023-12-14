@@ -223,7 +223,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 
 				// 如果找到了URL
 				for _, url := range matches {
-					newContent = append(newContent, MediaMessage{
+					newContent = append(newContent, MediaMessageImage{
 						Type:     "image_url",
 						ImageUrl: MessageImageUrl{Url: url}, // 使用MessageImageUrl结构体
 					})

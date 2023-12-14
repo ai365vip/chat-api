@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,13 +10,13 @@ import (
 	_ "image/png"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"one-api/common"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/chai2010/webp"
 	"github.com/gin-gonic/gin"
 	"github.com/pkoukk/tiktoken-go"
 )
@@ -72,172 +71,110 @@ func getTokenNum(tokenEncoder *tiktoken.Tiktoken, text string) int {
 	return len(tokenEncoder.Encode(text, nil, nil))
 }
 
-func getImageToken(imageUrl string, detail string) (int, error) {
-	var config image.Config
-	var err error
-	// 如果detail为空，则默认为"low"
-	if detail == "" || detail == "auto" {
-		detail = "high"
-	}
-	if detail == "high" {
-		// 检查图片URL是否为Base64编码数据
-		if strings.HasPrefix(imageUrl, "data:image/") {
-			log.Println("正在解码Base64图像数据")
-			config, err = common.DecodeBase64ImageData(imageUrl)
-			if err != nil {
-				return 0, fmt.Errorf("解码Base64图像数据失败: %w", err)
-			}
-		} else if strings.HasPrefix(imageUrl, "http") {
-			// 对于HTTP/HTTPS URLs下载图片
-			log.Printf("正在下载图片: %s", imageUrl)
-			response, err := http.Get(imageUrl)
-			if err != nil {
-				return 0, fmt.Errorf("获取图片URL失败: %w", err)
-			}
-			defer response.Body.Close()
-
-			// 如果状态码不是200 OK，则返回错误
-			if response.StatusCode != http.StatusOK {
-				return 0, fmt.Errorf("服务器返回非200状态码: %d", response.StatusCode)
-			}
-
-			// 获取完整的图片数据
-			data, err := io.ReadAll(response.Body)
-			if err != nil {
-				return 0, fmt.Errorf("读取图片数据失败: %w", err)
-			}
-
-			// 尝试使用标准库解码图像配置信息
-			config, _, err = image.DecodeConfig(bytes.NewReader(data))
-			if err != nil {
-				// 标准库解码失败，尝试WebP格式
-				config, err = webp.DecodeConfig(bytes.NewReader(data))
-				if err != nil {
-					return 0, fmt.Errorf("解码WebP图像配置失败: %w", err)
-				}
-			}
-		} else {
-			return 0, errors.New("不支持的图片URL格式")
-		}
-	} else if detail == "low" {
+func getImageToken(imageUrl *MessageImageUrl) (int, error) {
+	if imageUrl.Detail == "low" {
 		return 85, nil
 	}
-
-	// 确保config中的Width和Height是有效的
-	if config.Width <= 0 || config.Height <= 0 {
-		return 0, fmt.Errorf("无效的图片尺寸")
+	var config image.Config
+	var err error
+	if strings.HasPrefix(imageUrl.Url, "http") {
+		common.SysLog(fmt.Sprintf("downloading image: %s", imageUrl.Url))
+		config, err = common.DecodeUrlImageData(imageUrl.Url)
+	} else {
+		common.SysLog(fmt.Sprintf("decoding image"))
+		config, err = common.DecodeBase64ImageData(imageUrl.Url)
+	}
+	if err != nil {
+		return 0, err
 	}
 
-	// 记录图片尺寸
-	log.Printf("图片尺寸 - 宽度: %d, 高度: %d", config.Width, config.Height)
+	if config.Width == 0 || config.Height == 0 {
+		return 0, errors.New(fmt.Sprintf("fail to decode image config: %s", imageUrl.Url))
+	}
+	// TODO: 适配官方auto计费
+	if config.Width < 512 && config.Height < 512 {
+		if imageUrl.Detail == "auto" || imageUrl.Detail == "" {
+			// 如果图片尺寸小于512，强制使用low
+			imageUrl.Detail = "low"
+			return 85, nil
+		}
+	}
 
-	// 根据逻辑计算token数量
 	shortSide := config.Width
+	otherSide := config.Height
+	log.Printf("width: %d, height: %d", config.Width, config.Height)
+	// 缩放倍数
+	scale := 1.0
 	if config.Height < shortSide {
 		shortSide = config.Height
+		otherSide = config.Width
 	}
 
-	scale := 1.0
+	// 将最小变的尺寸缩小到768以下，如果大于768，则缩放到768
 	if shortSide > 768 {
 		scale = float64(shortSide) / 768
 		shortSide = 768
 	}
-
-	otherSide := int(float64(config.Height) / scale)
-	if config.Width < config.Height {
-		otherSide = int(float64(config.Width) / scale)
-	}
-
-	// 计算token数
+	// 将另一边按照相同的比例缩小，向上取整
+	otherSide = int(math.Ceil(float64(otherSide) / scale))
+	log.Printf("shortSide: %d, otherSide: %d, scale: %f", shortSide, otherSide, scale)
+	// 计算图片的token数量(边的长度除以512，向上取整)
 	tiles := (shortSide + 511) / 512 * ((otherSide + 511) / 512)
-	tokenCount := tiles*170 + 85
-
-	// 记录计算出的tokens
-	log.Printf("计算得到的图片token数: %d", tokenCount)
-
-	return tokenCount, nil
-
+	log.Printf("tiles: %d", tiles)
+	return tiles*170 + 85, nil
 }
 
 func countTokenMessages(messages []Message, model string) (int, error) {
+	//recover when panic
 	tokenEncoder := getTokenEncoder(model)
+	// Reference:
+	// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
+	// https://github.com/pkoukk/tiktoken-go/issues/6
+	//
+	// Every message follows <|start|>{role/name}\n{content}<|end|>\n
 	var tokensPerMessage int
 	var tokensPerName int
-
-	// 根据不同的模型设置token计算方式
 	if model == "gpt-3.5-turbo-0301" {
 		tokensPerMessage = 4
-		tokensPerName = -1 // 如果有name，则忽略role的token计数
+		tokensPerName = -1 // If there's a name, the role is omitted
 	} else {
 		tokensPerMessage = 3
 		tokensPerName = 1
 	}
-
-	var totalTokens int
-
+	tokenNum := 0
 	for _, message := range messages {
-		totalTokens += tokensPerMessage
-		totalTokens += getTokenNum(tokenEncoder, "<|im_start|>"+message.Role+"\n")
+		tokenNum += tokensPerMessage
+		tokenNum += getTokenNum(tokenEncoder, message.Role)
+		var arrayContent []MediaMessage
+		if err := json.Unmarshal(message.Content, &arrayContent); err != nil {
 
-		if message.Name != nil && tokensPerName > 0 {
-			totalTokens += tokensPerName
-			totalTokens += getTokenNum(tokenEncoder, *message.Name+"\n")
-		}
-
-		if len(message.Content) > 0 && message.Content[0] == '[' {
-			var contentItems []json.RawMessage
-			err := json.Unmarshal(message.Content, &contentItems)
-			if err != nil {
-				return 0, fmt.Errorf("解析到[]json.RawMessage失败: %w", err)
-			}
-
-			for _, item := range contentItems {
-				var baseItem MediaMessageBase
-				err := json.Unmarshal(item, &baseItem)
-				if err != nil {
-					return 0, fmt.Errorf("解析媒体消息类型失败: %w", err)
-				}
-
-				switch baseItem.Type {
-				case "text":
-					var textItem MediaMessageText
-					err := json.Unmarshal(item, &textItem)
-					if err != nil {
-						return 0, fmt.Errorf("解析文本消息失败: %w", err)
-					}
-					totalTokens += getTokenNum(tokenEncoder, textItem.Text)
-				case "image_url":
-					var imageItem MediaMessageImage
-					err := json.Unmarshal(item, &imageItem)
-					if err != nil {
-						return 0, fmt.Errorf("解析图像消息失败: %w", err)
-					}
-
-					imageTokens, err := getImageToken(imageItem.ImageUrl.Url, imageItem.ImageUrl.Detail)
-					if err != nil {
-						return 0, fmt.Errorf("获取图像token失败: %w", err)
-					}
-					totalTokens += imageTokens
-				default:
-					return 0, fmt.Errorf("不支持的媒体消息类型: %s", baseItem.Type)
+			var stringContent string
+			if err := json.Unmarshal(message.Content, &stringContent); err != nil {
+				return 0, err
+			} else {
+				tokenNum += getTokenNum(tokenEncoder, stringContent)
+				if message.Name != nil {
+					tokenNum += tokensPerName
+					tokenNum += getTokenNum(tokenEncoder, *message.Name)
 				}
 			}
 		} else {
-			var textContent string
-			err := json.Unmarshal(message.Content, &textContent)
-			if err != nil {
-				return 0, fmt.Errorf("解析为字符串失败: %w", err)
+			for _, m := range arrayContent {
+				if m.Type == "image_url" {
+					imageTokenNum, err := getImageToken(&m.ImageUrl)
+					if err != nil {
+						return 0, err
+					}
+					tokenNum += imageTokenNum
+					log.Printf("image token num: %d", imageTokenNum)
+				} else {
+					tokenNum += getTokenNum(tokenEncoder, m.Text)
+				}
 			}
-			totalTokens += getTokenNum(tokenEncoder, textContent)
 		}
-
-		totalTokens += getTokenNum(tokenEncoder, "<|end|>\n")
 	}
-
-	// 将每个回复与assistant角色的标记进行累加
-	totalTokens += getTokenNum(tokenEncoder, "<|im_start|>assistant<|im_sep|>")
-
-	return totalTokens, nil
+	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>
+	return tokenNum, nil
 }
 
 func countTokenInput(input any, model string) int {

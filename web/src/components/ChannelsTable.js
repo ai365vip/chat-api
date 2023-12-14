@@ -34,23 +34,8 @@ import {
 } from "@douyinfe/semi-ui";
 import EditChannel from "../pages/Channel/EditChannel";
 
-function renderTimestamp(timestamp) {
-    return (
-        <>
-            {timestamp2string(timestamp)}
-        </>
-    );
-}
 
 let type2label = undefined;
-
-const ITEMS_PER_PAGE_OPTIONS = [
-  { key: '10', text: '10', value: 10 },
-  { key: '20', text: '20', value: 20 },
-  { key: '50', text: '50', value: 50 },
-  { key: '100', text: '100', value: 100 },
-  { key: '200', text: '200', value: 200 },
-];
 
 
 function renderType(type) {
@@ -64,26 +49,6 @@ function renderType(type) {
     return <Tag size='large' color={type2label[type]?.color}>{type2label[type]?.text}</Tag>;
 }
 
-function renderBalance(type, balance) {
-    switch (type) {
-        case 1: // OpenAI
-            return <span>${balance.toFixed(2)}</span>;
-        case 4: // CloseAI
-            return <span>¥{balance.toFixed(2)}</span>;
-        case 8: // 自定义
-            return <span>${balance.toFixed(2)}</span>;
-        case 5: // OpenAI-SB
-            return <span>¥{(balance / 10000).toFixed(2)}</span>;
-        case 10: // AI Proxy
-            return <span>{renderNumber(balance)}</span>;
-        case 12: // API2GPT
-            return <span>¥{balance.toFixed(2)}</span>;
-        case 13: // AIGC2D
-            return <span>{renderNumber(balance)}</span>;
-        default:
-            return <span>不支持</span>;
-    }
-}
 
 const ChannelsTable = () => {
   
@@ -495,34 +460,34 @@ const ChannelsTable = () => {
     
     // 使用异步函数删除选中的渠道
     const deleteSelectedChannels = async () => {
-      if (selectedChannels.size === 0) {
-          showError("没有选中的渠道");
-          return;
-      }
-  
-      Modal.confirm({
-          title: '确认删除',
-          content: '确定删除所选渠道吗？此操作无法撤销。',
-          onOk: async () => {
-              const promises = Array.from(selectedChannels).map(channelId =>
-                  API.delete(`/api/channel/${channelId}/`).catch(e => ({e, channelId}))
-              );
-              const results = await Promise.all(promises);
-  
-              const failedDeletions = results.filter(result => result.e);
-              failedDeletions.forEach(({channelId}) => {
-                  showError(`通道ID: ${channelId} 删除失败。`);
-              });
-  
-              if (failedDeletions.length < selectedChannels.size) {
-                  showSuccess(`成功删除了 ${selectedChannels.size - failedDeletions.length} 个通道。`);
-              }
-  
-              await refresh();
-              setSelectedChannels(new Set());
-          },
-      });
-  };
+        if (selectedChannels.size === 0) {
+            showError("没有选中的渠道");
+            return;
+        }
+    
+        Modal.confirm({
+            title: '确认删除',
+            content: '确定删除所选渠道吗？此操作无法撤销。',
+            onOk: async () => {
+                const promises = Array.from(selectedChannels).map(channelId =>
+                    API.delete(`/api/channel/${channelId}/`).catch(e => ({e, channelId}))
+                );
+                const results = await Promise.all(promises);
+    
+                const failedDeletions = results.filter(result => result.e);
+                failedDeletions.forEach(({channelId}) => {
+                    showError(`通道ID: ${channelId} 删除失败。`);
+                });
+    
+                if (failedDeletions.length < selectedChannels.size) {
+                    showSuccess(`成功删除了 ${selectedChannels.size - failedDeletions.length} 个通道。`);
+                }
+    
+                await refresh();
+                setSelectedChannels(new Set());
+            },
+        });
+    };
   
 
     
