@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
 
       - name: Save version info
         run: |
@@ -39,6 +41,9 @@ jobs:
         with:
           images: |
             ai365/new-api-en
+          tags: |
+            type=custom,value=$(<VERSION)
+            type=sha
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v3

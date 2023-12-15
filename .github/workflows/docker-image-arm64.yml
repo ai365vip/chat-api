@@ -20,10 +20,12 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
 
       - name: Save version info
         run: |
-          git describe --tags > VERSION 
+          git describe --tags > VERSION
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -51,6 +53,9 @@ jobs:
           images: |
             ai365/new-api
             ghcr.io/${{ github.repository }}
+          tags: |
+            type=custom,value=$(<VERSION)
+            type=sha
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v3
