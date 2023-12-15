@@ -297,6 +297,7 @@ const ChannelsTable = () => {
     const manageChannel = async (id, action, record, value) => {
         let data = {id};
         let res;
+        // eslint-disable-next-line default-case
         switch (action) {
             case 'delete':
                 res = await API.delete(`/api/channel/${id}/`);
@@ -557,27 +558,6 @@ const ChannelsTable = () => {
         setUpdatingBalance(false);
     };
 
-    const sortChannel = (key) => {
-        if (channels.length === 0) return;
-        setLoading(true);
-        let sortedChannels = [...channels];
-        if (typeof sortedChannels[0][key] === 'string') {
-            sortedChannels.sort((a, b) => {
-                return ('' + a[key]).localeCompare(b[key]);
-            });
-        } else {
-            sortedChannels.sort((a, b) => {
-                if (a[key] === b[key]) return 0;
-                if (a[key] > b[key]) return -1;
-                if (a[key] < b[key]) return 1;
-            });
-        }
-        if (sortedChannels[0].id === channels[0].id) {
-            sortedChannels.reverse();
-        }
-        setChannels(sortedChannels);
-        setLoading(false);
-    };
 
     let pageData = channels.slice((activePage - 1) * pageSize, activePage * pageSize);
 
