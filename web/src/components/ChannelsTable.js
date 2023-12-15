@@ -225,7 +225,7 @@ const ChannelsTable = () => {
       // 初始的GPT选项列表
       { key: 'gpt-3.5-turbo', text: 'GPT-3.5', value: 'gpt-3.5-turbo' },
       { key: 'gpt-4', text: 'GPT-4', value: 'gpt-4' },
-      { key: 'gpt-4-1106-preview', text: 'GPT-4-1106-preview', value: 'gpt-4-1106-preview' },
+      { key: 'gpt-4-1106-preview', text: 'GPT-4-1106', value: 'gpt-4-1106-preview' },
       // ...其他初始选项...
     ]);
   
@@ -541,6 +541,7 @@ const ChannelsTable = () => {
             record.balance = balance;
             record.balance_updated_time = Date.now() / 1000;
             showInfo(`通道 ${record.name} 余额更新成功！`);
+            await refresh();
         } else {
             showError(message);
         }
@@ -731,9 +732,6 @@ const ChannelsTable = () => {
                     <Button theme='light' type='primary' style={{marginRight: 8}} onClick={testSelectedChannels}>测试选中</Button>
                     <Button theme='light' type='primary' style={{marginRight: 8}} onClick={refresh}>刷新</Button>
                 </Space>
-                {/*<div style={{width: '100%', pointerEvents: 'none', position: 'absolute'}}>*/}
-
-                {/*</div>*/}
             </div>
         </>
     );
