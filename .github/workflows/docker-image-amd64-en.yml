@@ -6,9 +6,9 @@ on:
       - '*'
   workflow_dispatch:
     inputs:
-      name:
-        description: 'reason'
-        required: false
+      version: # 修改此处为合适的字段名
+        description: 'Enter the version number' # 在 UI 中展示的描述性文本
+        required: true # 设置为必填项
 jobs:
   push_to_registries:
     name: Push Docker image to multiple registries
@@ -22,9 +22,14 @@ jobs:
         with:
           fetch-depth: '0'
 
-      - name: Save version info
+      - name: Prepare version info
+        id: prep_version
         run: |
-          git describe --tags > VERSION 
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=$(git describe --tags)" >> $GITHUB_ENV
+          fi
 
       - name: Translate
         run: |
@@ -42,8 +47,9 @@ jobs:
           images: |
             ai365/new-api-en
           tags: |
-            type=custom,value=$(<VERSION)
+            type=ref,event=tag
             type=sha
+            ${{ env.VERSION }}
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v3
