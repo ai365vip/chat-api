@@ -374,7 +374,7 @@ func AutomaticallyTestDisabledChannels(frequency int) {
 		currentTime := time.Now()
 		for _, channel := range channels {
 			// 如果通道状态为自动禁用并且TestedTime不为空则执行测试
-			if channel.Status == common.ChannelStatusAutoDisabled && channel.TestedTime != nil {
+			if channel.Status == common.ChannelStatusAutoDisabled && channel.TestedTime != nil && *channel.TestedTime > 0 {
 				testInterval := time.Duration(*channel.TestedTime) * time.Second // 解引用并转换到time.Duration
 
 				// 执行测试并更新下一次测试的预定时间
