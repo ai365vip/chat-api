@@ -27,6 +27,8 @@ type Channel struct {
 	ModelMapping       *string `json:"model_mapping" gorm:"type:varchar(1024);default:''"`
 	Priority           *int64  `json:"priority" gorm:"bigint;default:0"`
 	AutoBan            *int    `json:"auto_ban" gorm:"default:1"`
+	TestedTime         *int    `json:"tested_time" gorm:"bigint"`
+	ModelTest          string  `json:"model_test"`
 }
 
 func GetAllChannels(startIdx int, num int, selectAll bool, idSort bool) ([]*Channel, error) {

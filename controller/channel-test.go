@@ -259,7 +259,7 @@ func disableChannel(channelId int, channelName string, reason string) {
 	}
 }
 
-func testAllChannels(gptVersion string, notify bool) error {
+func testAllChannels(notify bool) error {
 	if common.RootUserEmail == "" {
 		common.RootUserEmail = model.GetRootUserEmail()
 	}
@@ -281,15 +281,23 @@ func testAllChannels(gptVersion string, notify bool) error {
 	}
 	go func() {
 		for _, channel := range channels {
-			if channel.Status != common.ChannelStatusEnabled {
+			if channel.Status != common.ChannelStatusEnabled && channel.Status != common.ChannelStatusAutoDisabled {
 				continue
 			}
 			tik := time.Now()
-			err, openaiErr := testChannel(channel, *testRequest, gptVersion)
+			// 检查modelTest字段是否为空，如果为空则设置为默认值"gpt-3.5-turbo"
+			modelTest := channel.ModelTest
+			if modelTest == "" {
+				modelTest = "gpt-3.5-turbo"
+			}
+			err, openaiErr := testChannel(channel, *testRequest, modelTest)
 			tok := time.Now()
 			milliseconds := tok.Sub(tik).Milliseconds()
 
-			ban := false
+			// ban := false
+			// 标记是否应该禁用通道
+			ban := (openaiErr != nil || milliseconds > disableThreshold) && shouldDisableChannel(openaiErr, -1)
+
 			if milliseconds > disableThreshold {
 				err = errors.New(fmt.Sprintf("响应时间 %.2fs 超过阈值 %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0))
 				ban = true
@@ -302,8 +310,21 @@ func testAllChannels(gptVersion string, notify bool) error {
 			if channel.AutoBan != nil && *channel.AutoBan == 0 {
 				ban = false
 			}
-			if shouldDisableChannel(openaiErr, -1) && ban {
-				disableChannel(channel.Id, channel.Name, err.Error())
+			if ban {
+				// 如果满足禁用条件，则禁用通道
+				if channel.Status != common.ChannelStatusAutoDisabled {
+					disableChannel(channel.Id, channel.Name, err.Error())
+				}
+			} else {
+				// 测试成功且未被标记为禁用，检查是否需要重新启用
+				if channel.Status == common.ChannelStatusAutoDisabled {
+					model.UpdateChannelStatusById(channel.Id, common.ChannelStatusEnabled) // 启用通道
+					subject := fmt.Sprintf("通道「%s」（#%d）已恢复启用", channel.Name, channel.Id)
+					err := common.SendEmail(subject, common.RootUserEmail, subject)
+					if err != nil {
+						common.SysError(fmt.Sprintf("failed to send email: %s", err.Error()))
+					}
+				}
 			}
 			channel.UpdateResponseTime(milliseconds)
 			time.Sleep(common.RequestInterval)
@@ -322,8 +343,7 @@ func testAllChannels(gptVersion string, notify bool) error {
 }
 
 func TestAllChannels(c *gin.Context) {
-	gptVersion := c.DefaultQuery("version", "gpt-3.5-turbo")
-	err := testAllChannels(gptVersion, true)
+	err := testAllChannels(true)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -338,11 +358,73 @@ func TestAllChannels(c *gin.Context) {
 	return
 }
 
-func AutomaticallyTestChannels(frequency int, gptVersion string) {
+func AutomaticallyTestDisabledChannels(frequency int) {
+	common.SysLog("Starting the auto-disabled channels testing goroutine")
+	ticker := time.NewTicker(time.Duration(frequency) * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		common.SysLog("Testing all auto-disabled channels")
+		channels, err := model.GetAllChannels(0, 0, true, false)
+		if err != nil {
+			common.SysError(fmt.Sprintf("Error retrieving channels: %s", err.Error()))
+			continue
+		}
+
+		currentTime := time.Now()
+		for _, channel := range channels {
+			// 如果通道状态为自动禁用并且TestedTime不为空则执行测试
+			if channel.Status == common.ChannelStatusAutoDisabled && channel.TestedTime != nil {
+				testInterval := time.Duration(*channel.TestedTime) * time.Second // 解引用并转换到time.Duration
+
+				// 执行测试并更新下一次测试的预定时间
+				go testChannelAndHandleResult(channel, testInterval, currentTime)
+			}
+		}
+	}
+}
+
+func testChannelAndHandleResult(channel *model.Channel, testInterval time.Duration, lastTestTime time.Time) {
+	testRequest := buildTestRequest()
+
+	// 检查modelTest字段是否为空，如果为空则设置为默认值"gpt-3.5-turbo"
+	modelTest := channel.ModelTest
+	if modelTest == "" {
+		modelTest = "gpt-3.5-turbo"
+	}
+
+	// 调用testChannel函数使用确定好的模型进行测试
+	err, _ := testChannel(channel, *testRequest, modelTest)
+
+	if err == nil && channel.Status == common.ChannelStatusAutoDisabled {
+		// 测试通过，更新通道状态为启用
+		model.UpdateChannelStatusById(channel.Id, common.ChannelStatusEnabled)
+		notifyChannelEnabled(channel) // 发送通知（假设已经实现了这个函数）
+	} else if err != nil {
+		// 测试失败，记录错误
+		common.SysError(fmt.Sprintf("Error testing channel #%d: %s", channel.Id, err.Error()))
+	}
+}
+
+// notifyChannelEnabled发送通道已重新启用的通知
+func notifyChannelEnabled(channel *model.Channel) {
+	if common.RootUserEmail == "" {
+		common.RootUserEmail = model.GetRootUserEmail()
+	}
+	// 实现发送通知的逻辑
+	subject := fmt.Sprintf("通道「%s」（#%d）已恢复启用", channel.Name, channel.Id)
+	content := "通道成功通过了测试，并已重新启用。"
+	err := common.SendEmail(subject, common.RootUserEmail, content)
+	if err != nil {
+		common.SysError(fmt.Sprintf("failed to send email notification: %s", err.Error()))
+	}
+}
+
+func AutomaticallyTestChannels(frequency int) {
 	for {
 		time.Sleep(time.Duration(frequency) * time.Minute)
 		common.SysLog("testing all channels")
-		_ = testAllChannels(gptVersion, false)
+		_ = testAllChannels(false)
 		common.SysLog("channel test finished")
 	}
 }

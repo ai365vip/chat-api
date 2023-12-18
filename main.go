@@ -83,14 +83,9 @@ func main() {
 			common.FatalLog("failed to parse CHANNEL_TEST_FREQUENCY: " + err.Error())
 		}
 
-		gptVersion := os.Getenv("GPT_VERSION") // 获取 GPT 版本环境变量
-		if gptVersion == "" {
-			gptVersion = "gpt-3.5-turbo" // 如果没有设置环境变量，默认为 "gpt-3.5-turbo"
-		}
-
-		go controller.AutomaticallyTestChannels(frequency, gptVersion)
+		go controller.AutomaticallyTestChannels(frequency)
 	}
-
+	go controller.AutomaticallyTestDisabledChannels(60)
 	go controller.UpdateMidjourneyTask()
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
 		common.BatchUpdateEnabled = true

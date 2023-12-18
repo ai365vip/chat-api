@@ -149,6 +149,25 @@ const ChannelsTable = () => {
             },
         },
         {
+            title: '重启',
+            dataIndex: 'tested_time',
+            render: (text, record, index) => {
+                return (
+                    <div>
+                        <InputNumber
+                            style={{width: 70}}
+                            name='name'
+                            onChange={value => {
+                                manageChannel(record.id, 'tested_time', record, value);
+                            }}
+                            defaultValue={record.tested_time}
+                            min={0}
+                        />
+                    </div>
+                );
+            },
+        },
+        {
             title: '',
             dataIndex: 'operate',
             render: (text, record, index) => (
@@ -315,6 +334,13 @@ const ChannelsTable = () => {
                     return;
                 }
                 data.priority = parseInt(value);
+                res = await API.put('/api/channel/', data);
+                break;
+            case 'tested_time':
+                if (value === '') {
+                    return;
+                }
+                data.tested_time = parseInt(value);
                 res = await API.put('/api/channel/', data);
                 break;
             case 'weight':

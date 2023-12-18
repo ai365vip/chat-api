@@ -45,6 +45,7 @@ const EditChannel = (props) => {
         model_mapping: '',
         models: [],
         auto_ban: 1,
+        model_test: '', // 添加model_test字段
         groups: ['default']
     };
     const [batch, setBatch] = useState(false);
@@ -192,6 +193,7 @@ const EditChannel = (props) => {
             showInfo('请至少选择一个模型！');
             return;
         }
+        
         if (inputs.model_mapping !== '' && !verifyJSON(inputs.model_mapping)) {
             showInfo('模型映射必须是合法的 JSON 格式！');
             return;
@@ -205,6 +207,10 @@ const EditChannel = (props) => {
         }
         if (localInputs.type === 18 && localInputs.other === '') {
             localInputs.other = 'v2.1';
+        }
+        // 如果 model_test 为空，则设置默认值
+        if (!localInputs.model_test) {
+            localInputs.model_test = 'gpt-3.5-turbo';
         }
 
         let channelsToCreate = [];
@@ -578,6 +584,16 @@ const EditChannel = (props) => {
                                 strong>是否自动禁用（仅当自动禁用开启时有效），关闭后不会自动禁用该渠道：</Typography.Text>
                         </Space>
                     </div>
+                    <div style={{marginTop: 10}}>
+                        <Typography.Text strong>自动测试模型：</Typography.Text>
+                    </div>
+                    <Select
+                        placeholder={'请选择自动测试使用的模型'}
+                        name='model_test'
+                        onChange={value => handleInputChange('model_test', value)}
+                        value={inputs.model_test}
+                        optionList={modelOptions} // 确保 modelOptions 包含所有可选项
+                    />
 
                     {
                         !isEdit && (
