@@ -67,6 +67,9 @@ var SMTPAccount = ""
 var SMTPFrom = ""
 var SMTPToken = ""
 
+var AppToken = ""
+var Uids = ""
+
 var GitHubClientId = ""
 var GitHubClientSecret = ""
 

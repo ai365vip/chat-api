@@ -75,6 +75,9 @@ func InitOptionMap() {
 	common.OptionMap["ChatLink"] = common.ChatLink
 	common.OptionMap["QuotaPerUnit"] = strconv.FormatFloat(common.QuotaPerUnit, 'f', -1, 64)
 	common.OptionMap["RetryTimes"] = strconv.Itoa(common.RetryTimes)
+	common.OptionMap["AppToken"] = ""
+	common.OptionMap["Uids"] = ""
+	common.OptionMap["NotificationEmail"] = ""
 
 	common.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
@@ -228,6 +231,18 @@ func updateOptionMap(key string, value string) (err error) {
 		common.ChannelDisableThreshold, _ = strconv.ParseFloat(value, 64)
 	case "QuotaPerUnit":
 		common.QuotaPerUnit, _ = strconv.ParseFloat(value, 64)
+	case "AppToken":
+		common.AppToken = value
+	case "Uids":
+		common.Uids = value
 	}
 	return err
+}
+
+// GetOptionFromMap retrieves an option value from the shared OptionMap based on its key.
+func GetOptionFromMap(key string) (string, bool) {
+	common.OptionMapRWMutex.RLock()
+	defer common.OptionMapRWMutex.RUnlock()
+	value, exists := common.OptionMap[key]
+	return value, exists
 }

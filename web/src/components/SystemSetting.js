@@ -32,7 +32,10 @@ const SystemSetting = () => {
         TurnstileSecretKey: '',
         RegisterEnabled: '',
         EmailDomainRestrictionEnabled: '',
-        EmailDomainWhitelist: ''
+        EmailDomainWhitelist: '',
+        EmailNotificationsEnabled: '',
+        WxPusherNotificationsEnabled: '',
+
     });
     const [originInputs, setOriginInputs] = useState({});
     let [loading, setLoading] = useState(false);
@@ -79,6 +82,8 @@ const SystemSetting = () => {
             case 'WeChatAuthEnabled':
             case 'TurnstileCheckEnabled':
             case 'EmailDomainRestrictionEnabled':
+            case 'EmailNotificationsEnabled':
+            case 'WxPusherNotificationsEnabled':
             case 'RegisterEnabled':
                 value = inputs[key] === 'true' ? 'false' : 'true';
                 break;
@@ -128,7 +133,10 @@ const SystemSetting = () => {
             name === 'TurnstileSiteKey' ||
             name === 'TurnstileSecretKey' ||
             name === 'EmailDomainWhitelist' ||
-            name === 'TopupGroupRatio'
+            name === 'TopupGroupRatio' ||
+            name === 'AppToken' || // 新增 AppToken 条件
+            name === 'Uids' ||         // 新增 Uids 条件
+            name === 'NotificationEmail'
         ) {
             setInputs((inputs) => ({...inputs, [name]: value}));
         } else {
@@ -187,6 +195,25 @@ const SystemSetting = () => {
             await updateOption('SMTPToken', inputs.SMTPToken);
         }
     };
+
+    const wxPusher = async () => {
+        // 更新 AppToken 设置
+        if (originInputs['AppToken'] !== inputs.AppToken) {
+            await updateOption('AppToken', inputs.AppToken);
+        }
+        // 更新 Uids 设置
+        if (originInputs['Uids'] !== inputs.Uids) {
+            await updateOption('Uids', inputs.Uids);
+        }
+        // 更新 邮箱
+        if (originInputs['NotificationEmail'] !== inputs.NotificationEmail) {
+            await updateOption('NotificationEmail', inputs.NotificationEmail);
+        }
+        // 处理完毕后更新 originInputs
+        setOriginInputs(inputs);
+    };
+    
+    
 
 
     const submitEmailDomainWhitelist = async () => {
@@ -402,6 +429,51 @@ const SystemSetting = () => {
                         />
                     </Form.Group>
                     <Divider/>
+                    <Header as='h3'>
+                        配置WxPusher消息推送
+                    </Header>
+                    <Form.Group widths={3}>
+                        <Form.Input
+                            label='AppToken'
+                            name='AppToken'
+                            onChange={handleInputChange}
+                            autoComplete='new-password'
+                            value={inputs.AppToken}
+                            placeholder='应用的AppToken'
+                        />
+                        <Form.Input
+                            label='用户的 Uid'
+                            name='Uids'
+                            onChange={handleInputChange}
+                            autoComplete='new-password'
+                            value={inputs.Uids}
+                            placeholder='用户的 Uid'
+                        />
+                        <Form.Input
+                            label='通知邮箱'
+                            name='NotificationEmail'
+                            onChange={handleInputChange}
+                            autoComplete='new-password'
+                            value={inputs.NotificationEmail}
+                            placeholder='通知邮箱'
+                        />
+                    </Form.Group>
+                    <Form.Group inline>
+                    <label>通知设置</label>
+                    <Form.Checkbox
+                        label='启用电子邮件通知'
+                        checked={inputs.EmailNotificationsEnabled === 'true'}
+                        name='EmailNotificationsEnabled'
+                        onChange={handleInputChange}// handleCheckboxChange 是一个处理复选框变化的函数
+                    />
+                    <Form.Checkbox
+                        label='启用WxPusher通知'
+                        checked={inputs.WxPusherNotificationsEnabled === 'true'}
+                        name='WxPusherNotificationsEnabled'
+                        onChange={handleInputChange}
+                    />
+                    </Form.Group>
+                    <Form.Button onClick={wxPusher}>保存 WxPusher 设置</Form.Button>
                     <Header as='h3'>
                         配置邮箱域名白名单
                         <Header.Subheader>用以防止恶意用户利用临时邮箱批量注册</Header.Subheader>

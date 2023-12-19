@@ -253,23 +253,51 @@ func TestChannel(c *gin.Context) {
 var testAllChannelsLock sync.Mutex
 var testAllChannelsRunning bool = false
 
-// disable & notify
+// disableChannel 禁用通道并发送通知
 func disableChannel(channelId int, channelName string, reason string) {
-	if common.RootUserEmail == "" {
-		common.RootUserEmail = model.GetRootUserEmail()
+	notificationEmail := common.OptionMap["NotificationEmail"]
+	if notificationEmail == "" {
+		// 如果没有设置专门的通知邮箱，则尝试获取 RootUserEmail
+		if common.RootUserEmail == "" {
+			common.RootUserEmail = model.GetRootUserEmail()
+		}
+		notificationEmail = common.RootUserEmail
 	}
+
+	// 更新通道状态
 	model.UpdateChannelStatusById(channelId, common.ChannelStatusAutoDisabled)
+
+	// 准备通知内容
 	subject := fmt.Sprintf("通道「%s」（#%d）已被禁用", channelName, channelId)
 	content := fmt.Sprintf("通道「%s」（#%d）已被禁用，原因：%s", channelName, channelId, reason)
-	err := common.SendEmail(subject, common.RootUserEmail, content)
-	if err != nil {
-		common.SysError(fmt.Sprintf("failed to send email: %s", err.Error()))
+
+	// 发送电子邮件通知
+	emailNotifEnabled, _ := strconv.ParseBool(common.OptionMap["EmailNotificationsEnabled"])
+	if emailNotifEnabled {
+		err := common.SendEmail(subject, notificationEmail, content)
+		if err != nil {
+			common.SysError(fmt.Sprintf("failed to send email: %s", err.Error()))
+		}
+	}
+
+	// 发送WxPusher通知
+	wxNotifEnabled, _ := strconv.ParseBool(common.OptionMap["WxPusherNotificationsEnabled"])
+	if wxNotifEnabled {
+		err := SendWxPusherNotification(subject, content)
+		if err != nil {
+			common.SysError(fmt.Sprintf("无法发送WxPusher通知: %s", err))
+		}
 	}
 }
 
 func testAllChannels(notify bool) error {
-	if common.RootUserEmail == "" {
-		common.RootUserEmail = model.GetRootUserEmail()
+	notificationEmail := common.OptionMap["NotificationEmail"]
+	if notificationEmail == "" {
+		// 如果没有设置专门的通知邮箱，则尝试获取 RootUserEmail
+		if common.RootUserEmail == "" {
+			common.RootUserEmail = model.GetRootUserEmail()
+		}
+		notificationEmail = common.RootUserEmail
 	}
 	testAllChannelsLock.Lock()
 	if testAllChannelsRunning {
@@ -327,11 +355,8 @@ func testAllChannels(notify bool) error {
 				// 测试成功且未被标记为禁用，检查是否需要重新启用
 				if channel.Status == common.ChannelStatusAutoDisabled {
 					model.UpdateChannelStatusById(channel.Id, common.ChannelStatusEnabled) // 启用通道
-					subject := fmt.Sprintf("通道「%s」（#%d）已恢复启用", channel.Name, channel.Id)
-					err := common.SendEmail(subject, common.RootUserEmail, subject)
-					if err != nil {
-						common.SysError(fmt.Sprintf("failed to send email: %s", err.Error()))
-					}
+					notifyChannelEnabled(channel)                                          // 发送通知邮箱
+					notifyWxPusherEnabled(channel)                                         // 发送通知wxpusher
 				}
 			}
 			channel.UpdateResponseTime(milliseconds)
@@ -341,9 +366,22 @@ func testAllChannels(notify bool) error {
 		testAllChannelsRunning = false
 		testAllChannelsLock.Unlock()
 		if notify {
-			err := common.SendEmail("通道测试完成", common.RootUserEmail, "通道测试完成，如果没有收到禁用通知，说明所有通道都正常")
-			if err != nil {
-				common.SysError(fmt.Sprintf("failed to send email: %s", err.Error()))
+			// 发送电子邮件通知
+			emailNotifEnabled, _ := strconv.ParseBool(common.OptionMap["EmailNotificationsEnabled"])
+			if emailNotifEnabled {
+				err := common.SendEmail("通道测试完成", notificationEmail, "通道测试完成，如果没有收到禁用通知，说明所有通道都正常")
+				if err != nil {
+					common.SysError(fmt.Sprintf("failed to send email: %s", err.Error()))
+				}
+			}
+
+			// 发送WxPusher通知
+			wxNotifEnabled, _ := strconv.ParseBool(common.OptionMap["WxPusherNotificationsEnabled"])
+			if wxNotifEnabled {
+				err = SendWxPusherNotification("通道测试完成", "通道测试完成，如果没有收到禁用通知，说明所有通道都正常")
+				if err != nil {
+					common.SysError(fmt.Sprintf("无法发送WxPusher通知: %s", err))
+				}
 			}
 		}
 	}()
@@ -407,7 +445,8 @@ func testChannelAndHandleResult(channel *model.Channel, testInterval time.Durati
 	if err == nil && channel.Status == common.ChannelStatusAutoDisabled {
 		// 测试通过，更新通道状态为启用
 		model.UpdateChannelStatusById(channel.Id, common.ChannelStatusEnabled)
-		notifyChannelEnabled(channel) // 发送通知（假设已经实现了这个函数）
+		notifyChannelEnabled(channel)  // 发送通知（假设已经实现了这个函数）
+		notifyWxPusherEnabled(channel) // 发送通知wxpusher
 	} else if err != nil {
 		// 测试失败，记录错误
 		common.SysError(fmt.Sprintf("Error testing channel #%d: %s", channel.Id, err.Error()))
@@ -416,15 +455,34 @@ func testChannelAndHandleResult(channel *model.Channel, testInterval time.Durati
 
 // notifyChannelEnabled发送通道已重新启用的通知
 func notifyChannelEnabled(channel *model.Channel) {
-	if common.RootUserEmail == "" {
-		common.RootUserEmail = model.GetRootUserEmail()
+	emailNotifEnabled, _ := strconv.ParseBool(common.OptionMap["EmailNotificationsEnabled"])
+	if emailNotifEnabled {
+		notificationEmail := common.OptionMap["NotificationEmail"]
+		if notificationEmail == "" {
+			// 如果没有设置专门的通知邮箱，则尝试获取 RootUserEmail
+			if common.RootUserEmail == "" {
+				common.RootUserEmail = model.GetRootUserEmail()
+			}
+			notificationEmail = common.RootUserEmail
+		}
+		subject := fmt.Sprintf("通道「%s」（#%d）已恢复启用", channel.Name, channel.Id)
+		content := "通道成功通过了测试，并已重新启用。"
+		err := common.SendEmail(subject, notificationEmail, content)
+		if err != nil {
+			common.SysError(fmt.Sprintf("failed to send email notification: %s", err.Error()))
+		}
 	}
-	// 实现发送通知的逻辑
-	subject := fmt.Sprintf("通道「%s」（#%d）已恢复启用", channel.Name, channel.Id)
-	content := "通道成功通过了测试，并已重新启用。"
-	err := common.SendEmail(subject, common.RootUserEmail, content)
-	if err != nil {
-		common.SysError(fmt.Sprintf("failed to send email notification: %s", err.Error()))
+}
+
+func notifyWxPusherEnabled(channel *model.Channel) {
+	wxNotifEnabled, _ := strconv.ParseBool(common.OptionMap["WxPusherNotificationsEnabled"])
+	if wxNotifEnabled {
+		subject := fmt.Sprintf("通道「%s」（#%d）已恢复启用", channel.Name, channel.Id)
+		content := "通道成功通过了测试，并已重新启用。"
+		err := SendWxPusherNotification(subject, content)
+		if err != nil {
+			common.SysError(fmt.Sprintf("无法发送WxPusher通知: %s", err))
+		}
 	}
 }
 
