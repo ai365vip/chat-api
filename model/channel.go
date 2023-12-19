@@ -109,6 +109,7 @@ func BatchDeleteChannels(ids []int) error {
 	if err != nil {
 		// 回滚事务
 		tx.Rollback()
+		return err
 	}
 	// 提交事务
 	tx.Commit()

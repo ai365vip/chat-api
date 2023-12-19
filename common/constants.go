@@ -191,6 +191,7 @@ const (
 	ChannelTypeFastGPT        = 22
 	ChannelTypeTencent        = 23
 	ChannelTypeChatBot        = 24
+	ChannelTypeGemini         = 25
 )
 
 var ChannelBaseURLs = []string{
