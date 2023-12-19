@@ -279,9 +279,14 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	fullRequestURL := fmt.Sprintf("%s%s", baseURL, requestURL)
 	log.Printf("fullRequestURL: %s", fullRequestURL)
 
+	var m map[string]interface{}
 	var requestBody io.Reader
+
 	if isModelMapped {
-		jsonStr, err := json.Marshal(midjRequest)
+		// 将 midjRequest 转为一个 map
+		inrec, _ := json.Marshal(midjRequest)
+		json.Unmarshal(inrec, &m)
+		jsonStr, err := json.Marshal(m)
 		if err != nil {
 			return &MidjourneyResponse{
 				Code:        4,
@@ -290,7 +295,28 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		}
 		requestBody = bytes.NewBuffer(jsonStr)
 	} else {
-		requestBody = c.Request.Body
+		// 读取原始请求体
+		bodyBytes, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			// handle error
+		}
+
+		// 将原始请求体的内容反序列化为一个 map
+		json.Unmarshal(bodyBytes, &m)
+
+		updatedBodyBytes, err := json.Marshal(m)
+		if err != nil {
+			return &MidjourneyResponse{
+				Code:        4,
+				Description: "marshal_text_request_failed",
+			}
+		}
+
+		// 创建一个新的请求体
+		requestBody = bytes.NewBuffer(updatedBodyBytes)
+
+		// 重置原始请求体以供后续处理
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	}
 
 	modelRatio := common.GetModelRatio(imageModel)
@@ -323,12 +349,9 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
 	req.Header.Set("Accept", c.Request.Header.Get("Accept"))
-	//mjToken := ""
-	//if c.Request.Header.Get("Authorization") != "" {
-	//	mjToken = strings.Split(c.Request.Header.Get("Authorization"), " ")[1]
-	//}
-	//req.Header.Set("Authorization", "Bearer midjourney-proxy")
 	req.Header.Set("mj-api-secret", strings.Split(c.Request.Header.Get("Authorization"), " ")[1])
+	//req.Header.Set("Authorization", "Bearer midjourney-proxy")
+	//req.Header.Set("mj-api-secret", strings.Split(c.Request.Header.Get("Authorization"), " ")[1])
 	// print request header
 	log.Printf("request header: %s", req.Header)
 	log.Printf("request body: %s", midjRequest.Prompt)

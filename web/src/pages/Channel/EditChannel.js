@@ -199,6 +199,9 @@ const EditChannel = (props) => {
             return;
         }
         let localInputs = {...inputs};
+         // 将 autoBan 状态转换为对应的整数值并添加到 localInputs 中
+        localInputs.auto_ban = autoBan ? 1 : 0;
+        
         if (localInputs.base_url && localInputs.base_url.endsWith('/')) {
             localInputs.base_url = localInputs.base_url.slice(0, localInputs.base_url.length - 1);
         }
@@ -572,12 +575,7 @@ const EditChannel = (props) => {
                             <Checkbox
                                 name='auto_ban'
                                 checked={autoBan}
-                                onChange={
-                                    () => {
-                                        setAutoBan(!autoBan);
-
-                                    }
-                                }
+                                onChange={() => setAutoBan(!autoBan)}
                                 // onChange={handleInputChange}
                             />
                             <Typography.Text
