@@ -396,6 +396,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 		requestBody = bytes.NewBuffer(jsonStr)
 	case APITypeGemini:
 		geminiChatRequest := requestOpenAI2Gemini(textRequest)
+
 		jsonStr, err := json.Marshal(geminiChatRequest)
 		if err != nil {
 			return errorWrapper(err, "marshal_text_request_failed", http.StatusInternalServerError)
@@ -492,14 +493,21 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			}
 		case APITypeTencent:
 			req.Header.Set("Authorization", apiKey)
+		case APITypeGemini:
+			req.Header.Set("Content-Type", "application/json")
 		default:
 			req.Header.Set("Authorization", "Bearer "+apiKey)
 		}
-		req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
-		req.Header.Set("Accept", c.Request.Header.Get("Accept"))
-		if isStream && c.Request.Header.Get("Accept") == "" {
-			req.Header.Set("Accept", "text/event-stream")
+
+		if apiType != APITypeGemini {
+			// 设置公共头部...
+			req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
+			req.Header.Set("Accept", c.Request.Header.Get("Accept"))
+			if isStream && c.Request.Header.Get("Accept") == "" {
+				req.Header.Set("Accept", "text/event-stream")
+			}
 		}
+
 		//req.Header.Set("Connection", c.Request.Header.Get("Connection"))
 		resp, err = httpClient.Do(req)
 

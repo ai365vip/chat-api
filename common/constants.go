@@ -223,4 +223,5 @@ var ChannelBaseURLs = []string{
 	"https://fastgpt.run/api/openapi",   // 22
 	"https://hunyuan.cloud.tencent.com", //23
 	"",                                  //24
+	"",                                  //25
 }
