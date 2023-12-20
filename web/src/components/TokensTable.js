@@ -3,7 +3,7 @@ import {Link} from 'react-router-dom';
 import {API, copy, isAdmin, showError, showSuccess, showWarning, timestamp2string} from '../helpers';
 
 import {ITEMS_PER_PAGE} from '../constants';
-import {renderQuota, stringToColor} from '../helpers/render';
+import {renderQuota, stringToColor,renderGroup} from '../helpers/render';
 import {
     Avatar,
     Tag,
@@ -47,6 +47,7 @@ function renderStatus(status) {
 }
 
 const TokensTable = () => {
+    const isAdminUser = isAdmin();
 
     const link_menu = [
         {node: 'item', key: 'next', name: 'ChatGPT Next Web', onClick: () => {onOpenLink('next')}},
@@ -58,6 +59,29 @@ const TokensTable = () => {
         {
             title: '名称',
             dataIndex: 'name',
+            render: (text, record, dataIndex) => {
+                return (
+                        <div>
+                            <Tag onClick={async () => {
+                                await copyText(text);
+                            }}>
+                                {text}
+                            </Tag>
+                        </div>
+                );
+            },
+        },  
+        isAdminUser && {
+            title: '分组',
+            dataIndex: 'group',
+            key: 'group',
+            render: (text, record, index) => {
+                return (
+                    <div>
+                        {renderGroup(text)}
+                    </div>
+                );
+            },
         },
         {
             title: '状态',
@@ -192,7 +216,8 @@ const TokensTable = () => {
                 </div>
             ),
         },
-    ];
+    ].filter(Boolean);
+    
 
     const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
     const [showEdit, setShowEdit] = useState(false);
@@ -204,8 +229,6 @@ const TokensTable = () => {
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchToken, setSearchToken] = useState('');
     const [searching, setSearching] = useState(false);
-    const [showTopUpModal, setShowTopUpModal] = useState(false);
-    const [targetTokenIdx, setTargetTokenIdx] = useState(0);
     const [editingToken, setEditingToken] = useState({
         id: undefined,
     });

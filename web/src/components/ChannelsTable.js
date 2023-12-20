@@ -233,6 +233,7 @@ const ChannelsTable = () => {
     const [channelCount, setChannelCount] = useState(pageSize);
     const [groupOptions, setGroupOptions] = useState([]);
     const [showEdit, setShowEdit] = useState(false);
+    const [isFiltering, setIsFiltering] = useState(false);
     const [selectedChannels, setSelectedChannels] = useState(new Set());
     const [gptVersion, setGptVersion] = useState('gpt-3.5-turbo');
     const [editingChannel, setEditingChannel] = useState({
@@ -420,33 +421,36 @@ const ChannelsTable = () => {
     };
 
     const searchChannels = async (searchKeyword, searchGroup) => {
-        if (searchKeyword === '' && searchGroup === '') {
-            // 如果关键词为空，则载入全部渠道
-            await loadChannels(0, pageSize, idSort);
-            setActivePage(1);
-            return;
-        }
         setSearching(true);
     
-        // 动态构建查询参数字符串
-        let queryParameters = `?keyword=${encodeURIComponent(searchKeyword)}`;
-        if (searchGroup) {
-            queryParameters += `&group=${encodeURIComponent(searchGroup)}`;
+        let queryParameters = '';
+        if (searchKeyword || searchGroup) {
+            setIsFiltering(true);
+            queryParameters += `?keyword=${encodeURIComponent(searchKeyword)}`;
+            if (searchGroup) {
+                queryParameters += `&group=${encodeURIComponent(searchGroup)}`;
+            }
+        } else {
+            setIsFiltering(false); // 没有筛选条件，不处于筛选模式
         }
     
-        // 使用动态构建的查询参数字符串发起 API 请求
         const res = await API.get(`/api/channel/search${queryParameters}`);
         const {success, message, data} = res.data;
     
         if (success) {
-            setChannels(data);  // 设置检索到的渠道
-            setActivePage(1);  // 重置为第一页
+            setChannelFormat(data); // 设置渠道列表
+            if (!isFiltering) {
+                setChannelCount(data.length); // 更新总数以反映筛选后的结果
+            }
+            setSelectedChannels(new Set()); // 清空之前的选择
         } else {
             showError(message);
         }
     
         setSearching(false);
     };
+    
+    
   
 
     const testChannel = async (record) => {
@@ -702,25 +706,37 @@ const ChannelsTable = () => {
                 */}
 
             <Table
-              rowSelection={{
-                  onChange: (selectedRowKeys) => {
-                      setSelectedChannels(new Set(selectedRowKeys));
-                  },
-                  selectedRowKeys: Array.from(selectedChannels),
-              }}
-              columns={columns} dataSource={pageData} pagination={{
-                currentPage: activePage,
-                pageSize: pageSize,
-                total: channelCount,
-                pageSizeOpts: [10, 20, 50, 100,200],
-                showSizeChanger: true,
-                formatPageText:(page) => '',
-                onPageSizeChange: (size) => {
-                    handlePageSizeChange(size).then()
-                },
-                onPageChange: handlePageChange,
-            }} loading={loading} onRow={handleRow}/>
-            <div style={{display: isMobile()?'':'flex', marginTop: isMobile()?0:-45, zIndex: 999, position: 'relative', pointerEvents: 'none'}}>
+                rowSelection={{
+                    onChange: (selectedRowKeys) => {
+                        setSelectedChannels(new Set(selectedRowKeys));
+                    },
+                    selectedRowKeys: Array.from(selectedChannels),
+                }}
+                columns={columns}
+                dataSource={isFiltering ? channels : channels.slice((activePage - 1) * pageSize, activePage * pageSize)}
+                loading={loading}
+                pagination={isFiltering ? false : {
+                    currentPage: activePage,
+                    pageSize: pageSize,
+                    total: channelCount,
+                    pageSizeOpts: [10, 20, 50, 100,200],
+                    showSizeChanger: true,
+                    formatPageText:(page) => '',
+                    onPageSizeChange: (size) => {
+                        handlePageSizeChange(size).then()
+                    },
+                    onPageChange: handlePageChange,
+                    }}
+                onRow={handleRow}
+            />
+            {isFiltering && (
+                <div style={{ paddingTop: '10px' }}>
+                    <Typography.Text>
+                        共 {channels.length} 条结果
+                    </Typography.Text>
+                </div>
+            )}
+            <div style={{display: isMobile()?'':'flex', marginTop: isFiltering ? '10px' : (isMobile() ? '0' : '-45px'), zIndex: 999, position: 'relative', pointerEvents: 'none'}}>
                 <Space style={{pointerEvents: 'auto'}}>
                     <Button theme='light' type='primary' style={{marginRight: 8}} onClick={
                         () => {
@@ -755,7 +771,7 @@ const ChannelsTable = () => {
                     </Popconfirm>
                     <Button theme='light' type='danger' style={{marginRight: 8}} onClick={deleteSelectedChannels} >删除选中</Button>
 
-                    <Button theme='light' type='primary' style={{marginRight: 8}} onClick={testSelectedChannels}>测试选中</Button>
+                    {/*<Button theme='light' type='primary' style={{marginRight: 8}} onClick={testSelectedChannels}>测试选中</Button>*/}
                     <Button theme='light' type='primary' style={{marginRight: 8}} onClick={refresh}>刷新</Button>
                 </Space>
             </div>
