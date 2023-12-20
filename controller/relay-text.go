@@ -274,7 +274,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	}
 	preConsumedTokens := common.PreConsumedQuota
 	if textRequest.MaxTokens != 0 {
-		preConsumedTokens = promptTokens + textRequest.MaxTokens
+		preConsumedTokens = promptTokens + int(textRequest.MaxTokens)
 	}
 	for _, message := range textRequest.Messages {
 		usertext = string(message.Content)
