@@ -46,8 +46,9 @@ func GetProLogs(c *gin.Context) {
 	tokenName := c.Query("token_name")
 	modelName := c.Query("model_name")
 	channel, _ := strconv.Atoi(c.Query("channel"))
+
 	// 调用已经修改过的 model.GetProLogs 函数，它现在返回日志和总行数
-	logs, total, err := model.GetProLogs(logType, startTimestamp, endTimestamp, modelName, username, tokenName, channel)
+	logs, total, err := model.GetProLogs(model.DB, logType, startTimestamp, endTimestamp, modelName, username, tokenName, channel)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,

@@ -132,92 +132,93 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	return logs, err
 }
 
-func GetProLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (logs []*Logs, total int64, err error) {
-	// 构建原始查询基础...
-	var queryBase = `
-        FROM
-            logs
-        WHERE
-            1=1
-    `
+func GetProLogs(db *gorm.DB, logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (logs []*Logs, total int64, err error) {
+	// 确定当前使用的数据库方言
+	dialect := db.Dialector.Name()
 
-	var queryParams []interface{}
-	var groupByFields []string // 使用一个切片来存储需要分组的字段列表
+	// 构建 SELECT 子句和 GROUP BY 子句，这里要区分不同的数据库
+	var selectClause, groupByClause string
+	switch dialect {
+	case "postgres":
+		// PostgreSQL 方言的日期格式化
+		selectClause = "TO_CHAR(TO_TIMESTAMP(created_at), 'YYYY-MM-DD') AS created_data, COUNT(id) AS cishu, SUM(prompt_tokens) AS prompt_tokens, SUM(completion_tokens) AS completion_tokens, SUM(quota) AS quota"
+		groupByClause = "TO_CHAR(TO_TIMESTAMP(created_at), 'YYYY-MM-DD')"
+	case "sqlite":
+		// SQLite 方言的日期格式化
+		selectClause = "DATE(datetime(created_at, 'unixepoch')) AS created_data, COUNT(id) AS cishu, SUM(prompt_tokens) AS prompt_tokens, SUM(completion_tokens) AS completion_tokens, SUM(quota) AS quota"
+		groupByClause = "DATE(datetime(created_at, 'unixepoch'))"
+	case "mysql":
+		// MySQL 方言的日期格式化
+		selectClause = "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') AS created_data, COUNT(id) AS cishu, SUM(prompt_tokens) AS prompt_tokens, SUM(completion_tokens) AS completion_tokens, SUM(quota) AS quota"
+		groupByClause = "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d')"
+	default:
+		return nil, 0, fmt.Errorf("不支持的数据库方言: %s", dialect)
+	}
+
+	query := db.Model(&Log{})
 
 	if logType != LogTypeUnknown {
-		queryBase += " AND type = ?"
-		queryParams = append(queryParams, logType)
+		query = query.Where("type = ?", logType)
 	}
 	if modelName != "" {
-		queryBase += " AND model_name = ?"
-		queryParams = append(queryParams, modelName)
-		groupByFields = append(groupByFields, "model_name") // 分组字段
+		query = query.Where("model_name = ?", modelName)
 	}
 	if username != "" {
-		queryBase += " AND username = ?"
-		queryParams = append(queryParams, username)
-		groupByFields = append(groupByFields, "username") // 分组字段
+		query = query.Where("username = ?", username)
 	}
 	if tokenName != "" {
-		queryBase += " AND token_name = ?"
-		queryParams = append(queryParams, tokenName)
-		groupByFields = append(groupByFields, "token_name") // 分组字段
+		query = query.Where("token_name = ?", tokenName)
 	}
 	if startTimestamp != 0 {
-		queryBase += " AND created_at >= ?"
-		queryParams = append(queryParams, startTimestamp)
+		query = query.Where("created_at >= ?", startTimestamp)
 	}
 	if endTimestamp != 0 {
-		queryBase += " AND created_at <= ?"
-		queryParams = append(queryParams, endTimestamp)
+		query = query.Where("created_at <= ?", endTimestamp)
 	}
 	if channel != 0 {
-		queryBase += " AND channel_id = ?"
-		queryParams = append(queryParams, channel)
-		groupByFields = append(groupByFields, "channel_id") // 分组字段
+		query = query.Where("channel_id = ?", channel)
 	}
 
-	// 构建 SELECT 和 GROUP BY 子句
-	selectClause := "SELECT DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL 12 HOUR), '%Y-%m-%d') AS created_data,"
-	groupByClause := "GROUP BY created_data"
-	for _, field := range groupByFields {
-		selectClause += fmt.Sprintf(" %s,", field)
-		groupByClause += fmt.Sprintf(", %s", field)
+	// 定义结果结构体，包含了 GROUP BY 和 SELECT 语句中所需字段
+	type groupResult struct {
+		CreatedData      string
+		Cishu            int
+		PromptTokens     int
+		CompletionTokens int
+		Quota            int
 	}
 
-	// 查询日志数据...
-	dataQuery := selectClause + `
-        COUNT(id) AS cishu,
-        SUM(prompt_tokens) AS prompt_tokens,
-        SUM(completion_tokens) AS completion_tokens,
-        SUM(quota) AS quota
-    ` + queryBase + `
-    ` + groupByClause + `
-    ORDER BY created_data DESC, quota DESC
-    `
+	var results []groupResult
 
-	tx := DB.Raw(dataQuery, queryParams...).Scan(&logs)
-	err = tx.Error
+	// 执行 GROUP BY 查询
+	err = query.Select(selectClause).Group(groupByClause).Order("created_data DESC, quota DESC").Scan(&results).Error
 	if err != nil {
-		fmt.Printf("查询日志出错: %+v\n", err)
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("查询日志出错: %+v", err)
 	}
 
-	// 查询 dataQuery 结果的总条数
-	totalQuery := `SELECT COUNT(*) AS count FROM (` + dataQuery + `) AS a`
+	// 转换 results 到 Logs 结构体切片
+	for _, result := range results {
+		log := &Logs{
+			CreatedData:      result.CreatedData,
+			Cishu:            result.Cishu,
+			PromptTokens:     result.PromptTokens,
+			CompletionTokens: result.CompletionTokens,
+			Quota:            result.Quota,
+			// 其他字段根据需要填充
+		}
+		logs = append(logs, log)
+	}
 
-	var totalResult struct {
-		Count int64
+	const secondsInDay = 24 * 60 * 60
+	totalDays := (endTimestamp - startTimestamp) / secondsInDay
+	if (endTimestamp-startTimestamp)%secondsInDay != 0 {
+		totalDays++ // 对于不满一天的部分也计为一天
 	}
-	err = DB.Raw(totalQuery, queryParams...).Scan(&totalResult).Error
-	if err != nil {
-		fmt.Printf("查询 dataQuery 结果的总条数出错: %+v\n", err)
-		return nil, 0, err
-	}
-	total = totalResult.Count
+
+	// 将计算出的总天数赋值给 total
+	total = totalDays
 
 	return logs, total, nil
-
 }
 
 func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int) (logs []*Log, err error) {

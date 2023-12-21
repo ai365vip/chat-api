@@ -177,7 +177,7 @@ const LogsTable = () => {
     const isAdminUser = isAdmin();
     let now = new Date();
     let sevenDaysAgo = new Date(); // 创建一个新的日期对象表示七天前
-    sevenDaysAgo.setDate(now.getDate() - 7); // 将这个日期设置为七天前
+    sevenDaysAgo.setDate(now.getDate() - 4); // 将这个日期设置为七天前
     const [inputs, setInputs] = useState({
         username: '',
         token_name: '',
@@ -254,12 +254,6 @@ const LogsTable = () => {
         }
     };
 
-    const setLogsFormat = (logs) => {
-
-        setLogs(logs); // 假设这行代码是用来更新你的状态管理
-
-    }
-
 
     const [hasMoreLogs, setHasMoreLogs] = useState(true);
     const loadLogs = async (startIdx) => {
@@ -271,8 +265,6 @@ const LogsTable = () => {
         let localEndTimestamp = Date.parse(end_timestamp) / 1000;
         if (isAdminUser) {
             url = `/api/logall/?p=${startIdx}&type=${logType}&username=${username}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&channel=${channel}`;
-        } else {
-            url = `/api/log/self/?p=${startIdx}&type=${logType}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
         }
         try {
             const res = await API.get(url);
