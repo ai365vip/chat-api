@@ -80,35 +80,35 @@ var ModelRatio = map[string]float64{
 }
 
 var ModelRatio2 = map[string]float64{
-	"gpt-4-gizmo-*":             200, // $0.2 / 1次
-	"gpt-4-all":                 200,
-	"gpt-4":                     200,
-	"gpt-4-0314":                200,
-	"gpt-4-0613":                200,
-	"gpt-4-32k":                 400, // $0.4 / 1次
-	"gpt-4-32k-0314":            400,
-	"gpt-4-32k-0613":            400,
-	"gpt-4-1106-preview":        100, // $0.4 / 1次
-	"gpt-4-vision":              100,
-	"gpt-4-vision-preview":      100, // $0.01 / 1K tokens
-	"gpt-4-1106-vision-preview": 100, // $0.01 / 1K tokens
-	"gpt-3.5-turbo":             1,   // $0.001 / 1次
-	"gpt-3.5-turbo-0301":        1,
-	"gpt-3.5-turbo-0613":        1,
-	"gpt-3.5-turbo-16k":         2,
-	"gpt-3.5-turbo-16k-0613":    2,
-	"gpt-3.5-turbo-instruct":    1,
-	"gpt-3.5-turbo-1106":        1,
-	"whisper-1":                 200, // $0.2 / 1次
-	"tts-1":                     100, // $0.1 / 1次
-	"tts-1-1106":                100,
-	"tts-1-hd":                  200,
-	"tts-1-hd-1106":             200,
-	"dall-e-2":                  200,
-	"dall-e-3":                  200,
-	"claude-instant-1":          100,
-	"claude-2":                  100,
-	"gemini-pro":                1, // $0.001 / 1次
+	"gpt-4-gizmo-*":             0.2, 
+	"gpt-4-all":                 0.2,
+	"gpt-4":                     0.2,
+	"gpt-4-0314":                0.2,
+	"gpt-4-0613":                0.2,
+	"gpt-4-32k":                 0.4, 
+	"gpt-4-32k-0314":            0.4,
+	"gpt-4-32k-0613":            0.4,
+	"gpt-4-1106-preview":        0.1,
+	"gpt-4-vision":              0.1,
+	"gpt-4-vision-preview":      0.1, 
+	"gpt-4-1106-vision-preview": 0.1, 
+	"gpt-3.5-turbo":             0.001,  
+	"gpt-3.5-turbo-0301":        0.001,
+	"gpt-3.5-turbo-0613":        0.001,
+	"gpt-3.5-turbo-16k":         0.002,
+	"gpt-3.5-turbo-16k-0613":    0.002,
+	"gpt-3.5-turbo-instruct":    0.001,
+	"gpt-3.5-turbo-1106":        0.001,
+	"whisper-1":                 0.2,
+	"tts-1":                     0.1,
+	"tts-1-1106":                0.1,
+	"tts-1-hd":                  0.2,
+	"tts-1-hd-1106":             0.2,
+	"dall-e-2":                  0.2,
+	"dall-e-3":                  0.2,
+	"claude-instant-1":          0.1,
+	"claude-2":                  0.1,
+	"gemini-pro":                0.001,
 }
 
 func ModelRatioJSONString() string {
