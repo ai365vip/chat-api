@@ -1,4 +1,4 @@
-name: Publish Docker image (arm64)
+name: Publish Docker image (new-api-v)
 
 on:
   push:
