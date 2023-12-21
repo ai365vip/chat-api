@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Input, Label, Message, Popup,Dropdown} from 'semantic-ui-react';
+import { Popup} from 'semantic-ui-react';
 
 import {Link} from 'react-router-dom';
 import {
@@ -29,7 +29,8 @@ import {
     Switch,
     Typography, 
     InputNumber,
-    Select
+    Select,
+    AutoComplete
     
 } from "@douyinfe/semi-ui";
 import EditChannel from "../pages/Channel/EditChannel";
@@ -240,19 +241,11 @@ const ChannelsTable = () => {
         id: undefined,
     });
 
-
-    const [gptOptions, setGptOptions] = useState([
-      // 初始的GPT选项列表
-      { key: 'gpt-3.5-turbo', text: 'GPT-3.5', value: 'gpt-3.5-turbo' },
-      { key: 'gpt-4', text: 'GPT-4', value: 'gpt-4' },
-      { key: 'gpt-4-1106-preview', text: 'GPT-4-1106', value: 'gpt-4-1106-preview' },
-      // ...其他初始选项...
-    ]);
-  
     
-    const onGptVersionChange = (e, { value }) => {
-        setGptVersion(value); // 更新当前选中的GPT版本
+    const onGptVersionChange = (value) => {
+        setGptVersion(value); // 直接使用传入的 value 更新状态
     };
+
 
     const removeRecord = id => {
         let newDataSource = [...channels];
@@ -668,21 +661,24 @@ const ChannelsTable = () => {
                         <Form.Select field="group" label='分组' optionList={groupOptions} onChange={(v) => {
                             setSearchGroup(v)
                             searchChannels(searchKeyword, v)
+                            
                         }}/>
-                        <Dropdown
-                            selection
-                            search
-                            options={gptOptions}
-                            value={gptVersion} // 使用 value 而不是 defaultValue 来确保 Dropdown 反映当前状态
-                            onChange={onGptVersionChange}
-                            allowAdditions
-                            onAddItem={(e, { value }) => {
-                                const newOption = { key: value, text: value, value };
-                                setGptOptions(prevOptions => [...prevOptions, newOption]);
-                                setGptVersion(value); // 添加项时也更新当前选中的GPT版本
-                            }}
-                            style={{ alignItems: 'center', display: 'inline-flex', height: '38px' }}
-                        />
+                        <Space>
+                            <Typography.Text>测试模型：</Typography.Text>
+                            <AutoComplete
+                                placeholder={'选择或输入 GPT 版本'}
+                                onChange={onGptVersionChange}
+                                value={gptVersion}
+                                data={[
+                                    {value: 'gpt-3.5-turbo', label: 'gpt-3.5-turbo'},
+                                    {value: 'gpt-3.5-turbo-1106', label: 'gpt-3.5-turbo-1106'},
+                                    {value: 'gpt-3.5-turbo-16k', label: 'gpt-3.5-turbo-16k'},
+                                    {value: 'gpt-4', label: 'gpt-4'},
+                                    {value: 'gpt-4-1106-preview', label: 'gpt-4-1106-preview'},
+                                ]}
+                            />
+                        </Space>
+
 
                     </Space>
                 </div>
