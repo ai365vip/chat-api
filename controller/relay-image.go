@@ -133,7 +133,7 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 		modelRatio = common.GetModelRatio2(imageRequest.Model)
 		groupRatio = common.GetGroupRatio(group)
 		ratio = modelRatio * groupRatio
-		quota = int(ratio * 1 * 500)
+		quota = int(ratio * 1 * 500000)
 	} else {
 		quota = int(ratio*sizeRatio*qualityRatio*1000) * imageRequest.N
 	}
@@ -185,7 +185,7 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 				modelRatioString := ""
 				if token.BillingEnabled {
 					// 当启用计费时，显示按次倍率
-					modelRatioString = fmt.Sprintf("模型按次倍率 %.2f", modelRatio)
+					modelRatioString = fmt.Sprintf("按次计费")
 				} else {
 					// 否则，显示模型倍率
 					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio) // 注意这里使用了另一个变量 ratio，需要确保其在此处上下文中是有效的

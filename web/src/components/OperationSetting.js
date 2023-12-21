@@ -3,35 +3,35 @@ import {Divider, Form, Grid, Header,Popup } from 'semantic-ui-react';
 import {API, showError, showSuccess, timestamp2string, verifyJSON} from '../helpers';
 
 const DEFAULT_MODEL_RATIO2 = {
-  "gpt-4-gizmo-*":             200, 
-	"gpt-4-all":                 200,
-	"gpt-4":                     200,
-	"gpt-4-0314":                200,
-	"gpt-4-0613":                200,
-	"gpt-4-32k":                 400, 
-	"gpt-4-32k-0314":            400,
-	"gpt-4-32k-0613":            400,
-	"gpt-4-1106-preview":        100,
-	"gpt-4-vision":              100,
-	"gpt-4-vision-preview":      100, 
-	"gpt-4-1106-vision-preview": 100, 
-	"gpt-3.5-turbo":             1,  
-	"gpt-3.5-turbo-0301":        1,
-	"gpt-3.5-turbo-0613":        1,
-	"gpt-3.5-turbo-16k":         2,
-	"gpt-3.5-turbo-16k-0613":    2,
-	"gpt-3.5-turbo-instruct":    1,
-	"gpt-3.5-turbo-1106":        1,
-	"whisper-1":                 200,
-	"tts-1":                     100,
-	"tts-1-1106":                100,
-	"tts-1-hd":                  200,
-	"tts-1-hd-1106":             200,
-	"dall-e-2":                  200,
-	"dall-e-3":                  200,
-	"claude-instant-1":          100,
-	"claude-2":                  100,
-	"gemini-pro":                1,
+  "gpt-4-gizmo-*":             0.2, 
+	"gpt-4-all":                 0.2,
+	"gpt-4":                     0.2,
+	"gpt-4-0314":                0.2,
+	"gpt-4-0613":                0.2,
+	"gpt-4-32k":                 0.4, 
+	"gpt-4-32k-0314":            0.4,
+	"gpt-4-32k-0613":            0.4,
+	"gpt-4-1106-preview":        0.1,
+	"gpt-4-vision":              0.1,
+	"gpt-4-vision-preview":      0.1, 
+	"gpt-4-1106-vision-preview": 0.1, 
+	"gpt-3.5-turbo":             0.001,  
+	"gpt-3.5-turbo-0301":        0.001,
+	"gpt-3.5-turbo-0613":        0.001,
+	"gpt-3.5-turbo-16k":         0.002,
+	"gpt-3.5-turbo-16k-0613":    0.002,
+	"gpt-3.5-turbo-instruct":    0.001,
+	"gpt-3.5-turbo-1106":        0.001,
+	"whisper-1":                 0.2,
+	"tts-1":                     0.1,
+	"tts-1-1106":                0.1,
+	"tts-1-hd":                  0.2,
+	"tts-1-hd-1106":             0.2,
+	"dall-e-2":                  0.2,
+	"dall-e-3":                  0.2,
+	"claude-instant-1":          0.1,
+	"claude-2":                  0.1,
+	"gemini-pro":                0.001,
 };
 
 
@@ -389,10 +389,10 @@ const OperationSetting = () => {
                     <Popup
                           trigger={
                             <label  style={{ fontWeight: 'bold' }}>
-                              模型按次倍率
+                              模型按次计费
                             </label>
                           }
-                          content='1=$0.001，未设置的模型默认20，MJ不需要在这里配置'
+                          content='1=$1，未设置的模型默认0.02，MJ不需要在这里配置'
                           basic
                         />
                     <Form.Group widths='equal'> 
