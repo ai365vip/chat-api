@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/model"
@@ -171,6 +172,7 @@ func DeleteToken(c *gin.Context) {
 func UpdateToken(c *gin.Context) {
 	userId := c.GetInt("id")
 	statusOnly := c.Query("status_only")
+	billingStrategyOnly := c.Query("billing_strategy_only") // 新增查询参数
 	token := model.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
@@ -213,6 +215,8 @@ func UpdateToken(c *gin.Context) {
 	}
 	if statusOnly != "" {
 		cleanToken.Status = token.Status
+	} else if billingStrategyOnly != "" {
+		cleanToken.BillingEnabled = token.BillingEnabled
 	} else {
 		// If you add more fields, please also update token.Update()
 		cleanToken.Name = token.Name
@@ -235,4 +239,64 @@ func UpdateToken(c *gin.Context) {
 		"data":    cleanToken,
 	})
 	return
+}
+
+func UpdateTokenBillingStrategy(c *gin.Context) {
+	userId := c.GetInt("id")
+	tokenId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid token ID",
+			"data":    nil,
+		})
+		return
+	}
+	log.Println(userId, tokenId)
+
+	// 使用Token结构体的部分实例来绑定billing_enabled字段
+	var partialToken struct {
+		BillingEnabled int `json:"billing_enabled"` // 前端传来的是1或0
+	}
+	err = c.ShouldBindJSON(&partialToken)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request body",
+		})
+		return
+	}
+
+	// 获取token对象，确认它确实属于操作的用户
+	cleanToken, err := model.GetTokenByIds(tokenId, userId)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "Token not found",
+		})
+		return
+	}
+
+	// 将整数值转换为布尔值
+	billingEnabled := false
+	if partialToken.BillingEnabled == 1 {
+		billingEnabled = true
+	}
+
+	// 更新BillingEnabled字段
+	cleanToken.BillingEnabled = billingEnabled
+	err = cleanToken.UpdateTokenBilling()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to update billing strategy",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Billing strategy updated successfully",
+		"data":    cleanToken,
+	})
 }

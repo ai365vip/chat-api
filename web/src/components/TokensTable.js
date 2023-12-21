@@ -14,7 +14,8 @@ import {
     Modal,
     Popconfirm,
     SplitButtonGroup,
-    Dropdown
+    Dropdown,
+    Select
 } from "@douyinfe/semi-ui";
 
 import {
@@ -61,6 +62,7 @@ const TokensTable = () => {
             dataIndex: 'name',
             render: (text, record, dataIndex) => {
                 return (
+                    
                         <div>
                             <Tag onClick={async () => {
                                 await copyText(text);
@@ -68,9 +70,10 @@ const TokensTable = () => {
                                 {text}
                             </Tag>
                         </div>
+                     
                 );
             },
-        },  
+        },        
         isAdminUser && {
             title: '分组',
             dataIndex: 'group',
@@ -140,6 +143,21 @@ const TokensTable = () => {
             },
         },
         {
+            title: '计费策略',
+            dataIndex: 'billing_enabled',
+            render: (text, record, index) => {
+                const defaultValue = text ? "1" : "0";
+        
+                return (
+                    <Select defaultValue={defaultValue} style={{ width: 120 }}
+                            onChange={(value) => updateTokenBillingStrategy(value === "1", record.id)}>
+                        <Select.Option value="0">按Token计费</Select.Option>
+                        <Select.Option value="1">按次计费</Select.Option>
+                    </Select>
+                );
+            },
+        },                                  
+        {
             title: '',
             dataIndex: 'operate',
             render: (text, record, index) => (
@@ -207,6 +225,7 @@ const TokensTable = () => {
                                 }
                             }>启用</Button>
                     }
+                    
                     <Button theme='light' type='tertiary' style={{marginRight: 1}} onClick={
                         () => {
                             setEditingToken(record);
@@ -233,7 +252,6 @@ const TokensTable = () => {
         id: undefined,
     });
 
-
     const closeEdit = () => {
         setShowEdit(false);
     }
@@ -246,6 +264,7 @@ const TokensTable = () => {
             setTokenCount(tokens.length);
         }
     }
+
 
     let pageData = tokens.slice((activePage - 1) * pageSize, activePage * pageSize);
     const loadTokens = async (startIdx) => {
@@ -339,6 +358,33 @@ const TokensTable = () => {
         }
     };
 
+    // 更新令牌的收费策略
+    const updateTokenBillingStrategy = async (billingEnabled, id) => {
+        setLoading(true);
+        try {
+          const res = await API.put(`/api/token/${id}/billing_strategy`, {
+            billing_enabled: billingEnabled ? 1 : 0, 
+          });
+      
+          // 确保响应存在并且有data属性
+          if (res && res.data) {
+            if (res.data.success) {
+              showSuccess('计费策略已更新');
+              refresh(); // 重新加载数据以反映更改
+            } else {
+              showError(res.data.message);
+            }
+          } else {
+            // 如果没有data属性，抛出错误，走到catch块
+            throw new Error('Invalid response structure');
+          }
+        } catch (error) {
+          showError(`更新失败: ${error.message ?? error.toString()}`);
+        } finally {
+          setLoading(false);
+        }
+    };
+      
     const manageToken = async (id, action, record) => {
         setLoading(true);
         let data = {id};

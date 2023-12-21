@@ -445,7 +445,7 @@ func testChannelAndHandleResult(channel *model.Channel, testInterval time.Durati
 	if err == nil && channel.Status == common.ChannelStatusAutoDisabled {
 		// 测试通过，更新通道状态为启用
 		model.UpdateChannelStatusById(channel.Id, common.ChannelStatusEnabled)
-		notifyChannelEnabled(channel)  // 发送通知（假设已经实现了这个函数）
+		notifyChannelEnabled(channel)  // 发送通知
 		notifyWxPusherEnabled(channel) // 发送通知wxpusher
 	} else if err != nil {
 		// 测试失败，记录错误

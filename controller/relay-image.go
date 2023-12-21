@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/model"
@@ -122,8 +123,20 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 			qualityRatio = 1.5
 		}
 	}
+	quota := 0
+	token, err := model.GetTokenById(tokenId)
+	if err != nil {
+		log.Println("获取token出错:", err)
+	}
 
-	quota := int(ratio*sizeRatio*qualityRatio*1000) * imageRequest.N
+	if token.BillingEnabled {
+		modelRatio = common.GetModelRatio2(imageRequest.Model)
+		groupRatio = common.GetGroupRatio(group)
+		ratio = modelRatio * groupRatio
+		quota = int(ratio * 1 * 500)
+	} else {
+		quota = int(ratio*sizeRatio*qualityRatio*1000) * imageRequest.N
+	}
 
 	if consumeQuota && userQuota-quota < 0 {
 		return errorWrapper(errors.New("user quota is not enough"), "insufficient_user_quota", http.StatusForbidden)
@@ -169,7 +182,15 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 			}
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
-				multiplier := fmt.Sprintf("模型倍率 %.2f，分组倍率 %.2f", modelRatio, groupRatio)
+				modelRatioString := ""
+				if token.BillingEnabled {
+					// 当启用计费时，显示按次倍率
+					modelRatioString = fmt.Sprintf("模型按次倍率 %.2f", modelRatio)
+				} else {
+					// 否则，显示模型倍率
+					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio) // 注意这里使用了另一个变量 ratio，需要确保其在此处上下文中是有效的
+				}
+				multiplier := fmt.Sprintf(" %s，分组倍率 %.2f", modelRatioString, groupRatio)
 				logContent := fmt.Sprintf(" ")
 				model.RecordConsumeLog(ctx, userId, channelId, 0, 0, imageRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota)
 				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)

@@ -283,7 +283,21 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	modelRatio := common.GetModelRatio(textRequest.Model)
 	groupRatio := common.GetGroupRatio(group)
 	ratio := modelRatio * groupRatio
-	preConsumedQuota := int(float64(preConsumedTokens) * ratio)
+	preConsumedQuota := 0
+
+	token, err := model.GetTokenById(tokenId)
+	if err != nil {
+		log.Println("获取token出错:", err)
+	}
+	if token.BillingEnabled {
+		modelRatio = common.GetModelRatio2(textRequest.Model)
+		groupRatio = common.GetGroupRatio(group)
+		ratio = modelRatio * groupRatio
+		preConsumedQuota = int(ratio * 1 * 500)
+	} else {
+		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+	}
+
 	userQuota, err := model.CacheGetUserQuota(userId)
 	if err != nil {
 		return errorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
@@ -546,13 +560,25 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	defer func(ctx context.Context) {
 		// c.Writer.Flush()
 		go func() {
+
 			quota := 0
+			token, err := model.GetTokenById(tokenId)
+			if err != nil {
+				log.Println("获取token出错:", err)
+			}
 			completionRatio := common.GetCompletionRatio(textRequest.Model)
 			promptTokens = textResponse.Usage.PromptTokens
 			completionTokens = textResponse.Usage.CompletionTokens
-
 			quota = promptTokens + int(float64(completionTokens)*completionRatio)
-			quota = int(float64(quota) * ratio)
+			if token.BillingEnabled {
+				modelRatio = common.GetModelRatio2(textRequest.Model)
+				groupRatio = common.GetGroupRatio(group)
+				ratio = modelRatio * groupRatio
+				quota = int(ratio * 1 * 500)
+			} else {
+				quota = int(float64(quota) * ratio)
+			}
+
 			if ratio != 0 && quota <= 0 {
 				quota = 1
 			}
@@ -563,7 +589,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 				quota = 0
 			}
 			quotaDelta := quota - preConsumedQuota
-			err := model.PostConsumeTokenQuota(tokenId, userQuota, quotaDelta, preConsumedQuota, true)
+			err = model.PostConsumeTokenQuota(tokenId, userQuota, quotaDelta, preConsumedQuota, true)
 			if err != nil {
 				common.LogError(ctx, "error consuming token remain quota: "+err.Error())
 			}
@@ -573,7 +599,15 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			}
 			// record all the consume log even if quota is 0
 			useTimeSeconds := time.Now().Unix() - startTime.Unix()
-			multiplier := fmt.Sprintf("模型倍率 %.2f，分组倍率 %.2f，用时 %d秒", modelRatio, groupRatio, useTimeSeconds)
+			modelRatioString := ""
+			if token.BillingEnabled {
+				// 当启用计费时，显示按次倍率
+				modelRatioString = fmt.Sprintf("模型按次倍率 %.2f", modelRatio)
+			} else {
+				// 否则，显示模型倍率
+				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio) // 注意这里使用了另一个变量 ratio，需要确保其在此处上下文中是有效的
+			}
+			multiplier := fmt.Sprintf("%s，分组倍率 %.2f，用时 %d秒", modelRatioString, groupRatio, useTimeSeconds)
 			logContent := fmt.Sprintf("用户: %s \n 用时：%d秒\nAI: %s", usertext, useTimeSeconds, aitext)
 			model.RecordConsumeLog(ctx, userId, channelId, promptTokens, completionTokens, textRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota)
 			model.UpdateUserUsedQuotaAndRequestCount(userId, quota)

@@ -79,7 +79,39 @@ var ModelRatio = map[string]float64{
 	"hunyuan":                   7.143,  // ¥0.1 / 1k tokens  // https://cloud.tencent.com/document/product/1729/97731#e0e6be58-60c8-469f-bdeb-6c264ce3b4d0
 }
 
-func ModelRatio2JSONString() string {
+var ModelRatio2 = map[string]float64{
+	"gpt-4-gizmo-*":             200, // $0.2 / 1次
+	"gpt-4-all":                 200,
+	"gpt-4":                     200,
+	"gpt-4-0314":                200,
+	"gpt-4-0613":                200,
+	"gpt-4-32k":                 400, // $0.4 / 1次
+	"gpt-4-32k-0314":            400,
+	"gpt-4-32k-0613":            400,
+	"gpt-4-1106-preview":        100, // $0.4 / 1次
+	"gpt-4-vision":              100,
+	"gpt-4-vision-preview":      100, // $0.01 / 1K tokens
+	"gpt-4-1106-vision-preview": 100, // $0.01 / 1K tokens
+	"gpt-3.5-turbo":             1,   // $0.001 / 1次
+	"gpt-3.5-turbo-0301":        1,
+	"gpt-3.5-turbo-0613":        1,
+	"gpt-3.5-turbo-16k":         2,
+	"gpt-3.5-turbo-16k-0613":    2,
+	"gpt-3.5-turbo-instruct":    1,
+	"gpt-3.5-turbo-1106":        1,
+	"whisper-1":                 200, // $0.2 / 1次
+	"tts-1":                     100, // $0.1 / 1次
+	"tts-1-1106":                100,
+	"tts-1-hd":                  200,
+	"tts-1-hd-1106":             200,
+	"dall-e-2":                  200,
+	"dall-e-3":                  200,
+	"claude-instant-1":          100,
+	"claude-2":                  100,
+	"gemini-pro":                1, // $0.001 / 1次
+}
+
+func ModelRatioJSONString() string {
 	jsonBytes, err := json.Marshal(ModelRatio)
 	if err != nil {
 		SysError("error marshalling model ratio: " + err.Error())
@@ -92,6 +124,19 @@ func UpdateModelRatioByJSONString(jsonStr string) error {
 	return json.Unmarshal([]byte(jsonStr), &ModelRatio)
 }
 
+func ModelRatio2JSONString() string {
+	jsonBytes, err := json.Marshal(ModelRatio2)
+	if err != nil {
+		SysError("error marshalling model ratio: " + err.Error())
+	}
+	return string(jsonBytes)
+}
+
+func UpdateModelRatio2ByJSONString(jsonStr string) error {
+	ModelRatio2 = make(map[string]float64)
+	return json.Unmarshal([]byte(jsonStr), &ModelRatio2)
+}
+
 func GetModelRatio(name string) float64 {
 	if strings.HasPrefix(name, "gpt-4-gizmo") {
 		name = "gpt-4-gizmo-*"
@@ -100,6 +145,18 @@ func GetModelRatio(name string) float64 {
 	if !ok {
 		SysError("model ratio not found: " + name)
 		return 30
+	}
+	return ratio
+}
+
+func GetModelRatio2(name string) float64 {
+	if strings.HasPrefix(name, "gpt-4-gizmo") {
+		name = "gpt-4-gizmo-*"
+	}
+	ratio, ok := ModelRatio2[name]
+	if !ok {
+		SysError("model ratio not found: " + name)
+		return 20
 	}
 	return ratio
 }

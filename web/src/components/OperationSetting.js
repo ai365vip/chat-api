@@ -1,6 +1,39 @@
 import React, {useEffect, useState} from 'react';
-import {Divider, Form, Grid, Header} from 'semantic-ui-react';
+import {Divider, Form, Grid, Header,Popup } from 'semantic-ui-react';
 import {API, showError, showSuccess, timestamp2string, verifyJSON} from '../helpers';
+
+const DEFAULT_MODEL_RATIO2 = {
+  "gpt-4-gizmo-*":             200, 
+	"gpt-4-all":                 200,
+	"gpt-4":                     200,
+	"gpt-4-0314":                200,
+	"gpt-4-0613":                200,
+	"gpt-4-32k":                 400, 
+	"gpt-4-32k-0314":            400,
+	"gpt-4-32k-0613":            400,
+	"gpt-4-1106-preview":        100,
+	"gpt-4-vision":              100,
+	"gpt-4-vision-preview":      100, 
+	"gpt-4-1106-vision-preview": 100, 
+	"gpt-3.5-turbo":             1,  
+	"gpt-3.5-turbo-0301":        1,
+	"gpt-3.5-turbo-0613":        1,
+	"gpt-3.5-turbo-16k":         2,
+	"gpt-3.5-turbo-16k-0613":    2,
+	"gpt-3.5-turbo-instruct":    1,
+	"gpt-3.5-turbo-1106":        1,
+	"whisper-1":                 200,
+	"tts-1":                     100,
+	"tts-1-1106":                100,
+	"tts-1-hd":                  200,
+	"tts-1-hd-1106":             200,
+	"dall-e-2":                  200,
+	"dall-e-3":                  200,
+	"claude-instant-1":          100,
+	"claude-2":                  100,
+	"gemini-pro":                1,
+};
+
 
 const OperationSetting = () => {
     let now = new Date();let [inputs, setInputs] = useState({
@@ -10,6 +43,7 @@ const OperationSetting = () => {
         QuotaRemindThreshold: 0,
         PreConsumedQuota: 0,
         ModelRatio: '',
+        ModelRatio2: '',
         GroupRatio: '',
         TopUpLink: '',
         ChatLink: '',
@@ -30,8 +64,18 @@ const OperationSetting = () => {
     if (success) {
       let newInputs = {};
       data.forEach((item) => {
-        if (item.key === 'ModelRatio' || item.key === 'GroupRatio') {
-          item.value = JSON.stringify(JSON.parse(item.value), null, 2);
+        if (['ModelRatio', 'ModelRatio2', 'GroupRatio'].includes(item.key)) {
+          try {
+            // 检查 item.value 是否是非空字符串
+            if (item.value && item.value.trim() !== '') {
+              item.value = JSON.stringify(JSON.parse(item.value), null, 2);
+            } else if (item.key === 'ModelRatio2') {
+              // 设置 ModelRatio2 的默认值
+              item.value = JSON.stringify(DEFAULT_MODEL_RATIO2, null, 2);
+            }
+          } catch (error) {
+            showError('无法解析 ' + item.key + ' 的 JSON: ' + error.message);
+          }
         }
         newInputs[item.key] = item.value;
       });
@@ -89,6 +133,13 @@ const OperationSetting = () => {
             return;
           }
           await updateOption('ModelRatio', inputs.ModelRatio);
+        }
+        if (originInputs['ModelRatio2'] !== inputs.ModelRatio2) {
+          if (!verifyJSON(inputs.ModelRatio2)) {
+            showError('模型按次倍率不是合法的 JSON 字符串');
+            return;
+          }
+          await updateOption('ModelRatio2', inputs.ModelRatio2);
         }
         if (originInputs['GroupRatio'] !== inputs.GroupRatio) {
           if (!verifyJSON(inputs.GroupRatio)) {
@@ -315,9 +366,18 @@ const OperationSetting = () => {
                     <Header as='h3'>
                         倍率设置
                     </Header>
+                    <Popup
+                          trigger={
+                            <label  style={{ fontWeight: 'bold' }}>
+                              模型倍率
+                            </label>
+                          }
+                          content='未设置的模型默认30'
+                          basic
+                        />
                     <Form.Group widths='equal'>
                         <Form.TextArea
-                            label='模型倍率'
+                            
                             name='ModelRatio'
                             onChange={handleInputChange}
                             style={{minHeight: 250, fontFamily: 'JetBrains Mono, Consolas'}}
@@ -326,6 +386,25 @@ const OperationSetting = () => {
                             placeholder='为一个 JSON 文本，键为模型名称，值为倍率'
                         />
                     </Form.Group>
+                    <Popup
+                          trigger={
+                            <label  style={{ fontWeight: 'bold' }}>
+                              模型按次倍率
+                            </label>
+                          }
+                          content='1=$0.001，未设置的模型默认20，MJ不需要在这里配置'
+                          basic
+                        />
+                    <Form.Group widths='equal'> 
+                        <Form.TextArea
+                          name='ModelRatio2'
+                          onChange={handleInputChange}
+                          style={{ minHeight: 250, fontFamily: 'JetBrains Mono, Consolas' }}
+                          autoComplete='new-password'
+                          value={inputs.ModelRatio2}
+                          placeholder='为一个 JSON 文本，键为模型名称，值为倍率'
+                        />
+                      </Form.Group>
                     <Form.Group widths='equal'>
                         <Form.TextArea
                             label='分组倍率'
