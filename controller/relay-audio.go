@@ -64,7 +64,19 @@ func relayAudioHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 	modelRatio := common.GetModelRatio(audioRequest.Model)
 	groupRatio := common.GetGroupRatio(group)
 	ratio := modelRatio * groupRatio
-	preConsumedQuota := int(float64(preConsumedTokens) * ratio)
+	preConsumedQuota := 0
+	token, err := model.GetTokenById(tokenId)
+	if err != nil {
+		log.Println("获取token出错:", err)
+	}
+	if token.BillingEnabled {
+		modelRatio = common.GetModelRatio2(audioRequest.Model)
+		groupRatio = common.GetGroupRatio(group)
+		ratio = modelRatio * groupRatio
+		preConsumedQuota = int(ratio * 1 * 50000)
+	} else {
+		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+	}
 	userQuota, err := model.CacheGetUserQuota(userId)
 	if err != nil {
 		return errorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)

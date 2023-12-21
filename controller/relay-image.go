@@ -103,7 +103,6 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 	groupRatio := common.GetGroupRatio(group)
 	ratio := modelRatio * groupRatio
 	userQuota, err := model.CacheGetUserQuota(userId)
-
 	sizeRatio := 1.0
 	// Size
 	if imageRequest.Size == "256x256" {
