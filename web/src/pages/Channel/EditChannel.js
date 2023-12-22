@@ -593,7 +593,7 @@ const EditChannel = (props) => {
                         name='model_test'
                         onChange={value => handleInputChange('model_test', value)}
                         value={inputs.model_test}
-                        optionList={modelOptions} // 确保 modelOptions 包含所有可选项
+                        optionList={inputs.models.map(model => ({ label: model, value: model }))}
                     />
 
                     {

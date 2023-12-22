@@ -150,21 +150,23 @@ const ChannelsTable = () => {
             },
         },
         {
-            title: '重启',
+            title: (
+                <Tooltip content="自动禁用的通道间隔重启时间">
+                    <span>重启(秒)</span>
+                </Tooltip>
+            ),
             dataIndex: 'tested_time',
             render: (text, record, index) => {
                 return (
-                    <div>
-                        <InputNumber
-                            style={{width: 70}}
-                            name='name'
-                            onChange={value => {
-                                manageChannel(record.id, 'tested_time', record, value);
-                            }}
-                            defaultValue={record.tested_time}
-                            min={0}
-                        />
-                    </div>
+                    <InputNumber
+                        style={{width: 70}}
+                        name='name'
+                        onChange={value => {
+                            manageChannel(record.id, 'tested_time', record, value);
+                        }}
+                        defaultValue={record.tested_time}
+                        min={0}
+                    />
                 );
             },
         },
