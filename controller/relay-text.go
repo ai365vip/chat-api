@@ -512,7 +512,6 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 		default:
 			req.Header.Set("Authorization", "Bearer "+apiKey)
 		}
-
 		if apiType != APITypeGemini {
 			// 设置公共头部...
 			req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
@@ -597,6 +596,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			if err != nil {
 				common.LogError(ctx, "error update user quota cache: "+err.Error())
 			}
+
 			// record all the consume log even if quota is 0
 			useTimeSeconds := time.Now().Unix() - startTime.Unix()
 			modelRatioString := ""

@@ -148,6 +148,13 @@ const OperationSetting = () => {
           }
           await updateOption('GroupRatio', inputs.GroupRatio);
         }
+          if (originInputs['ModelPrice'] !== inputs.ModelPrice) {
+              if (!verifyJSON(inputs.ModelPrice)) {
+                  showError('模型固定价格不是合法的 JSON 字符串');
+                  return;
+              }
+              await updateOption('ModelPrice', inputs.ModelPrice);
+          }
         break;
       case 'quota':
         if (originInputs['QuotaForNewUser'] !== inputs.QuotaForNewUser) {

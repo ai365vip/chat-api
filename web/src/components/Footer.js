@@ -7,6 +7,7 @@ import {Layout} from "@douyinfe/semi-ui";
 const Footer = () => {
   const systemName = getSystemName();
   const [footer, setFooter] = useState(getFooterHTML());
+  const appVersion = process.env.REACT_APP_VERSION || '未知版本';
   let remainCheckTimes = 5;
 
   const loadFooter = () => {
@@ -38,20 +39,7 @@ const Footer = () => {
           ></div>
         ) : (
           <div className='custom-footer'>
-            <a
-              href='https://github.com/Calcium-Ion/new-api'
-              target='_blank'
-            >
-              New API {process.env.REACT_APP_VERSION}{' '}
-            </a>
-            由{' '}
-            <a href='https://github.com/Calcium-Ion' target='_blank'>
-              Calcium-Ion
-            </a>{' '}
-            开发，基于{' '}
-            <a href='https://github.com/songquanpeng/one-api' target='_blank'>
-              One API v0.5.4
-            </a>{' '}
+            当前版本 {appVersion} {/* 这里显示版本信息 */}
             ，本项目根据{' '}
             <a href='https://opensource.org/licenses/mit-license.php'>
               MIT 许可证
