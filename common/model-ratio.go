@@ -80,6 +80,7 @@ var ModelRatio = map[string]float64{
 }
 
 var ModelRatio2 = map[string]float64{
+	"default":                   0.02,
 	"gpt-4-gizmo-*":             0.2,
 	"gpt-4-all":                 0.2,
 	"gpt-4":                     0.2,
@@ -93,21 +94,11 @@ var ModelRatio2 = map[string]float64{
 	"gpt-4-vision-preview":      0.1,
 	"gpt-4-1106-vision-preview": 0.1,
 	"gpt-3.5-turbo":             0.001,
-	"gpt-3.5-turbo-0301":        0.001,
 	"gpt-3.5-turbo-0613":        0.001,
 	"gpt-3.5-turbo-16k":         0.002,
 	"gpt-3.5-turbo-16k-0613":    0.002,
 	"gpt-3.5-turbo-instruct":    0.001,
 	"gpt-3.5-turbo-1106":        0.001,
-	"whisper-1":                 0.2,
-	"tts-1":                     0.1,
-	"tts-1-1106":                0.1,
-	"tts-1-hd":                  0.2,
-	"tts-1-hd-1106":             0.2,
-	"dall-e-2":                  0.2,
-	"dall-e-3":                  0.2,
-	"claude-instant-1":          0.1,
-	"claude-2":                  0.1,
 	"gemini-pro":                0.001,
 }
 
@@ -149,16 +140,15 @@ func GetModelRatio(name string) float64 {
 	return ratio
 }
 
-func GetModelRatio2(name string) float64 {
+func GetModelRatio2(name string) (float64, bool) {
 	if strings.HasPrefix(name, "gpt-4-gizmo") {
 		name = "gpt-4-gizmo-*"
 	}
 	ratio, ok := ModelRatio2[name]
 	if !ok {
-		SysError("model ratio not found: " + name)
-		return 0.02
+		ratio, ok = ModelRatio2["default"] // 尝试获取默认
 	}
-	return ratio
+	return ratio, ok
 }
 
 func GetCompletionRatio(name string) float64 {

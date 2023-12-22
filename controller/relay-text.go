@@ -290,10 +290,13 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 		log.Println("获取token出错:", err)
 	}
 	if token.BillingEnabled {
-		modelRatio = common.GetModelRatio2(textRequest.Model)
-		groupRatio = common.GetGroupRatio(group)
-		ratio = modelRatio * groupRatio
-		preConsumedQuota = int(ratio * 1 * 500)
+		modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
+		if !ok {
+			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+		} else {
+			ratio = modelRatio2 * groupRatio
+			preConsumedQuota = int(ratio * 1 * 500000)
+		}
 	} else {
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	}
@@ -560,6 +563,8 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 		// c.Writer.Flush()
 		go func() {
 
+			modelRatioString := ""
+
 			quota := 0
 			token, err := model.GetTokenById(tokenId)
 			if err != nil {
@@ -570,12 +575,21 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			completionTokens = textResponse.Usage.CompletionTokens
 			quota = promptTokens + int(float64(completionTokens)*completionRatio)
 			if token.BillingEnabled {
-				modelRatio = common.GetModelRatio2(textRequest.Model)
-				groupRatio = common.GetGroupRatio(group)
-				ratio = modelRatio * groupRatio
-				quota = int(ratio * 1 * 500000)
+				modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
+				if !ok {
+					quota = int(float64(quota) * ratio)
+					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+
+				} else {
+					groupRatio := common.GetGroupRatio(group)
+					ratio = modelRatio2 * groupRatio
+					quota = int(ratio * 1 * 500000)
+					modelRatioString = fmt.Sprintf("按次计费")
+				}
 			} else {
 				quota = int(float64(quota) * ratio)
+				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+
 			}
 
 			if ratio != 0 && quota <= 0 {
@@ -596,17 +610,8 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			if err != nil {
 				common.LogError(ctx, "error update user quota cache: "+err.Error())
 			}
-
-			// record all the consume log even if quota is 0
 			useTimeSeconds := time.Now().Unix() - startTime.Unix()
-			modelRatioString := ""
-			if token.BillingEnabled {
-				// 当启用计费时，显示按次倍率
-				modelRatioString = fmt.Sprintf("按次计费")
-			} else {
-				// 否则，显示模型倍率
-				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio) // 注意这里使用了另一个变量 ratio，需要确保其在此处上下文中是有效的
-			}
+
 			multiplier := fmt.Sprintf("%s，分组倍率 %.2f，用时 %d秒", modelRatioString, groupRatio, useTimeSeconds)
 			logContent := fmt.Sprintf("用户: %s \n 用时：%d秒\nAI: %s", usertext, useTimeSeconds, aitext)
 			model.RecordConsumeLog(ctx, userId, channelId, promptTokens, completionTokens, textRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota)

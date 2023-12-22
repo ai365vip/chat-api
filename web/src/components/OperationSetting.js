@@ -2,38 +2,6 @@ import React, {useEffect, useState} from 'react';
 import {Divider, Form, Grid, Header,Popup } from 'semantic-ui-react';
 import {API, showError, showSuccess, timestamp2string, verifyJSON} from '../helpers';
 
-const DEFAULT_MODEL_RATIO2 = {
-  "gpt-4-gizmo-*":             0.2, 
-	"gpt-4-all":                 0.2,
-	"gpt-4":                     0.2,
-	"gpt-4-0314":                0.2,
-	"gpt-4-0613":                0.2,
-	"gpt-4-32k":                 0.4, 
-	"gpt-4-32k-0314":            0.4,
-	"gpt-4-32k-0613":            0.4,
-	"gpt-4-1106-preview":        0.1,
-	"gpt-4-vision":              0.1,
-	"gpt-4-vision-preview":      0.1, 
-	"gpt-4-1106-vision-preview": 0.1, 
-	"gpt-3.5-turbo":             0.001,  
-	"gpt-3.5-turbo-0301":        0.001,
-	"gpt-3.5-turbo-0613":        0.001,
-	"gpt-3.5-turbo-16k":         0.002,
-	"gpt-3.5-turbo-16k-0613":    0.002,
-	"gpt-3.5-turbo-instruct":    0.001,
-	"gpt-3.5-turbo-1106":        0.001,
-	"whisper-1":                 0.2,
-	"tts-1":                     0.1,
-	"tts-1-1106":                0.1,
-	"tts-1-hd":                  0.2,
-	"tts-1-hd-1106":             0.2,
-	"dall-e-2":                  0.2,
-	"dall-e-3":                  0.2,
-	"claude-instant-1":          0.1,
-	"claude-2":                  0.1,
-	"gemini-pro":                0.001,
-};
-
 
 const OperationSetting = () => {
     let now = new Date();let [inputs, setInputs] = useState({
@@ -69,10 +37,7 @@ const OperationSetting = () => {
             // 检查 item.value 是否是非空字符串
             if (item.value && item.value.trim() !== '') {
               item.value = JSON.stringify(JSON.parse(item.value), null, 2);
-            } else if (item.key === 'ModelRatio2') {
-              // 设置 ModelRatio2 的默认值
-              item.value = JSON.stringify(DEFAULT_MODEL_RATIO2, null, 2);
-            }
+            } 
           } catch (error) {
             showError('无法解析 ' + item.key + ' 的 JSON: ' + error.message);
           }
@@ -117,6 +82,7 @@ const OperationSetting = () => {
     };
 
   const submitConfig = async (group) => {
+    // eslint-disable-next-line default-case
     switch (group) {
       case 'monitor':
         if (originInputs['ChannelDisableThreshold'] !== inputs.ChannelDisableThreshold) {
@@ -394,22 +360,29 @@ const OperationSetting = () => {
                         />
                     </Form.Group>
                     <Popup
-                          trigger={
-                            <label  style={{ fontWeight: 'bold' }}>
-                              模型按次计费
-                            </label>
-                          }
-                          content='1=$1，未设置的模型默认0.02，MJ不需要在这里配置'
-                          basic
-                        />
-                    <Form.Group widths='equal'> 
+                        trigger={
+                          <label style={{ fontWeight: 'bold' }}>
+                            模型按次计费（默认计费设置为 'default': 0.02，即未指定模型的情况下将应用该默认费率。若移除此项，默认计费方式将转为Token计费。）
+                          </label>
+                        }
+                        content={
+                          <>
+                            <p>每1的设定值相当于1次使用的费用（1美元）。如果模型未特别设定，则默认采用Token计费方式。</p>
+                            <p>MJ模型无需在此设置。</p>
+                            <p>默认计费设置为 'default': 0.02，即未指定模型的情况下将应用该默认费率。</p>
+                            <p>若移除此项，默认计费方式将转为Token计费。</p>
+                          </>
+                        }
+                        basic
+                      />
+                      <Form.Group widths='equal'> 
                         <Form.TextArea
                           name='ModelRatio2'
                           onChange={handleInputChange}
                           style={{ minHeight: 250, fontFamily: 'JetBrains Mono, Consolas' }}
                           autoComplete='new-password'
                           value={inputs.ModelRatio2}
-                          placeholder='为一个 JSON 文本，键为模型名称，值为倍率'
+                          placeholder='请输入一个 JSON 格式的文本，其中键为模型名称，值为每次计费的金额，例如：{"gpt-4": 0.1} 表示 GPT-4 模型每次使用费用为0.1美元。'
                         />
                       </Form.Group>
                     <Form.Group widths='equal'>
@@ -429,8 +402,7 @@ const OperationSetting = () => {
                 </Form>
             </Grid.Column>
         </Grid>
-    )
-        ;
+    );
 };
 
 export default OperationSetting;

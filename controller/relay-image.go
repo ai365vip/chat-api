@@ -122,6 +122,7 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 			qualityRatio = 1.5
 		}
 	}
+	modelRatioString := ""
 	quota := 0
 	token, err := model.GetTokenById(tokenId)
 	if err != nil {
@@ -129,12 +130,18 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 	}
 
 	if token.BillingEnabled {
-		modelRatio = common.GetModelRatio2(imageRequest.Model)
-		groupRatio = common.GetGroupRatio(group)
-		ratio = modelRatio * groupRatio
-		quota = int(ratio * 1 * 500000)
+		modelRatio2, ok := common.GetModelRatio2(imageRequest.Model)
+		if !ok { // 如果 ModelRatio2 中没有对应的 name，则继续使用之前的 quota 值
+			quota = int(ratio*sizeRatio*qualityRatio*1000) * imageRequest.N
+			modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+		} else {
+			ratio = modelRatio2 * groupRatio
+			quota = int(ratio * 1 * 500000)
+			modelRatioString = fmt.Sprintf("按次计费")
+		}
 	} else {
 		quota = int(ratio*sizeRatio*qualityRatio*1000) * imageRequest.N
+		modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 	}
 
 	if consumeQuota && userQuota-quota < 0 {
@@ -181,14 +188,6 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 			}
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
-				modelRatioString := ""
-				if token.BillingEnabled {
-					// 当启用计费时，显示按次倍率
-					modelRatioString = fmt.Sprintf("按次计费")
-				} else {
-					// 否则，显示模型倍率
-					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio) // 注意这里使用了另一个变量 ratio，需要确保其在此处上下文中是有效的
-				}
 				multiplier := fmt.Sprintf(" %s，分组倍率 %.2f", modelRatioString, groupRatio)
 				logContent := fmt.Sprintf(" ")
 				model.RecordConsumeLog(ctx, userId, channelId, 0, 0, imageRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota)
