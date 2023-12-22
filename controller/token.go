@@ -134,7 +134,8 @@ func AddToken(c *gin.Context) {
 		ExpiredTime:    token.ExpiredTime,
 		RemainQuota:    token.RemainQuota,
 		UnlimitedQuota: token.UnlimitedQuota,
-		Group:          token.Group, // 确保 Group 字段也被包含进来
+		Group:          token.Group,
+		BillingEnabled: token.BillingEnabled,
 	}
 	err = cleanToken.Insert()
 	if err != nil {

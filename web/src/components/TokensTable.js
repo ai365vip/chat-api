@@ -584,8 +584,14 @@ const TokensTable = () => {
                 }
             }>复制所选令牌到剪贴板</Button>
             {/* 新增删除按钮 */}
-            <Button theme='light' type='danger' style={{ marginLeft: '8px' }} onClick={deleteSelectedTokens}>删除所选令牌</Button>
-        </>
+            <Popconfirm
+                title="确定是否要删除所选令牌"
+                content="此修改将不可逆"
+                okType={'danger'}
+                onConfirm={deleteSelectedTokens}
+            >
+                <Button theme='light' type='danger' style={{ marginLeft: '8px' }}>删除所选令牌</Button>
+            </Popconfirm>        </>
     );
 };
 

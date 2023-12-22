@@ -14,6 +14,7 @@ const EditToken = (props) => {
     const [groupOptions, setGroupOptions] = useState([]);
     const [userState] = useContext(UserContext);
     const [selectedGroup, setSelectedGroup] = useState();
+    const [billingStrategy, setBillingStrategy] = useState('0');
     const originInputs = {
         name: '',
         remain_quota: isEdit ? 0 : 500000,
@@ -143,6 +144,7 @@ const EditToken = (props) => {
                 localInputs.remain_quota = parseInt(localInputs.remain_quota);
                 // 仅管理员创建新令牌时设置 group 字段
                 localInputs.group = selectedGroup;
+                localInputs.billing_enabled = billingStrategy === '1';
 
                 if (localInputs.expired_time !== -1) {
                     let time = Date.parse(localInputs.expired_time);
@@ -328,6 +330,22 @@ const EditToken = (props) => {
                             />
                             </>
                         )}
+                    {!isEdit && (
+                        <>
+                            <div style={{marginTop: 20}}>
+                                <Typography.Text>计费策略</Typography.Text>
+                            </div>
+                            <Select
+                                style={{ marginTop: 8 }}
+                                placeholder={'请选择计费策略'}
+                                value={billingStrategy}
+                                onChange={(value) => setBillingStrategy(value)}
+                            >
+                                <Select.Option value="0">按Token计费</Select.Option>
+                                <Select.Option value="1">按次计费</Select.Option>
+                            </Select>
+                        </>
+                    )}
                 </Spin>
             </SideSheet>
         </>
