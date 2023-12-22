@@ -1,4 +1,4 @@
-name: Publish Docker image (new-api-v)
+name: Publish Docker image (amd64)
 
 on:
   push:
@@ -55,7 +55,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            ai365/new-api-v
+            ai365/new-api
             ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=tag
