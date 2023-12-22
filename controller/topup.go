@@ -2,15 +2,16 @@ package controller
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/samber/lo"
-	epay "github.com/star-horizon/go-epay"
 	"log"
 	"net/url"
 	"one-api/common"
 	"one-api/model"
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
+	epay "github.com/star-horizon/go-epay"
 )
 
 type EpayRequest struct {
@@ -123,24 +124,26 @@ func EpayNotify(c *gin.Context) {
 		if err != nil {
 			log.Println("易支付回调写入失败")
 		}
+		notifyEmailForFail()    // 发送回调失败通知
+		notifyWxPusherForFail() // 发送回调失败通知
+		return
 	}
 	verifyInfo, err := client.Verify(params)
-	if err == nil && verifyInfo.VerifyStatus {
-		_, err := c.Writer.Write([]byte("success"))
-		if err != nil {
+	if err != nil || !verifyInfo.VerifyStatus {
+		log.Printf("易支付回调验证失败: %v", err)
+		_, writeErr := c.Writer.Write([]byte("fail"))
+		if writeErr != nil {
 			log.Println("易支付回调写入失败")
 		}
-	} else {
-		_, err := c.Writer.Write([]byte("fail"))
-		if err != nil {
-			log.Println("易支付回调写入失败")
-		}
+		notifyEmailForFail()    // 发送验证失败通知
+		notifyWxPusherForFail() // 发送验证失败通知
+		return
 	}
 
 	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
 		log.Println(verifyInfo)
 		topUp := model.GetTopUpByTradeNo(verifyInfo.ServiceTradeNo)
-		if topUp.Status == "pending" {
+		if topUp != nil && topUp.Status == "pending" {
 			topUp.Status = "success"
 			err := topUp.Update()
 			if err != nil {
@@ -155,10 +158,84 @@ func EpayNotify(c *gin.Context) {
 				return
 			}
 			log.Printf("易支付回调更新用户成功 %v", topUp)
+			notifyEmail(topUp)
+			notifyWxPusher(topUp)
 			model.RecordLog(topUp.UserId, model.LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", common.LogQuota(topUp.Amount*500000), topUp.Money))
+		}
+		_, writeErr := c.Writer.Write([]byte("success")) // 确保发送 success 响应
+		if writeErr != nil {
+			log.Println("易支付回调响应成功写入失败")
 		}
 	} else {
 		log.Printf("易支付异常回调: %v", verifyInfo)
+		_, writeErr := c.Writer.Write([]byte("fail"))
+		if writeErr != nil {
+			log.Println("易支付回调写入失败")
+		}
+	}
+}
+
+func notifyEmail(topUp *model.TopUp) {
+	emailNotifEnabled, _ := strconv.ParseBool(common.OptionMap["EmailNotificationsEnabled"])
+	if emailNotifEnabled {
+		notificationEmail := common.OptionMap["NotificationEmail"]
+		if notificationEmail == "" {
+			// 如果没有设置专门的通知邮箱，则尝试获取 RootUserEmail
+			if common.RootUserEmail == "" {
+				common.RootUserEmail = model.GetRootUserEmail()
+			}
+			notificationEmail = common.RootUserEmail
+		}
+		subject := fmt.Sprintf("充值成功通知: 用户「%d」充值金额：%v，支付金额：%f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
+		content := fmt.Sprintf("用户「%d」使用在线充值成功。充值金额：%v，支付金额：%f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
+		err := common.SendEmail(subject, notificationEmail, content)
+		if err != nil {
+			common.SysError(fmt.Sprintf("failed to send email notification: %s", err.Error()))
+		}
+	}
+}
+
+func notifyWxPusher(topUp *model.TopUp) {
+	wxNotifEnabled, _ := strconv.ParseBool(common.OptionMap["WxPusherNotificationsEnabled"])
+	if wxNotifEnabled {
+		subject := fmt.Sprintf("充值成功通知: 用户「%d」充值金额：%v，支付金额：%f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
+		content := fmt.Sprintf("用户「%d」使用在线充值成功。充值金额：%v，支付金额：%f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
+		err := SendWxPusherNotification(subject, content)
+		if err != nil {
+			common.SysError(fmt.Sprintf("无法发送WxPusher通知: %s", err))
+		}
+	}
+}
+
+func notifyEmailForFail() {
+	emailNotifEnabled, _ := strconv.ParseBool(common.OptionMap["EmailNotificationsEnabled"])
+	if emailNotifEnabled {
+		notificationEmail := common.OptionMap["NotificationEmail"]
+		if notificationEmail == "" {
+			// 如果没有设置专门的通知邮箱，则尝试获取 RootUserEmail
+			if common.RootUserEmail == "" {
+				common.RootUserEmail = model.GetRootUserEmail()
+			}
+			notificationEmail = common.RootUserEmail
+		}
+		subject := "支付回调失败通知"
+		content := "一个支付回调未能成功处理，请检查系统日志获取更多信息。"
+		err := common.SendEmail(subject, notificationEmail, content)
+		if err != nil {
+			common.SysError(fmt.Sprintf("failed to send email notification: %s", err.Error()))
+		}
+	}
+}
+
+func notifyWxPusherForFail() {
+	wxNotifEnabled, _ := strconv.ParseBool(common.OptionMap["WxPusherNotificationsEnabled"])
+	if wxNotifEnabled {
+		subject := "支付回调失败通知"
+		content := "一个支付回调未能成功处理，请检查系统日志获取更多信息。"
+		err := SendWxPusherNotification(subject, content)
+		if err != nil {
+			common.SysError(fmt.Sprintf("无法发送WxPusher通知: %s", err))
+		}
 	}
 }
 
