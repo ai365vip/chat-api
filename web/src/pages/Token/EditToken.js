@@ -277,6 +277,12 @@ const EditToken = (props) => {
                         ]}
                         disabled={unlimited_quota}
                     />
+                    <div>
+                        <Button style={{marginTop: 8}} type={'warning'} onClick={() => {
+                            setUnlimitedQuota();
+                        }}>{unlimited_quota ? '取消无限额度' : '设为无限额度'}</Button>
+                    </div>
+                    <Divider/>
                    
                     {!isEdit && (
                         <>
@@ -302,50 +308,40 @@ const EditToken = (props) => {
                         />
                         </>
                     )}
+                    <Divider/>
 
-                    <div>
-                        <Button style={{marginTop: 8}} type={'warning'} onClick={() => {
-                            setUnlimitedQuota();
-                        }}>{unlimited_quota ? '取消无限额度' : '设为无限额度'}</Button>
-                    </div>
-                    {isAdminUser && (
-                            <>
-                            <Divider />
-                            <div style={{marginTop: 20}}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
+                        {isAdminUser && (
+                            <div style={{ flex: 1, marginRight: 8 }}>
                                 <Typography.Text>选择分组</Typography.Text>
+                                <Select
+                                    placeholder={'请选择分组'}
+                                    name='group'
+                                    onChange={(value) => setSelectedGroup(value)}
+                                    value={selectedGroup}
+                                    autoComplete='new-password'
+                                    optionList={groupOptions}
+                                    style={{ width: '100%', marginTop: 8 }}
+                                />
                             </div>
-                            
-                            <Select
-                                placeholder={'请选择分组'}
-                                name='group'
-                                fluid
-                                search
-                                selection
-                                allowAdditions
-                                additionLabel={'请在系统设置页面编辑分组倍率以添加新的分组：'}
-                                onChange={(value) => setSelectedGroup(value)}
-                                value={selectedGroup}
-                                autoComplete='new-password'
-                                optionList={groupOptions}
-                            />
-                            </>
                         )}
-                    {!isEdit && (
-                        <>
-                            <div style={{marginTop: 20}}>
+                        
+                        {!isEdit && (
+                            <div style={{ flex: 1, marginLeft: isAdminUser ? 8 : 0 }}> {/* 当存在管理员选项时添加间隔 */}
                                 <Typography.Text>计费策略</Typography.Text>
+                                <Select
+                                    placeholder={'请选择计费策略'}
+                                    value={billingStrategy}
+                                    onChange={(value) => setBillingStrategy(value)}
+                                    style={{ width: '100%', marginTop: 8 }}
+                                >
+                                    <Select.Option value="0">按Token计费</Select.Option>
+                                    <Select.Option value="1">按次计费</Select.Option>
+                                </Select>
                             </div>
-                            <Select
-                                style={{ marginTop: 8 }}
-                                placeholder={'请选择计费策略'}
-                                value={billingStrategy}
-                                onChange={(value) => setBillingStrategy(value)}
-                            >
-                                <Select.Option value="0">按Token计费</Select.Option>
-                                <Select.Option value="1">按次计费</Select.Option>
-                            </Select>
-                        </>
-                    )}
+                        )}
+                    </div>
+
                 </Spin>
             </SideSheet>
         </>
