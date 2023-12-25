@@ -31,6 +31,29 @@ func GetOptions(c *gin.Context) {
 	return
 }
 
+func GetUserOptions(c *gin.Context) {
+	var options []*model.Option
+	common.OptionMapRWMutex.RLock() // 使用读锁
+	keys := []string{"TopUpLink", "YzfZfb", "YzfWx"}
+
+	for _, key := range keys {
+		if value, exists := common.OptionMap[key]; exists {
+			options = append(options, &model.Option{
+				Key:   key,
+				Value: value,
+			})
+		}
+	}
+	common.OptionMapRWMutex.RUnlock() // 释放读锁
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    options,
+	})
+	return
+}
+
 func UpdateOption(c *gin.Context) {
 	var option model.Option
 	err := json.NewDecoder(c.Request.Body).Decode(&option)

@@ -197,8 +197,8 @@ const (
 	ChannelTypeAIProxyLibrary = 21
 	ChannelTypeFastGPT        = 22
 	ChannelTypeTencent        = 23
-	ChannelTypeChatBot        = 24
-	ChannelTypeGemini         = 25
+	ChannelTypeGemini         = 24
+	ChannelTypeChatBot        = 25
 )
 
 var ChannelBaseURLs = []string{

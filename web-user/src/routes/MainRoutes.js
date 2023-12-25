@@ -6,6 +6,7 @@ import Loadable from 'ui-component/Loadable';
 
 const Log = Loadable(lazy(() => import('views/Log')));
 const Mjlog = Loadable(lazy(() => import('views/MjLog')));
+const Model = Loadable(lazy(() => import('views/Model')));
 const Token = Loadable(lazy(() => import('views/Token')));
 const Topup = Loadable(lazy(() => import('views/Topup')));
 const Profile = Loadable(lazy(() => import('views/Profile')));
@@ -47,6 +48,10 @@ const MainRoutes = {
     {
       path: 'profile',
       element: <Profile />
+    },
+    {
+      path: 'model',
+      element: <Model />
     },
     {
       path: '404',

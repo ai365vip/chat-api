@@ -73,7 +73,7 @@ const TopupCard = () => {
   const [options, setOptions] = useState({});
 
   const getOptions = async () => {
-    const res = await API.get('/api/option/');
+    const res = await API.get('/api/user/option');
     const { success, message, data } = res.data;
     if (success) {
       let newOptions = {};

@@ -9,7 +9,7 @@ const AuthGuard = ({ children }) => {
   const navigate = useNavigate();
   useEffect(() => {
     if (isUserLoaded && !account.user) {
-      navigate('/login');
+      navigate('/home');
       return;
     }
   }, [account, navigate, isUserLoaded]);

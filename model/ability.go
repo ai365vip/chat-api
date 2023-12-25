@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+	"fmt"
 	"one-api/common"
 	"strings"
 )
@@ -13,6 +15,15 @@ type Ability struct {
 	Priority  *int64 `json:"priority" gorm:"bigint;default:0;index"`
 }
 
+type ModelBillingInfo struct {
+	Model           string  `json:"model"`
+	ModelRatio      float64 `json:"model_ratio"`      // ModelRatio中的值
+	ModelRatio2     float64 `json:"model_ratio_2"`    // ModelRatio2中的值（如果有的话）
+	CalculatedRatio float64 `json:"calculated_ratio"` // 计算后的比率
+}
+
+type ModelRatios map[string]float64
+
 func GetGroupModels(group string) []string {
 	var models []string
 	// Find distinct models
@@ -22,6 +33,111 @@ func GetGroupModels(group string) []string {
 	}
 	DB.Table("abilities").Where(groupCol+" = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models)
 	return models
+}
+
+func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
+	var models []string
+	// 获取所有模型名称
+	groupCol := "`group`"
+	if common.UsingPostgreSQL {
+		groupCol = `"group"`
+	}
+
+	err := DB.Table("abilities").Where(groupCol+" = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 查询options表获取ModelRatio和ModelRatio2的值
+	var options []struct {
+		Key   string
+		Value string
+	}
+
+	err = DB.Table("options").Where("`key` IN (?)", []string{"ModelRatio", "ModelRatio2"}).Find(&options).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 解析ModelRatio 和 ModelRatio2 的值
+	modelRatio := make(ModelRatios)
+	modelRatio2 := make(ModelRatios)
+	var defaultModelRatio2 float64
+	var hasDefault bool
+
+	for _, option := range options {
+		var ratios ModelRatios
+		err = json.Unmarshal([]byte(option.Value), &ratios)
+		if err != nil {
+			return nil, err
+		}
+		if option.Key == "ModelRatio" {
+			modelRatio = ratios
+		} else if option.Key == "ModelRatio2" {
+			modelRatio2 = ratios
+			// 尝试获取ModelRatio2的默认值
+			if defaultRatio, ok := ratios["default"]; ok {
+				defaultModelRatio2 = defaultRatio
+				hasDefault = true
+			}
+		}
+	}
+
+	var groupOption struct {
+		Key   string
+		Value string
+	}
+	err = DB.Table("options").Where("`key` = ?", "GroupRatio").First(&groupOption).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 解析 GroupRatio 的值
+	var groupRatio ModelRatios
+	err = json.Unmarshal([]byte(groupOption.Value), &groupRatio)
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取 group 对应的 ratio
+	var groupRatioValue float64
+	if val, ok := groupRatio[group]; ok {
+		groupRatioValue = val
+	} else if val, ok := groupRatio["default"]; ok {
+		groupRatioValue = val
+	} else {
+		return nil, fmt.Errorf("no default group ratio provided")
+	}
+
+	var modelsBillingInfos []ModelBillingInfo
+
+	for _, model := range models {
+		var modelInfo ModelBillingInfo
+
+		// 查找ModelRatio和ModelRatio2的值
+		if ratio, exists := modelRatio[model]; exists {
+			modelInfo.ModelRatio = ratio * groupRatioValue
+		} else {
+			// 如果ModelRatio不存在，使用默认值30
+			modelInfo.ModelRatio = 30 * groupRatioValue
+		}
+
+		if ratio, exists := modelRatio2[model]; exists {
+			modelInfo.ModelRatio2 = ratio * groupRatioValue
+		} else if hasDefault {
+			// 如果ModelRatio2不存在但有默认值，则使用此默认值
+			modelInfo.ModelRatio2 = defaultModelRatio2 * groupRatioValue
+		} else {
+			// 如果ModelRatio2不存在并且没有默认值，则设置为0
+			modelInfo.ModelRatio2 = 0
+		}
+
+		modelInfo.Model = model
+		modelsBillingInfos = append(modelsBillingInfos, modelInfo)
+	}
+
+	return modelsBillingInfos, nil
+
 }
 
 func GetRandomSatisfiedChannel(group string, model string) (*Channel, error) {

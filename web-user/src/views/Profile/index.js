@@ -26,7 +26,7 @@ import WechatModal from 'views/Authentication/AuthForms/WechatModal';
 import { useSelector } from 'react-redux';
 import EmailModal from './component/EmailModal';
 import Turnstile from 'react-turnstile';
-
+import { useNavigate } from 'react-router';
 const validationSchema = Yup.object().shape({
   username: Yup.string().required('用户名 不能为空').min(3, '用户名 不能小于 3 个字符'),
   display_name: Yup.string(),
@@ -45,6 +45,7 @@ export default function Profile() {
   const [openEmail, setOpenEmail] = useState(false);
   const status = useSelector((state) => state.siteInfo);
   const [models, setModels] = useState([]);
+  const navigate = useNavigate();
 
 
   const handleWechatOpen = () => {
@@ -120,7 +121,6 @@ export default function Profile() {
         const { success, message, data } = res.data;
         if (success) {
             setModels(data);
-            console.log(data);
         } else {
             showError(message);
         }
@@ -140,6 +140,11 @@ export default function Profile() {
     loadUser().then();
     loadModels();
   }, [status]);
+  
+
+  const goModel = () => {
+    navigate('/model');
+  };
 
   return (
     <>
@@ -208,8 +213,16 @@ export default function Profile() {
                 </Grid>
               </Grid>
             </SubCard>
-            <SubCard title="模型">
+            <SubCard title="">
+            <Stack direction="row" alignItems="center" justifyContent="flex-start" mb={2} spacing={2}>
+              <Typography variant="h2">模型</Typography>
+              <Button variant="contained" onClick={goModel}>
+                计费
+              </Button>
+            </Stack>
+
               <Typography variant="h6">可用模型</Typography>
+              
               <Box sx={{
                 display: 'flex',
                 flexWrap: 'wrap',
@@ -222,10 +235,17 @@ export default function Profile() {
                     label={model}
                     color="primary"
                     onClick={() => {
-                      navigator.clipboard.writeText(model);
-                      showSuccess(`模型 ${model} 已复制到剪贴板`);
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(model).then(() => {
+                          showSuccess(`模型 ${model} 已复制到剪贴板`);
+                        }).catch(() => {
+                          alert('复制失败，请手动复制！');
+                        });
+                      } else {
+
+                        alert('复制失败，请手动复制！');
+                      }
                     }}
-                    // 为每个Chip添加上下左右边距
                     sx={{ margin: '3px' }} 
                   />
                 ))}

@@ -41,6 +41,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/dashboard", controller.GetUserDashboard)
 				selfRoute.GET("/self", controller.GetSelf)
 				selfRoute.GET("/models", controller.GetUserModels)
+				selfRoute.GET("/modelbilling", controller.GetUserModelsBilling)
 				selfRoute.PUT("/self", controller.UpdateSelf)
 				selfRoute.DELETE("/self", controller.DeleteSelf)
 				selfRoute.GET("/token", controller.GenerateAccessToken)
@@ -49,6 +50,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/pay", controller.RequestEpay)
 				selfRoute.POST("/amount", controller.RequestAmount)
 				selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
+				selfRoute.GET("/option", controller.GetUserOptions)
 			}
 
 			adminRoute := userRoute.Group("/")
@@ -63,12 +65,14 @@ func SetApiRouter(router *gin.Engine) {
 				adminRoute.DELETE("/:id", controller.DeleteUser)
 			}
 		}
+		// 创建 /option 路由分组
 		optionRoute := apiRouter.Group("/option")
 		optionRoute.Use(middleware.RootAuth())
 		{
-			optionRoute.GET("/", controller.GetOptions)
-			optionRoute.PUT("/", controller.UpdateOption)
+			optionRoute.GET("/", controller.GetOptions)   // 根用户可访问
+			optionRoute.PUT("/", controller.UpdateOption) // 根用户可访问
 		}
+
 		channelRoute := apiRouter.Group("/channel")
 		channelRoute.Use(middleware.AdminAuth())
 		{

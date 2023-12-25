@@ -414,6 +414,44 @@ func GetUserModels(c *gin.Context) {
 	return
 }
 
+func GetUserModelsBilling(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		// 如果无法将参数转换为整数，则尝试从上下文中获取整数类型的ID
+		id = c.GetInt("id")
+	}
+
+	// 假设 model.GetUserById 函数会根据提供的ID获取用户信息
+	user, err := model.GetUserById(id, true)
+	if err != nil {
+		// 如果发生错误，返回错误信息
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 获取用户所在组的模型及其计费信息
+	models, err := model.GetGroupModelsBilling(user.Group)
+	if err != nil {
+		// 如果发生错误，返回错误信息
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 成功获取数据后，返回JSON响应
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    models, // 注意这里直接返回models切片，它包含了模型名称及计费信息
+	})
+	return
+}
+
 func UpdateUser(c *gin.Context) {
 	var updatedUser model.User
 	err := json.NewDecoder(c.Request.Body).Decode(&updatedUser)
