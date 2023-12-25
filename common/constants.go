@@ -22,8 +22,12 @@ var Logo = ""
 var TopUpLink = ""
 var ChatLink = ""
 var QuotaPerUnit = 500 * 1000.0 // $0.002 / 1K tokens
-var DisplayInCurrencyEnabled = true
-var DisplayTokenStatEnabled = true
+var DisplayInCurrencyEnabled = false
+var DisplayTokenStatEnabled = false
+var EmailNotificationsEnabled = true
+var WxPusherNotificationsEnabled = true
+var Wx = true
+var Zfb = true
 
 // Any options with "Secret", "Token" in its key won't be return by GetOptions
 

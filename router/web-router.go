@@ -2,27 +2,46 @@ package router
 
 import (
 	"embed"
-	"github.com/gin-contrib/gzip"
-	"github.com/gin-contrib/static"
-	"github.com/gin-gonic/gin"
+	"io/fs"
+	"log"
 	"net/http"
-	"one-api/common"
 	"one-api/controller"
 	"one-api/middleware"
 	"strings"
+
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-gonic/gin"
 )
 
-func SetWebRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
+func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIndexPage []byte, userIndexPage []byte) {
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())
-	router.Use(static.Serve("/", common.EmbedFolder(buildFS, "web/build")))
+	// 配置管理员界面的静态文件服务
+	adminStaticFiles, err := fs.Sub(adminFS, "web-admin/build")
+	if err != nil {
+		log.Fatalf("Failed to create sub FS for admin app: %v", err)
+	}
+	router.StaticFS("/admin", http.FS(adminStaticFiles))
+
+	userStaticFiles, err := fs.Sub(userFS, "web-user/build")
+	if err != nil {
+		log.Fatalf("Failed to create sub FS for user app: %v", err)
+	}
+	router.StaticFS("/panel", http.FS(userStaticFiles))
+
 	router.NoRoute(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.RequestURI, "/v1") || strings.HasPrefix(c.Request.RequestURI, "/api") {
 			controller.RelayNotFound(c)
 			return
 		}
 		c.Header("Cache-Control", "no-cache")
-		c.Data(http.StatusOK, "text/html; charset=utf-8", indexPage)
+		if strings.HasPrefix(c.Request.RequestURI, "/admin") {
+			// 返回管理员界面的 index.html
+			c.Data(http.StatusOK, "text/html; charset=utf-8", adminIndexPage)
+		} else {
+			// 否则返回普通用户界面的 index.html
+			c.Data(http.StatusOK, "text/html; charset=utf-8", userIndexPage)
+		}
 	})
 }

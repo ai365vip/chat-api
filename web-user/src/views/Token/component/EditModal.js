@@ -1,0 +1,307 @@
+require('dayjs/locale/zh-cn');
+import PropTypes from 'prop-types';
+import * as Yup from 'yup';
+import { Formik } from 'formik';
+import { useTheme } from '@mui/material/styles';
+import { useState, useEffect } from 'react';
+import dayjs from 'dayjs';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Divider,
+  Alert,
+  FormControl,
+  InputLabel,
+  OutlinedInput,
+  InputAdornment,
+  Switch,
+  FormHelperText,TextField,Select, MenuItem
+} from '@mui/material';
+
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { renderQuotaWithPrompt, showSuccess, showError } from 'utils/common';
+import { API } from 'utils/api';
+
+const validationSchema = Yup.object().shape({
+  is_edit: Yup.boolean(),
+  name: Yup.string().required('名称 不能为空'),
+  remain_quota: Yup.number().min(0, '必须大于等于0'),
+  expired_time: Yup.number(),
+  unlimited_quota: Yup.boolean(),
+  billing_enabled: Yup.boolean()
+});
+
+const originInputs = {
+  is_edit: false,
+  name: '',
+  remain_quota: 0,
+  expired_time: -1,
+  unlimited_quota: false,
+  billing_enabled:false
+};
+
+const EditModal = ({ open, tokenId, onCancel, onOk }) => {
+  const theme = useTheme();
+  const [inputs, setInputs] = useState(originInputs);
+
+  const generateRandomSuffix = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 4; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
+  const submit = async (values, { setErrors, setStatus, setSubmitting }) => {
+    setSubmitting(true);
+
+    try {
+      const submissions = [];
+      for (let i = 0; i < batchAddCount; i++) {
+        let adjustedValues = { ...values };
+        if (!adjustedValues.unlimited_quota) {
+          adjustedValues.remain_quota = parseInt(adjustedValues.remain_quota) * 500000;
+        }
+
+        // Add 4 random chars for each token when in batch add mode
+        if (batchAddCount > 1) {
+          const randomSuffix = generateRandomSuffix(); // Generate 4 random characters
+          adjustedValues.name = `${values.name}-${randomSuffix}`;
+        }
+
+        let res;
+        if (adjustedValues.is_edit) {
+          res = await API.put(`/api/token/`, { ...adjustedValues, id: parseInt(tokenId) });
+        } else {
+          res = await API.post(`/api/token/`, adjustedValues);
+        }
+
+        submissions.push(res.data);
+      }
+
+      const failedSubmissions = submissions.filter(submission => !submission.success);
+      if (failedSubmissions.length > 0) {
+        const message = failedSubmissions.map(submission => submission.message).join(', ');
+        showError(message);
+        setErrors({ submit: message });
+      } else {
+        showSuccess(batchAddCount > 1 ? '所有令牌创建成功！' : '令牌创建成功，请在列表页面点击复制获取令牌！');
+        setStatus({ success: true });
+        onOk(true);
+      }
+    } catch (error) {
+      showError(error.message);
+      setErrors({ submit: error.message });
+    }
+
+    setSubmitting(false);
+  };
+
+  const [batchAddCount, setBatchAddCount] = useState(1);
+
+  const handleBatchAddChange = (event) => {
+    const count = parseInt(event.target.value, 10);
+    if (!isNaN(count) && count > 0) {
+      setBatchAddCount(count);
+    }
+  };
+
+  const loadToken = async () => {
+    let res = await API.get(`/api/token/${tokenId}`);
+    const { success, message, data } = res.data;
+    if (success) {
+      data.is_edit = true;
+      setInputs({
+        ...data,
+        remain_quota: data.remain_quota/500000, 
+      });
+    } else {
+      showError(message);
+    }
+  };
+
+  useEffect(() => {
+    if (tokenId) {
+      loadToken().catch(showError);
+    }
+  }, [tokenId]);
+
+  useEffect(() => {
+    // 此处代码用于初始加载和tokenId改变时重设batchAddCount
+    if (!tokenId) {
+      setBatchAddCount(1);
+    }
+  }, [tokenId]);
+
+  
+
+  return (
+    <Dialog open={open} onClose={onCancel} fullWidth maxWidth={'md'}>
+      <DialogTitle sx={{ margin: '0px', fontWeight: 700, lineHeight: '1.55556', padding: '24px', fontSize: '1.125rem' }}>
+        {tokenId ? '编辑Token' : '新建Token'}
+      </DialogTitle>
+      <Divider />
+      <DialogContent>
+        <Alert severity="info">注意，令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制。</Alert>
+        <Formik initialValues={inputs} enableReinitialize validationSchema={validationSchema} onSubmit={submit}>
+          
+          {({ errors, handleBlur, handleChange, handleSubmit, touched, values, setFieldError, setFieldValue, isSubmitting }) => (
+            <form noValidate onSubmit={handleSubmit}>
+              <FormControl fullWidth error={Boolean(touched.name && errors.name)} sx={{ ...theme.typography.otherInput }}>
+                <InputLabel htmlFor="channel-name-label">名称</InputLabel>
+                <OutlinedInput
+                  id="channel-name-label"
+                  label="名称"
+                  type="text"
+                  value={values.name}
+                  name="name"
+                  onBlur={handleBlur}
+                  onChange={handleChange}
+                  inputProps={{ autoComplete: 'name' }}
+                  aria-describedby="helper-text-channel-name-label"
+                />
+                {touched.name && errors.name && (
+                  <FormHelperText error id="helper-tex-channel-name-label">
+                    {errors.name}
+                  </FormHelperText>
+                )}
+              </FormControl>
+              {values.expired_time !== -1 && (
+                <FormControl fullWidth error={Boolean(touched.expired_time && errors.expired_time)} sx={{ ...theme.typography.otherInput }}>
+                  <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'zh-cn'}>
+                    <DateTimePicker
+                      label="过期时间"
+                      ampm={false}
+                      value={dayjs.unix(values.expired_time)}
+                      onError={(newError) => {
+                        if (newError === null) {
+                          setFieldError('expired_time', null);
+                        } else {
+                          setFieldError('expired_time', '无效的日期');
+                        }
+                      }}
+                      onChange={(newValue) => {
+                        setFieldValue('expired_time', newValue.unix());
+                      }}
+                      slotProps={{
+                        actionBar: {
+                          actions: ['today', 'accept']
+                        }
+                      }}
+                    />
+                  </LocalizationProvider>
+                  {errors.expired_time && (
+                    <FormHelperText error id="helper-tex-channel-expired_time-label">
+                      {errors.expired_time}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              )}
+              <Switch
+                checked={values.expired_time === -1}
+                onClick={() => {
+                  if (values.expired_time === -1) {
+                    setFieldValue('expired_time', Math.floor(Date.now() / 1000));
+                  } else {
+                    setFieldValue('expired_time', -1);
+                  }
+                }}
+              />{' '}
+              永不过期
+              <FormControl fullWidth error={Boolean(touched.remain_quota && errors.remain_quota)} sx={{ ...theme.typography.otherInput }}>
+                <InputLabel htmlFor="channel-remain_quota-label">额度</InputLabel>
+                <OutlinedInput
+                  id="channel-remain_quota-label"
+                  label="额度"
+                  type="number"
+                  value={values.remain_quota}
+                  name="remain_quota"
+                  endAdornment={<InputAdornment position="end">{renderQuotaWithPrompt(values.remain_quota)}</InputAdornment>}
+                  onBlur={handleBlur}
+                  onChange={handleChange}
+                  aria-describedby="helper-text-channel-remain_quota-label"
+                  disabled={values.unlimited_quota}
+                />
+
+                {touched.remain_quota && errors.remain_quota && (
+                  <FormHelperText error id="helper-tex-channel-remain_quota-label">
+                    {errors.remain_quota}
+                  </FormHelperText>
+                )}
+              </FormControl>
+              <Switch
+                checked={values.unlimited_quota === true}
+                onClick={() => {
+                  setFieldValue('unlimited_quota', !values.unlimited_quota);
+                }}
+              />{' '}
+              无限额度
+              {/* 新增的计费方式选择框 */}
+              {tokenId ? null :(
+              <FormControl fullWidth error={Boolean(touched.billing_enabled && errors.billing_enabled)} sx={{ ...theme.typography.otherInput }}>
+                  <InputLabel id="billing-enabled-label">计费方式</InputLabel>
+                  <Select
+                    labelId="billing-enabled-label"
+                    id="billing-enabled-select"
+                    value={String(values.billing_enabled)} // 将布尔值转换为字符串
+                    label="计费方式"
+                    name="billing_enabled"
+                    onBlur={handleBlur}
+                    onChange={(event) => {
+                      // 更新表单状态时，将字符串转换回布尔值
+                      setFieldValue('billing_enabled', event.target.value === 'true');
+                    }}
+                  >
+                    <MenuItem value={'false'}>按Token计费</MenuItem>
+                    <MenuItem value={'true'}>按次计费</MenuItem>
+                  </Select>
+                  {touched.billing_enabled && errors.billing_enabled && (
+                    <FormHelperText error id="helper-text-billing-enabled">
+                      {errors.billing_enabled}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+                )}
+
+              {tokenId ? null : (
+                <FormControl fullWidth sx={{ ...theme.typography.otherInput }}>
+                  <TextField
+                    label="批量添加数量"
+                    type="number"
+                    value={batchAddCount}
+                    onChange={handleBatchAddChange}
+                    margin="normal"
+                    helperText="一次性创建多个Token的数量"
+                  />
+                </FormControl>
+              )}
+               
+              <DialogActions>
+                <Button onClick={onCancel}>取消</Button>
+                <Button disableElevation disabled={isSubmitting} type="submit" variant="contained" color="primary">
+                  提交
+                </Button>
+              </DialogActions>
+              
+            </form>
+          )}
+        </Formik>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default EditModal;
+
+EditModal.propTypes = {
+  open: PropTypes.bool,
+  tokenId: PropTypes.number,
+  onCancel: PropTypes.func,
+  onOk: PropTypes.func
+};

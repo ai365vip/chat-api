@@ -79,6 +79,10 @@ func InitOptionMap() {
 	common.OptionMap["AppToken"] = ""
 	common.OptionMap["Uids"] = ""
 	common.OptionMap["NotificationEmail"] = ""
+	common.OptionMap["WxPusherNotificationsEnabled"] = strconv.FormatBool(common.WxPusherNotificationsEnabled)
+	common.OptionMap["EmailNotificationsEnabled"] = strconv.FormatBool(common.EmailNotificationsEnabled)
+	common.OptionMap["YzfZfb"] = strconv.FormatBool(common.Zfb)
+	common.OptionMap["YzfWx"] = strconv.FormatBool(common.Wx)
 
 	common.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()

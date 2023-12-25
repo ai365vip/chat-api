@@ -45,6 +45,14 @@ type Logs struct {
 	Multiplier       string `json:"multiplier"`
 	UserQuota        int    `json:"userQuota"`
 }
+type LogStatistic struct {
+	Day              string `gorm:"column:day"`
+	ModelName        string `gorm:"column:model_name"`
+	RequestCount     int    `gorm:"column:request_count"`
+	Quota            int    `gorm:"column:quota"`
+	PromptTokens     int    `gorm:"column:prompt_tokens"`
+	CompletionTokens int    `gorm:"column:completion_tokens"`
+}
 
 const (
 	LogTypeUnknown = iota
@@ -59,16 +67,16 @@ func GetLogByKey(key string) (logs []*Log, err error) {
 	return logs, err
 }
 
-func RecordLog(userId int, logType int, content string) {
+func RecordLog(userId int, logType int, multiplier string) {
 	if logType == LogTypeConsume && !common.LogConsumeEnabled {
 		return
 	}
 	log := &Log{
-		UserId:    userId,
-		Username:  GetUsernameById(userId),
-		CreatedAt: common.GetTimestamp(),
-		Type:      logType,
-		Content:   content,
+		UserId:     userId,
+		Username:   GetUsernameById(userId),
+		CreatedAt:  common.GetTimestamp(),
+		Type:       logType,
+		Multiplier: multiplier,
 	}
 	err := DB.Create(log).Error
 	if err != nil {
@@ -130,6 +138,36 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	}
 	err = tx.Order("id desc").Limit(num).Offset(startIdx).Find(&logs).Error
 	return logs, err
+}
+
+func SearchLogsByDayAndModel(user_id, start, end int) (LogStatistics []*LogStatistic, err error) {
+	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
+
+	if common.UsingPostgreSQL {
+		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD') as day"
+	}
+
+	if common.UsingSQLite {
+		groupSelect = "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch')) as day"
+	}
+
+	err = DB.Raw(`
+		SELECT `+groupSelect+`,
+		model_name, count(1) as request_count,
+		sum(quota) as quota,
+		sum(prompt_tokens) as prompt_tokens,
+		sum(completion_tokens) as completion_tokens
+		FROM logs
+		WHERE type=2
+		AND user_id= ?
+		AND created_at BETWEEN ? AND ?
+		GROUP BY day, model_name
+		ORDER BY day, model_name
+	`, user_id, start, end).Scan(&LogStatistics).Error
+
+	fmt.Println(user_id, start, end)
+
+	return LogStatistics, err
 }
 
 func GetProLogs(db *gorm.DB, logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (logs []*Logs, total int64, err error) {
