@@ -40,33 +40,34 @@ export default function Log() {
             <Table sx={{ minWidth: 650 }} aria-label="simple table">
               <ModelTableHead />
               <TableBody>
-              {models && models.length > 0 ? (
-                models.map((modelInfo, index) => (
-                <TableRow key={index}>
-                  <TableCell component="th" scope="row">{modelInfo.model}</TableCell>
-                  
-                  <TableCell align="right">
-                    {modelInfo.model_ratio_2 !== undefined ? modelInfo.model_ratio_2.toFixed(4) : 'N/A'}
-                  </TableCell>
+                {models && models.length > 0 ? (
+                  models.map((modelInfo, index) => (
+                      <TableRow key={index}>
+                          <TableCell component="th" scope="row">{modelInfo.model}</TableCell>
+                          
+                          <TableCell align="right">
+                              {modelInfo.model_ratio_2 !== undefined && modelInfo.model_ratio_2 !== 0 ? 
+                              modelInfo.model_ratio_2.toFixed(4) : '无'}
+                          </TableCell>
 
-                  <TableCell align="right">
-                    {modelInfo.model_ratio !== undefined ? modelInfo.model_ratio.toFixed(4) * 0.002 : 'N/A'}
-                  </TableCell>
+                          <TableCell align="right">
+                              {modelInfo.model_ratio !== undefined && modelInfo.model_ratio !== 0 ? 
+                              (modelInfo.model_ratio * 0.002).toFixed(4) : '无'}
+                          </TableCell>
 
-                  <TableCell align="right">
-                    {modelInfo.model_ratio !== undefined ? modelInfo.model_ratio.toFixed(4) * 0.002 * 2 : 'N/A'}
-                  </TableCell>
-                </TableRow>
-              ))
+                          <TableCell align="right">
+                              {modelInfo.model_ratio !== undefined && modelInfo.model_ratio !== 0 ? 
+                              (modelInfo.model_ratio * 0.002 * 2).toFixed(4) : '无'}
+                          </TableCell>
+                      </TableRow>
+                  ))
               ) : (
-                <TableRow>
-                  <TableCell colSpan={4} align="center">
-                    No data available
-                  </TableCell>
-                </TableRow>
+                  <TableRow>
+                      <TableCell colSpan={4} align="center">
+                          No data available
+                      </TableCell>
+                  </TableRow>
               )}
-
-
               </TableBody>
             </Table>
           </TableContainer>

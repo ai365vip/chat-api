@@ -2,9 +2,12 @@ package model
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"one-api/common"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 type Ability struct {
@@ -61,6 +64,16 @@ func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
 
 	// 解析ModelRatio 和 ModelRatio2 的值
 	modelRatio := make(ModelRatios)
+	if len(modelRatio) == 0 {
+		jsonStr := common.OptionMap["ModelRatio"]
+		if jsonStr == "" {
+			jsonStr = common.ModelRatioJSONString()
+		}
+		err := json.Unmarshal([]byte(jsonStr), &modelRatio)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshalling ModelRatio from common: %v", err)
+		}
+	}
 	modelRatio2 := make(ModelRatios)
 	var defaultModelRatio2 float64
 	var hasDefault bool
@@ -87,26 +100,26 @@ func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
 		Key   string
 		Value string
 	}
+	var groupRatioValue float64 = 1
 	err = DB.Table("options").Where("`key` = ?", "GroupRatio").First(&groupOption).Error
-	if err != nil {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// 如果记录未找到，则将相关变量设置为默认值 1
+		groupRatioValue = 1
+	} else if err != nil {
+		// 如果有其他错误，则返回错误
 		return nil, err
 	}
 
-	// 解析 GroupRatio 的值
-	var groupRatio ModelRatios
-	err = json.Unmarshal([]byte(groupOption.Value), &groupRatio)
-	if err != nil {
-		return nil, err
-	}
-
-	// 获取 group 对应的 ratio
-	var groupRatioValue float64
-	if val, ok := groupRatio[group]; ok {
-		groupRatioValue = val
-	} else if val, ok := groupRatio["default"]; ok {
-		groupRatioValue = val
-	} else {
-		return nil, fmt.Errorf("no default group ratio provided")
+	if groupOption.Value != "" {
+		var groupRatio ModelRatios
+		err = json.Unmarshal([]byte(groupOption.Value), &groupRatio)
+		if err != nil {
+			return nil, err
+		}
+		// 获取 group 对应的 ratio，如果没有特定于组的比率则使用默认值
+		if val, ok := groupRatio[group]; ok {
+			groupRatioValue = val
+		}
 	}
 
 	var modelsBillingInfos []ModelBillingInfo

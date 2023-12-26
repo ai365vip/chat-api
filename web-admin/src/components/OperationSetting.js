@@ -26,30 +26,33 @@ const OperationSetting = () => {
     const [originInputs, setOriginInputs] = useState({});
     let [loading, setLoading] = useState(false);let [historyTimestamp, setHistoryTimestamp] = useState(timestamp2string(now.getTime() / 1000 - 30 * 24 * 3600)); // a month ago
 
-  const getOptions = async () => {
-    const res = await API.get('/api/option/');
-    const { success, message, data } = res.data;
-    if (success) {
-      let newInputs = {};
-      data.forEach((item) => {
-        if (['ModelRatio', 'ModelRatio2', 'GroupRatio'].includes(item.key)) {
-          try {
-            // 检查 item.value 是否是非空字符串
-            if (item.value && item.value.trim() !== '') {
-              item.value = JSON.stringify(JSON.parse(item.value), null, 2);
-            } 
-          } catch (error) {
-            showError('无法解析 ' + item.key + ' 的 JSON: ' + error.message);
+    const getOptions = async () => {
+      const res = await API.get('/api/option/');
+      const { success, message, data } = res.data;
+      if (success) {
+        let newInputs = {};
+        data.forEach((item) => {
+          if (['ModelRatio', 'ModelRatio2', 'GroupRatio'].includes(item.key)) {
+            try {
+                // 检查 item.value 是否是非空字符串
+                if (item.value && item.value.trim() !== '') {
+                    item.value = JSON.stringify(JSON.parse(item.value), null, 2);
+                } else if (item.key === 'ModelRatio2') {
+                    // 如果 ModelRatio2 是空字符串，则设置为默认的空JSON对象
+                    item.value = '{}';
+                }
+            } catch (error) {
+                showError('无法解析 ' + item.key + ' 的 JSON: ' + error.message);
+            }
           }
-        }
-        newInputs[item.key] = item.value;
-      });
-      setInputs(newInputs);
-      setOriginInputs(newInputs);
-    } else {
-      showError(message);
-    }
-  };
+          newInputs[item.key] = item.value;
+        });
+        setInputs(newInputs);
+        setOriginInputs(newInputs);
+      } else {
+        showError(message);
+      }
+    };
 
     useEffect(() => {
         getOptions().then();

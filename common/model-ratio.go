@@ -79,28 +79,7 @@ var ModelRatio = map[string]float64{
 	"hunyuan":                   7.143,  // ¥0.1 / 1k tokens  // https://cloud.tencent.com/document/product/1729/97731#e0e6be58-60c8-469f-bdeb-6c264ce3b4d0
 }
 
-var ModelRatio2 = map[string]float64{
-	"default":                   0.02,
-	"gpt-4-gizmo-*":             0.2,
-	"gpt-4-all":                 0.2,
-	"gpt-4":                     0.2,
-	"gpt-4-0314":                0.2,
-	"gpt-4-0613":                0.2,
-	"gpt-4-32k":                 0.4,
-	"gpt-4-32k-0314":            0.4,
-	"gpt-4-32k-0613":            0.4,
-	"gpt-4-1106-preview":        0.1,
-	"gpt-4-vision":              0.1,
-	"gpt-4-vision-preview":      0.1,
-	"gpt-4-1106-vision-preview": 0.1,
-	"gpt-3.5-turbo":             0.001,
-	"gpt-3.5-turbo-0613":        0.001,
-	"gpt-3.5-turbo-16k":         0.002,
-	"gpt-3.5-turbo-16k-0613":    0.002,
-	"gpt-3.5-turbo-instruct":    0.001,
-	"gpt-3.5-turbo-1106":        0.001,
-	"gemini-pro":                0.001,
-}
+var ModelRatio2 = map[string]float64{}
 
 func ModelRatioJSONString() string {
 	jsonBytes, err := json.Marshal(ModelRatio)
