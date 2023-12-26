@@ -248,38 +248,34 @@ const TopupCard = () => {
             在线充值
           </Typography>
           
-          <FormControl fullWidth variant="outlined" sx={{ mt: 2 }}>
+          <FormControl fullWidth variant="outlined" sx={{ mt: 2, mb: 1 }}>
             <InputLabel htmlFor="amount">充值金额</InputLabel>
             <OutlinedInput
               id="amount"
               label="充值金额"
               type="number"
-              value={topUpCount} // 使用 topUpCount 替代原来的 topUpAmount
+              value={topUpCount} 
               onChange={(e) => {
                 const newTopUpCount = e.target.value;
-                setTopUpCount(newTopUpCount); // 正确地设置 topUpCount
-                getAmount(newTopUpCount); // 当输入值改变时调用 getAmount
+                setTopUpCount(newTopUpCount); 
+                getAmount(newTopUpCount); 
               }}
               startAdornment={<InputAdornment position="start">$</InputAdornment>}
-              endAdornment={
-                <InputAdornment position="end">
-                  <Stack direction="row" spacing={1}>
-                  {zfb === 'true' && (
-                    <Button variant="contained" onClick={() => preTopUp('zfb')}>
-                      支付宝
-                    </Button>
-                  )}
-                  {wx === 'true' && (
-                    <Button variant="contained" onClick={() => preTopUp('wx')}>
-                      微信
-                    </Button>
-                  )}
-                    
-                  </Stack>
-                </InputAdornment>
-              }
+              
             />
           </FormControl>
+          <Stack direction="row" spacing={1} sx={{ mb: 2 }}> {/* 添加 Stack 的 margin-bottom */}
+    {zfb === 'true' && (
+      <Button variant="contained" onClick={() => preTopUp('zfb')}>
+        支付宝
+      </Button>
+    )}
+    {wx === 'true' && (
+      <Button variant="contained" onClick={() => preTopUp('wx')}>
+        微信
+      </Button>
+    )}
+  </Stack>
         </SubCard>
           <Modal open={open} onClose={() => setOpen(false)}>
         <Box sx={{

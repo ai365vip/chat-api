@@ -134,7 +134,7 @@ export default function Log() {
               <Button
                   onClick={goToLogPage}
                   startIcon={<IconPhoto width={'18px'} />}>
-                MJ绘图
+                MJ
               </Button>
             </ButtonGroup>
           </Container>
