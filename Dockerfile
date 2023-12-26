@@ -1,9 +1,12 @@
 FROM node:16 as builder
 
 WORKDIR /build
-COPY web/package.json .
+COPY web-user/package.json .
 RUN npm install
-COPY ./web .
+COPY ./web-user .
+COPY web-admin/package.json .
+RUN npm install
+COPY ./web-admin .
 COPY ./VERSION .
 RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat VERSION) npm run build
 

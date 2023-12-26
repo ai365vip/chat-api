@@ -12,15 +12,18 @@ export default function Log() {
     try {
       let res = await API.get('/api/user/modelbilling');
       const { success, message, data } = res.data;
-      if (success) {
+      if (success && Array.isArray(data)) { 
         setModels(data);
       } else {
         showError(message);
+        setModels([]); 
       }
     } catch (err) {
       showError(err.message);
+      setModels([]); 
     }
   };
+  
 
   useEffect(() => {
     loadModels();
@@ -37,7 +40,8 @@ export default function Log() {
             <Table sx={{ minWidth: 650 }} aria-label="simple table">
               <ModelTableHead />
               <TableBody>
-              {models.map((modelInfo, index) => (
+              {models && models.length > 0 ? (
+                models.map((modelInfo, index) => (
                 <TableRow key={index}>
                   <TableCell component="th" scope="row">{modelInfo.model}</TableCell>
                   
@@ -53,7 +57,14 @@ export default function Log() {
                     {modelInfo.model_ratio !== undefined ? modelInfo.model_ratio.toFixed(4) * 0.002 * 2 : 'N/A'}
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    No data available
+                  </TableCell>
+                </TableRow>
+              )}
 
 
               </TableBody>

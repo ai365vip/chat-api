@@ -64,7 +64,7 @@ const StatisticalLineChartCard = ({ isLoading, title, chartData, todayValue }) =
         <SkeletonTotalOrderCard />
       ) : (
         <CardWrapper border={false} content={false}>
-          <Box sx={{ p: 2.25 }}>
+          <Box sx={{ p: 2.25, minHeight: 150 }}> 
             <Grid container direction="column">
               <Grid item sx={{ mb: 0.75 }}>
                 <Grid container alignItems="center">

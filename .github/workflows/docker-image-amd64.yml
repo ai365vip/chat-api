@@ -55,7 +55,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            ai365/new-api
+            ai365/chat-api
             ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=tag

@@ -61,15 +61,15 @@ const panel = {
       icon: icons.IconGardenCart,
       breadcrumbs: false
     },
-    {
-      id: 'profile',
-      title: '个人设置',
-      type: 'item',
-      url: '/profile',
-      icon: icons.IconUserScan,
-      breadcrumbs: false,
-      isAdmin: true
-    }
+   //{
+   //  id: 'profile',
+   //  title: '个人设置',
+   //  type: 'item',
+   //  url: '/profile',
+   //  icon: icons.IconUserScan,
+   //  breadcrumbs: false,
+   //  isAdmin: true
+   //}
   ]
 };
 

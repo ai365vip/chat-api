@@ -22,7 +22,11 @@ jobs:
         env:
           CI: ""
         run: |
-          cd web
+          cd web-admin
+          npm install
+          REACT_APP_VERSION=$(git describe --tags) npm run build
+          cd ..
+          cd web-user
           npm install
           REACT_APP_VERSION=$(git describe --tags) npm run build
           cd ..
@@ -33,7 +37,7 @@ jobs:
       - name: Build Backend (amd64)
         run: |
           go mod download
-          go build -ldflags "-s -w -X 'one-api/common.Version=$(git describe --tags)' -extldflags '-static'" -o new-api
+          go build -ldflags "-s -w -X 'one-api/common.Version=$(git describe --tags)' -extldflags '-static'" -o chat-api
 
       - name: Build Backend (arm64)
         run: |
@@ -46,8 +50,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            new-api
-            new-api-arm64
+            chat-api
+            chat-api-arm64
           draft: true
           generate_release_notes: true
         env:

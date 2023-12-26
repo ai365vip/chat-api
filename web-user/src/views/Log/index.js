@@ -90,7 +90,7 @@ export default function Log() {
     setInitPage(true);
   };
   const goToLogPage = () => {
-    navigate('/Mjlog');
+    navigate('/mjlog');
   };
 
   useEffect(() => {

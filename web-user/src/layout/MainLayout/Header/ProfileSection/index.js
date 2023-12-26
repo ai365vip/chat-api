@@ -24,7 +24,7 @@ import User1 from 'assets/images/users/user-round.svg';
 import useLogin from 'hooks/useLogin';
 
 // assets
-import { IconLogout, IconSettings, IconUserScan } from '@tabler/icons-react';
+import { IconLogout, IconSettings, IconUserScan,IconInfoCircle  } from '@tabler/icons-react';
 
 // ==============================|| PROFILE MENU ||============================== //
 
@@ -154,7 +154,7 @@ const ProfileSection = () => {
                     </ListItemButton>
                     <ListItemButton sx={{ borderRadius: `${customization.borderRadius}px` }} onClick={() => navigate('/about')}>
                       <ListItemIcon>
-                        <IconUserScan stroke={1.5} size="1.3rem" />
+                        <IconInfoCircle stroke={1.5} size="1.3rem" />
                       </ListItemIcon>
                       <ListItemText primary={<Typography variant="body2">关于</Typography>} />
                     </ListItemButton>
