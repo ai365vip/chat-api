@@ -243,6 +243,8 @@ const EditChannel = (props) => {
                 name: name || `Channel for ${address}`, // 如果没有指定名称，则使用默认名称
                 models: inputs.models.join(','), // 将模型数组转换为字符串
                 group: inputs.groups.join(','), // 将群组数组转换为字符串
+                tested_time: parseInt(restartDelay, 10) || 0,
+                priority: parseInt(priority, 10) || 0, 
             };
             });
     
