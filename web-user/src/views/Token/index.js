@@ -226,6 +226,8 @@ export default function Token() {
                     key={row.id}
                     handleOpenModal={handleOpenModal}
                     setModalTokenId={setEditTokenId}
+                    modelRatioEnabled={modelRatioEnabled}
+                    billingByRequestEnabled={billingByRequestEnabled}
                   />
                 ))}
               </TableBody>
