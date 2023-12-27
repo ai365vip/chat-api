@@ -1,4 +1,3 @@
-
 # Chat API
 
 > [!NOTE]
@@ -15,18 +14,19 @@
 > 更新指令 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower -cR
 
 ## 此分叉版本的主要变更
+
 1. 全新的UI界面（部分界面还待更新），C端与管理端
 2. 添加[Midjourney-Proxy](https://github.com/novicezk/midjourney-proxy)接口的支持：
-    + [x] /mj/submit/imagine
-    + [x] /mj/submit/change
-    + [x] /mj/submit/blend
-    + [x] /mj/submit/describe
-    + [x] /mj/image/{id} （通过此接口获取图片，**请必须在系统设置中填写服务器地址！！**）
-    + [x] /mj/task/{id}/fetch （此接口返回的图片地址为经过One API转发的地址）
+   + [x] /mj/submit/imagine
+   + [x] /mj/submit/change
+   + [x] /mj/submit/blend
+   + [x] /mj/submit/describe
+   + [x] /mj/image/{id} （通过此接口获取图片，**请必须在系统设置中填写服务器地址！！**）
+   + [x] /mj/task/{id}/fetch （此接口返回的图片地址为经过One API转发的地址）
 3. 支持在线充值功能，可在系统设置中设置，当前支持的支付接口：
-    + [x] 易支付
+   + [x] 易支付
 4. 支持用key查询使用额度:
-    + 配合项目[neko-api-key-tool](https://github.com/Calcium-Ion/neko-api-key-tool)可实现用key查询使用情况，方便二次分销
+   + 配合项目[neko-api-key-tool](https://github.com/Calcium-Ion/neko-api-key-tool)可实现用key查询使用情况，方便二次分销
 5. 渠道显示已使用额度，支持指定组织访问
 6. 分页支持选择每页显示数量
 7. 支持 gpt-4-1106-vision-preview，dall-e-3，tts-1
@@ -37,10 +37,12 @@
 12. 支持令牌分组
 13. 支持模型按次计费
 14. 支持WxPusher消息推送，在线充值通知
-14. 支持渠道自启时间设置
+15. 支持渠道自启时间设置
 
 ## 部署
+
 ### 基于 Docker 进行部署
+
 ```shell
 # 使用 SQLite 的部署命令：
 docker run --name chat-api -d --restart always -p 3000:3000 -e TZ=Asia/Shanghai -v /home/ubuntu/data/chat-api:/data ai365/chat-api:latest
@@ -145,6 +147,6 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 
 ## 捐款
 
-如果觉得这个软件对你有所帮助，欢迎请作者喝可乐、喝咖啡～
+如果觉得这个软件对你有所帮助，欢迎请作者喝可乐、喝咖啡～        Chat API 交流群
 
-<img width="250" alt="image" src="https://github.com/ai365vip/chat-api/assets/154959065/31289586-f7a6-4640-bf8c-e6d6c97db581">
+ <img src="https://github.com/ai365vip/chat-api/assets/154959065/31289586-f7a6-4640-bf8c-e6d6c97db581" width="250" alt="赞助" style="margin-right: 10px;">                                                    <img src="https://github.com/ai365vip/chat-api/assets/154959065/534c7d1e-948d-4f61-8740-2b4851bffb7b" width="250" alt="交流群">
