@@ -1,16 +1,16 @@
-# File path: /etc/systemd/system/one-api.service
+# File path: /etc/systemd/system/chat-api.service
 # sudo systemctl daemon-reload
-# sudo systemctl start one-api
-# sudo systemctl enable one-api
-# sudo systemctl status one-api
+# sudo systemctl start chat-api
+# sudo systemctl enable chat-api
+# sudo systemctl status chat-api
 [Unit]
 Description=One API Service
 After=network.target
 
 [Service]
 User=ubuntu  # 注意修改用户名
-WorkingDirectory=/path/to/one-api  # 注意修改路径
-ExecStart=/path/to/one-api/one-api --port 3000 --log-dir /path/to/one-api/logs  # 注意修改路径和端口号
+WorkingDirectory=/path/to/chat-api  # 注意修改路径
+ExecStart=/path/to/chat-api/chat-api --port 3000 --log-dir /path/to/chat-api/logs  # 注意修改路径和端口号
 Restart=always
 RestartSec=5
 
