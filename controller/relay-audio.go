@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/model"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -70,7 +71,26 @@ func relayAudioHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 		log.Println("获取token出错:", err)
 	}
 
-	if token.BillingEnabled {
+	BillingByRequestEnabled, _ := strconv.ParseBool(common.OptionMap["BillingByRequestEnabled"])
+	ModelRatioEnabled, _ := strconv.ParseBool(common.OptionMap["ModelRatioEnabled"])
+
+	if BillingByRequestEnabled && ModelRatioEnabled {
+		if token.BillingEnabled {
+			if token.BillingEnabled {
+				modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
+				if !ok {
+					preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+				} else {
+					ratio = modelRatio2 * groupRatio
+					preConsumedQuota = int(ratio * 1 * 500000)
+				}
+			} else {
+				preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+			}
+		} else {
+			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+		}
+	} else if BillingByRequestEnabled {
 		modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
 		if !ok {
 			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
@@ -165,13 +185,24 @@ func relayAudioHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 			} else {
 				quota = countAudioToken(audioResponse.Text, audioRequest.Model)
 			}
-			token, err := model.GetTokenById(tokenId)
-			if err != nil {
-				log.Println("获取token出错:", err)
-			}
 			modelRatioString := ""
 
-			if token.BillingEnabled {
+			if BillingByRequestEnabled && ModelRatioEnabled {
+				if token.BillingEnabled {
+					modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
+					if !ok {
+						quota = int(float64(quota) * ratio)
+						modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+					} else {
+						ratio = modelRatio2 * groupRatio
+						quota = int(ratio * 1 * 500000)
+						modelRatioString = fmt.Sprintf("按次计费")
+					}
+				} else {
+					quota = int(float64(quota) * ratio)
+					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+				}
+			} else if BillingByRequestEnabled {
 				modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
 				if !ok {
 					quota = int(float64(quota) * ratio)

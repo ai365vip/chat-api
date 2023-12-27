@@ -26,6 +26,8 @@ var DisplayInCurrencyEnabled = true
 var DisplayTokenStatEnabled = true
 var EmailNotificationsEnabled = true
 var WxPusherNotificationsEnabled = true
+var ModelRatioEnabled = true
+var BillingByRequestEnabled = true
 var Wx = true
 var Zfb = true
 

@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types';
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { API } from 'utils/api';
+
 import {
   Popover,
   TableRow,
@@ -60,7 +61,9 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
   const siteInfo = useSelector((state) => state.siteInfo);
   const [loading, setLoading] = useState(false);
   const [billingEnabled, setBillingEnabled] = useState(item.billing_enabled ? 1 : 0);
-
+  const [modelRatioEnabled, setModelRatioEnabled] = useState('');
+  const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
+  const [options, setOptions] = useState({});
 
   const handleBillingChange = async (event) => {
     const billingValue = event.target.value;
@@ -86,6 +89,46 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
       setLoading(false); // 完成请求后更新loading状态
     }
   };
+
+  useEffect(() => {
+      getOptions();
+  }, []);
+
+  const getOptions = async () => {
+    const res = await API.get('/api/user/option');
+    const { success, message, data } = res.data;
+    if (success) {
+      let newOptions = {};
+      data.forEach((item) => {
+        newOptions[item.key] = item.value;
+      });
+      setOptions(newOptions); // 设置所有选项的状态
+    } else {
+      showError(message);
+    }
+  };
+
+  useEffect(() => {
+    if (options.ModelRatioEnabled) { 
+      setModelRatioEnabled(options.ModelRatioEnabled === 'true');
+    }
+    if (options.BillingByRequestEnabled) { 
+      setBillingByRequestEnabled(options.BillingByRequestEnabled === 'true');
+    }
+  }, [options]);
+
+  const handleChatClick = () => {
+    if (!siteInfo?.chat_link) {
+      showSuccess('管理员未设置聊天界面');
+    } else {
+      const chatOption = COPY_OPTIONS.find(option => option.key === 'next');
+      if (chatOption) {
+        handleCopy(chatOption, 'link');
+      }
+    }
+  };
+  
+  
 
   const handleDeleteOpen = () => {
     handleCloseMenu();
@@ -160,7 +203,15 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
 
     let url = option.url;
 
-    if (option.key === 'next' && siteInfo?.chat_link) {
+    if (!siteInfo?.chat_link && option.key === 'next') {
+      showSuccess('管理员未设置聊天界面');
+      return;
+    }
+    if (option.encode) {
+      serverAddress = encodeURIComponent(serverAddress);
+    }
+
+    if (option.key === 'next') {
       url = siteInfo.chat_link + `/#/?settings={"key":"sk-{key}","url":"{serverAddress}"}`;
     }
 
@@ -233,10 +284,12 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
         <TableCell>{timestamp2string(item.created_time)}</TableCell>
 
         <TableCell>{item.expired_time === -1 ? '永不过期' : timestamp2string(item.expired_time)}</TableCell>
+        {modelRatioEnabled && billingByRequestEnabled && (
         <TableCell>
-            {loading ? ( // 使用loading状态来条件渲染加载指示器或下拉框
-              <CircularProgress size={24} />
-            ) : (
+          {loading ? (
+            <CircularProgress size={24} />
+          ) : (
+            
               <FormControl fullWidth size="small" variant="outlined" sx={{ minWidth: 100 }}>
                 <Select
                   value={billingEnabled}
@@ -248,8 +301,11 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
                   <MenuItem value={1}>按次计费</MenuItem>
                 </Select>
               </FormControl>
-            )}
-      </TableCell>
+
+          )}
+        </TableCell>
+        )}
+
         <TableCell>
           <Stack direction="row" spacing={1}>
             <Tooltip title={`sk-${item.key}`} placement="top">
@@ -278,7 +334,7 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
 
             </ButtonGroup>
             <ButtonGroup size="small" aria-label="split button">
-              <Button color="primary">聊天</Button>
+              <Button color="primary" onClick={handleChatClick} >聊天</Button>
               <Button size="small" onClick={(e) => handleOpenMenu(e, 'link')}>
                 <IconCaretDownFilled size={'16px'} />
               </Button>

@@ -29,6 +29,9 @@ export default function Token() {
   const [openModal, setOpenModal] = useState(false);
   const [editTokenId, setEditTokenId] = useState(0);
   const siteInfo = useSelector((state) => state.siteInfo);
+  const [modelRatioEnabled, setModelRatioEnabled] = useState('');
+  const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
+  const [options, setOptions] = useState({});
 
   const loadTokens = async (startIdx) => {
     setSearching(true);
@@ -54,7 +57,31 @@ export default function Token() {
       .catch((reason) => {
         showError(reason);
       });
+    getOptions();
   }, []);
+
+  const getOptions = async () => {
+    const res = await API.get('/api/user/option');
+    const { success, message, data } = res.data;
+    if (success) {
+      let newOptions = {};
+      data.forEach((item) => {
+        newOptions[item.key] = item.value;
+      });
+      setOptions(newOptions); // 设置所有选项的状态
+    } else {
+      showError(message);
+    }
+  };
+
+  useEffect(() => {
+    if (options.ModelRatioEnabled) { 
+      setModelRatioEnabled(options.ModelRatioEnabled === 'true');
+    }
+    if (options.BillingByRequestEnabled) { 
+      setBillingByRequestEnabled(options.BillingByRequestEnabled === 'true');
+    }
+  }, [options]);
 
   const onPaginationChange = (event, activePage) => {
     (async () => {
@@ -187,7 +214,10 @@ export default function Token() {
         <PerfectScrollbar component="div">
           <TableContainer sx={{ overflow: 'unset' }}>
             <Table sx={{ minWidth: 800 }}>
-              <TokenTableHead />
+              <TokenTableHead 
+              modelRatioEnabled={modelRatioEnabled}
+              billingByRequestEnabled={billingByRequestEnabled}
+              />
               <TableBody>
                 {tokens.slice(activePage * ITEMS_PER_PAGE, (activePage + 1) * ITEMS_PER_PAGE).map((row) => (
                   <TokensTableRow

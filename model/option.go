@@ -81,6 +81,8 @@ func InitOptionMap() {
 	common.OptionMap["NotificationEmail"] = ""
 	common.OptionMap["WxPusherNotificationsEnabled"] = strconv.FormatBool(common.WxPusherNotificationsEnabled)
 	common.OptionMap["EmailNotificationsEnabled"] = strconv.FormatBool(common.EmailNotificationsEnabled)
+	common.OptionMap["BillingByRequestEnabled"] = strconv.FormatBool(common.BillingByRequestEnabled)
+	common.OptionMap["ModelRatioEnabled"] = strconv.FormatBool(common.ModelRatioEnabled)
 	common.OptionMap["YzfZfb"] = strconv.FormatBool(common.Zfb)
 	common.OptionMap["YzfWx"] = strconv.FormatBool(common.Wx)
 
@@ -164,6 +166,18 @@ func updateOptionMap(key string, value string) (err error) {
 			common.LogConsumeEnabled = boolValue
 		case "DisplayInCurrencyEnabled":
 			common.DisplayInCurrencyEnabled = boolValue
+		case "WxPusherNotificationsEnabled":
+			common.WxPusherNotificationsEnabled = boolValue
+		case "EmailNotificationsEnabled":
+			common.EmailNotificationsEnabled = boolValue
+		case "BillingByRequestEnabled":
+			common.BillingByRequestEnabled = boolValue
+		case "ModelRatioEnabled":
+			common.ModelRatioEnabled = boolValue
+		case "YzfZfb":
+			common.Zfb = boolValue
+		case "YzfWx":
+			common.Wx = boolValue
 		}
 	}
 	switch key {

@@ -15,6 +15,9 @@ const EditToken = (props) => {
     const [userState] = useContext(UserContext);
     const [selectedGroup, setSelectedGroup] = useState();
     const [billingStrategy, setBillingStrategy] = useState('0');
+    const [modelRatioEnabled, setModelRatioEnabled] = useState('');
+    const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
+    const [options, setOptions] = useState({});
     const originInputs = {
         name: '',
         remain_quota: isEdit ? 0 : 500000,
@@ -79,7 +82,31 @@ const EditToken = (props) => {
         if (isAdminUser) {
             fetchGroups().then(); // 如果是管理员，则获取分组选项
           }
+        getOptions();
     }, [props.editingToken.id]);
+
+    const getOptions = async () => {
+        const res = await API.get('/api/user/option');
+        const { success, message, data } = res.data;
+        if (success) {
+          let newOptions = {};
+          data.forEach((item) => {
+            newOptions[item.key] = item.value;
+          });
+          setOptions(newOptions); // 设置所有选项的状态
+        } else {
+          showError(message);
+        }
+      };
+    
+      useEffect(() => {
+        if (options.ModelRatioEnabled) { 
+          setModelRatioEnabled(options.ModelRatioEnabled === 'true');
+        }
+        if (options.BillingByRequestEnabled) { 
+          setBillingByRequestEnabled(options.BillingByRequestEnabled === 'true');
+        }
+      }, [options]);
 
 
     // 新增 state 变量 tokenCount 来记录用户想要创建的令牌数量，默认为 1
@@ -326,7 +353,7 @@ const EditToken = (props) => {
                             </div>
                         )}
                         
-                        {!isEdit && (
+                        {!isEdit && modelRatioEnabled && billingByRequestEnabled && (
                             <div style={{ flex: 1, marginLeft: isAdminUser ? 8 : 0 }}> {/* 当存在管理员选项时添加间隔 */}
                                 <Typography.Text>计费策略</Typography.Text>
                                 <Select

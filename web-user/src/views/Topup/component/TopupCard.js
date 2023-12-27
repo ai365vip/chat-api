@@ -1,4 +1,4 @@
-import { Typography, Stack, OutlinedInput, InputAdornment, Button, InputLabel, FormControl,Modal,Box  } from '@mui/material';
+import { Typography, Stack, OutlinedInput, InputAdornment, Button, InputLabel, FormControl,Modal,Box,useMediaQuery   } from '@mui/material';
 import { IconWallet } from '@tabler/icons-react';
 import { useTheme } from '@mui/material/styles';
 import SubCard from 'ui-component/cards/SubCard';
@@ -21,7 +21,7 @@ const TopupCard = () => {
   const [open, setOpen] = useState(false);
   const [payWay, setPayWay] = useState('');
   const [topUpCode, setTopUpCode] = useState(''); 
-
+  const isMobile = useMediaQuery('(max-width:600px)');
 
 
   const topUp = async () => {
@@ -243,11 +243,10 @@ const TopupCard = () => {
         </SubCard>
        
         <SubCard sx={{ marginTop: '40px' }}>
-          {/* 在线充值部分 */}
           <Typography variant="h3" color={theme.palette.grey[700]} sx={{ marginBottom: '20px' }}>
             在线充值
           </Typography>
-          
+
           <FormControl fullWidth variant="outlined" sx={{ mt: 2, mb: 1 }}>
             <InputLabel htmlFor="amount">充值金额</InputLabel>
             <OutlinedInput
@@ -261,21 +260,47 @@ const TopupCard = () => {
                 getAmount(newTopUpCount); 
               }}
               startAdornment={<InputAdornment position="start">$</InputAdornment>}
-              
+              // 根据isMobile状态，决定endAdornment的内容
+              endAdornment={!isMobile ? (
+                  <InputAdornment position="end">
+                    {zfb === 'true' && (
+                      <Button variant="contained" onClick={() => preTopUp('zfb')} sx={{ mr: 1 }}>
+                        支付宝
+                      </Button>
+                    )}
+                    {wx === 'true' && (
+                      <Button variant="contained" onClick={() => preTopUp('wx')}>
+                        微信
+                      </Button>
+                    )}
+                  </InputAdornment>
+                ) : null}
             />
           </FormControl>
-          <Stack direction="row" spacing={1} sx={{ mb: 2 }}> {/* 添加 Stack 的 margin-bottom */}
-    {zfb === 'true' && (
-      <Button variant="contained" onClick={() => preTopUp('zfb')}>
-        支付宝
-      </Button>
-    )}
-    {wx === 'true' && (
-      <Button variant="contained" onClick={() => preTopUp('wx')}>
-        微信
-      </Button>
-    )}
-  </Stack>
+          
+          {isMobile && (
+            <Stack direction="row" spacing={1} sx={{ mt: 1, justifyContent: 'center' }}> 
+              {zfb === 'true' && (
+                <Button
+                  variant="contained"
+                  onClick={() => preTopUp('zfb')}
+                  sx={{ minWidth: 'auto', width: 'auto', flexGrow: 0, paddingX: 2 }}
+                >
+                  支付宝
+                </Button>
+              )}
+              {wx === 'true' && (
+                <Button
+                  variant="contained"
+                  onClick={() => preTopUp('wx')}
+                  sx={{ minWidth: 'auto', width: 'auto', flexGrow: 0, paddingX: 2 }}
+                >
+                  微信
+                </Button>
+              )}
+            </Stack>
+            )
+          }
         </SubCard>
           <Modal open={open} onClose={() => setOpen(false)}>
         <Box sx={{

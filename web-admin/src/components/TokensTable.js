@@ -49,6 +49,8 @@ function renderStatus(status) {
 
 const TokensTable = () => {
     const isAdminUser = isAdmin();
+    const [modelRatioEnabled, setModelRatioEnabled] = useState('');
+    const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
 
     const link_menu = [
         {node: 'item', key: 'next', name: 'ChatGPT Next Web', onClick: () => {onOpenLink('next')}},
@@ -142,7 +144,7 @@ const TokensTable = () => {
                 );
             },
         },
-        {
+        modelRatioEnabled && billingByRequestEnabled && {
             title: '计费策略',
             dataIndex: 'billing_enabled',
             render: (text, record, index) => {
@@ -156,7 +158,7 @@ const TokensTable = () => {
                     </Select>
                 );
             },
-        },                                  
+        },                                         
         {
             title: '',
             dataIndex: 'operate',
@@ -248,9 +250,12 @@ const TokensTable = () => {
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchToken, setSearchToken] = useState('');
     const [searching, setSearching] = useState(false);
+    
     const [editingToken, setEditingToken] = useState({
         id: undefined,
     });
+
+    const [options, setOptions] = useState({});
 
     const closeEdit = () => {
         setShowEdit(false);
@@ -344,7 +349,31 @@ const TokensTable = () => {
             .catch((reason) => {
                 showError(reason);
             });
+        getOptions();
     }, [pageSize]);
+
+    const getOptions = async () => {
+        const res = await API.get('/api/user/option');
+        const { success, message, data } = res.data;
+        if (success) {
+          let newOptions = {};
+          data.forEach((item) => {
+            newOptions[item.key] = item.value;
+          });
+          setOptions(newOptions); // 设置所有选项的状态
+        } else {
+          showError(message);
+        }
+      };
+    
+      useEffect(() => {
+        if (options.ModelRatioEnabled) { 
+          setModelRatioEnabled(options.ModelRatioEnabled === 'true');
+        }
+        if (options.BillingByRequestEnabled) { 
+          setBillingByRequestEnabled(options.BillingByRequestEnabled === 'true');
+        }
+      }, [options]);
 
     const removeRecord = key => {
         let newDataSource = [...tokens];
@@ -591,7 +620,8 @@ const TokensTable = () => {
                 onConfirm={deleteSelectedTokens}
             >
                 <Button theme='light' type='danger' style={{ marginLeft: '8px' }}>删除所选令牌</Button>
-            </Popconfirm>        </>
+            </Popconfirm>        
+        </>
     );
 };
 

@@ -12,6 +12,7 @@ import (
 	"one-api/common"
 	"one-api/model"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -289,7 +290,21 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 	if err != nil {
 		log.Println("获取token出错:", err)
 	}
-	if token.BillingEnabled {
+	BillingByRequestEnabled, _ := strconv.ParseBool(common.OptionMap["BillingByRequestEnabled"])
+	ModelRatioEnabled, _ := strconv.ParseBool(common.OptionMap["ModelRatioEnabled"])
+	if BillingByRequestEnabled && ModelRatioEnabled {
+		if token.BillingEnabled {
+			modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
+			if !ok {
+				preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+			} else {
+				ratio = modelRatio2 * groupRatio
+				preConsumedQuota = int(ratio * 1 * 500000)
+			}
+		} else {
+			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+		}
+	} else if BillingByRequestEnabled {
 		modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
 		if !ok {
 			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
@@ -574,12 +589,27 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			promptTokens = textResponse.Usage.PromptTokens
 			completionTokens = textResponse.Usage.CompletionTokens
 			quota = promptTokens + int(float64(completionTokens)*completionRatio)
-			if token.BillingEnabled {
+			if BillingByRequestEnabled && ModelRatioEnabled {
+				if token.BillingEnabled {
+					modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
+					if !ok {
+						quota = int(float64(quota) * ratio)
+						modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+					} else {
+						groupRatio := common.GetGroupRatio(group)
+						ratio = modelRatio2 * groupRatio
+						quota = int(ratio * 1 * 500000)
+						modelRatioString = fmt.Sprintf("按次计费")
+					}
+				} else {
+					quota = int(float64(quota) * ratio)
+					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+				}
+			} else if BillingByRequestEnabled {
 				modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
 				if !ok {
 					quota = int(float64(quota) * ratio)
 					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
-
 				} else {
 					groupRatio := common.GetGroupRatio(group)
 					ratio = modelRatio2 * groupRatio
@@ -589,7 +619,6 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			} else {
 				quota = int(float64(quota) * ratio)
 				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
-
 			}
 
 			if ratio != 0 && quota <= 0 {

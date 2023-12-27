@@ -69,7 +69,7 @@ const PersonalSetting = () => {
         }
         getUserData().then(
             (res) => {
-                console.log(userState)
+                //console.log(userState)
             }
         );
         loadModels().then();
@@ -132,7 +132,7 @@ const PersonalSetting = () => {
         const {success, message, data} = res.data;
         if (success) {
             setModels(data);
-            console.log(data)
+            //console.log(data)
         } else {
             showError(message);
         }

@@ -1,6 +1,7 @@
+import PropTypes from 'prop-types';
 import { TableCell, TableHead, TableRow } from '@mui/material';
 
-const TokenTableHead = () => {
+const TokenTableHead = ({ modelRatioEnabled, billingByRequestEnabled }) => {
   return (
     <TableHead>
       <TableRow>
@@ -10,11 +11,18 @@ const TokenTableHead = () => {
         <TableCell>剩余额度</TableCell>
         <TableCell>创建时间</TableCell>
         <TableCell>过期时间</TableCell>
-        <TableCell>计费策略</TableCell>
+        {modelRatioEnabled && billingByRequestEnabled && (
+          <TableCell>计费策略</TableCell>
+        )}
         <TableCell>操作</TableCell>
       </TableRow>
     </TableHead>
   );
+};
+
+TokenTableHead.propTypes = {
+  modelRatioEnabled: PropTypes.bool,
+  billingByRequestEnabled: PropTypes.bool
 };
 
 export default TokenTableHead;

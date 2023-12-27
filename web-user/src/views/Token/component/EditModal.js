@@ -48,6 +48,9 @@ const originInputs = {
 const EditModal = ({ open, tokenId, onCancel, onOk }) => {
   const theme = useTheme();
   const [inputs, setInputs] = useState(originInputs);
+  const [modelRatioEnabled, setModelRatioEnabled] = useState('');
+  const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
+  const [options, setOptions] = useState({});
 
   const generateRandomSuffix = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -130,6 +133,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
     if (tokenId) {
       loadToken().catch(showError);
     }
+    getOptions();
   }, [tokenId]);
 
   useEffect(() => {
@@ -138,6 +142,29 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
       setBatchAddCount(1);
     }
   }, [tokenId]);
+
+  const getOptions = async () => {
+    const res = await API.get('/api/user/option');
+    const { success, message, data } = res.data;
+    if (success) {
+      let newOptions = {};
+      data.forEach((item) => {
+        newOptions[item.key] = item.value;
+      });
+      setOptions(newOptions); // 设置所有选项的状态
+    } else {
+      showError(message);
+    }
+  };
+
+  useEffect(() => {
+    if (options.ModelRatioEnabled) { 
+      setModelRatioEnabled(options.ModelRatioEnabled === 'true');
+    }
+    if (options.BillingByRequestEnabled) { 
+      setBillingByRequestEnabled(options.BillingByRequestEnabled === 'true');
+    }
+  }, [options]);
 
   
 
@@ -243,7 +270,8 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
               />{' '}
               无限额度
               {/* 新增的计费方式选择框 */}
-              {tokenId ? null :(
+              {tokenId ? null : (
+              modelRatioEnabled && billingByRequestEnabled && (
               <FormControl fullWidth error={Boolean(touched.billing_enabled && errors.billing_enabled)} sx={{ ...theme.typography.otherInput }}>
                   <InputLabel id="billing-enabled-label">计费方式</InputLabel>
                   <Select
@@ -267,6 +295,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
                     </FormHelperText>
                   )}
                 </FormControl>
+                  )
                 )}
 
               {tokenId ? null : (

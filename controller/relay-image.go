@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/model"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -128,8 +129,25 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 	if err != nil {
 		log.Println("获取token出错:", err)
 	}
+	BillingByRequestEnabled, _ := strconv.ParseBool(common.OptionMap["BillingByRequestEnabled"])
+	ModelRatioEnabled, _ := strconv.ParseBool(common.OptionMap["ModelRatioEnabled"])
 
-	if token.BillingEnabled {
+	if BillingByRequestEnabled && ModelRatioEnabled {
+		if token.BillingEnabled {
+			modelRatio2, ok := common.GetModelRatio2(imageRequest.Model)
+			if !ok { // 如果 ModelRatio2 中没有对应的 name，则继续使用之前的 quota 值
+				quota = int(ratio*sizeRatio*qualityRatio*1000) * imageRequest.N
+				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+			} else {
+				ratio = modelRatio2 * groupRatio
+				quota = int(ratio * 1 * 500000)
+				modelRatioString = fmt.Sprintf("按次计费")
+			}
+		} else {
+			quota = int(ratio*sizeRatio*qualityRatio*1000) * imageRequest.N
+			modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+		}
+	} else if BillingByRequestEnabled {
 		modelRatio2, ok := common.GetModelRatio2(imageRequest.Model)
 		if !ok { // 如果 ModelRatio2 中没有对应的 name，则继续使用之前的 quota 值
 			quota = int(ratio*sizeRatio*qualityRatio*1000) * imageRequest.N
