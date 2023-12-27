@@ -132,15 +132,16 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 
 
 ## 界面截图
-![image](https://github.com/Calcium-Ion/new-api/assets/61247483/d1ac216e-0804-4105-9fdc-66b35022d861)
 
-![image](https://github.com/Calcium-Ion/new-api/assets/61247483/3ca0b282-00ff-4c96-bf9d-e29ef615c605)  
-![image](https://github.com/Calcium-Ion/new-api/assets/61247483/f4f40ed4-8ccb-43d7-a580-90677827646d)  
-![image](https://github.com/Calcium-Ion/new-api/assets/61247483/90d7d763-6a77-4b36-9f76-2bb30f18583d)
-![image](https://github.com/Calcium-Ion/new-api/assets/61247483/e414228a-3c35-429a-b298-6451d76d9032)
-夜间模式  
-![image](https://github.com/Calcium-Ion/new-api/assets/61247483/5b3228e8-2556-44f7-97d6-4f8d8ee6effa)  
-![image](https://github.com/Calcium-Ion/new-api/assets/61247483/af9a07ee-5101-4b3d-8bd9-ae21a4fd7e9e)
+![image](https://github.com/ai365vip/chat-api/assets/154959065/13fde0aa-aa19-4c2f-9ace-611fb9cd60b8)
+
+![image](https://github.com/ai365vip/chat-api/assets/154959065/327c6919-5fe6-4219-855d-1c09498ee567)
+
+![image](https://github.com/ai365vip/chat-api/assets/154959065/0017e8cb-645b-4c05-aefa-6cd538989278)  
+
+![image](https://github.com/ai365vip/chat-api/assets/154959065/8c4ea0cd-c4fb-4074-8080-4998b0fcda20)  
+![image](https://github.com/ai365vip/chat-api/assets/154959065/b16aa85f-48ff-4843-af11-d88a6e596679)
+
 
 
 
