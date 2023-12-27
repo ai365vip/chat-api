@@ -145,8 +145,8 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/b16aa85f-48ff-4843-af11-d88a6e596679)
 
 
-## 捐款
+## 赞助
 
 如果觉得这个软件对你有所帮助，欢迎请作者喝可乐、喝咖啡～        Chat API 交流群
 
- <img src="https://github.com/ai365vip/chat-api/assets/154959065/31289586-f7a6-4640-bf8c-e6d6c97db581" width="250" alt="赞助" style="margin-right: 10px;">                                                    <img src="https://github.com/ai365vip/chat-api/assets/154959065/534c7d1e-948d-4f61-8740-2b4851bffb7b" width="250" alt="交流群">
+ <img src="https://github.com/ai365vip/chat-api/assets/154959065/31289586-f7a6-4640-bf8c-e6d6c97db581" width="250"  style="margin-right: 100px;">                                                    <img src="https://github.com/ai365vip/chat-api/assets/154959065/534c7d1e-948d-4f61-8740-2b4851bffb7b" width="250"">
