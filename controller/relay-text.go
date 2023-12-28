@@ -589,6 +589,8 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 			promptTokens = textResponse.Usage.PromptTokens
 			completionTokens = textResponse.Usage.CompletionTokens
 			quota = promptTokens + int(float64(completionTokens)*completionRatio)
+			log.Println("BillingByRequestEnabled:", BillingByRequestEnabled)
+			log.Println("ModelRatioEnabled:", ModelRatioEnabled)
 			if BillingByRequestEnabled && ModelRatioEnabled {
 				if token.BillingEnabled {
 					modelRatio2, ok := common.GetModelRatio2(textRequest.Model)

@@ -111,10 +111,14 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 			Model:    json.RawMessage(`{"id":"gpt-3.5-turbo"}`),
 			Messages: messagesMap,
 		}
-		jsonData, err = json.Marshal(requestChatbot) // 使用新的 struct 的内容进行序列化
+		jsonData, err = json.Marshal(requestChatbot)
 
 	} else {
-		requestURL = channel.GetBaseURL() + "/v1/chat/completions"
+		if baseURL := channel.GetBaseURL(); len(baseURL) > 0 {
+			requestURL = baseURL
+		}
+
+		requestURL = getFullRequestURL(requestURL, "/v1/chat/completions", channel.Type)
 		jsonData, err = json.Marshal(request)
 	}
 
@@ -122,7 +126,7 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 		return err, nil
 	}
 	// 打印JSON数据
-	//fmt.Println(string(jsonData))
+	//fmt.Println(requestURL)
 
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	messagesMap := make([]map[string]string, len(request.Messages))
@@ -185,6 +189,7 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 
 	return nil, nil
 }
+
 func randomID() string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -227,9 +232,12 @@ func TestChannel(c *gin.Context) {
 		return
 	}
 	testRequest := buildTestRequest()
-	gptVersion := c.DefaultQuery("version", "gpt-3.5-turbo")
+	modelTest := channel.ModelTest
+	if modelTest == "" {
+		modelTest = "gpt-3.5-turbo"
+	}
 	tik := time.Now()
-	err, _ = testChannel(channel, *testRequest, gptVersion)
+	err, _ = testChannel(channel, *testRequest, modelTest)
 	tok := time.Now()
 	milliseconds := tok.Sub(tik).Milliseconds()
 	go channel.UpdateResponseTime(milliseconds)
