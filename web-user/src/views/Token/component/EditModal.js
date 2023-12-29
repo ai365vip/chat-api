@@ -30,7 +30,7 @@ import { API } from 'utils/api';
 const validationSchema = Yup.object().shape({
   is_edit: Yup.boolean(),
   name: Yup.string().required('名称 不能为空'),
-  remain_quota: Yup.number().min(0, '必须大于等于0'),
+  remain_quota: Yup.number().min(0.5, '必须大于等于0.5'),
   expired_time: Yup.number(),
   unlimited_quota: Yup.boolean(),
   billing_enabled: Yup.boolean()
@@ -39,7 +39,7 @@ const validationSchema = Yup.object().shape({
 const originInputs = {
   is_edit: false,
   name: '',
-  remain_quota: 0,
+  remain_quota: 0.5,
   expired_time: -1,
   unlimited_quota: false,
   billing_enabled:false
@@ -63,6 +63,11 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
 
   const submit = async (values, { setErrors, setStatus, setSubmitting }) => {
     setSubmitting(true);
+
+    if (batchAddCount < 1 || batchAddCount > 100) {
+      showError('批量添加数量必须在1到100之间');
+      return;
+    }
 
     try {
       const submissions = [];

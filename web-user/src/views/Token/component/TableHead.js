@@ -1,10 +1,17 @@
 import PropTypes from 'prop-types';
-import { TableCell, TableHead, TableRow } from '@mui/material';
+import { TableCell, TableHead, TableRow,Checkbox } from '@mui/material';
 
-const TokenTableHead = ({ modelRatioEnabled, billingByRequestEnabled }) => {
+const TokenTableHead = ({ numSelected, rowCount, onSelectAllClick, modelRatioEnabled, billingByRequestEnabled }) => {
   return (
     <TableHead>
       <TableRow>
+        <TableCell padding="checkbox">
+          <Checkbox
+            indeterminate={numSelected > 0 && numSelected < rowCount}
+            checked={rowCount > 0 && numSelected === rowCount}
+            onChange={onSelectAllClick}
+          />
+        </TableCell>
         <TableCell>名称</TableCell>
         <TableCell>状态</TableCell>
         <TableCell>已用额度</TableCell>
@@ -22,7 +29,10 @@ const TokenTableHead = ({ modelRatioEnabled, billingByRequestEnabled }) => {
 
 TokenTableHead.propTypes = {
   modelRatioEnabled: PropTypes.bool,
-  billingByRequestEnabled: PropTypes.bool
+  billingByRequestEnabled: PropTypes.bool,
+  onSelectAllClick: PropTypes.func.isRequired, // 新增 propType
+  numSelected: PropTypes.number.isRequired, // 新增 propType
+  rowCount: PropTypes.number.isRequired // 新增 propType
 };
 
 export default TokenTableHead;

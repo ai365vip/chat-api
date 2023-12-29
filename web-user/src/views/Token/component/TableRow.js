@@ -17,12 +17,11 @@ import {
   Button,
   Tooltip,
   Stack,
-  ButtonGroup,Select, FormControl
+  ButtonGroup,Select, FormControl,Checkbox
 } from '@mui/material';
 import TableSwitch from 'ui-component/Switch';
 import { renderQuota, showSuccess, timestamp2string } from 'utils/common';
 import CircularProgress from '@mui/material/CircularProgress';
-
 import { IconDotsVertical, IconEdit, IconTrash, IconCaretDownFilled,IconEye  } from '@tabler/icons-react';
 
 const COPY_OPTIONS = [
@@ -53,7 +52,7 @@ function createMenu(menuItems) {
   );
 }
 
-export default function TokensTableRow({ item, manageToken, handleOpenModal, setModalTokenId }) {
+export default function TokensTableRow({ item, manageToken, handleOpenModal, setModalTokenId ,selected, handleSelectOne}) {
   const [open, setOpen] = useState(null);
   const [menuItems, setMenuItems] = useState(null);
   const [openDelete, setOpenDelete] = useState(false);
@@ -64,6 +63,7 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
   const [modelRatioEnabled, setModelRatioEnabled] = useState('');
   const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
   const [options, setOptions] = useState({});
+  
 
   const handleBillingChange = async (event) => {
     const billingValue = event.target.value;
@@ -246,10 +246,15 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
 
   return (
     <>
-      <TableRow tabIndex={item.id}>
-        <TableCell>{item.name}</TableCell>
-        
 
+      <TableRow tabIndex={item.id}>
+        <TableCell padding="checkbox">
+          <Checkbox
+            checked={selected.indexOf(item.id) !== -1}
+            onChange={(event) => handleSelectOne(event, item.id)}
+          />
+        </TableCell>
+        <TableCell>{item.name}</TableCell>
         <TableCell>
           <Tooltip
             title={(() => {
@@ -378,5 +383,7 @@ TokensTableRow.propTypes = {
   item: PropTypes.object,
   manageToken: PropTypes.func,
   handleOpenModal: PropTypes.func,
-  setModalTokenId: PropTypes.func
+  setModalTokenId: PropTypes.func,
+  selected: PropTypes.array.isRequired,
+  handleSelectOne: PropTypes.func.isRequired
 };

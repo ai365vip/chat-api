@@ -17,7 +17,7 @@ import TokenTableHead from './component/TableHead';
 import TableToolBar from 'ui-component/TableToolBar';
 import { API } from 'utils/api';
 import { ITEMS_PER_PAGE } from 'constants';
-import { IconRefresh, IconPlus } from '@tabler/icons-react';
+import { IconRefresh, IconPlus,IconTrash } from '@tabler/icons-react';
 import EditeModal from './component/EditModal';
 import { useSelector } from 'react-redux';
 
@@ -32,33 +32,43 @@ export default function Token() {
   const [modelRatioEnabled, setModelRatioEnabled] = useState('');
   const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
   const [options, setOptions] = useState({});
+  const [selected, setSelected] = useState([]);
+  const [rowsPerPage, setRowsPerPage] = useState(ITEMS_PER_PAGE);
 
-  const loadTokens = async (startIdx) => {
+
+
+  const loadTokens = async (startIdx, rowsPerPage = ITEMS_PER_PAGE) => {
     setSearching(true);
-    const res = await API.get(`/api/token/?p=${startIdx}`);
-    const { success, message, data } = res.data;
-    if (success) {
-      if (startIdx === 0) {
-        setTokens(data);
+    try {
+      const res = await API.get(`/api/token/?p=${startIdx}&size=${rowsPerPage}`);
+      const { success, message, data } = res.data;
+      if (success) {
+        if (startIdx === 0) {
+          setTokens(data);
+        } else {
+          let newTokens = [...tokens];
+          newTokens.splice(startIdx * rowsPerPage, data.length, ...data);
+          setTokens(newTokens);
+        }
       } else {
-        let newTokens = [...tokens];
-        newTokens.splice(startIdx * ITEMS_PER_PAGE, data.length, ...data);
-        setTokens(newTokens);
+        showError(message);
       }
-    } else {
-      showError(message);
+    } catch (error) {
+      showError(`加载数据时出错: ${error}`);
     }
     setSearching(false);
   };
+  
 
   useEffect(() => {
-    loadTokens(0)
+    loadTokens(0, rowsPerPage)
       .then()
       .catch((reason) => {
         showError(reason);
       });
-    getOptions();
-  }, []);
+      getOptions();
+  }, [rowsPerPage]);
+  
 
   const getOptions = async () => {
     const res = await API.get('/api/user/option');
@@ -83,15 +93,16 @@ export default function Token() {
     }
   }, [options]);
 
-  const onPaginationChange = (event, activePage) => {
+  const onPaginationChange = (event, newActivePage) => {
     (async () => {
-      if (activePage === Math.ceil(tokens.length / ITEMS_PER_PAGE)) {
+      if (newActivePage === Math.ceil(tokens.length / rowsPerPage)) {
         // In this case we have to load more data and then append them.
-        await loadTokens(activePage);
+        await loadTokens(newActivePage);
       }
-      setActivePage(activePage);
+      setActivePage(newActivePage);
     })();
   };
+  
 
   const searchTokens = async (event) => {
     event.preventDefault();
@@ -168,6 +179,52 @@ export default function Token() {
     }
   };
 
+  const handleSelectAllClick = (event) => {
+    if (event.target.checked) {
+      const newSelecteds = tokens.map((n) => n.id);
+      setSelected(newSelecteds);
+      return;
+    }
+    setSelected([]);
+  };
+
+  // 分页处理函数
+  const handleRowsPerPageChange = (event) => {
+    const newRowsPerPage = parseInt(event.target.value, 10);
+    setRowsPerPage(newRowsPerPage); // 更新每页显示的行数
+    setActivePage(0); // 重置到第一页
+    loadTokens(0, newRowsPerPage); 
+  };
+  
+
+  const handleDeleteSelected = async () => {
+
+    const promises = selected.map((id) => API.delete(`/api/token/${id}`));
+    const results = await Promise.allSettled(promises);
+    const success = results.every((result) => result.status === 'fulfilled');
+    if (success) {
+      showSuccess('选中的 Token 已删除');
+      setSelected([]); // 清空选中状态
+      loadTokens(0); // 重新加载数据
+    } else {
+      showError('删除时发生错误');
+    }
+  };
+
+  const handleSelectOne = (event, id) => {
+    const selectedIndex = selected.indexOf(id);
+    let newSelected = [];
+  
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, id);
+    } else if (selectedIndex >= 0) {
+      newSelected = newSelected.filter((selectedId) => selectedId !== id);
+    }
+  
+    setSelected(newSelected);
+  };
+  
+
   return (
     <>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
@@ -203,33 +260,49 @@ export default function Token() {
           }}
         >
           <Container>
-            <ButtonGroup variant="outlined" aria-label="outlined small primary button group">
+            <ButtonGroup variant="outlined" aria-label="outlined primary button group">
+              {selected.length > 0 && (
+                <Button
+                  onClick={handleDeleteSelected}
+                  startIcon={<IconTrash />}
+                  color="error"
+                >
+                  删除选中
+                </Button>
+              )}
               <Button onClick={handleRefresh} startIcon={<IconRefresh width={'18px'} />}>
                 刷新
               </Button>
             </ButtonGroup>
           </Container>
         </Toolbar>
+
         {searching && <LinearProgress />}
         <PerfectScrollbar component="div">
           <TableContainer sx={{ overflow: 'unset' }}>
             <Table sx={{ minWidth: 800 }}>
               <TokenTableHead 
+              numSelected={selected.length}
+              rowCount={tokens.length}
+              onSelectAllClick={handleSelectAllClick}
               modelRatioEnabled={modelRatioEnabled}
               billingByRequestEnabled={billingByRequestEnabled}
               />
               <TableBody>
-                {tokens.slice(activePage * ITEMS_PER_PAGE, (activePage + 1) * ITEMS_PER_PAGE).map((row) => (
-                  <TokensTableRow
-                    item={row}
-                    manageToken={manageToken}
-                    key={row.id}
-                    handleOpenModal={handleOpenModal}
-                    setModalTokenId={setEditTokenId}
-                    modelRatioEnabled={modelRatioEnabled}
-                    billingByRequestEnabled={billingByRequestEnabled}
-                  />
-                ))}
+              {tokens.slice(activePage * rowsPerPage, (activePage + 1) * rowsPerPage).map((row) => (
+                <TokensTableRow
+                  item={row}
+                  manageToken={manageToken}
+                  key={row.id}
+                  handleOpenModal={handleOpenModal}
+                  setModalTokenId={setEditTokenId}
+                  modelRatioEnabled={modelRatioEnabled}
+                  billingByRequestEnabled={billingByRequestEnabled}
+                  selected={selected}
+                  handleSelectOne={handleSelectOne} // 这里传递 handleSelectOne
+                />
+              ))}
+
               </TableBody>
             </Table>
           </TableContainer>
@@ -237,10 +310,15 @@ export default function Token() {
         <TablePagination
           page={activePage}
           component="div"
-          count={tokens.length + (tokens.length % ITEMS_PER_PAGE === 0 ? 1 : 0)}
-          rowsPerPage={ITEMS_PER_PAGE}
+          count={-1} 
+          rowsPerPage={rowsPerPage} 
           onPageChange={onPaginationChange}
-          rowsPerPageOptions={[ITEMS_PER_PAGE]}
+          onRowsPerPageChange={handleRowsPerPageChange} 
+          rowsPerPageOptions={[10, 30,50,100]} 
+          labelRowsPerPage="每页行数：" 
+          labelDisplayedRows={({ from, to }) => {
+            return `${from}–${to}`;
+          }}
         />
       </Card>
       <EditeModal open={openModal} onCancel={handleCloseModal} onOk={handleOkModal} tokenId={editTokenId} />
