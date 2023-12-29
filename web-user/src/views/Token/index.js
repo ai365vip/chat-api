@@ -224,6 +224,28 @@ export default function Token() {
     setSelected(newSelected);
   };
   
+  const copySelectedKeys = () => {
+    const selectedKeysText = selected.map((id) => {
+      const token = tokens.find((token) => token.id === id);
+      return token ? `sk-${token.key}` : ''; 
+    }).join('\n');
+  
+    if (!navigator.clipboard) {
+      showError('复制到剪贴板失败：剪贴板功能不可用');
+      return;
+    }
+  
+    navigator.clipboard.writeText(selectedKeysText)
+      .then(() => {
+        showSuccess('选中的 keys 已复制到剪贴板');
+      })
+      .catch((err) => {
+        showError('复制到剪贴板失败：' + err);
+      });
+  };
+  
+  
+  
 
   return (
     <>
@@ -269,6 +291,15 @@ export default function Token() {
                 >
                   删除选中
                 </Button>
+              )}
+              {selected.length > 0 && (
+                <Button
+                    onClick={copySelectedKeys}
+                    disabled={selected.length === 0} // 当没有选中项时禁用按钮
+                  >
+                    复制选中的 Key
+                  </Button>
+              
               )}
               <Button onClick={handleRefresh} startIcon={<IconRefresh width={'18px'} />}>
                 刷新

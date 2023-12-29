@@ -20,7 +20,7 @@ import {
   ButtonGroup,Select, FormControl,Checkbox
 } from '@mui/material';
 import TableSwitch from 'ui-component/Switch';
-import { renderQuota, showSuccess, timestamp2string } from 'utils/common';
+import { renderQuota, showSuccess,showError, timestamp2string } from 'utils/common';
 import CircularProgress from '@mui/material/CircularProgress';
 import { IconDotsVertical, IconEdit, IconTrash, IconCaretDownFilled,IconEye  } from '@tabler/icons-react';
 
@@ -52,7 +52,8 @@ function createMenu(menuItems) {
   );
 }
 
-export default function TokensTableRow({ item, manageToken, handleOpenModal, setModalTokenId ,selected, handleSelectOne}) {
+export default function TokensTableRow({ item, manageToken, handleOpenModal, setModalTokenId, selected, handleSelectOne }) {
+
   const [open, setOpen] = useState(null);
   const [menuItems, setMenuItems] = useState(null);
   const [openDelete, setOpenDelete] = useState(false);
@@ -226,6 +227,8 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
     handleCloseMenu();
   };
 
+
+
   const copyItems = createMenu(
     COPY_OPTIONS.map((option) => ({
       text: option.text,
@@ -254,7 +257,17 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
             onChange={(event) => handleSelectOne(event, item.id)}
           />
         </TableCell>
-        <TableCell>{item.name}</TableCell>
+        <TableCell onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(`${item.name}`);
+                  showSuccess('已复制到剪贴板！');
+                } catch (error) {
+                  showError(`复制失败，请手动复制。${item.name}`); // 提示用户手动复制
+                }
+              }}
+            >
+          {item.name}
+        </TableCell>
         <TableCell>
           <Tooltip
             title={(() => {
@@ -313,7 +326,7 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
 
         <TableCell>
           <Stack direction="row" spacing={1}>
-            <Tooltip title={`sk-${item.key}`} placement="top">
+            <Tooltip title={`sk-${item.key}`} placement="top" >
                 <IconButton
                   edge="end"
                   aria-label="view"
@@ -330,7 +343,7 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
                   await navigator.clipboard.writeText(`sk-${item.key}`);
                   showSuccess('已复制到剪贴板！');
                 } catch (error) {
-                  alert(`复制失败，请手动复制。sk-${item.key}`); // 提示用户手动复制
+                  showError(`复制失败，请手动复制。sk-${item.key}`); // 提示用户手动复制
                 }
               }}
             >

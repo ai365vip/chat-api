@@ -1,30 +1,29 @@
 # Chat API
 
 > [!NOTE]
-> 本项目为开源项目，在[New API](https://github.com/Calcium-Ion/new-api)与[MartialBE](https://github.com/MartialBE/one-api)的基础上进行二次开发，感谢原作者的无私奉献。 
+> 本项目为开源项目，在[New API](https://github.com/Calcium-Ion/new-api)与[MartialBE](https://github.com/MartialBE/one-api)的基础上进行二次开发，感谢原作者的无私奉献。
 > 使用者必须在遵循 OpenAI 的[使用条款](https://openai.com/policies/terms-of-use)以及**法律法规**的情况下使用，不得用于非法用途。
 
-
 > [!WARNING]
-> 本项目为个人学习使用，不保证稳定性，且不提供任何技术支持，使用者必须在遵循 OpenAI 的使用条款以及法律法规的情况下使用，不得用于非法用途。  
+> 本项目为个人学习使用，不保证稳定性，且不提供任何技术支持，使用者必须在遵循 OpenAI 的使用条款以及法律法规的情况下使用，不得用于非法用途。
 > 根据[《生成式人工智能服务管理暂行办法》](http://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm)的要求，请勿对中国地区公众提供一切未经备案的生成式人工智能服务。
 
 > [!NOTE]
-> 最新版Docker镜像 ai365/chat-api:latest  
+> 最新版Docker镜像 ai365/chat-api:latest
 > 更新指令 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower -cR
 
 ## 此分叉版本的主要变更
 
-1. 全新的UI界面（部分界面还待更新），C端与管理端
+1. 全新的UI界面，C端与管理端 (/admin)
 2. 添加[Midjourney-Proxy](https://github.com/novicezk/midjourney-proxy)接口的支持：
-   + [x] /mj/submit/imagine
-   + [x] /mj/submit/change
-   + [x] /mj/submit/blend
-   + [x] /mj/submit/describe
-   + [x] /mj/image/{id} （通过此接口获取图片，**请必须在系统设置中填写服务器地址！！**）
-   + [x] /mj/task/{id}/fetch （此接口返回的图片地址为经过One API转发的地址）
+   + [X]  /mj/submit/imagine
+   + [X]  /mj/submit/change
+   + [X]  /mj/submit/blend
+   + [X]  /mj/submit/describe
+   + [X]  /mj/image/{id} （通过此接口获取图片，**请必须在系统设置中填写服务器地址！！**）
+   + [X]  /mj/task/{id}/fetch （此接口返回的图片地址为经过One API转发的地址）
 3. 支持在线充值功能，可在系统设置中设置，当前支持的支付接口：
-   + [x] 易支付
+   + [X]  易支付
 4. 支持用key查询使用额度:
    + 配合项目[neko-api-key-tool](https://github.com/Calcium-Ion/neko-api-key-tool)可实现用key查询使用情况，方便二次分销
 5. 渠道显示已使用额度，支持指定组织访问
@@ -35,7 +34,7 @@
 10. 支持模型按次数收费，可在 系统设置-运营设置 中设置
 11. 支持gemini-pro模型
 12. 支持令牌分组
-13. 支持模型按次计费
+13. 支持批量创建令牌
 14. 支持WxPusher消息推送，在线充值通知
 15. 支持渠道自启时间设置
 
@@ -57,32 +56,29 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 
    ```shell
    git clone https://github.com/songquanpeng/one-api.git
-   
+
    # 构建前端
    cd chat-api/web-admin
    npm install
    npm run build
-   
+
    cd ..
    cd chat-api/web-user
    npm install
    npm run build
-   
+
    # 构建后端
    cd ..
    go mod download
    go build -ldflags "-s -w" -o chat-api
    ```
-
 2. 运行：
 
    ```shell
    chmod u+x chat-api
    ./chat-api --port 3000 --log-dir ./logs
    ```
-
 3. 访问 [http://localhost:3000/](http://localhost:3000/) 并登录。初始账号用户名为 `root`，密码为 `123456`。
-
 
 ### 环境变量
 
@@ -131,23 +127,20 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 15. `RELAY_TIMEOUT`：中继超时设置，单位为秒，默认不设置超时时间。
 16. `SQLITE_BUSY_TIMEOUT`：SQLite 锁等待超时设置，单位为毫秒，默认 `3000`。
 
-
-
 ## 界面截图
 
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/13fde0aa-aa19-4c2f-9ace-611fb9cd60b8)
 
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/327c6919-5fe6-4219-855d-1c09498ee567)
 
-![image](https://github.com/ai365vip/chat-api/assets/154959065/0017e8cb-645b-4c05-aefa-6cd538989278)  
+![image](https://github.com/ai365vip/chat-api/assets/154959065/0017e8cb-645b-4c05-aefa-6cd538989278)
 
-![image](https://github.com/ai365vip/chat-api/assets/154959065/8c4ea0cd-c4fb-4074-8080-4998b0fcda20)  
+![image](https://github.com/ai365vip/chat-api/assets/154959065/8c4ea0cd-c4fb-4074-8080-4998b0fcda20)
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/b16aa85f-48ff-4843-af11-d88a6e596679)
-
 
 ## 赞助
 
-如果觉得这个软件对你有所帮助，欢迎请作者喝可乐、喝咖啡～ 
+如果觉得这个软件对你有所帮助，欢迎请作者喝可乐、喝咖啡～
 
- <img src="https://github.com/ai365vip/chat-api/assets/154959065/31289586-f7a6-4640-bf8c-e6d6c97db581" width="250"  style="margin-right: 100px;">                                                    <img 
-              src="https://github.com/ai365vip/chat-api/assets/154959065/bf2d09f4-4569-481c-9328-754a4bc9f67c" width="250">
+<img src="https://github.com/ai365vip/chat-api/assets/154959065/31289586-f7a6-4640-bf8c-e6d6c97db581" width="250"  style="margin-right: 100px;">                                                    <img 
+src="https://github.com/ai365vip/chat-api/assets/154959065/bf2d09f4-4569-481c-9328-754a4bc9f67c" width="250">

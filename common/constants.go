@@ -135,7 +135,7 @@ var (
 	GlobalApiRateLimitDuration int64 = 3 * 60
 
 	GlobalWebRateLimitNum            = GetOrDefault("GLOBAL_WEB_RATE_LIMIT", 400)
-	GlobalWebRateLimitDuration int64 = 3 * 60
+	GlobalWebRateLimitDuration int64 = 3 * 400
 
 	UploadRateLimitNum            = 10
 	UploadRateLimitDuration int64 = 60

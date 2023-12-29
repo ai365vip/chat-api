@@ -39,7 +39,7 @@ const validationSchema = Yup.object().shape({
 const originInputs = {
   is_edit: false,
   name: '',
-  remain_quota: 0.5,
+  remain_quota: 0,
   expired_time: -1,
   unlimited_quota: false,
   billing_enabled:false
