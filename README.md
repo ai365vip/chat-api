@@ -77,6 +77,7 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 
    ```shell
    chmod u+x chat-api
+   .env //设置环境变量 放在同一目录下
    ./chat-api --port 3000 --log-dir ./logs
    ```
 3. 访问 [http://localhost:3000/](http://localhost:3000/) 并登录。初始账号用户名为 `root`，密码为 `123456`。
