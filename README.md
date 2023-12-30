@@ -53,7 +53,7 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 
 ### 手动部署
 
-1. 从 [GitHub ](https://github.com/ai365vip/chat-api)下载可执行文件或者从源码编译：
+1. 从 [GitHub Releases ](https://github.com/ai365vip/chat-api/releases))下载可执行文件或者从源码编译：
    
    ```shell
    git clone https://github.com/ai365vip/chat-api.git
