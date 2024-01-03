@@ -33,7 +33,8 @@ const validationSchema = Yup.object().shape({
   remain_quota: Yup.number().min(0.5, '必须大于等于0.5'),
   expired_time: Yup.number(),
   unlimited_quota: Yup.boolean(),
-  billing_enabled: Yup.boolean()
+  billing_enabled: Yup.boolean(),
+  models: Yup.array().of(Yup.string()),
 });
 
 const originInputs = {
@@ -51,6 +52,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
   const [modelRatioEnabled, setModelRatioEnabled] = useState('');
   const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
   const [options, setOptions] = useState({});
+  const [models, setModels] = useState([]);
 
   const generateRandomSuffix = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -76,6 +78,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
         if (!adjustedValues.unlimited_quota) {
           adjustedValues.remain_quota = parseInt(adjustedValues.remain_quota) * 500000;
         }
+        adjustedValues.models = values.models.join(',');
 
         // Add 4 random chars for each token when in batch add mode
         if (batchAddCount > 1) {
@@ -111,6 +114,20 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
     setSubmitting(false);
   };
 
+  const loadModels = async () => {
+    try {
+        let res = await API.get('/api/user/models');
+        const { success, message, data } = res.data;
+        if (success) {
+            setModels(data);
+        } else {
+            showError(message);
+        }
+    } catch (err) {
+        showError(err.message);
+    }
+  };
+
   const [batchAddCount, setBatchAddCount] = useState(1);
 
   const handleBatchAddChange = (event) => {
@@ -128,6 +145,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
       setInputs({
         ...data,
         remain_quota: data.remain_quota/500000, 
+        models: data.models ? data.models.split(',') : [] 
       });
     } else {
       showError(message);
@@ -137,7 +155,13 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
   useEffect(() => {
     if (tokenId) {
       loadToken().catch(showError);
+    } else {
+      setInputs({
+        ...originInputs, 
+        models: [], 
+      });
     }
+    loadModels();
     getOptions();
   }, [tokenId]);
 
@@ -274,6 +298,44 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
                 }}
               />{' '}
               无限额度
+              <FormControl fullWidth sx={{ ...theme.typography.otherInput, mt: 2 }}>
+                <InputLabel htmlFor="models-multiple-select">可用模型</InputLabel>
+                <Select
+                  labelId="models-multiple-label"
+                  id="models-multiple-select"
+                  label="可用模型"
+                  name="models"
+                  multiple
+                  value={values.models}
+                  onChange={(event) => {
+                    setFieldValue('models', event.target.value);
+                  }}
+                  renderValue={(selected) => selected.join(', ')}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 48 * 4.5 + 8,
+                        width: 250,
+                      },
+                    },
+                  }}
+                >
+                  {models.map((model) => (
+                    <MenuItem key={model} value={model}>
+                      {model}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>限制令牌可以使用的模型，为空表示全部可用。</FormHelperText>
+                {touched.models && errors.models && (
+                  <FormHelperText error id="helper-text-models">
+                    {errors.models}
+                  </FormHelperText>
+                )}
+              </FormControl>
+
+
+
               {/* 新增的计费方式选择框 */}
               {tokenId ? null : (
               modelRatioEnabled && billingByRequestEnabled && (

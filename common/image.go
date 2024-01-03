@@ -105,11 +105,11 @@ func getImageConfig(reader io.Reader) (image.Config, string, error) {
 			err = errors.New(fmt.Sprintf("fail to decode image config(webp): %s", err.Error()))
 			SysLog(err.Error())
 		}
+		format = "webp"
 	}
 
 	if err != nil {
 		return image.Config{}, "", err
 	}
-
 	return config, format, nil
 }

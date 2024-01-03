@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"log"
 	"one-api/common"
 	"strconv"
 	"strings"
@@ -24,6 +25,7 @@ type Token struct {
 	UsedQuota      int    `json:"used_quota" gorm:"default:0"`
 	Group          string `json:"group" gorm:"type:varchar(32);"` // 添加 group 字段
 	BillingEnabled bool   `json:"billing_enabled" gorm:"default:false"`
+	Models         string `json:"models"`
 }
 
 func GetAllUserTokens(userId int, startIdx int, num int) ([]*Token, error) {
@@ -41,7 +43,7 @@ func SearchUserTokens(userId int, keyword string, token string) (tokens []*Token
 	return tokens, err
 }
 
-func ValidateUserToken(key string) (token *Token, err error) {
+func ValidateUserToken(key string, model string) (token *Token, err error) {
 	if key == "" {
 		return nil, errors.New("未提供令牌")
 	}
@@ -75,6 +77,21 @@ func ValidateUserToken(key string) (token *Token, err error) {
 				}
 			}
 			return nil, errors.New("该令牌额度已用尽")
+		}
+		if token.Models != "" {
+			models := strings.Split(token.Models, ",")
+			log.Println(models)
+			log.Println(model)
+			modelFound := false
+			for _, m := range models {
+				if m == model {
+					modelFound = true
+					break
+				}
+			}
+			if !modelFound {
+				return nil, errors.New("该令牌不支持指定的模型")
+			}
 		}
 		return token, nil
 	}
@@ -110,7 +127,7 @@ func (token *Token) Insert() error {
 // Update Make sure your token's fields is completed, because this will update non-zero values
 func (token *Token) Update() error {
 	var err error
-	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota", "group", "billing_enabled").Updates(token).Error
+	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota", "group", "billing_enabled", "models").Updates(token).Error
 	return err
 }
 

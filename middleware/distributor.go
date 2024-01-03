@@ -20,12 +20,13 @@ func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var channel *model.Channel
 		tokenGroup, exists := c.Get("group")
+		Model, exists := c.Get("model")
 		if !exists || tokenGroup == nil || tokenGroup == "" {
 			log.Printf("无法获取 token 分组信息，tokenGroup: %#v, exists: %t\n", tokenGroup, exists)
 			userId := c.GetInt("id")
 			userGroup, _ := model.CacheGetUserGroup(userId)
-			tokenGroup = userGroup     // 不需要使用 := 因为我们更新已有的变量
-			c.Set("group", tokenGroup) // 重设group到上下文中
+			tokenGroup = userGroup
+			c.Set("group", tokenGroup)
 		}
 
 		channelId, ok := c.Get("channelId")
@@ -62,23 +63,16 @@ func Distribute() func(c *gin.Context) {
 				abortWithMessage(c, http.StatusForbidden, "指定的渠道不属于当前用户分组")
 				return
 			}
-			// 这里检查渠道是否支持请求的模型
-			var modelRequest ModelRequest
-			if err := common.UnmarshalBodyReusable(c, &modelRequest); err != nil {
-				log.Printf("解析请求体时发生错误：%v", err)
-				abortWithMessage(c, http.StatusBadRequest, "请求体解析失败，请确保提交了有效的JSON")
-				return
-			}
 			// 将 channels.models 分割成多个模型
 			supportedModels := strings.Split(channel.Models, ",")
 			modelSupported := false
 			for _, m := range supportedModels {
-				if m == modelRequest.Model {
+				if m == Model {
 					modelSupported = true
 					break
 				}
 			}
-			log.Printf("请求模型: %#v", modelRequest.Model)
+			log.Printf("请求模型: %#v", Model)
 
 			// 如果请求的模型不在渠道支持的模型列表中
 			if !modelSupported {
@@ -104,7 +98,7 @@ func Distribute() func(c *gin.Context) {
 				err = common.UnmarshalBodyReusable(c, &modelRequest)
 			}
 			if err != nil {
-				abortWithMessage(c, http.StatusBadRequest, "无效的请求")
+				abortWithMessage(c, http.StatusBadRequest, "无效的请求: "+err.Error())
 				return
 			}
 			if strings.HasPrefix(c.Request.URL.Path, "/v1/moderations") {

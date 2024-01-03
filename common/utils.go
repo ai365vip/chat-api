@@ -169,6 +169,11 @@ func GetRandomString(length int) string {
 	return string(key)
 }
 
+func GetRandomInt(max int) int {
+	//rand.Seed(time.Now().UnixNano())
+	return rand.Intn(max)
+}
+
 func GetTimestamp() int64 {
 	return time.Now().Unix()
 }

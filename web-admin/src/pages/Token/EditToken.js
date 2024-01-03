@@ -18,6 +18,7 @@ const EditToken = (props) => {
     const [modelRatioEnabled, setModelRatioEnabled] = useState('');
     const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
     const [options, setOptions] = useState({});
+    const [models, setModels] = useState([]);
     const originInputs = {
         name: '',
         remain_quota: isEdit ? 0 : 500000,
@@ -83,6 +84,7 @@ const EditToken = (props) => {
             fetchGroups().then(); // 如果是管理员，则获取分组选项
           }
         getOptions();
+        loadModels();
     }, [props.editingToken.id]);
 
     const getOptions = async () => {
@@ -136,6 +138,12 @@ const EditToken = (props) => {
         if (isEdit) {
             // 编辑令牌的逻辑保持不变
             let localInputs = {...inputs};
+            if (localInputs.models && localInputs.models.length > 0) {
+                localInputs.models = localInputs.models.join(',');
+            } else {
+                // 如果没有选择任何模型，则将其设置为空字符串
+                localInputs.models = '';
+            }
             localInputs.remain_quota = parseInt(localInputs.remain_quota);
             localInputs.group = selectedGroup;
             //console.log("Submitting token data: ", localInputs); // 打印提交的数据
@@ -164,6 +172,12 @@ const EditToken = (props) => {
             let successCount = 0; // 记录成功创建的令牌数量
             for (let i = 0; i < tokenCount; i++) {
                 let localInputs = {...inputs};
+                if (localInputs.models && localInputs.models.length > 0) {
+                    localInputs.models = localInputs.models.join(',');
+                } else {
+                    // 如果没有选择任何模型，则将其设置为空字符串
+                    localInputs.models = '';
+                }
                 if (i !== 0) {
                     // 如果用户想要创建多个令牌，则给每个令牌一个序号后缀
                     localInputs.name = `${inputs.name}-${generateRandomSuffix()}`;
@@ -217,6 +231,20 @@ const EditToken = (props) => {
           showError(error.message);
         }
     };
+
+    const loadModels = async () => {
+        try {
+            let res = await API.get('/api/user/models');
+            const { success, message, data } = res.data;
+            if (success) {
+                setModels(data);
+            } else {
+                showError(message);
+            }
+        } catch (err) {
+            showError(err.message);
+        }
+      };
 
 
 
@@ -310,33 +338,30 @@ const EditToken = (props) => {
                         }}>{unlimited_quota ? '取消无限额度' : '设为无限额度'}</Button>
                     </div>
                     <Divider/>
-                   
-                    {!isEdit && (
-                        <>
-                         <div style={{marginTop: 20}}>
-                            <Typography.Text>新建数量</Typography.Text>
-                        </div>
-                        <AutoComplete
-                            style={{ marginTop: 8 }}
-                            label='数量'
-                            placeholder={'请选择或输入创建令牌的数量'}
-                            onChange={(value) => handleTokenCountChange(value)}
-                            onSelect={(value) => handleTokenCountChange(value)}
-                            value={tokenCount.toString()}
-                            autoComplete='off'
-                            type='number'
-                            data={[
-                                { value: 10, label: '10个' },
-                                { value: 20, label: '20个' },
-                                { value: 30, label: '30个' },
-                                { value: 100, label: '100个' },
-                            ]}
-                            disabled={unlimited_quota}
-                        />
-                        </>
-                    )}
+                    <div style={{marginTop: 20}}>
+                        <Typography.Text>限制模型</Typography.Text>
+                    </div>
+                    <Select
+                        style={{ marginTop: 20 }}
+                        label="可用模型"
+                        placeholder={'请选择可用模型，为空代表全部可用'}
+                        onChange={(value) => handleInputChange('models', value)}
+                        value={inputs.models}
+                        multiple
+                        selection
+                        autoComplete='new-password'
+                        optionList={models.map(model => ({ label: model, value: model }))}
+                    >
+                        {models.map(model => (
+                            <Select.Option key={model} value={model}>
+                                {model}
+                            </Select.Option>
+                        ))}
+                    </Select>
                     <Divider/>
 
+
+                   
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
                         {isAdminUser && (
                             <div style={{ flex: 1, marginRight: 8 }}>
@@ -368,6 +393,32 @@ const EditToken = (props) => {
                             </div>
                         )}
                     </div>
+                    <Divider/>
+                    {!isEdit && (
+                        <>
+                         <div style={{marginTop: 20}}>
+                            <Typography.Text>新建数量</Typography.Text>
+                        </div>
+                        <AutoComplete
+                            style={{ marginTop: 8 }}
+                            label='数量'
+                            placeholder={'请选择或输入创建令牌的数量'}
+                            onChange={(value) => handleTokenCountChange(value)}
+                            onSelect={(value) => handleTokenCountChange(value)}
+                            value={tokenCount.toString()}
+                            autoComplete='off'
+                            type='number'
+                            data={[
+                                { value: 10, label: '10个' },
+                                { value: 20, label: '20个' },
+                                { value: 30, label: '30个' },
+                                { value: 100, label: '100个' },
+                            ]}
+                            disabled={unlimited_quota}
+                        />
+                        </>
+                    )}
+                    
 
                 </Spin>
             </SideSheet>

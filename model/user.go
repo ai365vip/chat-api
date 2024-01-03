@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"one-api/common"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -203,9 +204,13 @@ func (user *User) Update(updatePassword bool) error {
 		}
 	}
 	newUser := *user
-
 	DB.First(&user, user.Id)
 	err = DB.Model(user).Updates(newUser).Error
+	if err == nil {
+		if common.RedisEnabled {
+			_ = common.RedisSet(fmt.Sprintf("user_group:%d", user.Id), user.Group, time.Duration(UserId2GroupCacheSeconds)*time.Second)
+		}
+	}
 	return err
 }
 
