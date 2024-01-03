@@ -31,7 +31,9 @@ export const theme = (customization) => {
     customization
   };
 
+
   const themeOptions = {
+    
     direction: 'ltr',
     palette: themePalette(themeOption),
     mixins: {

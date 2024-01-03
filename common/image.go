@@ -5,11 +5,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/chai2010/webp"
 	"image"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/chai2010/webp"
 )
 
 func DecodeBase64ImageData(base64String string) (image.Config, string, error) {
@@ -82,20 +83,33 @@ func DecodeUrlImageData(imageUrl string) (image.Config, string, error) {
 }
 
 func getImageConfig(reader io.Reader) (image.Config, string, error) {
-	// 读取图片的头部信息来获取图片尺寸
-	config, format, err := image.DecodeConfig(reader)
+	buf := new(bytes.Buffer)
+	teeReader := io.TeeReader(reader, buf)
+
+	// 尝试解析标准图像格式（gif, jpg, png）
+	config, format, err := image.DecodeConfig(teeReader)
 	if err != nil {
-		err = errors.New(fmt.Sprintf("fail to decode image config(gif, jpg, png): %s", err.Error()))
-		SysLog(err.Error())
-		config, err = webp.DecodeConfig(reader)
-		if err != nil {
+		SysLog(fmt.Sprintf("fail to decode image config(gif, jpg, png): %s", err.Error()))
+		reader = bytes.NewReader(buf.Bytes())
+
+		// 尝试解析WebP格式
+		if webpConfig, err := webp.DecodeConfig(reader); err == nil {
+			config = image.Config{
+				Width:      webpConfig.Width,
+				Height:     webpConfig.Height,
+				ColorModel: webpConfig.ColorModel,
+			}
+			format = "webp"
+			return config, format, nil
+		} else {
 			err = errors.New(fmt.Sprintf("fail to decode image config(webp): %s", err.Error()))
 			SysLog(err.Error())
 		}
-		format = "webp"
 	}
+
 	if err != nil {
 		return image.Config{}, "", err
 	}
+
 	return config, format, nil
 }

@@ -132,7 +132,7 @@ func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
 			modelInfo.ModelRatio = ratio * groupRatioValue
 		} else {
 			// 如果ModelRatio不存在，使用默认值30
-			modelInfo.ModelRatio = 30 * groupRatioValue
+			modelInfo.ModelRatio = 15 * groupRatioValue
 		}
 
 		if ratio, exists := modelRatio2[model]; exists {
