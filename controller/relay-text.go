@@ -502,7 +502,7 @@ func relayTextHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode {
 		case APITypeOpenAI:
 			if channelType == common.ChannelTypeAzure {
 				req.Header.Set("api-key", apiKey)
-			} else if channelType == common.ChannelTypeOpenAI && apiKey != "" {
+			} else if apiKey != "" {
 				req.Header.Set("Authorization", "Bearer "+apiKey)
 			}
 		case APITypeChatBot:

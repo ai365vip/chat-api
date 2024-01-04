@@ -23,9 +23,15 @@ export const CHANNEL_OPTIONS = {
     value: 11,
     color: 'orange'
   },
+  24: {
+    key: 24,
+    text: 'Google Gemini',
+    value: 24,
+    color: 'orange'
+  },
   25: {
     key: 25,
-    text: 'Google Gemini',
+    text: 'Chat Bot',
     value: 25,
     color: 'orange'
   },
