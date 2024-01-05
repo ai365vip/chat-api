@@ -22,7 +22,7 @@ type Ability struct {
 type ModelBillingInfo struct {
 	Model           string  `json:"model"`
 	ModelRatio      float64 `json:"model_ratio"`      // ModelRatio中的值
-	ModelRatio2     float64 `json:"model_ratio_2"`    // ModelRatio2中的值（如果有的话）
+	ModelPrice      float64 `json:"model_ratio_2"`    // ModelPrice中的值（如果有的话）
 	CalculatedRatio float64 `json:"calculated_ratio"` // 计算后的比率
 }
 
@@ -52,18 +52,18 @@ func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
 		return nil, err
 	}
 
-	// 查询options表获取ModelRatio和ModelRatio2的值
+	// 查询options表获取ModelRatio和ModelPrice的值
 	var options []struct {
 		Key   string
 		Value string
 	}
 
-	err = DB.Table("options").Where("`key` IN (?)", []string{"ModelRatio", "ModelRatio2"}).Find(&options).Error
+	err = DB.Table("options").Where("`key` IN (?)", []string{"ModelRatio", "ModelPrice"}).Find(&options).Error
 	if err != nil {
 		return nil, err
 	}
 
-	// 解析ModelRatio 和 ModelRatio2 的值
+	// 解析ModelRatio 和 ModelPrice 的值
 	modelRatio := make(ModelRatios)
 	if len(modelRatio) == 0 {
 		jsonStr := common.OptionMap["ModelRatio"]
@@ -75,8 +75,8 @@ func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
 			return nil, fmt.Errorf("error unmarshalling ModelRatio from common: %v", err)
 		}
 	}
-	modelRatio2 := make(ModelRatios)
-	var defaultModelRatio2 float64
+	ModelPrice := make(ModelRatios)
+	var defaultModelPrice float64
 	var hasDefault bool
 
 	for _, option := range options {
@@ -87,11 +87,11 @@ func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
 		}
 		if option.Key == "ModelRatio" {
 			modelRatio = ratios
-		} else if option.Key == "ModelRatio2" {
-			modelRatio2 = ratios
-			// 尝试获取ModelRatio2的默认值
+		} else if option.Key == "ModelPrice" {
+			ModelPrice = ratios
+			// 尝试获取ModelPrice的默认值
 			if defaultRatio, ok := ratios["default"]; ok {
-				defaultModelRatio2 = defaultRatio
+				defaultModelPrice = defaultRatio
 				hasDefault = true
 			}
 		}
@@ -128,22 +128,24 @@ func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
 	for _, model := range models {
 		var modelInfo ModelBillingInfo
 
-		// 查找ModelRatio和ModelRatio2的值
-		if ratio, exists := modelRatio[model]; exists {
-			modelInfo.ModelRatio = ratio * groupRatioValue
-		} else {
-			// 如果ModelRatio不存在，使用默认值30
-			modelInfo.ModelRatio = 15 * groupRatioValue
+		// 查找ModelRatio和ModelPrice的值
+		if model != "midjourney" {
+			if ratio, exists := modelRatio[model]; exists {
+				modelInfo.ModelRatio = ratio * groupRatioValue
+			} else {
+				// 如果ModelRatio不存在，使用默认值15
+				modelInfo.ModelRatio = 15 * groupRatioValue
+			}
 		}
 
-		if ratio, exists := modelRatio2[model]; exists {
-			modelInfo.ModelRatio2 = ratio * groupRatioValue
+		if ratio, exists := ModelPrice[model]; exists {
+			modelInfo.ModelPrice = ratio * groupRatioValue
 		} else if hasDefault {
-			// 如果ModelRatio2不存在但有默认值，则使用此默认值
-			modelInfo.ModelRatio2 = defaultModelRatio2 * groupRatioValue
+			// 如果ModelPrice不存在但有默认值，则使用此默认值
+			modelInfo.ModelPrice = defaultModelPrice * groupRatioValue
 		} else {
-			// 如果ModelRatio2不存在并且没有默认值，则设置为0
-			modelInfo.ModelRatio2 = 0
+			// 如果ModelPrice不存在并且没有默认值，则设置为0
+			modelInfo.ModelPrice = 0
 		}
 
 		modelInfo.Model = model

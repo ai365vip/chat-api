@@ -1,4 +1,4 @@
-FROM node:16 as builder
+FROM node:18 as builder
 
 # 构建 web-user 应用
 WORKDIR /build/web-user
@@ -12,7 +12,7 @@ WORKDIR /build/web-admin
 COPY web-admin/package.json .
 RUN npm install
 COPY web-admin/ .
-RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat ../VERSION) npm run build
+RUN DISABLE_ESLINT_PLUGIN='true' npm run build
 
 FROM golang AS builder2
 

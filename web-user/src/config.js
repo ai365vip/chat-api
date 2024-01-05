@@ -5,7 +5,6 @@ const config = {
   defaultPath: '/dashboard',
   fontFamily: `'Roboto', sans-serif, Helvetica, Arial, sans-serif`,
   borderRadius: 12,
-  defaultMetaDescription: "接口聚合管理，我们致力于提供优质的API接入服务，让您可以轻松集成先进的AI模型至您的产品和服务。",
   siteInfo: {
     chat_link: '',
     display_in_currency: true,
