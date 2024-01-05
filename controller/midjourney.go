@@ -21,7 +21,7 @@ func UpdateMidjourneyTaskBulk() {
 	//revocer
 	//imageModel := "midjourney"
 	ctx := context.TODO()
-	imageModel := "midjourney"
+	//imageModel := "midjourney"
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("UpdateMidjourneyTask panic: %v", err)
@@ -118,13 +118,16 @@ func UpdateMidjourneyTaskBulk() {
 					log.Println(task.MjId + " 构建失败，" + task.FailReason)
 					task.Progress = "100%"
 					err = model.CacheUpdateUserQuota(task.UserId)
+					group, _ := model.CacheGetUserGroup(task.UserId)
 					if err != nil {
 						log.Println("error update user quota cache: " + err.Error())
 					} else {
-						modelRatio := common.GetModelRatio(imageModel)
-						groupRatio := common.GetGroupRatio("default")
+						modelRatio, ok := common.GetModelRatio2("mj_" + strings.ToLower(responseItem.Action))
+						if !ok {
+						}
+						groupRatio := common.GetGroupRatio(group)
 						ratio := modelRatio * groupRatio
-						quota := int(ratio * 1 * 1000)
+						quota := int(ratio * common.QuotaPerUnit)
 						if quota != 0 {
 							err := model.IncreaseUserQuota(task.UserId, quota)
 							if err != nil {
