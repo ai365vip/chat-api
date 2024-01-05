@@ -80,7 +80,9 @@ var ModelRatio = map[string]float64{
 	"hunyuan":                   7.143,  // ¥0.1 / 1k tokens  // https://cloud.tencent.com/document/product/1729/97731#e0e6be58-60c8-469f-bdeb-6c264ce3b4d0
 }
 
-var ModelRatio2 = map[string]float64{}
+var ModelRatio2 = map[string]float64{
+	"midjourney": 0.2,
+}
 
 func ModelRatioJSONString() string {
 	jsonBytes, err := json.Marshal(ModelRatio)

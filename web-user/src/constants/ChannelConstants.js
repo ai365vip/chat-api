@@ -71,12 +71,6 @@ export const CHANNEL_OPTIONS = {
     value: 23,
     color: 'default'
   },
-  24: {
-    key: 24,
-    text: 'Azure Speech',
-    value: 24,
-    color: 'orange'
-  },
   8: {
     key: 8,
     text: '自定义渠道',
