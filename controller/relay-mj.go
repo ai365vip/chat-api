@@ -57,7 +57,7 @@ type MidjourneyWithoutStatus struct {
 
 func RelayMidjourneyImage(c *gin.Context) {
 	taskId := c.Param("id")
-	midjourneyTask := model.GetByMJId(taskId)
+	midjourneyTask := model.GetByOnlyMJId(taskId)
 	if midjourneyTask == nil {
 		c.JSON(400, gin.H{
 			"error": "midjourney_task_not_found",
@@ -71,14 +71,27 @@ func RelayMidjourneyImage(c *gin.Context) {
 		})
 	}
 	defer resp.Body.Close()
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if resp.StatusCode != http.StatusOK {
+		responseBody, _ := io.ReadAll(resp.Body)
+		c.JSON(resp.StatusCode, gin.H{
+			"error": string(responseBody),
+		})
 		return
 	}
-	c.Header("Content-Type", "image/jpeg")
-	//c.HeaderBar("Content-Length", string(rune(len(data))))
-	c.Data(http.StatusOK, "image/jpeg", data)
+	// 从Content-Type头获取MIME类型
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		// 如果无法确定内容类型，则默认为jpeg
+		contentType = "image/jpeg"
+	}
+	// 设置响应的内容类型
+	c.Writer.Header().Set("Content-Type", contentType)
+	// 将图片流式传输到响应体
+	_, err = io.Copy(c.Writer, resp.Body)
+	if err != nil {
+		log.Println("Failed to stream image:", err)
+	}
+	return
 }
 
 func relayMidjourneyNotify(c *gin.Context) *MidjourneyResponse {
@@ -92,7 +105,7 @@ func relayMidjourneyNotify(c *gin.Context) *MidjourneyResponse {
 			Result:      "",
 		}
 	}
-	midjourneyTask := model.GetByMJId(midjRequest.MjId)
+	midjourneyTask := model.GetByOnlyMJId(midjRequest.MjId)
 	if midjourneyTask == nil {
 		return &MidjourneyResponse{
 			Code:        4,
@@ -121,16 +134,7 @@ func relayMidjourneyNotify(c *gin.Context) *MidjourneyResponse {
 	return nil
 }
 
-func relayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
-	taskId := c.Param("id")
-	originTask := model.GetByMJId(taskId)
-	if originTask == nil {
-		return &MidjourneyResponse{
-			Code:        4,
-			Description: "task_no_found",
-		}
-	}
-	var midjourneyTask Midjourney
+func getMidjourneyTaskModel(c *gin.Context, originTask *model.Midjourney) (midjourneyTask Midjourney) {
 	midjourneyTask.MjId = originTask.MjId
 	midjourneyTask.Progress = originTask.Progress
 	midjourneyTask.PromptEn = originTask.PromptEn
@@ -150,14 +154,65 @@ func relayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 	midjourneyTask.Action = originTask.Action
 	midjourneyTask.Description = originTask.Description
 	midjourneyTask.Prompt = originTask.Prompt
-	jsonMap, err := json.Marshal(midjourneyTask)
-	if err != nil {
-		return &MidjourneyResponse{
-			Code:        4,
-			Description: "unmarshal_response_body_failed",
+	return
+}
+
+func relayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
+	userId := c.GetInt("id")
+	var err error
+	var respBody []byte
+	switch relayMode {
+	case RelayModeMidjourneyTaskFetch:
+		taskId := c.Param("id")
+		originTask := model.GetByMJId(userId, taskId)
+		if originTask == nil {
+			return &MidjourneyResponse{
+				Code:        4,
+				Description: "task_no_found",
+			}
+		}
+		midjourneyTask := getMidjourneyTaskModel(c, originTask)
+		respBody, err = json.Marshal(midjourneyTask)
+		if err != nil {
+			return &MidjourneyResponse{
+				Code:        4,
+				Description: "unmarshal_response_body_failed",
+			}
+		}
+	case RelayModeMidjourneyTaskFetchByCondition:
+		var condition = struct {
+			IDs []string `json:"ids"`
+		}{}
+		err = c.BindJSON(&condition)
+		if err != nil {
+			return &MidjourneyResponse{
+				Code:        4,
+				Description: "do_request_failed",
+			}
+		}
+		var tasks []Midjourney
+		if len(condition.IDs) != 0 {
+			originTasks := model.GetByMJIds(userId, condition.IDs)
+			for _, originTask := range originTasks {
+				midjourneyTask := getMidjourneyTaskModel(c, originTask)
+				tasks = append(tasks, midjourneyTask)
+			}
+		}
+		if tasks == nil {
+			tasks = make([]Midjourney, 0)
+		}
+		respBody, err = json.Marshal(tasks)
+		if err != nil {
+			return &MidjourneyResponse{
+				Code:        4,
+				Description: "unmarshal_response_body_failed",
+			}
 		}
 	}
-	_, err = io.Copy(c.Writer, bytes.NewBuffer(jsonMap))
+
+	c.Writer.Header().Set("Content-Type", "application/json")
+
+	_, err = io.Copy(c.Writer, bytes.NewBuffer(respBody))
 	if err != nil {
 		return &MidjourneyResponse{
 			Code:        4,
@@ -166,6 +221,18 @@ func relayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 	}
 	return nil
 }
+
+const (
+	// type 1 根据 mode 价格不同
+	MJSubmitActionImagine   = "IMAGINE"
+	MJSubmitActionVariation = "VARIATION" //变换
+	MJSubmitActionBlend     = "BLEND"     //混图
+
+	MJSubmitActionReroll = "REROLL" //重新生成
+	// type 2 固定价格
+	MJSubmitActionDescribe = "DESCRIBE"
+	MJSubmitActionUpscale  = "UPSCALE" // 放大
+)
 
 func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	imageModel := "midjourney"
@@ -186,6 +253,9 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 		}
 	}
+
+	action := midjRequest.Action
+
 	if relayMode == RelayModeMidjourneyImagine { //绘画任务，此类任务可重复
 		if midjRequest.Prompt == "" {
 			return &MidjourneyResponse{
@@ -194,12 +264,52 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 		}
 		midjRequest.Action = "IMAGINE"
+		action = midjRequest.Action
 	} else if relayMode == RelayModeMidjourneyDescribe { //按图生文任务，此类任务可重复
 		midjRequest.Action = "DESCRIBE"
+		action = midjRequest.Action
 	} else if relayMode == RelayModeMidjourneyBlend { //绘画任务，此类任务可重复
 		midjRequest.Action = "BLEND"
+		action = midjRequest.Action
 	} else if midjRequest.TaskId != "" { //放大、变换任务，此类任务，如果重复且已有结果，远端api会直接返回最终结果
-		originTask := model.GetByMJId(midjRequest.TaskId)
+		mjId := ""
+		if relayMode == RelayModeMidjourneyChange {
+			if midjRequest.TaskId == "" {
+				return &MidjourneyResponse{
+					Code:        4,
+					Description: "taskId_is_required",
+				}
+			} else if midjRequest.Action == "" {
+				return &MidjourneyResponse{
+					Code:        4,
+					Description: "action_is_required",
+				}
+			} else if midjRequest.Index == 0 {
+				return &MidjourneyResponse{
+					Code:        4,
+					Description: "index_can_only_be_1_2_3_4",
+				}
+			}
+			action = midjRequest.Action
+			mjId = midjRequest.TaskId
+		} else if relayMode == RelayModeMidjourneySimpleChange {
+			if midjRequest.Content == "" {
+				return &MidjourneyResponse{
+					Code:        4,
+					Description: "content_is_required",
+				}
+			}
+			params := convertSimpleChangeParams(midjRequest.Content)
+			if params == nil {
+				return &MidjourneyResponse{
+					Code:        4,
+					Description: "content_parse_failed",
+				}
+			}
+			mjId = params.ID
+			action = params.Action
+		}
+		originTask := model.GetByMJId(userId, mjId)
 		if originTask == nil {
 			return &MidjourneyResponse{
 				Code:        4,
@@ -229,23 +339,6 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			log.Printf("检测到此操作为放大、变换，获取原channel信息: %s,%s", strconv.Itoa(originTask.ChannelId), channel.GetBaseURL())
 		}
 		midjRequest.Prompt = originTask.Prompt
-	} else if relayMode == RelayModeMidjourneyChange {
-		if midjRequest.TaskId == "" {
-			return &MidjourneyResponse{
-				Code:        4,
-				Description: "taskId_is_required",
-			}
-		} else if midjRequest.Action == "" {
-			return &MidjourneyResponse{
-				Code:        4,
-				Description: "action_is_required",
-			}
-		} else if midjRequest.Index == 0 {
-			return &MidjourneyResponse{
-				Code:        4,
-				Description: "index_can_only_be_1_2_3_4",
-			}
-		}
 	}
 
 	// map model name
@@ -277,7 +370,6 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	//midjRequest.NotifyHook = "http://127.0.0.1:3000/mj/notify"
 
 	fullRequestURL := fmt.Sprintf("%s%s", baseURL, requestURL)
-	log.Printf("fullRequestURL: %s", fullRequestURL)
 
 	var m map[string]interface{}
 	var requestBody io.Reader
@@ -318,19 +410,22 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		// 重置原始请求体以供后续处理
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	}
+	modelRatio, ok := common.GetModelRatio2("mj_" + strings.ToLower(action))
 
-	modelRatio := common.GetModelRatio(imageModel)
 	groupRatio := common.GetGroupRatio(group)
-	ratio := modelRatio * groupRatio
-	userQuota, err := model.CacheGetUserQuota(userId)
+	if !ok {
 
-	sizeRatio := 1.0
-	if midjRequest.Action == "UPSCALE" {
-		sizeRatio = 0.2
 	}
+	ratio := modelRatio * groupRatio
 
-	quota := int(ratio * sizeRatio * 1000)
-
+	userQuota, err := model.CacheGetUserQuota(userId)
+	if err != nil {
+		return &MidjourneyResponse{
+			Code:        4,
+			Description: err.Error(),
+		}
+	}
+	quota := int(ratio * common.QuotaPerUnit)
 	if consumeQuota && userQuota-quota < 0 {
 		return &MidjourneyResponse{
 			Code:        4,
@@ -353,8 +448,6 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	//req.Header.Set("Authorization", "Bearer midjourney-proxy")
 	//req.Header.Set("mj-api-secret", strings.Split(c.Request.Header.Get("Authorization"), " ")[1])
 	// print request header
-	log.Printf("request header: %s", req.Header)
-	log.Printf("request body: %s", midjRequest.Prompt)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -381,6 +474,7 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	var midjResponse MidjourneyResponse
 
 	defer func(ctx context.Context) {
+
 		if consumeQuota {
 			err := model.PostConsumeTokenQuota(tokenId, userQuota, quota, 0, true)
 			if err != nil {
@@ -392,7 +486,7 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
-				multiplier := fmt.Sprintf("模型倍率 %.2f，分组倍率 %.2f", modelRatio, groupRatio)
+				multiplier := fmt.Sprintf("模型固定价格 %.2f，分组倍率 %.2f，操作 %s", modelRatio, groupRatio, action)
 				model.RecordConsumeLog(ctx, userId, channelId, 0, 0, imageModel, tokenName, quota, midjResponse.Result, tokenId, multiplier, userQuota)
 				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 				channelId := c.GetInt("channel_id")
@@ -421,8 +515,6 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	}
 
 	err = json.Unmarshal(responseBody, &midjResponse)
-	log.Printf("responseBody: %s", string(responseBody))
-	log.Printf("midjResponse: %v", midjResponse)
 	if resp.StatusCode != 200 {
 		return &MidjourneyResponse{
 			Code:        4,
@@ -446,7 +538,7 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	midjourneyTask := &model.Midjourney{
 		UserId:      userId,
 		Code:        midjResponse.Code,
-		Action:      midjRequest.Action,
+		Action:      action,
 		MjId:        midjResponse.Result,
 		Prompt:      midjRequest.Prompt,
 		PromptEn:    "",
@@ -526,4 +618,39 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		}
 	}
 	return nil
+}
+
+type taskChangeParams struct {
+	ID     string
+	Action string
+	Index  int
+}
+
+func convertSimpleChangeParams(content string) *taskChangeParams {
+	split := strings.Split(content, " ")
+	if len(split) != 2 {
+		return nil
+	}
+
+	action := strings.ToLower(split[1])
+	changeParams := &taskChangeParams{}
+	changeParams.ID = split[0]
+
+	if action[0] == 'u' {
+		changeParams.Action = "UPSCALE"
+	} else if action[0] == 'v' {
+		changeParams.Action = "VARIATION"
+	} else if action == "r" {
+		changeParams.Action = "REROLL"
+		return changeParams
+	} else {
+		return nil
+	}
+
+	index, err := strconv.Atoi(action[1:2])
+	if err != nil || index < 1 || index > 4 {
+		return nil
+	}
+	changeParams.Index = index
+	return changeParams
 }

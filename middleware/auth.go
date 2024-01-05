@@ -86,11 +86,13 @@ func RootAuth() func(c *gin.Context) {
 
 func TokenAuth() func(c *gin.Context) {
 	return func(c *gin.Context) {
+		isMidJourneyKey := false
 		key := c.Request.Header.Get("Authorization")
 		parts := make([]string, 0)
 		key = strings.TrimPrefix(key, "Bearer ")
 		if key == "" || key == "midjourney-proxy" {
 			key = c.Request.Header.Get("mj-api-secret")
+			isMidJourneyKey = true
 			key = strings.TrimPrefix(key, "Bearer ")
 			key = strings.TrimPrefix(key, "sk-")
 			parts = strings.Split(key, "-")
@@ -101,10 +103,14 @@ func TokenAuth() func(c *gin.Context) {
 			key = parts[0]
 		}
 		var modelRequest ModelRequest
-		if err := common.UnmarshalBodyReusable(c, &modelRequest); err != nil {
-			log.Printf("解析请求体时发生错误：%v", err)
-			abortWithMessage(c, http.StatusBadRequest, "请求体解析失败，请确保提交了有效的JSON")
-			return
+		if !isMidJourneyKey {
+			if err := common.UnmarshalBodyReusable(c, &modelRequest); err != nil {
+				log.Printf("解析请求体时发生错误：%v", err)
+				abortWithMessage(c, http.StatusBadRequest, "请求体解析失败，请确保提交了有效的JSON")
+				return
+			}
+		} else {
+			modelRequest.Model = "midjourney"
 		}
 		token, err := model.ValidateUserToken(key, modelRequest.Model)
 		if err != nil {

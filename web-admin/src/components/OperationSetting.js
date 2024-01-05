@@ -11,7 +11,7 @@ const OperationSetting = () => {
         QuotaRemindThreshold: 0,
         PreConsumedQuota: 0,
         ModelRatio: '',
-        ModelRatio2: '',
+        ModelPrice : '',
         GroupRatio: '',
         TopUpLink: '',
         ChatLink: '',
@@ -34,7 +34,7 @@ const OperationSetting = () => {
     if (success) {
       let newInputs = {};
       data.forEach((item) => {
-        if (['ModelRatio', 'ModelRatio2', 'GroupRatio'].includes(item.key)) {
+        if (['ModelRatio', 'ModelPrice', 'GroupRatio'].includes(item.key)) {
           try {
             // 检查 item.value 是否是非空字符串
             if (item.value && item.value.trim() !== '') {
@@ -102,12 +102,12 @@ const OperationSetting = () => {
           }
           await updateOption('ModelRatio', inputs.ModelRatio);
         }
-        if (originInputs['ModelRatio2'] !== inputs.ModelRatio2) {
-          if (!verifyJSON(inputs.ModelRatio2)) {
+        if (originInputs['ModelPrice'] !== inputs.ModelPrice) {
+          if (!verifyJSON(inputs.ModelPrice)) {
             showError('模型按次倍率不是合法的 JSON 字符串');
             return;
           }
-          await updateOption('ModelRatio2', inputs.ModelRatio2);
+          await updateOption('ModelPrice', inputs.ModelPrice);
         }
         if (originInputs['GroupRatio'] !== inputs.GroupRatio) {
           if (!verifyJSON(inputs.GroupRatio)) {
@@ -385,7 +385,6 @@ const OperationSetting = () => {
                         content={
                           <>
                             <p>每1的设定值相当于1次使用的费用（1美元）。如果模型未特别设定，则默认采用Token计费方式。</p>
-                            <p>MJ模型无需在此设置。</p>
                             <p>默认计费设置为 "default": 0.02，即未指定模型的情况下将应用该默认费率。</p>
                             <p>若移除此项，默认计费方式将转为Token计费。</p>
                           </>
@@ -394,11 +393,11 @@ const OperationSetting = () => {
                       />
                       <Form.Group widths='equal'> 
                         <Form.TextArea
-                          name='ModelRatio2'
+                          name='ModelPrice'
                           onChange={handleInputChange}
                           style={{ minHeight: 250, fontFamily: 'JetBrains Mono, Consolas' }}
                           autoComplete='new-password'
-                          value={inputs.ModelRatio2}
+                          value={inputs.ModelPrice}
                           placeholder='请输入一个 JSON 格式的文本，其中键为模型名称，值为每次计费的金额，例如：{"gpt-4": 0.1} 表示 GPT-4 模型每次使用费用为0.1美元。'
                         />
                       </Form.Group>

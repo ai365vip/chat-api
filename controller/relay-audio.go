@@ -82,7 +82,7 @@ func relayAudioHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 					preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 				} else {
 					ratio = modelRatio2 * groupRatio
-					preConsumedQuota = int(ratio * 1 * 500000)
+					preConsumedQuota = int(ratio * common.QuotaPerUnit)
 				}
 			} else {
 				preConsumedQuota = int(float64(preConsumedTokens) * ratio)
@@ -96,7 +96,7 @@ func relayAudioHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 		} else {
 			ratio = modelRatio2 * groupRatio
-			preConsumedQuota = int(ratio * 1 * 500000)
+			preConsumedQuota = int(ratio * common.QuotaPerUnit)
 		}
 	} else {
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
@@ -195,7 +195,7 @@ func relayAudioHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 						modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 					} else {
 						ratio = modelRatio2 * groupRatio
-						quota = int(ratio * 1 * 500000)
+						quota = int(ratio * common.QuotaPerUnit)
 						modelRatioString = fmt.Sprintf("按次计费")
 					}
 				} else {
@@ -209,7 +209,7 @@ func relayAudioHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 				} else {
 					ratio = modelRatio2 * groupRatio
-					quota = int(ratio * 1 * 500000)
+					quota = int(ratio * common.QuotaPerUnit)
 					modelRatioString = fmt.Sprintf("按次计费")
 				}
 			} else {

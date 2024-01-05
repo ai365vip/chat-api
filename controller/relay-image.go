@@ -140,7 +140,7 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 			} else {
 				ratio = modelRatio2 * groupRatio
-				quota = int(ratio * 1 * 500000)
+				quota = int(ratio * common.QuotaPerUnit)
 				modelRatioString = fmt.Sprintf("按次计费")
 			}
 		} else {
