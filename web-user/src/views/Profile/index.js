@@ -97,7 +97,7 @@ export default function Profile() {
       showError(message);
     }
 
-    console.log(turnstileEnabled, turnstileSiteKey, status);
+    //console.log(turnstileEnabled, turnstileSiteKey, status);
   };
 
   const submit = async () => {

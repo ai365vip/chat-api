@@ -16,14 +16,14 @@
 
 1. 全新的UI界面，C端与管理端 (/admin)
 2. 添加[Midjourney-Proxy](https://github.com/novicezk/midjourney-proxy)接口的支持：
-   + [x] /mj/submit/imagine
-   + [x] /mj/submit/change
-   + [x] /mj/submit/blend
-   + [x] /mj/submit/describe
-   + [x] /mj/image/{id} （通过此接口获取图片，**请必须在系统设置中填写服务器地址！！**）
-   + [x] /mj/task/{id}/fetch （此接口返回的图片地址为经过One API转发的地址）
+   + [X]  /mj/submit/imagine
+   + [X]  /mj/submit/change
+   + [X]  /mj/submit/blend
+   + [X]  /mj/submit/describe
+   + [X]  /mj/image/{id} （通过此接口获取图片，**请必须在系统设置中填写服务器地址！！**）
+   + [X]  /mj/task/{id}/fetch （此接口返回的图片地址为经过One API转发的地址）
 3. 支持在线充值功能，可在系统设置中设置，当前支持的支付接口：
-   + [x] 易支付
+   + [X]  易支付
 4. 支持用key查询使用额度:
    + 配合项目[neko-api-key-tool](https://github.com/Calcium-Ion/neko-api-key-tool)可实现用key查询使用情况，方便二次分销
 5. 渠道显示已使用额度，支持指定组织访问
@@ -56,27 +56,27 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 ### 手动部署
 
 1. 从 [GitHub Releases ](https://github.com/ai365vip/chat-api/releases))下载可执行文件或者从源码编译：
-   
+
    ```shell
    git clone https://github.com/ai365vip/chat-api.git
-   
+
    # 构建前端
    cd chat-api/web-admin
    npm install
    npm run build
-   
+
    cd ..
    cd chat-api/web-user
    npm install
    npm run build
-   
+
    # 构建后端
    cd ..
    go mod download
    go build -ldflags "-s -w" -o chat-api
    ```
 2. 运行：
-   
+
    ```shell
    chmod u+x chat-api
    .env //设置环境变量 放在同一目录下
@@ -131,7 +131,13 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
     - `DATA_GYM_CACHE_DIR`：目前该配置作用与 `TIKTOKEN_CACHE_DIR` 一致，但是优先级没有它高。
 15. `RELAY_TIMEOUT`：中继超时设置，单位为秒，默认不设置超时时间。
 16. `SQLITE_BUSY_TIMEOUT`：SQLite 锁等待超时设置，单位为毫秒，默认 `3000`。
-17. DYNAMIC_USER_INDEX_PATH：设置SEO映射路径，容器内的路径
+17. `DYNAMIC_USER_INDEX_PATH`：设置SEO映射路径，容器内的路径
+
+SEO配置：
+
+```shell
+-e DYNAMIC_USER_INDEX_PATH=/data/chat-api/index.html -v /data/chat-api/index.html:/data/chat-api/index.html
+```
 
 ## 界面截图
 
@@ -150,4 +156,3 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 
 <img src="https://github.com/ai365vip/chat-api/assets/154959065/31289586-f7a6-4640-bf8c-e6d6c97db581" width="250"  style="margin-right: 100px;">                                                    <img 
 src="https://github.com/ai365vip/chat-api/assets/154959065/bf2d09f4-4569-481c-9328-754a4bc9f67c" width="250">
-

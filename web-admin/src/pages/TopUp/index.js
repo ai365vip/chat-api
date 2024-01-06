@@ -166,7 +166,7 @@ const TopUp = () => {
     }, [options]);
 
     const renderAmount = () => {
-        console.log(amount);
+        //console.log(amount);
         return amount + '元';
     }
 

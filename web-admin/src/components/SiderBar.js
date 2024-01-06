@@ -152,7 +152,7 @@ const SiderBar = () => {
                         }}
                         items={headerButtons}
                         onSelect={key => {
-                            console.log(key);
+                            //console.log(key);
                             setSelectedKeys([key.itemKey]);
                         }}
                         header={{

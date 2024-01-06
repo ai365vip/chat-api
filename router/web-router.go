@@ -20,12 +20,13 @@ func serveUserIndexPage(c *gin.Context) {
 	var userIndexPage []byte
 	var err error
 
+	// 尝试加载动态路径指定的 index.html 文件
 	if userIndexPath != "" {
 		userIndexPage, err = ioutil.ReadFile(userIndexPath)
 		if err != nil {
-			log.Printf("Failed to read dynamic user index page: %v", err)
-			c.String(http.StatusInternalServerError, "Internal Server Error")
-			return
+			log.Printf("Failed to read dynamic user index page at path %s: %v", userIndexPath, err)
+			// 如果动态文件读取失败，则回退到默认的嵌入式页面
+			userIndexPage = c.MustGet("defaultUserIndexPage").([]byte)
 		}
 	} else {
 		userIndexPage = c.MustGet("defaultUserIndexPage").([]byte)
