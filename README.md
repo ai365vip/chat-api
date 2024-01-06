@@ -34,11 +34,13 @@
 10. 支持模型按次数收费，可在 系统设置-运营设置 中设置
 11. 支持普通用户自行选择令牌按倍率、按次收费
 12. 支持gemini-pro模型
-13. 支持令牌分组
+13. 支持令牌分组，**模型限制**
 14. 支持批量创建令牌
 15. 支持WxPusher消息推送，在线充值通知
 16. 支持渠道自启时间设置
 17. 支持渠道**加权随机**
+18. 支持自定义**SEO**
+
 ## 部署
 
 ### 基于 Docker 进行部署
@@ -129,6 +131,7 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
     - `DATA_GYM_CACHE_DIR`：目前该配置作用与 `TIKTOKEN_CACHE_DIR` 一致，但是优先级没有它高。
 15. `RELAY_TIMEOUT`：中继超时设置，单位为秒，默认不设置超时时间。
 16. `SQLITE_BUSY_TIMEOUT`：SQLite 锁等待超时设置，单位为毫秒，默认 `3000`。
+17. DYNAMIC_USER_INDEX_PATH：设置SEO映射路径，容器内的路径
 
 ## 界面截图
 
