@@ -3,17 +3,38 @@ package router
 import (
 	"embed"
 	"io/fs"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"one-api/controller"
 	"one-api/middleware"
+	"os"
 	"strings"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
-func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIndexPage []byte, userIndexPage []byte) {
+func serveUserIndexPage(c *gin.Context) {
+	userIndexPath := os.Getenv("DYNAMIC_USER_INDEX_PATH")
+	var userIndexPage []byte
+	var err error
+
+	if userIndexPath != "" {
+		userIndexPage, err = ioutil.ReadFile(userIndexPath)
+		if err != nil {
+			log.Printf("Failed to read dynamic user index page: %v", err)
+			c.String(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+	} else {
+		userIndexPage = c.MustGet("defaultUserIndexPage").([]byte)
+	}
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", userIndexPage)
+}
+
+func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIndexPage []byte, defaultUserIndexPage []byte) {
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())
@@ -30,6 +51,11 @@ func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIn
 	}
 	router.StaticFS("/panel", http.FS(userStaticFiles))
 
+	// 设置默认的 User Index Page
+	router.Use(func(c *gin.Context) {
+		c.Set("defaultUserIndexPage", defaultUserIndexPage)
+	})
+
 	router.NoRoute(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.RequestURI, "/v1") || strings.HasPrefix(c.Request.RequestURI, "/api") {
 			controller.RelayNotFound(c)
@@ -41,7 +67,7 @@ func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIn
 			c.Data(http.StatusOK, "text/html; charset=utf-8", adminIndexPage)
 		} else {
 			// 否则返回普通用户界面的 index.html
-			c.Data(http.StatusOK, "text/html; charset=utf-8", userIndexPage)
+			serveUserIndexPage(c)
 		}
 	})
 }

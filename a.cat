@@ -1,0 +1,514 @@
+.
+├── a.cat
+├── bin
+│   ├── migration_v0.2-v0.3.sql
+│   ├── migration_v0.3-v0.4.sql
+│   └── time_test.sh
+├── chat-api
+├── chat-api-v0.0.1.8
+├── common
+│   ├── constants.go
+│   ├── crypto.go
+│   ├── custom-event.go
+│   ├── database.go
+│   ├── email.go
+│   ├── embed-file-system.go
+│   ├── gin.go
+│   ├── group-ratio.go
+│   ├── image.go
+│   ├── init.go
+│   ├── logger.go
+│   ├── model-ratio.go
+│   ├── pprof.go
+│   ├── rate-limit.go
+│   ├── redis.go
+│   ├── topup-ratio.go
+│   ├── utils.go
+│   ├── validate.go
+│   └── verification.go
+├── controller
+│   ├── billing.go
+│   ├── channel-billing.go
+│   ├── channel.go
+│   ├── channel-test.go
+│   ├── github.go
+│   ├── group.go
+│   ├── log.go
+│   ├── midjourney.go
+│   ├── misc.go
+│   ├── model.go
+│   ├── option.go
+│   ├── redemption.go
+│   ├── relay-aiproxy.go
+│   ├── relay-ali.go
+│   ├── relay-audio.go
+│   ├── relay-baidu.go
+│   ├── relay-chatbot.go
+│   ├── relay-claude.go
+│   ├── relay-gemini.go
+│   ├── relay.go
+│   ├── relay-image.go
+│   ├── relay-mj.go
+│   ├── relay-openai.go
+│   ├── relay-palm.go
+│   ├── relay-tencent.go
+│   ├── relay-text.go
+│   ├── relay-utils.go
+│   ├── relay-xunfei.go
+│   ├── relay-zhipu.go
+│   ├── token.go
+│   ├── topup.go
+│   ├── user.go
+│   ├── wechat.go
+│   └── wxpusher.go
+├── docker-compose.yml
+├── Dockerfile
+├── go.mod
+├── go.sum
+├── i18n
+│   ├── en.json
+│   └── translate.py
+├── images
+├── LICENSE
+├── logs
+│   ├── oneapi-20231227.log
+│   ├── oneapi-20231228.log
+│   ├── oneapi-20231229.log
+│   ├── oneapi-20231231.log
+│   ├── oneapi-20240101.log
+│   ├── oneapi-20240103.log
+│   ├── oneapi-20240104.log
+│   └── oneapi-20240105.log
+├── main
+├── main.go
+├── middleware
+│   ├── auth.go
+│   ├── cache.go
+│   ├── cors.go
+│   ├── distributor.go
+│   ├── logger.go
+│   ├── rate-limit.go
+│   ├── request-id.go
+│   ├── turnstile-check.go
+│   └── utils.go
+├── Midjourney.md
+├── model
+│   ├── ability.go
+│   ├── cache.go
+│   ├── channel.go
+│   ├── log.go
+│   ├── main.go
+│   ├── midjourney.go
+│   ├── option.go
+│   ├── redemption.go
+│   ├── token.go
+│   ├── topup.go
+│   ├── user.go
+│   └── utils.go
+├── one-api.db
+├── one-api.service
+├── README.md
+├── router
+│   ├── api-router.go
+│   ├── dashboard.go
+│   ├── main.go
+│   ├── relay-router.go
+│   └── web-router.go
+├── VERSION
+├── web-admin
+│   ├── build
+│   │   ├── asset-manifest.json
+│   │   ├── favicon.ico
+│   │   ├── index.html
+│   │   ├── logo.png
+│   │   ├── robots.txt
+│   │   └── static
+│   │       ├── css
+│   │       │   ├── main.f761a8fa.css
+│   │       │   └── main.f761a8fa.css.map
+│   │       ├── js
+│   │       │   ├── 416.22936acf.chunk.js
+│   │       │   ├── 416.22936acf.chunk.js.map
+│   │       │   ├── 651.24bca325.chunk.js
+│   │       │   ├── 651.24bca325.chunk.js.map
+│   │       │   ├── main.df08333a.js
+│   │       │   ├── main.df08333a.js.LICENSE.txt
+│   │       │   └── main.df08333a.js.map
+│   │       └── media
+│   │           ├── brand-icons.278156e41e0ad908cf7f.woff2
+│   │           ├── brand-icons.65a2fb6d9aaa164b41a0.ttf
+│   │           ├── brand-icons.6729d29753e000c17489.svg
+│   │           ├── brand-icons.cac87dc00c87a5d74711.woff
+│   │           ├── brand-icons.d68fa3e67dbb653a13ce.eot
+│   │           ├── flags.99f63ae7a743f21ab308.png
+│   │           ├── icons.38c6d8bab26db77d8c80.woff2
+│   │           ├── icons.425399f81e4ce7cbd967.woff
+│   │           ├── icons.62d9dae4e0040e81c980.svg
+│   │           ├── icons.a01e3f2d6c83dc3aee17.eot
+│   │           ├── icons.c656b8caa454ed19b9a2.ttf
+│   │           ├── outline-icons.5367103510b27b784827.ttf
+│   │           ├── outline-icons.687a4990ea22bb1a49d4.woff2
+│   │           ├── outline-icons.752905fa5edf21fc52a1.eot
+│   │           ├── outline-icons.9c4845b4b41ef40a22fa.svg
+│   │           └── outline-icons.ddae9b1ba9b0b42f5880.woff
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── public
+│   │   ├── favicon.ico
+│   │   ├── index.html
+│   │   ├── logo.png
+│   │   └── robots.txt
+│   ├── README.md
+│   ├── src
+│   │   ├── App.js
+│   │   ├── components
+│   │   │   ├── ChannelsTable.js
+│   │   │   ├── Footer.js
+│   │   │   ├── GitHubOAuth.js
+│   │   │   ├── HeaderBar.js
+│   │   │   ├── Loading.js
+│   │   │   ├── LoginForm.js
+│   │   │   ├── LogsAllTable.js
+│   │   │   ├── LogsTable.js
+│   │   │   ├── MjLogsTable.js
+│   │   │   ├── OperationSetting.js
+│   │   │   ├── OtherSetting.js
+│   │   │   ├── PasswordResetConfirm.js
+│   │   │   ├── PasswordResetForm.js
+│   │   │   ├── PersonalSetting.js
+│   │   │   ├── PrivateRoute.js
+│   │   │   ├── RedemptionsTable.js
+│   │   │   ├── RegisterForm.js
+│   │   │   ├── SiderBar.js
+│   │   │   ├── SystemSetting.js
+│   │   │   ├── TokensTable.js
+│   │   │   ├── UsersTable.js
+│   │   │   └── utils.js
+│   │   ├── constants
+│   │   │   ├── channel.constants.js
+│   │   │   ├── common.constant.js
+│   │   │   ├── index.js
+│   │   │   ├── toast.constants.js
+│   │   │   └── user.constants.js
+│   │   ├── context
+│   │   │   ├── Status
+│   │   │   │   ├── index.js
+│   │   │   │   └── reducer.js
+│   │   │   └── User
+│   │   │       ├── index.js
+│   │   │       └── reducer.js
+│   │   ├── helpers
+│   │   │   ├── api.js
+│   │   │   ├── auth-header.js
+│   │   │   ├── history.js
+│   │   │   ├── index.js
+│   │   │   ├── render.js
+│   │   │   └── utils.js
+│   │   ├── index.css
+│   │   ├── index.js
+│   │   └── pages
+│   │       ├── About
+│   │       │   └── index.js
+│   │       ├── Channel
+│   │       │   ├── EditChannel.js
+│   │       │   └── index.js
+│   │       ├── Chat
+│   │       │   └── index.js
+│   │       ├── Home
+│   │       │   └── index.js
+│   │       ├── Log
+│   │       │   └── index.js
+│   │       ├── LogAll
+│   │       │   └── index.js
+│   │       ├── Midjourney
+│   │       │   └── index.js
+│   │       ├── NotFound
+│   │       │   └── index.js
+│   │       ├── Redemption
+│   │       │   ├── EditRedemption.js
+│   │       │   └── index.js
+│   │       ├── Setting
+│   │       │   └── index.js
+│   │       ├── Token
+│   │       │   ├── EditToken.js
+│   │       │   └── index.js
+│   │       ├── TopUp
+│   │       │   └── index.js
+│   │       └── User
+│   │           ├── AddUser.js
+│   │           ├── EditUser.js
+│   │           └── index.js
+│   └── vercel.json
+└── web-user
+    ├── build
+    │   ├── asset-manifest.json
+    │   ├── favicon.ico
+    │   ├── index.html
+    │   └── static
+    │       ├── css
+    │       │   ├── main.a66e4805.css
+    │       │   └── main.a66e4805.css.map
+    │       ├── js
+    │       │   ├── 142.c7afe07d.chunk.js
+    │       │   ├── 142.c7afe07d.chunk.js.map
+    │       │   ├── 155.fa18aee3.chunk.js
+    │       │   ├── 155.fa18aee3.chunk.js.map
+    │       │   ├── 291.576822c4.chunk.js
+    │       │   ├── 291.576822c4.chunk.js.map
+    │       │   ├── 315.47396ab9.chunk.js
+    │       │   ├── 315.47396ab9.chunk.js.map
+    │       │   ├── 461.966597e7.chunk.js
+    │       │   ├── 461.966597e7.chunk.js.map
+    │       │   ├── 469.3193e957.chunk.js
+    │       │   ├── 469.3193e957.chunk.js.map
+    │       │   ├── 471.ed1ba5a3.chunk.js
+    │       │   ├── 471.ed1ba5a3.chunk.js.map
+    │       │   ├── 510.3d783346.chunk.js
+    │       │   ├── 510.3d783346.chunk.js.map
+    │       │   ├── 5.1324c334.chunk.js
+    │       │   ├── 5.1324c334.chunk.js.map
+    │       │   ├── 581.3af84e9b.chunk.js
+    │       │   ├── 581.3af84e9b.chunk.js.map
+    │       │   ├── 587.f0eea425.chunk.js
+    │       │   ├── 587.f0eea425.chunk.js.map
+    │       │   ├── 623.7b9b946d.chunk.js
+    │       │   ├── 623.7b9b946d.chunk.js.map
+    │       │   ├── 647.212fe3bd.chunk.js
+    │       │   ├── 647.212fe3bd.chunk.js.map
+    │       │   ├── 673.fd2b4760.chunk.js
+    │       │   ├── 673.fd2b4760.chunk.js.map
+    │       │   ├── 675.3722062f.chunk.js
+    │       │   ├── 675.3722062f.chunk.js.LICENSE.txt
+    │       │   ├── 675.3722062f.chunk.js.map
+    │       │   ├── 68.ca84a9e3.chunk.js
+    │       │   ├── 68.ca84a9e3.chunk.js.map
+    │       │   ├── 702.adeeab3e.chunk.js
+    │       │   ├── 702.adeeab3e.chunk.js.map
+    │       │   ├── 712.d64de9ed.chunk.js
+    │       │   ├── 712.d64de9ed.chunk.js.map
+    │       │   ├── 7.2d0f2470.chunk.js
+    │       │   ├── 7.2d0f2470.chunk.js.map
+    │       │   ├── 830.53935c51.chunk.js
+    │       │   ├── 830.53935c51.chunk.js.map
+    │       │   ├── 851.389a95d4.chunk.js
+    │       │   ├── 851.389a95d4.chunk.js.map
+    │       │   ├── 926.71a65f75.chunk.js
+    │       │   ├── 926.71a65f75.chunk.js.map
+    │       │   ├── 940.e689c7a8.chunk.js
+    │       │   ├── 940.e689c7a8.chunk.js.map
+    │       │   ├── 961.77c6c9aa.chunk.js
+    │       │   ├── 961.77c6c9aa.chunk.js.map
+    │       │   ├── 985.34d40dd5.chunk.js
+    │       │   ├── 985.34d40dd5.chunk.js.map
+    │       │   ├── 994.e55c2faf.chunk.js
+    │       │   ├── 994.e55c2faf.chunk.js.map
+    │       │   ├── main.b9f4a22a.js
+    │       │   ├── main.b9f4a22a.js.LICENSE.txt
+    │       │   └── main.b9f4a22a.js.map
+    │       └── media
+    │           ├── 404.9eb0066be672b8088b57d445cc6dfbdb.svg
+    │           ├── cover.ce8466cd4be184bb082b.jpg
+    │           ├── cwok_casual_19.1745e77a5684e8163b32.webp
+    │           ├── github.029cdccf41e42f37144d68f11c0cf57c.svg
+    │           ├── logo.68b17e733347aa0a417e3860f62bb313.svg
+    │           ├── shape-avatar.096ea8015d2d14ba4ce707d949a97823.svg
+    │           ├── user-round.95b2e396f1158e016a1b40c25cd6bd0a.svg
+    │           └── wechat.2ba86f25b8e99e9d20f53105a34f78db.svg
+    ├── jsconfig.json
+    ├── package.json
+    ├── package-lock.json
+    ├── public
+    │   ├── favicon.ico
+    │   └── index.html
+    ├── README.md
+    └── src
+        ├── App.js
+        ├── assets
+        │   ├── images
+        │   │   ├── 404.svg
+        │   │   ├── auth
+        │   │   │   ├── auth-blue-card.svg
+        │   │   │   ├── auth-pattern-dark.svg
+        │   │   │   ├── auth-pattern.svg
+        │   │   │   ├── auth-purple-card.svg
+        │   │   │   ├── auth-signup-blue-card.svg
+        │   │   │   └── auth-signup-white-card.svg
+        │   │   ├── icons
+        │   │   │   ├── earning.svg
+        │   │   │   ├── github.svg
+        │   │   │   ├── shape-avatar.svg
+        │   │   │   ├── social-google.svg
+        │   │   │   └── wechat.svg
+        │   │   ├── invite
+        │   │   │   ├── cover.jpg
+        │   │   │   └── cwok_casual_19.webp
+        │   │   ├── logo-2.svg
+        │   │   ├── logo.svg
+        │   │   └── users
+        │   │       └── user-round.svg
+        │   └── scss
+        │       ├── style.scss
+        │       └── _themes-vars.module.scss
+        ├── config.js
+        ├── constants
+        │   ├── ChannelConstants.js
+        │   ├── CommonConstants.js
+        │   ├── index.js
+        │   └── SnackbarConstants.js
+        ├── contexts
+        │   ├── StatusContext.js
+        │   └── UserContext.js
+        ├── hooks
+        │   ├── useAuth.js
+        │   ├── useLogin.js
+        │   ├── useRegister.js
+        │   └── useScriptRef.js
+        ├── index.js
+        ├── layout
+        │   ├── MainLayout
+        │   │   ├── Header
+        │   │   │   ├── index.js
+        │   │   │   └── ProfileSection
+        │   │   │       └── index.js
+        │   │   ├── index.js
+        │   │   ├── LogoSection
+        │   │   │   └── index.js
+        │   │   └── Sidebar
+        │   │       ├── index.js
+        │   │       ├── MenuCard
+        │   │       │   └── index.js
+        │   │       └── MenuList
+        │   │           ├── index.js
+        │   │           ├── NavCollapse
+        │   │           │   └── index.js
+        │   │           ├── NavGroup
+        │   │           │   └── index.js
+        │   │           └── NavItem
+        │   │               └── index.js
+        │   ├── MinimalLayout
+        │   │   ├── Header
+        │   │   │   └── index.js
+        │   │   └── index.js
+        │   ├── NavigationScroll.js
+        │   └── NavMotion.js
+        ├── menu-items
+        │   ├── index.js
+        │   └── panel.js
+        ├── routes
+        │   ├── index.js
+        │   ├── MainRoutes.js
+        │   └── OtherRoutes.js
+        ├── serviceWorker.js
+        ├── store
+        │   ├── accountReducer.js
+        │   ├── actions.js
+        │   ├── constant.js
+        │   ├── customizationReducer.js
+        │   ├── index.js
+        │   ├── reducer.js
+        │   └── siteInfoReducer.js
+        ├── themes
+        │   ├── compStyleOverride.js
+        │   ├── index.js
+        │   ├── palette.js
+        │   └── typography.js
+        ├── ui-component
+        │   ├── AdminContainer.js
+        │   ├── cards
+        │   │   ├── CardSecondaryAction.js
+        │   │   ├── MainCard.js
+        │   │   ├── Skeleton
+        │   │   │   ├── EarningCard.js
+        │   │   │   ├── ImagePlaceholder.js
+        │   │   │   ├── PopularCard.js
+        │   │   │   ├── ProductPlaceholder.js
+        │   │   │   ├── TotalGrowthBarChart.js
+        │   │   │   └── TotalIncomeCard.js
+        │   │   ├── SubCard.js
+        │   │   └── UserCard.js
+        │   ├── extended
+        │   │   ├── AnimateButton.js
+        │   │   ├── Avatar.js
+        │   │   ├── Breadcrumbs.js
+        │   │   └── Transitions.js
+        │   ├── Footer.js
+        │   ├── Label.js
+        │   ├── Loadable.js
+        │   ├── Loader.js
+        │   ├── Logo.js
+        │   ├── SvgColor.js
+        │   ├── Switch.js
+        │   └── TableToolBar.js
+        ├── utils
+        │   ├── api.js
+        │   ├── chart.js
+        │   ├── common.js
+        │   ├── password-strength.js
+        │   └── route-guard
+        │       └── AuthGuard.js
+        └── views
+            ├── About
+            │   └── index.js
+            ├── Authentication
+            │   ├── Auth
+            │   │   ├── ForgetPassword.js
+            │   │   ├── GitHubOAuth.js
+            │   │   ├── Login.js
+            │   │   ├── Register.js
+            │   │   └── ResetPassword.js
+            │   ├── AuthCardWrapper.js
+            │   ├── AuthForms
+            │   │   ├── AuthLogin.js
+            │   │   ├── AuthRegister.js
+            │   │   ├── ForgetPasswordForm.js
+            │   │   ├── ResetPasswordForm.js
+            │   │   └── WechatModal.js
+            │   └── AuthWrapper.js
+            ├── Dashboard
+            │   ├── component
+            │   │   ├── StatisticalBarChart.js
+            │   │   ├── StatisticalCard.js
+            │   │   └── StatisticalLineChartCard.js
+            │   └── index.js
+            ├── Error
+            │   └── index.js
+            ├── Home
+            │   ├── baseIndex.js
+            │   └── index.js
+            ├── Log
+            │   ├── component
+            │   │   ├── TableHead.js
+            │   │   ├── TableRow.js
+            │   │   └── TableToolBar.js
+            │   ├── index.js
+            │   └── type
+            │       └── LogType.js
+            ├── MjLog
+            │   ├── component
+            │   │   ├── TableHead.js
+            │   │   ├── TableRow.js
+            │   │   └── TableToolBar.js
+            │   ├── index.js
+            │   └── type
+            │       └── LogType.js
+            ├── Model
+            │   ├── component
+            │   │   └── TableHead.js
+            │   └── index.js
+            ├── Profile
+            │   ├── component
+            │   │   └── EmailModal.js
+            │   └── index.js
+            ├── Token
+            │   ├── component
+            │   │   ├── EditModal.js
+            │   │   ├── TableHead.js
+            │   │   └── TableRow.js
+            │   └── index.js
+            └── Topup
+                ├── component
+                │   ├── InviteCard.js
+                │   └── TopupCard.js
+                └── index.js
+
+101 directories, 410 files

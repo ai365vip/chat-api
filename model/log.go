@@ -67,6 +67,62 @@ func GetLogByKey(key string) (logs []*Log, err error) {
 	return logs, err
 }
 
+func GetLogMjByKey(DB *gorm.DB, key string) (midjourneys []*Midjourney, err error) {
+	// 分割 key 获取所需的参数
+	parts := strings.Split(key, "-")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("无效的 key 格式: %s", key)
+	}
+	tokenKey := parts[1]
+
+	dialect := DB.Dialector.Name()
+	var sql string
+	switch dialect {
+	case "postgres":
+		// PostgreSQL 方言的查询
+		sql = `
+			SELECT mj.* FROM midjourneys mj
+			JOIN logs l ON mj.channel_id = l.channel_id AND mj.mj_id = l.content
+			JOIN tokens t ON t.name = l.token_name
+			WHERE t.key = ? AND l.model_name = 'midjourney'
+			ORDER BY mj.start_time DESC
+		`
+	case "sqlite":
+		// SQLite 方言的查询
+		sql = `
+			SELECT mj.* FROM midjourneys mj
+			JOIN logs l ON mj.channel_id = l.channel_id AND mj.mj_id = l.content
+			JOIN tokens t ON t.name = l.token_name
+			WHERE t.key = ? AND l.model_name = 'midjourney'
+			ORDER BY mj.start_time DESC
+		`
+	case "mysql":
+		// MySQL 方言的查询
+		sql = `
+			SELECT mj.* FROM midjourneys mj
+			JOIN logs l ON mj.channel_id = l.channel_id AND  mj.mj_id = l.content COLLATE utf8mb4_general_ci
+			JOIN tokens t ON t.name = l.token_name
+			WHERE t.key = ? AND l.model_name = 'midjourney'
+			ORDER BY mj.start_time DESC
+		`
+	default:
+		return nil, fmt.Errorf("不支持的数据库方言: %s", dialect)
+	}
+
+	err = DB.Raw(sql, tokenKey).Scan(&midjourneys).Error
+	if err != nil {
+		// 处理查询执行时遇到的任何错误
+		return nil, fmt.Errorf("query execution failed: %v", err)
+	}
+
+	// 如果 midjourneys 为空，这意味着未找到与 key 匹配的记录
+	if len(midjourneys) == 0 {
+		return midjourneys, nil
+	}
+
+	return midjourneys, nil
+}
+
 func RecordLog(userId int, logType int, multiplier string) {
 	if logType == LogTypeConsume && !common.LogConsumeEnabled {
 		return

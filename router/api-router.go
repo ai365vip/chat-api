@@ -128,6 +128,7 @@ func SetApiRouter(router *gin.Engine) {
 		logRoute.Use(middleware.CORS())
 		{
 			logRoute.GET("/token", controller.GetLogByKey)
+			logRoute.GET("/tokenmj", controller.GetLogMjByKey)
 
 		}
 
