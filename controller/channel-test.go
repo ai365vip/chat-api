@@ -84,10 +84,10 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 			}
 		}()
 	default:
-		if gptVersion == "gpt-3.5-turbo" {
-			request.Model = "gpt-3.5-turbo"
-		} else {
+		if gptVersion != "" {
 			request.Model = gptVersion
+		} else {
+			request.Model = "gpt-3.5-turbo"
 		}
 
 	}
@@ -97,6 +97,7 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 	requestURL := common.ChannelBaseURLs[channel.Type]
 	if channel.Type == common.ChannelTypeAzure {
 		requestURL = fmt.Sprintf("%s/openai/deployments/%s/chat/completions?api-version=2023-03-15-preview", channel.GetBaseURL(), request.Model)
+		jsonData, err = json.Marshal(request)
 	} else if channel.Type == common.ChannelTypeChatBot {
 		requestURL = channel.GetBaseURL()
 		messagesMap := make([]map[string]string, len(request.Messages))
@@ -126,7 +127,7 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 		return err, nil
 	}
 	// 打印JSON数据
-	//fmt.Println(requestURL)
+	//fmt.Println(bytes.NewBuffer(jsonData))
 
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	messagesMap := make([]map[string]string, len(request.Messages))
@@ -145,9 +146,11 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 			req.Header.Set("Authorization", "Bearer "+channel.Key)
 		}
 	}
+
 	completionTokens := calculateCompletionTokens(messagesMap)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := httpClient.Do(req)
+
 	if err != nil {
 		return err, nil
 	}

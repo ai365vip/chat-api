@@ -414,7 +414,6 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	groupRatio := common.GetGroupRatio(group)
 	if !ok {
-
 	}
 	ratio := modelRatio * groupRatio
 

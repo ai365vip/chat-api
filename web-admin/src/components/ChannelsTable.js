@@ -468,7 +468,7 @@ const ChannelsTable = () => {
   
 
     const testChannel = async (record) => {
-        const res = await API.get(`/api/channel/test/${record.id}/`, {params: {version: gptVersion}});
+        const res = await API.get(`/api/channel/test/${record.id}/`);
         const {success, message, time} = res.data;
         if (success) {
             let newChannels = [...channels];
@@ -684,7 +684,7 @@ const ChannelsTable = () => {
                             searchChannels(searchKeyword, v)
                             
                         }}/>
-                        <Space>
+                       {/*  <Space>
                             <Typography.Text>测试模型：</Typography.Text>
                             <AutoComplete
                                 placeholder={'选择或输入 GPT 版本'}
@@ -699,6 +699,7 @@ const ChannelsTable = () => {
                                 ]}
                             />
                         </Space>
+                        */}
 
 
                     </Space>
