@@ -5,21 +5,24 @@ import { marked } from 'marked';
 import BaseIndex from './baseIndex';
 import { Box, Container } from '@mui/material';
 
+
+
 const Home = () => {
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
   const [homePageContent, setHomePageContent] = useState('');
   const displayNotice = async () => {
-    const res = await API.get('/api/notice');
-    const { success, message, data } = res.data;
-    if (success) {
-      let oldNotice = localStorage.getItem('notice');
-      if (data !== oldNotice && data !== '') {
+    try {
+      const res = await API.get('/api/notice');
+      const { success, message, data } = res.data;
+      if (success) {
         const htmlNotice = marked(data);
         showNotice(htmlNotice, true);
-        localStorage.setItem('notice', data);
+      } else {
+        showError(message);
       }
-    } else {
-      showError(message);
+    } catch (error) {
+      // 可能还想要处理网络错误或其他异常
+      showError('无法加载公告');
     }
   };
 
@@ -42,7 +45,7 @@ const Home = () => {
   };
 
   useEffect(() => {
-    displayNotice().then();
+    displayNotice();
     displayHomePageContent().then();
   }, []);
 

@@ -3,12 +3,34 @@ import { Button, Divider, Form, Grid, Header, Message, Modal } from 'semantic-ui
 import { API, showError, showSuccess } from '../helpers';
 import { marked } from 'marked';
 
+
+const defaultSystemText = `<!doctype html>
+<html lang="en">
+<head>
+  <title>Chat API</title>
+  <link rel="icon" href="/favicon.ico" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#2296f3" />
+  <meta name="description" content="OpenAI 接口聚合管理，我们致力于提供优质的API接入服务，让您可以轻松集成先进的AI模型至您的产品和服务。" />
+  <link rel="preconnect" href="https://api.ai365vip.com/" />
+  <script defer="defer" src="/panel/static/js/main.300fb56d.js"></script>
+  <link href="/panel/static/css/main.a66e4805.css" rel="stylesheet">
+</head>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+</body>
+</html>`;
+
+
 const OtherSetting = () => {
   let [inputs, setInputs] = useState({
     Footer: '',
     Notice: '',
     About: '',
     SystemName: '',
+    SystemText: defaultSystemText,
     Logo: '',
     HomePageContent: ''
   });
@@ -36,6 +58,7 @@ const OtherSetting = () => {
   };
 
   useEffect(() => {
+    
     getOptions().then();
   }, []);
 
@@ -68,6 +91,10 @@ const OtherSetting = () => {
 
   const submitSystemName = async () => {
     await updateOption('SystemName', inputs.SystemName);
+  };
+
+  const submitSystemText = async () => {
+    await updateOption('SystemText', inputs.SystemText);
   };
 
   const submitLogo = async () => {
@@ -132,6 +159,17 @@ const OtherSetting = () => {
             />
           </Form.Group>
           <Form.Button onClick={submitSystemName}>设置系统名称</Form.Button>
+          <Form.Group widths='equal'>
+            <Form.TextArea
+              label='系统描述（只能修改content内容与url 别的不要动！！！）'
+              placeholder='修改内容'
+              value={inputs.SystemText}
+              name='SystemText'
+              onChange={handleInputChange}
+              style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
+            />
+          </Form.Group>
+          <Form.Button onClick={submitSystemText}>设置系统描述</Form.Button>
           <Form.Group widths='equal'>
             <Form.Input
               label='Logo 图片地址'

@@ -3,12 +3,11 @@ package router
 import (
 	"embed"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"one-api/common"
 	"one-api/controller"
 	"one-api/middleware"
-	"os"
 	"strings"
 
 	"github.com/gin-contrib/gzip"
@@ -16,23 +15,17 @@ import (
 )
 
 func serveUserIndexPage(c *gin.Context) {
-	userIndexPath := os.Getenv("DYNAMIC_USER_INDEX_PATH")
-	var userIndexPage []byte
-	var err error
-
-	// 尝试加载动态路径指定的 index.html 文件
-	if userIndexPath != "" {
-		userIndexPage, err = ioutil.ReadFile(userIndexPath)
-		if err != nil {
-			log.Printf("Failed to read dynamic user index page at path %s: %v", userIndexPath, err)
-			// 如果动态文件读取失败，则回退到默认的嵌入式页面
-			userIndexPage = c.MustGet("defaultUserIndexPage").([]byte)
-		}
-	} else {
-		userIndexPage = c.MustGet("defaultUserIndexPage").([]byte)
+	// 尝试从配置中获取 SystemText 的字符串值
+	systemText, exists := common.OptionMap["SystemText"]
+	if !exists || systemText == "" {
+		// 如果 SystemText 键不存在或者对应的字符串为空，则使用默认的用户索引页内容
+		userIndexPage := c.MustGet("defaultUserIndexPage").([]byte)
+		c.Data(http.StatusOK, "text/html; charset=utf-8", userIndexPage)
+		return
 	}
 
-	c.Data(http.StatusOK, "text/html; charset=utf-8", userIndexPage)
+	// 如果 SystemText 存在且不为空，则将其作为响应发送
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(systemText))
 }
 
 func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIndexPage []byte, defaultUserIndexPage []byte) {
