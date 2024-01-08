@@ -37,6 +37,8 @@ func InitOptionMap() {
 	common.OptionMap["LogConsumeEnabled"] = strconv.FormatBool(common.LogConsumeEnabled)
 	common.OptionMap["DisplayInCurrencyEnabled"] = strconv.FormatBool(common.DisplayInCurrencyEnabled)
 	common.OptionMap["DisplayTokenStatEnabled"] = strconv.FormatBool(common.DisplayTokenStatEnabled)
+	common.OptionMap["DrawingEnabled"] = strconv.FormatBool(common.DrawingEnabled)
+	common.OptionMap["DataExportEnabled"] = strconv.FormatBool(common.DataExportEnabled)
 	common.OptionMap["ChannelDisableThreshold"] = strconv.FormatFloat(common.ChannelDisableThreshold, 'f', -1, 64)
 	common.OptionMap["EmailDomainRestrictionEnabled"] = strconv.FormatBool(common.EmailDomainRestrictionEnabled)
 	common.OptionMap["EmailDomainWhitelist"] = strings.Join(common.EmailDomainWhitelist, ",")
@@ -86,6 +88,7 @@ func InitOptionMap() {
 	common.OptionMap["ModelRatioEnabled"] = strconv.FormatBool(common.ModelRatioEnabled)
 	common.OptionMap["YzfZfb"] = strconv.FormatBool(common.Zfb)
 	common.OptionMap["YzfWx"] = strconv.FormatBool(common.Wx)
+	common.OptionMap["DataExportInterval"] = strconv.Itoa(common.DataExportInterval)
 
 	common.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
@@ -179,6 +182,12 @@ func updateOptionMap(key string, value string) (err error) {
 			common.Zfb = boolValue
 		case "YzfWx":
 			common.Wx = boolValue
+		case "DisplayTokenStatEnabled":
+			common.DisplayTokenStatEnabled = boolValue
+		case "DrawingEnabled":
+			common.DrawingEnabled = boolValue
+		case "DataExportEnabled":
+			common.DataExportEnabled = boolValue
 		}
 	}
 	switch key {
@@ -241,6 +250,8 @@ func updateOptionMap(key string, value string) (err error) {
 		common.PreConsumedQuota, _ = strconv.Atoi(value)
 	case "RetryTimes":
 		common.RetryTimes, _ = strconv.Atoi(value)
+	case "DataExportInterval":
+		common.DataExportInterval, _ = strconv.Atoi(value)
 	case "ModelRatio":
 		err = common.UpdateModelRatioByJSONString(value)
 	case "ModelPrice":

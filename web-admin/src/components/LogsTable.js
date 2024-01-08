@@ -327,7 +327,6 @@ const LogsTable = () => {
         // data.key = '' + data.id
         setLogs(logs);
         setLogCount(logs.length + ITEMS_PER_PAGE);
-        //console.log(logCount);
     }
 
     const loadLogs = async (startIdx) => {
@@ -462,7 +461,6 @@ const LogsTable = () => {
                                          value={end_timestamp} type='dateTime'
                                          name='end_timestamp'
                                          onChange={value => handleInputChange(value, 'end_timestamp')}/>
-                        {/*<Form.Button fluid label='操作' width={2} onClick={refresh}>查询</Form.Button>*/}
                         {
                             isAdminUser && <>
                                 <Form.Input field="channel" label='渠道 ID' style={{width: 176}} value={channel}

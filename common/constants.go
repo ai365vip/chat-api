@@ -31,6 +31,9 @@ var ModelRatioEnabled = true
 var BillingByRequestEnabled = true
 var Wx = true
 var Zfb = true
+var DrawingEnabled = true
+var DataExportEnabled = true
+var DataExportInterval = 5 // unit: minute
 
 // Any options with "Secret", "Token" in its key won't be return by GetOptions
 

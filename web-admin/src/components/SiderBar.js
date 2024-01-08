@@ -1,4 +1,4 @@
-import React, {useContext, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {UserContext} from '../context/User';
 
@@ -6,7 +6,7 @@ import {API, getLogo, getSystemName, isAdmin, isMobile, showSuccess} from '../he
 import '../index.css';
 
 import {
-    IconAt,
+    IconCalendarClock,
     IconHistogram,
     IconGift,
     IconKey,
@@ -20,85 +20,7 @@ import {
 } from '@douyinfe/semi-icons';
 import {Nav, Avatar, Dropdown, Layout} from '@douyinfe/semi-ui';
 
-// HeaderBar Buttons
-let headerButtons = [
-   //{
-   //    text: '首页',
-   //    itemKey: 'home',
-   //    to: '/admin',
-   //    icon: <IconHome/>
-   //},
-    {
-        text: '渠道',
-        itemKey: 'channel',
-        to: '/channel',
-        icon: <IconLayers/>,
-        className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-    },
 
-    {
-        text: '令牌',
-        itemKey: 'token',
-        to: '/token',
-        icon: <IconKey/>,
-        className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-    },
-    {
-        text: '兑换码',
-        itemKey: 'redemption',
-        to: '/redemption',
-        icon: <IconGift/>,
-        className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-    },
-    {
-        text: '钱包',
-        itemKey: 'topup',
-        to: '/topup',
-        icon: <IconCreditCard/>,
-        className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-    },
-    {
-        text: '用户管理',
-        itemKey: 'user',
-        to: '/user',
-        icon: <IconUser/>,
-        className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-    },
-    {
-        text: '日志',
-        itemKey: 'log',
-        to: '/log',
-        icon: <IconHistogram/>,
-        className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-    },
-    {
-        text: '统计',
-        itemKey: 'logall',
-        to: '/logall',
-        icon: <IconHistogram/>,
-        className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-    },
-    {
-        text: '绘图',
-        itemKey: 'midjourney',
-        to: '/midjourney',
-        icon: <IconImage/>,
-        className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-    },
-    {
-        text: '设置',
-        itemKey: 'setting',
-        to: '/setting',
-        icon: <IconSetting/>,
-        className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-    },
-    // {
-    //     text: '关于',
-    //     itemKey: 'about',
-    //     to: '/about',
-    //     icon: <IconAt/>
-    // }
-];
 
 const SiderBar = () => {
     const [userState, userDispatch] = useContext(UserContext);
@@ -107,6 +29,86 @@ const SiderBar = () => {
     const [showSidebar, setShowSidebar] = useState(false);
     const systemName = getSystemName();
     const logo = getLogo();
+    const headerButtons = useMemo(() => [
+        {
+            text: '首页',
+            itemKey: 'detail',
+            to: '/detail',
+            icon: <IconCalendarClock />,
+            className: isAdmin()? "semi-navigation-item-normal" : "tableHiddle"
+        },
+        {
+            text: '渠道',
+            itemKey: 'channel',
+            to: '/channel',
+            icon: <IconLayers/>,
+            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        },
+    
+        {
+            text: '令牌',
+            itemKey: 'token',
+            to: '/token',
+            icon: <IconKey/>,
+            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        },
+        {
+            text: '兑换码',
+            itemKey: 'redemption',
+            to: '/redemption',
+            icon: <IconGift/>,
+            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        },
+        {
+            text: '钱包',
+            itemKey: 'topup',
+            to: '/topup',
+            icon: <IconCreditCard/>,
+            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        },
+        {
+            text: '用户管理',
+            itemKey: 'user',
+            to: '/user',
+            icon: <IconUser/>,
+            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        },
+        {
+            text: '日志',
+            itemKey: 'log',
+            to: '/log',
+            icon: <IconHistogram/>,
+            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        },
+        {
+            text: '统计',
+            itemKey: 'logall',
+            to: '/logall',
+            icon: <IconHistogram/>,
+            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        },
+        {
+            text: '绘图',
+            itemKey: 'midjourney',
+            to: '/midjourney',
+            icon: <IconImage/>,
+            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        },
+        {
+            text: '设置',
+            itemKey: 'setting',
+            to: '/setting',
+            icon: <IconSetting/>,
+            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        },
+        // {
+        //     text: '关于',
+        //     itemKey: 'about',
+        //     to: '/about',
+        //     icon: <IconAt/>
+        // }
+    ], []);
+
 
     async function logout() {
         setShowSidebar(false);
@@ -139,6 +141,7 @@ const SiderBar = () => {
                                 midjourney: "/admin/midjourney",
                                 setting: "/admin/setting",
                                 about: "/admin/about",
+                                detail: "/admin/detail",
                             };
                             
                             return (

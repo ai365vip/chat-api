@@ -72,7 +72,7 @@ func Distribute() func(c *gin.Context) {
 					break
 				}
 			}
-			log.Printf("请求模型: %#v", Model)
+			//log.Printf("请求模型: %#v", Model)
 
 			// 如果请求的模型不在渠道支持的模型列表中
 			if !modelSupported {

@@ -1,9 +1,10 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"one-api/common"
 	"one-api/model"
+
+	"github.com/gin-gonic/gin"
 )
 
 func GetSubscription(c *gin.Context) {
@@ -71,7 +72,7 @@ func GetUsage(c *gin.Context) {
 	if err != nil {
 		openAIError := OpenAIError{
 			Message: err.Error(),
-			Type:    "new_api_error",
+			Type:    "chat_api_error",
 		}
 		c.JSON(200, gin.H{
 			"error": openAIError,

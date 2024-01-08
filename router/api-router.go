@@ -125,6 +125,10 @@ func SetApiRouter(router *gin.Engine) {
 		logproRoute.GET("/stat", middleware.AdminAuth(), controller.GetLogsProStat)
 		logproRoute.GET("/search", middleware.AdminAuth(), controller.SearchProLogs)
 
+		dataRoute := apiRouter.Group("/data")
+		dataRoute.GET("/", middleware.AdminAuth(), controller.GetAllQuotaDates)
+		dataRoute.GET("/self", middleware.UserAuth(), controller.GetUserQuotaDates)
+
 		logRoute.Use(middleware.CORS())
 		{
 			logRoute.GET("/token", controller.GetLogByKey)

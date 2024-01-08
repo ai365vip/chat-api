@@ -10,7 +10,7 @@ import (
 )
 
 type Log struct {
-	Id               int    `json:"id;index:idx_created_at_id,priority:1"`
+	Id               int    `json:"id" gorm:"index:idx_created_at_id,priority:1"`
 	UserId           int    `json:"user_id" gorm:"index"`
 	CreatedAt        int64  `json:"created_at" gorm:"bigint;index:idx_created_at_id,priority:2;index:idx_created_at_type"`
 	Type             int    `json:"type" gorm:"index:idx_created_at_type"`
@@ -145,9 +145,10 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptToke
 	if !common.LogConsumeEnabled {
 		return
 	}
+	username := GetUsernameById(userId)
 	log := &Log{
 		UserId:           userId,
-		Username:         GetUsernameById(userId),
+		Username:         username,
 		CreatedAt:        common.GetTimestamp(),
 		Type:             LogTypeConsume,
 		Content:          content,
@@ -164,6 +165,9 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptToke
 	err := DB.Create(log).Error
 	if err != nil {
 		common.LogError(ctx, "failed to record log: "+err.Error())
+	}
+	if common.DataExportEnabled {
+		LogQuotaData(userId, username, LogTypeConsume, channelId, modelName, quota, common.GetTimestamp())
 	}
 }
 
