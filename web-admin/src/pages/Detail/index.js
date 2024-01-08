@@ -306,12 +306,13 @@ const Detail = (props) => {
     
         for (let i = 0; i < data.length; i++) {
             const item = data[i];
-            // 统计每个 model 的 count
-            if (!modelCount[item.model_name]) {
-                modelCount[item.model_name] = 0;
+            if (item.type === 2) { // 只考虑 type=2 的数据
+                // 统计每个 model 的 count
+                if (!modelCount[item.model_name]) {
+                    modelCount[item.model_name] = 0;
+                }
+                modelCount[item.model_name] += item.count;
             }
-            modelCount[item.model_name] += item.count;
-
         }
         let modelUsageArray = Object.keys(modelCount).map(model_name => ({
             model_name,
@@ -329,10 +330,12 @@ const Detail = (props) => {
     
         for (let i = 0; i < data.length; i++) {
             const item = data[i];
-            if (!userQuotaUsage[item.username]) {
-                userQuotaUsage[item.username] = 0;
+            if (item.type === 2) { // 只考虑 type=2 的数据
+                if (!userQuotaUsage[item.username]) {
+                    userQuotaUsage[item.username] = 0;
+                }
+                userQuotaUsage[item.username] += parseFloat(getQuotaWithUnit(item.quota));
             }
-            userQuotaUsage[item.username] += parseFloat(getQuotaWithUnit(item.quota));
         }
     
         // 转换为数组并排序用户的 Quota 使用量
@@ -351,10 +354,12 @@ const Detail = (props) => {
     
         for (let i = 0; i < data.length; i++) {
             const item = data[i];
-            if (!channelQuotaUsage[item.channel]) {
-                channelQuotaUsage[item.channel] = 0;
+            if (item.type === 2) { // 只考虑 type=2 的数据
+                if (!channelQuotaUsage[item.channel]) {
+                    channelQuotaUsage[item.channel] = 0;
+                }
+                channelQuotaUsage[item.channel] += parseFloat(getQuotaWithUnit(item.quota));
             }
-            channelQuotaUsage[item.channel] += parseFloat(getQuotaWithUnit(item.quota));
         }
     
         // 转换为数组并排序 channel 的 Quota 使用量
