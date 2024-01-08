@@ -1,7 +1,7 @@
 import React, {useContext, useEffect, useState} from 'react';
 import {Link, useNavigate, useSearchParams} from 'react-router-dom';
 import {UserContext} from '../context/User';
-import {API, getLogo, isMobile, showError, showInfo, showSuccess, showWarning} from '../helpers';
+import {API, getLogo,isAdmin, isMobile, showError, showInfo, showSuccess, showWarning} from '../helpers';
 import {onGitHubOAuthClicked} from './utils';
 import Turnstile from "react-turnstile";
 import {Layout, Card, Image, Form, Button, Divider, Modal} from "@douyinfe/semi-ui";
@@ -26,6 +26,7 @@ const LoginForm = () => {
     let navigate = useNavigate();
     const [status, setStatus] = useState({});
     const logo = getLogo();
+    
 
     useEffect(() => {
         if (searchParams.get('expired')) {
@@ -41,32 +42,6 @@ const LoginForm = () => {
             }
         }
     }, []);
-
-    const [showWeChatLoginModal, setShowWeChatLoginModal] = useState(false);
-
-    const onWeChatLoginClicked = () => {
-        setShowWeChatLoginModal(true);
-    };
-
-    const onSubmitWeChatVerificationCode = async () => {
-        if (turnstileEnabled && turnstileToken === '') {
-            showInfo('请稍后几秒重试，Turnstile 正在检查用户环境！');
-            return;
-        }
-        const res = await API.get(
-            `/api/oauth/wechat?code=${inputs.wechat_verification_code}`
-        );
-        const {success, message, data} = res.data;
-        if (success) {
-            userDispatch({type: 'login', payload: data});
-            localStorage.setItem('user', JSON.stringify(data));
-            navigate('/admin');
-            showSuccess('登录成功！');
-            setShowWeChatLoginModal(false);
-        } else {
-            showError(message);
-        }
-    };
 
     function handleChange(name, value) {
         setInputs((inputs) => ({...inputs, [name]: value}));
@@ -85,13 +60,22 @@ const LoginForm = () => {
             });
             const {success, message, data} = res.data;
             if (success) {
+                
                 userDispatch({type: 'login', payload: data});
                 localStorage.setItem('user', JSON.stringify(data));
                 showSuccess('登录成功！');
-                if (username === 'root' && password === '123456') {
-                    Modal.error({title: '您正在使用默认密码！', content: '请立刻修改默认密码！', centered: true});
+                const isAdminUser = isAdmin();
+                if (isAdminUser) {
+                    if (username === 'root' && password === '123456') {
+                        Modal.error({title: '您正在使用默认密码！', content: '请立刻修改默认密码！', centered: true});
+                    }
+                    navigate('/admin/channel');
+                    window.location.reload();
+                } else {
+                    navigate('/');
+                    window.location.reload();
                 }
-                navigate('/admin/channel');
+                
             } else {
                 showError(message);
             }
@@ -135,77 +119,14 @@ const LoginForm = () => {
                                     </Button>
                                 </Form>
                                 <div style={{display: 'flex', justifyContent: 'space-between', marginTop: 20}}>
-                                    <Text>
+                                   {/* <Text>
                                         没有账号请先 <Link to='/admin/register'>注册账号</Link>
                                     </Text>
+                                    */} 
                                     <Text>
                                         忘记密码 <Link to='/admin/reset'>点击重置</Link>
                                     </Text>
                                 </div>
-                                {status.github_oauth || status.wechat_login ? (
-                                    <>
-                                        <Divider margin='12px' align='center'>
-                                            第三方登录
-                                        </Divider>
-                                        <div style={{display: 'flex', justifyContent: 'center', marginTop: 20}}>
-                                            {status.github_oauth ? (
-                                                <Button
-                                                    type='primary'
-                                                    icon={<IconGithubLogo/>}
-                                                    onClick={() => onGitHubOAuthClicked(status.github_client_id)}
-                                                />
-                                            ) : (
-                                                <></>
-                                            )}
-                                            {/*{status.wechat_login ? (*/}
-                                            {/*    <Button*/}
-                                            {/*        circular*/}
-                                            {/*        color='green'*/}
-                                            {/*        icon='wechat'*/}
-                                            {/*        onClick={onWeChatLoginClicked}*/}
-                                            {/*    />*/}
-                                            {/*) : (*/}
-                                            {/*    <></>*/}
-                                            {/*)}*/}
-                                        </div>
-                                    </>
-                                ) : (
-                                    <></>
-                                )}
-                                {/*<Modal*/}
-                                {/*    onClose={() => setShowWeChatLoginModal(false)}*/}
-                                {/*    onOpen={() => setShowWeChatLoginModal(true)}*/}
-                                {/*    open={showWeChatLoginModal}*/}
-                                {/*    size={'mini'}*/}
-                                {/*>*/}
-                                {/*    <Modal.Content>*/}
-                                {/*        <Modal.Description>*/}
-                                {/*            <Image src={status.wechat_qrcode} fluid/>*/}
-                                {/*            <div style={{textAlign: 'center'}}>*/}
-                                {/*                <p>*/}
-                                {/*                    微信扫码关注公众号，输入「验证码」获取验证码（三分钟内有效）*/}
-                                {/*                </p>*/}
-                                {/*            </div>*/}
-                                {/*            <Form size='large'>*/}
-                                {/*                <Form.Input*/}
-                                {/*                    field={'wechat_verification_code'}*/}
-                                {/*                    placeholder='验证码'*/}
-                                {/*                    name='wechat_verification_code'*/}
-                                {/*                    value={inputs.wechat_verification_code}*/}
-                                {/*                    onChange={handleChange}*/}
-                                {/*                />*/}
-                                {/*                <Button*/}
-                                {/*                    color=''*/}
-                                {/*                    fluid*/}
-                                {/*                    size='large'*/}
-                                {/*                    onClick={onSubmitWeChatVerificationCode}*/}
-                                {/*                >*/}
-                                {/*                    登录*/}
-                                {/*                </Button>*/}
-                                {/*            </Form>*/}
-                                {/*        </Modal.Description>*/}
-                                {/*    </Modal.Content>*/}
-                                {/*</Modal>*/}
                             </Card>
                             {turnstileEnabled ? (
                                 <div style={{display: 'flex', justifyContent: 'center', marginTop: 20}}>

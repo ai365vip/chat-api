@@ -19,24 +19,21 @@ export function SnackbarHTMLContent({ htmlContent }) {
 
 export function getSnackbarOptions(variant) {
   let options = snackbarConstants.Common[variant];
+  
+  // 添加 anchorOrigin 属性以确定Snackbar的位置
   const positionOptions = {
     anchorOrigin: {
       vertical: 'top',
       horizontal: 'left',
     }
   };
-  const styleOptions = {
-    style: {
-      backgroundColor: '#fff', // 例如：'#f44336' 为红色背景
-    },
-  };
 
   if (isMobile()) {
-    // 合并 options、styleOptions、positionOptions 和 snackbarConstants.Mobile
-    options = { ...options, ...styleOptions, ...positionOptions, ...snackbarConstants.Mobile };
+    // 合并 options、positionOptions 和 snackbarConstants.Mobile
+    options = { ...options, ...positionOptions, ...snackbarConstants.Mobile };
   } else {
-    // 合并 options、styleOptions 和 positionOptions
-    options = { ...options, ...styleOptions, ...positionOptions };
+    // 合并 options 和 positionOptions
+    options = { ...options, ...positionOptions };
   }
 
   return options;

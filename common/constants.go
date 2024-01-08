@@ -12,28 +12,7 @@ import (
 var StartTime = time.Now().Unix() // unit: second
 var Version = "v0.0.0"            // this hard coding will be replaced automatically when building, no need to manually change
 var SystemName = "Chat API"
-var SystemText = `
-<!doctype html>
-<html lang="en">
-<head>
-    <title>${SystemName}</title>
-    <link rel="icon" href="/favicon.ico" />
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#2296f3" />
-    <meta name="description" content="OpenAI 接口聚合管理，我们致力于提供优质的API接入服务，让您可以轻松集成先进的AI模型至您的产品和服务。" />
-    <link rel="preconnect" href="https://api.ai365vip.com/" />
-    <script defer="defer" src="/panel/static/js/main.300fb56d.js"></script>
-    <link href="/panel/static/css/main.a66e4805.css" rel="stylesheet">
-</head>
-<body>
-    <noscript>
-        You need to enable JavaScript to run this app.
-    </noscript>
-    <div id="root"></div>
-</body>
-</html>
-`
+var SystemText = ""
 var ServerAddress = "http://localhost:3000"
 var PayAddress = ""
 var EpayId = ""

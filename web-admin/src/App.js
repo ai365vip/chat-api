@@ -93,7 +93,7 @@ function App() {
                     path='/admin'
                     element={
                         <Suspense fallback={<Loading></Loading>}>
-                            <Home />
+                            <LoginForm />
                         </Suspense>
                     }
                 />

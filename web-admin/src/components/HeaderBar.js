@@ -149,7 +149,7 @@ const HeaderBar = () => {
                                     :
                                     <>
                                         <Nav.Item itemKey={'login'} text={'登录'} icon={<IconKey />} />
-                                        <Nav.Item itemKey={'register'} text={'注册'} icon={<IconUser />} />
+                                        {/*<Nav.Item itemKey={'register'} text={'注册'} icon={<IconUser />} />*/}
                                     </>
                                 }
                             </>

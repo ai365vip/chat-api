@@ -22,12 +22,12 @@ import {Nav, Avatar, Dropdown, Layout} from '@douyinfe/semi-ui';
 
 // HeaderBar Buttons
 let headerButtons = [
-    {
-        text: '首页',
-        itemKey: 'home',
-        to: '/admin',
-        icon: <IconHome/>
-    },
+   //{
+   //    text: '首页',
+   //    itemKey: 'home',
+   //    to: '/admin',
+   //    icon: <IconHome/>
+   //},
     {
         text: '渠道',
         itemKey: 'channel',
@@ -128,7 +128,7 @@ const SiderBar = () => {
                         selectedKeys={selectedKeys}
                         renderWrapper={({itemElement, isSubNav, isInSubNav, props}) => {
                             const routerMap = {
-                                home: "/admin/",
+                                //home: "/admin/",
                                 channel: "/admin/channel",
                                 token: "/admin/token",
                                 redemption: "/admin/redemption",
