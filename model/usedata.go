@@ -12,7 +12,7 @@ type QuotaData struct {
 	Id        int    `json:"id"`
 	UserID    int    `json:"user_id" gorm:"index"`
 	Username  string `json:"username" gorm:"index:idx_qdt_model_user_name,priority:2;size:64;default:''"`
-	Type      int    `json:"type" gorm:"index:idx_created_at_type"`
+	Type      int    `json:"type" gorm:"default:0"`
 	ChannelId int    `json:"channel" gorm:"index"`
 	ModelName string `json:"model_name" gorm:"index:idx_qdt_model_user_name,priority:1;size:64;default:''"`
 	CreatedAt int64  `json:"created_at" gorm:"bigint;index:idx_qdt_created_at,priority:2"`
