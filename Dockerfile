@@ -12,8 +12,6 @@ RUN DISABLE_ESLINT_PLUGIN='true' npm run build
 
 # 构建 web-admin 应用
 WORKDIR /build/web-admin
-COPY web-admin/package.json .
-RUN npm install
 COPY web-admin/ .
 RUN DISABLE_ESLINT_PLUGIN='true' npm run build
 

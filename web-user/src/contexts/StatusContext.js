@@ -29,9 +29,7 @@ const StatusProvider = ({ children }) => {
         data.version !== 'v0.0.0' &&
         data.version !== '' &&
         process.env.REACT_APP_VERSION !== ''
-      ) {
-        showNotice(`新版本可用：${data.version}，请使用快捷键 Shift + F5 刷新页面`);
-      }
+      ) 
       if (data.system_name) {
         system_name = data.system_name;
       }
