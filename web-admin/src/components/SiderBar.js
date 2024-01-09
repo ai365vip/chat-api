@@ -16,7 +16,7 @@ import {
     IconCreditCard,
     IconSemiLogo,
     IconHome,
-    IconImage
+    IconImage,IconKanban
 } from '@douyinfe/semi-icons';
 import {Nav, Avatar, Dropdown, Layout} from '@douyinfe/semi-ui';
 
@@ -25,7 +25,7 @@ import {Nav, Avatar, Dropdown, Layout} from '@douyinfe/semi-ui';
 const SiderBar = () => {
     const [userState, userDispatch] = useContext(UserContext);
     let navigate = useNavigate();
-    const [selectedKeys, setSelectedKeys] = useState(['home']);
+    const [selectedKeys, setSelectedKeys] = useState(['']);
     const [showSidebar, setShowSidebar] = useState(false);
     const systemName = getSystemName();
     const logo = getLogo();
@@ -84,7 +84,7 @@ const SiderBar = () => {
             text: '统计',
             itemKey: 'logall',
             to: '/logall',
-            icon: <IconHistogram/>,
+            icon: <IconKanban />,
             className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
         },
         {

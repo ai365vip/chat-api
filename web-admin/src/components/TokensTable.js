@@ -15,11 +15,11 @@ import {
     Popconfirm,
     SplitButtonGroup,
     Dropdown,
-    Select
+    Select,Switch,Tooltip
 } from "@douyinfe/semi-ui";
 
 import {
-    IconTreeTriangleDown,
+    IconTreeTriangleDown,IconKey 
 } from '@douyinfe/semi-icons';
 import EditToken from "../pages/Token/EditToken";
 
@@ -32,19 +32,44 @@ function renderTimestamp(timestamp) {
     );
 }
 
-function renderStatus(status) {
+function renderStatus(status, record, manageToken) {
+    const isOn = status === 1; // 开启状态
+    const isOffOrClosed = [2, 3, 4].includes(status); // 关闭或已关闭状态
+    let statusText = '';
+
     switch (status) {
         case 1:
-            return <Tag color='green' size='large'>已启用</Tag>;
+            statusText = '已启用';
+            break;
         case 2:
-            return <Tag color='red' size='large'> 已禁用 </Tag>;
+            statusText = '已禁用';
+            break;
         case 3:
-            return <Tag color='yellow' size='large'> 已过期 </Tag>;
+            statusText = '已过期';
+            break;
         case 4:
-            return <Tag color='grey' size='large'> 已耗尽 </Tag>;
+            statusText = '已耗尽';
+            break;
         default:
-            return <Tag color='black' size='large'> 未知状态 </Tag>;
+            statusText = '未知状态';
     }
+
+    return (
+        <Tooltip content={statusText} position="top">
+            <Switch
+                checked={isOn}
+                checkedText="开"
+                uncheckedText={["3", "4"].includes(status) ? "〇" : "关"}
+                onChange={(checked) => {
+                    if (checked) {
+                        manageToken(record.id, 'enable', record); // 启用令牌
+                    } else if (!checked && isOn) {
+                        manageToken(record.id, 'disable', record); // 禁用令牌
+                    }
+                }}
+            />
+        </Tooltip>
+    );
 }
 
 const TokensTable = () => {
@@ -93,13 +118,10 @@ const TokensTable = () => {
             dataIndex: 'status',
             key: 'status',
             render: (text, record, index) => {
-                return (
-                    <div>
-                        {renderStatus(text)}
-                    </div>
-                );
+                return renderStatus(text, record, manageToken);
             },
         },
+        
         {
             title: '已用额度',
             dataIndex: 'used_quota',
@@ -165,22 +187,21 @@ const TokensTable = () => {
             render: (text, record, index) => (
                 <div>
                     <Popover
-                        content={
-                            'sk-' + record.key
-                        }
-                        style={{padding: 20}}
+                        content={'sk-' + record.key}
+                        style={{ padding: 20 }}
                         position="top"
                     >
-                        <Button theme='light' type='tertiary' style={{marginRight: 1}}>查看</Button>
+                        <Button theme='light' type='tertiary' icon={<IconKey />} style={{ marginRight: 1 }} />
                     </Popover>
+
                     <Button theme='light' type='secondary' style={{marginRight: 1}}
                             onClick={async (text) => {
                                 await copyText('sk-' + record.key)
                             }}
                     >复制</Button>
-                    <SplitButtonGroup style={{marginRight: 1}} aria-label="项目操作按钮组">
+                    {/* <SplitButtonGroup style={{marginRight: 1}} aria-label="项目操作按钮组">
                         <Button theme="light" style={{ color: 'rgba(var(--semi-teal-7), 1)' }} onClick={()=>{onOpenLink('next', record.key)}}>聊天</Button>
-                        <Dropdown trigger="click" position="bottomRight" menu={
+                        {/*<Dropdown trigger="click" position="bottomRight" menu={
                             [
                                 {node: 'item', key: 'next', name: 'ChatGPT Next Web', onClick: () => {onOpenLink('next', record.key)}},
                                 {node: 'item', key: 'ama', name: 'AMA 问天（BotGrem）', onClick: () => {onOpenLink('ama', record.key)}},
@@ -189,8 +210,8 @@ const TokensTable = () => {
                         }
                         >
                             <Button style={ { padding: '8px 4px', color: 'rgba(var(--semi-teal-7), 1)' }} type="primary" icon={<IconTreeTriangleDown />}></Button>
-                        </Dropdown>
-                    </SplitButtonGroup>
+                    </Dropdown>
+                    </SplitButtonGroup>*/}
                     <Popconfirm
                         title="确定是否要删除此令牌？"
                         content="此修改将不可逆"
@@ -206,7 +227,7 @@ const TokensTable = () => {
                     >
                         <Button theme='light' type='danger' style={{marginRight: 1}}>删除</Button>
                     </Popconfirm>
-                    {
+                    {/*{
                         record.status === 1 ?
                             <Button theme='light' type='warning' style={{marginRight: 1}} onClick={
                                 async () => {
@@ -226,7 +247,7 @@ const TokensTable = () => {
                                     );
                                 }
                             }>启用</Button>
-                    }
+                    }*/}
                     
                     <Button theme='light' type='tertiary' style={{marginRight: 1}} onClick={
                         () => {

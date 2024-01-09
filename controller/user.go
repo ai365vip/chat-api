@@ -175,6 +175,7 @@ func Register(c *gin.Context) {
 		Password:    user.Password,
 		DisplayName: user.Username,
 		InviterId:   inviterId,
+		CreatedAt:   time.Now().Unix(),
 	}
 	if common.EmailVerificationEnabled {
 		cleanUser.Email = user.Email

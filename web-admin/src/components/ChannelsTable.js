@@ -31,7 +31,6 @@ import {
     InputNumber,
     Select,
     AutoComplete
-    
 } from "@douyinfe/semi-ui";
 import EditChannel from "../pages/Channel/EditChannel";
 
@@ -63,6 +62,31 @@ const ChannelsTable = () => {
             dataIndex: 'name',
         },
         {
+            title: '状态',
+            dataIndex: 'status',
+            render: (text, record, index) => {
+                const isOn = record.status === 1;
+                const statusText = isOn ? '已启用' : (record.status === 3 ? '程序自动禁用' : '手动禁用');
+        
+                return (
+                    <Tooltip content={statusText} position="top">
+                        <Switch
+                            checked={isOn}
+                            checkedText="开" 
+                            uncheckedText="关" 
+                            onChange={(checked) => {
+                                if (checked) {
+                                    manageChannel(record.id, 'enable', record); // 启用通道
+                                } else if (!checked && isOn) {
+                                    manageChannel(record.id, 'disable', record); // 禁用通道
+                                }
+                            }}
+                        />
+                    </Tooltip>
+                );
+            },
+        },
+        {
             title: '分组',
             dataIndex: 'group',
             render: (text, record, index) => {
@@ -89,18 +113,7 @@ const ChannelsTable = () => {
                     </div>
                 );
             },
-        },
-        {
-            title: '状态',
-            dataIndex: 'status',
-            render: (text, record, index) => {
-                return (
-                    <div>
-                        {renderStatus(text)}
-                    </div>
-                );
-            },
-        },
+        },      
         {
             title: '响应时间',
             dataIndex: 'response_time',
@@ -210,7 +223,7 @@ const ChannelsTable = () => {
                     >
                         <Button theme='light' type='danger' style={{marginRight: 1}}>删除</Button>
                     </Popconfirm>
-                    {
+                    {/*{
                         record.status === 1 ?
                             <Button theme='light' type='warning' style={{marginRight: 1}} onClick={
                                 async () => {
@@ -230,7 +243,7 @@ const ChannelsTable = () => {
                                     );
                                 }
                             }>启用</Button>
-                    }
+                    }*/}
                     <Button theme='light' type='tertiary' style={{marginRight: 1}} onClick={
                         () => {
                             setEditingChannel(record);
@@ -385,38 +398,7 @@ const ChannelsTable = () => {
         }
     };
 
-    const renderStatus = (status) => {
-        switch (status) {
-            case 1:
-                return <Tag size='large' color='green'>已启用</Tag>;
-            case 2:
-                return (
-                    <Popup
-                        trigger={<Tag size='large' color='red'>
-                            已禁用
-                        </Tag>}
-                        content='本渠道被手动禁用'
-                        basic
-                    />
-                );
-            case 3:
-                return (
-                    <Popup
-                        trigger={<Tag size='large' color='yellow'>
-                            已禁用
-                        </Tag>}
-                        content='本渠道被程序自动禁用'
-                        basic
-                    />
-                );
-            default:
-                return (
-                    <Tag size='large' color='grey'>
-                        未知状态
-                    </Tag>
-                );
-        }
-    };
+    
 
     const renderResponseTime = (responseTime) => {
         let time = responseTime / 1000;

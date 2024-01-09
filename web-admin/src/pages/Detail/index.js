@@ -238,30 +238,32 @@ const Detail = (props) => {
 
     const loadQuotaData = async (lineChart, pieChart,channelChart,typeChart) => {
         setLoading(true);
-
-        let url = '';
-        let localStartTimestamp = Date.parse(start_timestamp) / 1000;
-        let localEndTimestamp = Date.parse(end_timestamp) / 1000;
-        if (isAdminUser) {
-            url = `/api/data/?username=${username}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
-        } 
-        const res = await API.get(url);
-        const {success, message, data} = res.data;
-        if (success) {
-            setQuotaData(data);
-            if (data.length === 0) {
-                return;
+        try {
+            let url = '';
+            let localStartTimestamp = Date.parse(start_timestamp) / 1000;
+            let localEndTimestamp = Date.parse(end_timestamp) / 1000;
+            if (isAdminUser) {
+                url = `/api/data/?username=${username}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
+            } 
+            const res = await API.get(url);
+            const {success, message, data} = res.data;
+            if (success) {
+                setQuotaData(data);
+                if (data.length > 0) {
+                    updateChartModel(pieChart, data);
+                    updateChartUser(lineChart, data);
+                    updateChartChannel(channelChart, data); 
+                    updateQuotaComparisonChart(typeChart, data);  
+                }
+                
+            } else {
+                showError(message);
             }
-             // 分离消费和充值数据
-
-            updateChartModel(pieChart, data);
-            updateChartUser(lineChart, data);
-            updateChartChannel(channelChart, data); 
-            updateQuotaComparisonChart(typeChart, data);  
-        } else {
-            showError(message);
+        } catch (error) {
+            showError(error.message); 
+        } finally {
+            setLoading(false); 
         }
-        setLoading(false);
     };
 
     const refresh = async () => {

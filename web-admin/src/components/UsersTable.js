@@ -63,19 +63,32 @@ const UsersTable = () => {
                 </Space>
             </div>);
         }
-    }, {
+    }, 
+    {
         title: '角色', dataIndex: 'role', render: (text, record, index) => {
             return (<div>
                 {renderRole(text)}
             </div>);
         },
-    }, {
+    }, 
+    {
         title: '状态', dataIndex: 'status', render: (text, record, index) => {
             return (<div>
                 {record.DeletedAt !== null? <Tag color='red'>已注销</Tag> : renderStatus(text)}
             </div>);
         },
-    }, {
+    }, 
+    {
+        title: '注册时间', dataIndex: 'created_at', render: (text, record, index) => {
+            if (!record.created_at) { // 检查 created_at 是否为空
+                return <Tag color='grey'>无</Tag>;
+            }
+            // Convert timestamp to readable date format.
+            const date = new Date(record.created_at * 1000); // 假设时间戳是秒级别的。
+            return `${date.getFullYear()}-${('0' + (date.getMonth() + 1)).slice(-2)}-${('0' + date.getDate()).slice(-2)} ${('0' + date.getHours()).slice(-2)}:${('0' + date.getMinutes()).slice(-2)}`;
+        },
+    },     
+    {
         title: '', dataIndex: 'operate', render: (text, record, index) => (<div>
             {
                 record.DeletedAt !== null ? <></>:

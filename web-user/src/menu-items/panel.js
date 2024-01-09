@@ -22,7 +22,7 @@ const panel = {
   children: [
     {
       id: 'dashboard',
-      title: 'Dashboard',
+      title: '总览',
       type: 'item',
       url: '/dashboard',
       icon: icons.IconDashboard,
@@ -31,7 +31,7 @@ const panel = {
     },
     {
       id: 'token',
-      title: 'Token',
+      title: '令牌',
       type: 'item',
       url: '/token',
       icon: icons.IconKey,

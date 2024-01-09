@@ -14,17 +14,17 @@ const Home = () => {
     try {
       const res = await API.get('/api/notice');
       const { success, message, data } = res.data;
-      if (success) {
+      if (success && data) { 
         const htmlNotice = marked(data);
         showNotice(htmlNotice, true);
-      } else {
+      } else if (!success) {
         showError(message);
       }
     } catch (error) {
-      // 可能还想要处理网络错误或其他异常
       showError('无法加载公告');
     }
   };
+  
 
   const displayHomePageContent = async () => {
     setHomePageContent(localStorage.getItem('home_page_content') || '');

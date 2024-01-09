@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Divider, Form, Grid, Header, Message, Modal } from 'semantic-ui-react';
+import { Button, Form, Typography, Divider, Toast, Spin, Layout,TextArea,Input } from '@douyinfe/semi-ui';
 import { API, showError, showSuccess } from '../helpers';
 import { marked } from 'marked';
 
 
-const defaultSystemText = `OpenAI 接口聚合管理，我们致力于提供优质的API接入服务，让您可以轻松集成先进的AI模型至您的产品和服务。`;
 
 
 const OtherSetting = () => {
+  const defaultSystemText = `OpenAI 接口聚合管理，我们致力于提供优质的API接入服务，让您可以轻松集成先进的AI模型至您的产品和服务。`;
+
   let [inputs, setInputs] = useState({
     Footer: '',
     Notice: '',
@@ -18,31 +19,24 @@ const OtherSetting = () => {
     HomePageContent: ''
   });
   let [loading, setLoading] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [updateData, setUpdateData] = useState({
-    tag_name: '',
-    content: ''
-  });
 
   const getOptions = async () => {
     const res = await API.get('/api/option/');
     const { success, message, data } = res.data;
     if (success) {
-      let newInputs = {};
+      let newInputs = { ...inputs }; // 使用当前状态来初始化newInputs
       data.forEach((item) => {
-        if (item.key in inputs) {
-          newInputs[item.key] = item.value;
-        }
+        newInputs[item.key] = item.value; // 更新每个键的值，无论是否存在于当前状态中
       });
-      setInputs(newInputs);
+      setInputs(newInputs); // 使用更新后的状态
     } else {
       showError(message);
     }
   };
+  
 
   useEffect(() => {
-    
-    getOptions().then();
+    getOptions();
   }, []);
 
   const updateOption = async (key, value) => {
@@ -60,8 +54,8 @@ const OtherSetting = () => {
     setLoading(false);
   };
 
-  const handleInputChange = async (e, { name, value }) => {
-    setInputs((inputs) => ({ ...inputs, [name]: value }));
+  const handleInputChange = (name, value) => {
+    setInputs((prevInputs) => ({ ...prevInputs, [name]: value }));
   };
 
   const submitNotice = async () => {
@@ -92,135 +86,119 @@ const OtherSetting = () => {
     await updateOption(key, inputs[key]);
   };
 
-  const openGitHubRelease = () => {
-    window.location =
-      'https://github.com/songquanpeng/one-api/releases/latest';
-  };
-
-  const checkUpdate = async () => {
-    const res = await API.get(
-      'https://api.github.com/repos/songquanpeng/one-api/releases/latest'
-    );
-    const { tag_name, body } = res.data;
-    if (tag_name === process.env.REACT_APP_VERSION) {
-      showSuccess(`已是最新版本：${tag_name}`);
-    } else {
-      setUpdateData({
-        tag_name: tag_name,
-        content: marked.parse(body)
-      });
-      setShowUpdateModal(true);
-    }
-  };
-
   return (
-    <Grid columns={1}>
-      <Grid.Column>
-        <Form loading={loading}>
-          <Header as='h3'>通用设置</Header>
-          {/*<Form.Button onClick={checkUpdate}>检查更新</Form.Button>*/}
-          <Form.Group widths='equal'>
-            <Form.TextArea
-              label='公告'
-              placeholder='在此输入新的公告内容，支持 Markdown & HTML 代码'
-              value={inputs.Notice}
-              name='Notice'
-              onChange={handleInputChange}
-              style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
-            />
-          </Form.Group>
-          <Form.Button onClick={submitNotice}>保存公告</Form.Button>
-          <Divider />
-          <Header as='h3'>个性化设置</Header>
-          <Form.Group widths='equal'>
-            <Form.Input
-              label='系统名称'
-              placeholder='在此输入系统名称'
-              value={inputs.SystemName}
-              name='SystemName'
-              onChange={handleInputChange}
-            />
-          </Form.Group>
-          <Form.Button onClick={submitSystemName}>设置系统名称</Form.Button>
-          <Form.Group widths='equal'>
-            <Form.Input
-              label='系统描述'
-              placeholder='系统描述内容'
-              value={inputs.SystemText}
-              name='SystemText'
-              onChange={handleInputChange}
-            />
-          </Form.Group>
-          <Form.Button onClick={submitSystemText}>设置系统描述</Form.Button>
-          <Form.Group widths='equal'>
-            <Form.Input
-              label='Logo 图片地址'
-              placeholder='在此输入 Logo 图片地址'
-              value={inputs.Logo}
-              name='Logo'
-              type='url'
-              onChange={handleInputChange}
-            />
-          </Form.Group>
-          <Form.Button onClick={submitLogo}>设置 Logo</Form.Button>
-          <Form.Group widths='equal'>
-            <Form.TextArea
-              label='首页内容'
-              placeholder='在此输入首页内容，支持 Markdown & HTML 代码，设置后首页的状态信息将不再显示。如果输入的是一个链接，则会使用该链接作为 iframe 的 src 属性，这允许你设置任意网页作为首页。'
-              value={inputs.HomePageContent}
-              name='HomePageContent'
-              onChange={handleInputChange}
-              style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
-            />
-          </Form.Group>
-          <Form.Button onClick={() => submitOption('HomePageContent')}>保存首页内容</Form.Button>
-          <Form.Group widths='equal'>
-            <Form.TextArea
-              label='关于'
-              placeholder='在此输入新的关于内容，支持 Markdown & HTML 代码。如果输入的是一个链接，则会使用该链接作为 iframe 的 src 属性，这允许你设置任意网页作为关于页面。'
-              value={inputs.About}
-              name='About'
-              onChange={handleInputChange}
-              style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
-            />
-          </Form.Group>
-          <Form.Button onClick={submitAbout}>保存关于</Form.Button>
-          <Message>移除 One API 的版权标识必须首先获得授权，项目维护需要花费大量精力，如果本项目对你有意义，请主动支持本项目。</Message>
-          <Form.Group widths='equal'>
-            <Form.Input
-              label='页脚'
-              placeholder='在此输入新的页脚，留空则使用默认页脚，支持 HTML 代码'
-              value={inputs.Footer}
-              name='Footer'
-              onChange={handleInputChange}
-            />
-          </Form.Group>
-          <Form.Button onClick={submitFooter}>设置页脚</Form.Button>
-        </Form>
-      </Grid.Column>
-      {/*<Modal*/}
-      {/*  onClose={() => setShowUpdateModal(false)}*/}
-      {/*  onOpen={() => setShowUpdateModal(true)}*/}
-      {/*  open={showUpdateModal}*/}
-      {/*>*/}
-      {/*  <Modal.Header>新版本：{updateData.tag_name}</Modal.Header>*/}
-      {/*  <Modal.Content>*/}
-      {/*    <Modal.Description>*/}
-      {/*      <div dangerouslySetInnerHTML={{ __html: updateData.content }}></div>*/}
-      {/*    </Modal.Description>*/}
-      {/*  </Modal.Content>*/}
-      {/*  <Modal.Actions>*/}
-      {/*    <Button onClick={() => setShowUpdateModal(false)}>关闭</Button>*/}
-      {/*    <Button*/}
-      {/*      content='详情'*/}
-      {/*      onClick={() => {*/}
-      {/*        setShowUpdateModal(false);*/}
-      {/*        openGitHubRelease();*/}
-      {/*      }}*/}
-      {/*    />*/}
-      {/*  </Modal.Actions>*/}
-      {/*</Modal>*/}
-    </Grid>
+      <Spin spinning={loading}>
+          <Layout style={{ padding: '24px' }}>
+            <Typography.Title heading={5}>通用设置</Typography.Title>
+                <Form>
+                  {/* 公告模块 */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ marginTop: '10px' }}>
+                      <Typography.Text strong>公告</Typography.Text>
+                    </div>
+                    <TextArea
+                      placeholder='在此输入新的公告内容，支持 Markdown & HTML 代码'
+                      value={inputs.Notice}
+                      onChange={(value) => handleInputChange('Notice', value)}
+                      autosize={{ minRows: 6 }}
+                      style={{ maxHeight: '200px', overflowY: 'auto' }} 
+                    />
+                    <Button onClick={submitNotice} style={{ marginTop: '10px' }}>保存公告</Button>
+                  </div>
+
+                  <Divider />
+
+                  {/* 系统名称模块 */}
+                <div style={{ marginBottom: '20px' }}>
+                  <Typography.Title heading={5}>个性化设置</Typography.Title>
+                  <div style={{ marginTop: '10px' }}>
+                    <Typography.Text strong>系统名称</Typography.Text>
+                  </div>
+                  <Input
+                    placeholder='在此输入系统名称'
+                    value={inputs.SystemName}
+                    name='SystemName'
+                    onChange={(value) => handleInputChange('SystemName', value)}
+                  />
+                  <Button onClick={submitSystemName} style={{ marginTop: '10px' }}>设置系统名称</Button>
+                </div>
+
+                {/* 系统描述模块 */}
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginTop: '10px' }}>
+                    <Typography.Text strong>系统描述</Typography.Text>
+                  </div>
+                  <Input
+                    placeholder='系统描述内容'
+                    value={inputs.SystemText}
+                    onChange={(value) => handleInputChange('SystemText', value)}
+                  />
+                  <Button onClick={submitSystemText} style={{ marginTop: '10px' }}>设置系统描述</Button>
+                </div>
+
+                {/* Logo 图片地址模块 */}
+                <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginTop: '10px' }}>
+                      <Typography.Text strong>Logo 图片地址</Typography.Text>
+                    </div>
+                  <Input
+                    placeholder='在此输入 Logo 图片地址'
+                    value={inputs.Logo}
+                    onChange={(value) => handleInputChange('Logo', value)}
+                    type='url'
+                  />
+                  <Button onClick={submitLogo} style={{ marginTop: '10px' }}>设置 Logo</Button>
+                </div>
+                <Divider />
+
+                {/* 首页内容模块 */}
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginTop: '10px' }}>
+                      <Typography.Text strong>首页内容</Typography.Text>
+                    </div>
+                  <TextArea
+                    placeholder='在此输入首页内容，支持 Markdown & HTML 代码...'
+                    value={inputs.HomePageContent}
+                    onChange={(value) => handleInputChange('HomePageContent', value)}
+                    autosize={{ minRows: 6 }}
+                    style={{ maxHeight: '200px', overflowY: 'auto' }} 
+                  />
+                  <Button onClick={() => submitOption('HomePageContent')} style={{ marginTop: '10px' }}>
+                    保存首页内容
+                  </Button>
+                </div>
+                <Divider />
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginTop: '10px' }}>
+                      <Typography.Text strong>关于</Typography.Text>
+                  </div>
+                  <TextArea
+                      label='关于'
+                      placeholder='在此输入新的关于内容，支持 Markdown & HTML 代码...'
+                      value={inputs.About}
+                      onChange={(value) => handleInputChange('About', value )}
+                      autosize={{ minRows: 6 }}
+                      style={{ maxHeight: '200px', overflowY: 'auto'   }} 
+                  />
+                  <Button onClick={submitAbout} style={{ marginTop: '10px' }}>保存关于</Button>
+                  </div>
+                  <Divider />
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ marginTop: '10px' }}>
+                        <Typography.Text strong>页脚</Typography.Text>
+                    </div>
+                  <Input
+                      label='页脚'
+                      placeholder='在此输入新的页脚，留空则使用默认页脚，支持 HTML 代码'
+                      value={inputs.Footer}
+                      onChange={(value) => handleInputChange('Footer', value )}
+                  />
+                  <Button onClick={submitFooter} style={{ marginTop: '10px' }}>设置页脚</Button>
+                  </div>
+              </Form>
+          </Layout>
+      </Spin>
   );
 };
 

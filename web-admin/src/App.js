@@ -8,7 +8,7 @@ import LoginForm from './components/LoginForm';
 import NotFound from './pages/NotFound';
 import Setting from './pages/Setting';
 import EditUser from './pages/User/EditUser';
-import { API, getLogo, getSystemName, showError, showNotice } from './helpers';
+import { API, getLogo,isAdmin, getSystemName, showError, showNotice } from './helpers';
 import PasswordResetForm from './components/PasswordResetForm';
 import GitHubOAuth from './components/GitHubOAuth';
 import PasswordResetConfirm from './components/PasswordResetConfirm';
@@ -31,6 +31,7 @@ const About = lazy(() => import('./pages/About'));
 function App() {
   const [userState, userDispatch] = useContext(UserContext);
   const [statusState, statusDispatch] = useContext(StatusContext);
+  const isAdminUser = isAdmin();
 
   const loadUser = () => {
     let user = localStorage.getItem('user');
@@ -57,15 +58,7 @@ function App() {
       } else {
         localStorage.removeItem('chat_link');
       }
-      // if (
-      //   data.version !== process.env.REACT_APP_VERSION &&
-      //   data.version !== 'v0.0.0' &&
-      //   process.env.REACT_APP_VERSION !== ''
-      // ) {
-      //   showNotice(
-      //     `新版本可用：${data.version}，请使用快捷键 Shift + F5 刷新页面`
-      //   );
-      // }
+
     } else {
       showError('无法正常连接至服务器！');
     }
@@ -87,6 +80,8 @@ function App() {
     }
   }, []);
 
+
+
   return (
     <Layout>
         <Layout.Content>
@@ -95,7 +90,7 @@ function App() {
                     path='/admin'
                     element={
                         <Suspense fallback={<Loading></Loading>}>
-                            <LoginForm />
+                            {isAdminUser ? <Detail /> : <LoginForm />}
                         </Suspense>
                     }
                 />

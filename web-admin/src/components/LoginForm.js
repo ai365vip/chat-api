@@ -66,11 +66,12 @@ const LoginForm = () => {
                 showSuccess('登录成功！');
                 const isAdminUser = isAdmin();
                 if (isAdminUser) {
+                    
+                    navigate('/admin/detail');
+                    window.location.reload();
                     if (username === 'root' && password === '123456') {
                         Modal.error({title: '您正在使用默认密码！', content: '请立刻修改默认密码！', centered: true});
                     }
-                    navigate('/admin/detail');
-                    window.location.reload();
                 } else {
                     navigate('/');
                     window.location.reload();

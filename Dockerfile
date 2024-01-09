@@ -1,11 +1,14 @@
 FROM node:18 as builder
 
+ARG GIT_TAG
+ENV REACT_APP_VERSION=$GIT_TAG
+
 # 构建 web-user 应用
 WORKDIR /build/web-user
 COPY web-user/package.json .
 RUN npm install
 COPY web-user/ .
-RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat ../VERSION) npm run build
+RUN DISABLE_ESLINT_PLUGIN='true' npm run build
 
 # 构建 web-admin 应用
 WORKDIR /build/web-admin
@@ -27,7 +30,7 @@ COPY . .
 # 将 web-user 和 web-admin 的构建结果复制到指定位置
 COPY --from=builder /build/web-user/build ./web-user/build
 COPY --from=builder /build/web-admin/build ./web-admin/build
-RUN go build -ldflags "-s -w -X 'one-api/common.Version=$(cat VERSION)' -extldflags '-static'" -o chat-api
+RUN go build -ldflags "-s -w -X 'one-api/common.Version=${GIT_TAG}' -extldflags '-static'" -o chat-api
 
 FROM alpine
 
