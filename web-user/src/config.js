@@ -17,7 +17,7 @@ const config = {
     server_address: '',
     start_time: 0,
     system_name: 'Chat API',
-    system_text: 'OpenAI 接口聚合管理，我们致力于提供优质的API接入服务，让您可以轻松集成先进的AI模型至您的产品和服务。',
+    system_text: '',
     top_up_link: '',
     turnstile_check: false,
     turnstile_site_key: '',

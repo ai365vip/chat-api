@@ -158,9 +158,14 @@ func EpayNotify(c *gin.Context) {
 				return
 			}
 			log.Printf("易支付回调更新用户成功 %v", topUp)
+			err = model.VipUserQuota(topUp.UserId)
+			if err != nil {
+				log.Printf("用户分组更新失败: %v", topUp)
+				return
+			}
 			notifyEmail(topUp)
 			notifyWxPusher(topUp)
-			model.RecordLog(topUp.UserId, model.LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", common.LogQuota(topUp.Amount*500000), topUp.Money))
+			model.RecordLog(topUp.UserId, model.LogTypeTopup, topUp.Amount, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", common.LogQuota(topUp.Amount*500000), topUp.Money))
 		}
 		_, writeErr := c.Writer.Write([]byte("success")) // 确保发送 success 响应
 		if writeErr != nil {

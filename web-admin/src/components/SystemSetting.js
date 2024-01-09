@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Button, Divider, Form, Grid, Header, Modal, Message} from 'semantic-ui-react';
 import {API, removeTrailingSlash, showError, verifyJSON} from '../helpers';
-
+import {Typography,Select} from "@douyinfe/semi-ui";
 const SystemSetting = () => {
     let [inputs, setInputs] = useState({
         PasswordLoginEnabled: '',
@@ -37,6 +37,8 @@ const SystemSetting = () => {
         WxPusherNotificationsEnabled: '',
         YzfZfb: '',
         YzfWx: '',
+        UserGroup:'',
+        VipUserGroup:'',
 
     });
     const [originInputs, setOriginInputs] = useState({});
@@ -44,6 +46,7 @@ const SystemSetting = () => {
     const [EmailDomainWhitelist, setEmailDomainWhitelist] = useState([]);
     const [restrictedDomainInput, setRestrictedDomainInput] = useState('');
     const [showPasswordWarningModal, setShowPasswordWarningModal] = useState(false);
+    const [groupOptions, setGroupOptions] = useState([]);
 
     const getOptions = async () => {
         const res = await API.get('/api/option/');
@@ -72,6 +75,7 @@ const SystemSetting = () => {
 
     useEffect(() => {
         getOptions().then();
+        fetchGroups().then();
     }, []);
 
     const updateOption = async (key, value) => {
@@ -115,6 +119,19 @@ const SystemSetting = () => {
         setLoading(false);
     };
 
+    const fetchGroups = async () => {
+    try {
+      let res = await API.get(`/api/group/`);
+      setGroupOptions(res.data.data.map((group) => ({
+        label: group,
+        value: group,
+      })));
+    } catch (error) {
+      showError(error.message);
+    }
+  };
+    
+
     const handleInputChange = async (e, {name, value}) => {
         if (name === 'PasswordLoginEnabled' && inputs[name] === 'true') {
             // block disabling password login
@@ -140,7 +157,9 @@ const SystemSetting = () => {
             name === 'TopupGroupRatio' ||
             name === 'AppToken' || // 新增 AppToken 条件
             name === 'Uids' ||         // 新增 Uids 条件
-            name === 'NotificationEmail'
+            name === 'NotificationEmail'||
+            name === 'UserGroup' ||
+            name === 'VipUserGroup' 
         ) {
             setInputs((inputs) => ({...inputs, [name]: value}));
         } else {
@@ -365,7 +384,7 @@ const SystemSetting = () => {
                             label='支付宝'
                             checked={inputs.YzfZfb === 'true'}
                             name='YzfZfb'
-                            onChange={handleInputChange}// handleCheckboxChange 是一个处理复选框变化的函数
+                            onChange={handleInputChange}
                         />
                         <Form.Checkbox
                             label='微信'
@@ -448,6 +467,45 @@ const SystemSetting = () => {
                             onChange={handleInputChange}
                         />
                     </Form.Group>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                        <div style={{ flex: 1, marginRight: 5 }}>
+                            <Typography.Text>新注册用户默认分组 </Typography.Text>
+                            <Select
+                            placeholder={'请选择分组'}
+                            name='UserGroup'
+                            fluid
+                            search
+                            selection
+                            allowAdditions
+                            additionLabel={'请在系统设置页面编辑分组倍率以添加新的分组：'}
+                            onChange={async (value) => {
+                                await updateOption('UserGroup', value);
+                            }}
+                            value={inputs.UserGroup}
+                            autoComplete='new-password'
+                            optionList={groupOptions}
+                            />
+                        </div>
+                        <div style={{ flex: 5, marginLeft: 5 }}>
+                            <Typography.Text>充值用户默认分组 </Typography.Text>
+                            <Select
+                            placeholder={'请选择分组'}
+                            name='VipUserGroup'
+                            fluid
+                            search
+                            selection
+                            allowAdditions
+                            additionLabel={'请在系统设置页面编辑分组倍率以添加新的分组：'}
+                            onChange={async (value) => {
+                                // 直接调用 updateOption 函数进行提交
+                                await updateOption('VipUserGroup', value);
+                            }}
+                            value={inputs.VipUserGroup}
+                            autoComplete='new-password'
+                            optionList={groupOptions}
+                            />
+                        </div>
+                    </div>
                     <Divider/>
                     <Header as='h3'>
                         配置WxPusher消息推送

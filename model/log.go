@@ -123,7 +123,7 @@ func GetLogMjByKey(DB *gorm.DB, key string) (midjourneys []*Midjourney, err erro
 	return midjourneys, nil
 }
 
-func RecordLog(userId int, logType int, multiplier string) {
+func RecordLog(userId int, logType int, quota int, multiplier string) {
 	if logType == LogTypeConsume && !common.LogConsumeEnabled {
 		return
 	}
@@ -131,6 +131,7 @@ func RecordLog(userId int, logType int, multiplier string) {
 		UserId:     userId,
 		Username:   GetUsernameById(userId),
 		CreatedAt:  common.GetTimestamp(),
+		Quota:      quota,
 		Type:       logType,
 		Multiplier: multiplier,
 	}
@@ -138,6 +139,10 @@ func RecordLog(userId int, logType int, multiplier string) {
 	if err != nil {
 		common.SysError("failed to record log: " + err.Error())
 	}
+	if common.DataExportEnabled {
+		LogQuotaData(userId, GetUsernameById(userId), LogTypeConsume, 0, "", quota, common.GetTimestamp())
+	}
+
 }
 
 func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int, multiplier string, userQuota int) {

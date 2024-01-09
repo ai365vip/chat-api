@@ -7,14 +7,14 @@ import { marked } from 'marked';
 
 
 const OtherSetting = () => {
-  const defaultSystemText = `OpenAI 接口聚合管理，我们致力于提供优质的API接入服务，让您可以轻松集成先进的AI模型至您的产品和服务。`;
+
 
   let [inputs, setInputs] = useState({
     Footer: '',
     Notice: '',
     About: '',
     SystemName: '',
-    SystemText: defaultSystemText,
+    SystemText: '',
     Logo: '',
     HomePageContent: ''
   });
@@ -128,11 +128,13 @@ const OtherSetting = () => {
                   <div style={{ marginTop: '10px' }}>
                     <Typography.Text strong>系统描述</Typography.Text>
                   </div>
-                  <Input
-                    placeholder='系统描述内容'
-                    value={inputs.SystemText}
-                    onChange={(value) => handleInputChange('SystemText', value)}
-                  />
+                  <TextArea
+                      placeholder='系统描述内容'
+                      value={inputs.SystemText}
+                      onChange={(value) => handleInputChange('SystemText', value)}
+                      autosize={{ minRows: 6 }}
+                      style={{ maxHeight: '200px', overflowY: 'auto' }} 
+                    />
                   <Button onClick={submitSystemText} style={{ marginTop: '10px' }}>设置系统描述</Button>
                 </div>
 

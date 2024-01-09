@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"one-api/common"
 	"one-api/controller"
 	"one-api/middleware"
 	"strings"
@@ -12,6 +13,22 @@ import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
+
+func serveUserIndexPage(c *gin.Context) {
+
+	systemText, exists := common.OptionMap["SystemText"]
+
+	if !exists || systemText == "" {
+		userIndexPage := c.MustGet("defaultUserIndexPage").([]byte)
+		common.SystemText = string(userIndexPage)
+		common.OptionMap["SystemText"] = common.SystemText
+
+		c.Data(http.StatusOK, "text/html; charset=utf-8", userIndexPage)
+		return
+	}
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(systemText))
+}
 
 func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIndexPage []byte, defaultUserIndexPage []byte) {
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
@@ -46,7 +63,7 @@ func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIn
 			c.Data(http.StatusOK, "text/html; charset=utf-8", adminIndexPage)
 		} else {
 			// 否则返回普通用户界面的 index.html
-			c.Data(http.StatusOK, "text/html; charset=utf-8", defaultUserIndexPage)
+			serveUserIndexPage(c)
 		}
 	})
 }

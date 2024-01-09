@@ -135,7 +135,7 @@ func UpdateMidjourneyTaskBulk() {
 							}
 							logContent := fmt.Sprintf("%s 构图失败，补偿 %s", task.MjId, common.LogQuota(quota))
 
-							model.RecordLog(task.UserId, 1, logContent)
+							model.RecordLog(task.UserId, 1, 0, logContent)
 						}
 					}
 				}

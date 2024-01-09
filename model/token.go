@@ -23,7 +23,7 @@ type Token struct {
 	RemainQuota    int    `json:"remain_quota" gorm:"default:0"`
 	UnlimitedQuota bool   `json:"unlimited_quota" gorm:"default:false"`
 	UsedQuota      int    `json:"used_quota" gorm:"default:0"`
-	Group          string `json:"group" gorm:"type:varchar(32);"` // 添加 group 字段
+	Group          string `json:"group" gorm:"type:varchar(255);"` // 添加 group 字段
 	BillingEnabled bool   `json:"billing_enabled" gorm:"default:false"`
 	Models         string `json:"models"`
 }

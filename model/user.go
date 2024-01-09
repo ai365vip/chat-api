@@ -180,16 +180,16 @@ func (user *User) Insert(inviterId int) error {
 		return result.Error
 	}
 	if common.QuotaForNewUser > 0 {
-		RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("新用户注册赠送 %s", common.LogQuota(common.QuotaForNewUser)))
+		RecordLog(user.Id, LogTypeSystem, 0, fmt.Sprintf("新用户注册赠送 %s", common.LogQuota(common.QuotaForNewUser)))
 	}
 	if inviterId != 0 {
 		if common.QuotaForInvitee > 0 {
 			_ = IncreaseUserQuota(user.Id, common.QuotaForInvitee)
-			RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("使用邀请码赠送 %s", common.LogQuota(common.QuotaForInvitee)))
+			RecordLog(user.Id, LogTypeSystem, 0, fmt.Sprintf("使用邀请码赠送 %s", common.LogQuota(common.QuotaForInvitee)))
 		}
 		if common.QuotaForInviter > 0 {
 			//_ = IncreaseUserQuota(inviterId, common.QuotaForInviter)
-			RecordLog(inviterId, LogTypeSystem, fmt.Sprintf("邀请用户赠送 %s", common.LogQuota(common.QuotaForInviter)))
+			RecordLog(inviterId, LogTypeSystem, 0, fmt.Sprintf("邀请用户赠送 %s", common.LogQuota(common.QuotaForInviter)))
 			_ = inviteUser(inviterId)
 		}
 	}
@@ -387,6 +387,12 @@ func IncreaseUserQuota(id int, quota int) (err error) {
 		return nil
 	}
 	return increaseUserQuota(id, quota)
+}
+
+func VipUserQuota(id int) (err error) {
+	VipUserGroup, _ := common.OptionMap["VipUserGroup"]
+	err = DB.Model(&User{}).Where("id = ?", id).Update("group", VipUserGroup).Error
+	return err
 }
 
 func increaseUserQuota(id int, quota int) (err error) {

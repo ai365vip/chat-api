@@ -89,6 +89,8 @@ func InitOptionMap() {
 	common.OptionMap["YzfZfb"] = strconv.FormatBool(common.Zfb)
 	common.OptionMap["YzfWx"] = strconv.FormatBool(common.Wx)
 	common.OptionMap["DataExportInterval"] = strconv.Itoa(common.DataExportInterval)
+	common.OptionMap["UserGroup"] = common.UserGroup
+	common.OptionMap["VipUserGroup"] = common.VipUserGroup
 
 	common.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
@@ -270,6 +272,10 @@ func updateOptionMap(key string, value string) (err error) {
 		common.AppToken = value
 	case "Uids":
 		common.Uids = value
+	case "UserGroup":
+		common.UserGroup = value
+	case "VipUserGroup":
+		common.VipUserGroup = value
 	}
 	return err
 }
