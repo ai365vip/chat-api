@@ -91,6 +91,8 @@ func InitOptionMap() {
 	common.OptionMap["DataExportInterval"] = strconv.Itoa(common.DataExportInterval)
 	common.OptionMap["UserGroup"] = common.UserGroup
 	common.OptionMap["VipUserGroup"] = common.VipUserGroup
+	common.OptionMap["MiniQuota"] = strconv.FormatFloat(common.MiniQuota, 'f', -1, 64)
+	common.OptionMap["ProporTions"] = strconv.Itoa(common.ProporTions)
 
 	common.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
@@ -216,6 +218,8 @@ func updateOptionMap(key string, value string) (err error) {
 		common.EpayKey = value
 	case "Price":
 		common.Price, _ = strconv.ParseFloat(value, 64)
+	case "MiniQuota":
+		common.MiniQuota, _ = strconv.ParseFloat(value, 64)
 	case "TopupGroupRatio":
 		err = common.UpdateTopupGroupRatioByJSONString(value)
 	case "GitHubClientId":
@@ -254,6 +258,8 @@ func updateOptionMap(key string, value string) (err error) {
 		common.RetryTimes, _ = strconv.Atoi(value)
 	case "DataExportInterval":
 		common.DataExportInterval, _ = strconv.Atoi(value)
+	case "ProporTions":
+		common.ProporTions, _ = strconv.Atoi(value)
 	case "ModelRatio":
 		err = common.UpdateModelRatioByJSONString(value)
 	case "ModelPrice":

@@ -34,6 +34,8 @@ var Zfb = true
 var DrawingEnabled = true
 var DataExportEnabled = true
 var DataExportInterval = 5 // unit: minute
+var MiniQuota = 1.0
+var ProporTions = 10
 var UserGroup = "default"
 var VipUserGroup = "default"
 

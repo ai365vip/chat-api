@@ -27,8 +27,10 @@ const OperationSetting = () => {
         DrawingEnabled: '',
         DataExportEnabled: '',
         DataExportInterval: 5,
-        RetryTimes: 0
-    });
+        RetryTimes: 0,
+        MiniQuota: 10,
+        ProporTions: 10,
+    }); 
     const [originInputs, setOriginInputs] = useState({});
     let [loading, setLoading] = useState(false);
     let [historyTimestamp, setHistoryTimestamp] = useState(timestamp2string(now.getTime() / 1000 - 30 * 24 * 3600)); // a month ago
@@ -126,6 +128,12 @@ const OperationSetting = () => {
                 }
                 if (originInputs['PreConsumedQuota'] !== inputs.PreConsumedQuota) {
                     await updateOption('PreConsumedQuota', inputs.PreConsumedQuota);
+                }
+                if (originInputs['MiniQuota'] !== inputs.MiniQuota) {
+                    await updateOption('MiniQuota', inputs.MiniQuota);
+                }
+                if (originInputs['ProporTions'] !== inputs.ProporTions) {
+                    await updateOption('ProporTions', inputs.ProporTions);
                 }
                 break;
             case 'general':
@@ -350,6 +358,26 @@ const OperationSetting = () => {
                             type='number'
                             min='0'
                             placeholder='例如：1000'
+                        />
+                        <Form.Input
+                            label='提现/划转最低金额（1=1元）'
+                            name='MiniQuota'
+                            onChange={handleInputChange}
+                            autoComplete='new-password'
+                            value={inputs.MiniQuota}
+                            type='number'
+                            min='0'
+                            placeholder='例如：10'
+                        />
+                        <Form.Input
+                            label='邀请用户返现比例'
+                            name='ProporTions'
+                            onChange={handleInputChange}
+                            autoComplete='new-password'
+                            value={inputs.ProporTions}
+                            type='number'
+                            min='0'
+                            placeholder='例如：10'
                         />
                     </Form.Group>
                     <Form.Button onClick={() => {

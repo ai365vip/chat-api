@@ -108,6 +108,7 @@ func Logout(c *gin.Context) {
 }
 
 func Register(c *gin.Context) {
+
 	if !common.RegisterEnabled {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "管理员关闭了新用户注册",
@@ -131,6 +132,7 @@ func Register(c *gin.Context) {
 		})
 		return
 	}
+
 	if err := common.Validate.Struct(&user); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -180,6 +182,7 @@ func Register(c *gin.Context) {
 		CreatedAt:   time.Now().Unix(),
 		Group:       UserGroup,
 	}
+
 	if common.EmailVerificationEnabled {
 		cleanUser.Email = user.Email
 	}
