@@ -176,6 +176,9 @@ const InviteCard = () => {
             <Button variant='contained' onClick={handleOpenTransfer} size='small' sx={{marginLeft: 2}}>
               划转
             </Button>
+            <Button variant='contained' onClick={handleOpenTransfer} size='small' sx={{marginLeft: 2}}>
+              提现
+            </Button>
           </Stack>
 
 

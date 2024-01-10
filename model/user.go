@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"one-api/common"
+	"strconv"
 	"strings"
 	"time"
 
@@ -161,6 +162,39 @@ func (user *User) TransferAffQuotaToQuota(quota int) error {
 	return tx.Commit().Error
 }
 
+func (user *User) AffQuotaToQuota(quota int) error {
+	transferAmount := int(float64(quota) * common.QuotaPerUnit)
+
+	// 开始数据库事务
+	tx := DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer tx.Rollback() // 确保在函数退出时事务能回滚
+
+	// 加锁查询用户以确保数据一致性
+	err := tx.Set("gorm:query_option", "FOR UPDATE").First(&user, user.Id).Error
+	if err != nil {
+		return err
+	}
+
+	// 再次检查用户的AffQuota是否足够
+	if user.AffQuota < transferAmount {
+		return errors.New("邀请额度不足！")
+	}
+
+	// 更新用户额度
+	user.AffQuota -= transferAmount
+
+	// 保存用户状态
+	if err := tx.Save(user).Error; err != nil {
+		return err
+	}
+
+	// 提交事务
+	return tx.Commit().Error
+}
+
 func (user *User) Insert(inviterId int) error {
 	var err error
 	if user.Password != "" {
@@ -191,6 +225,45 @@ func (user *User) Insert(inviterId int) error {
 		}
 	}
 	return nil
+}
+
+func VipInsert(userid int, affquota int) error {
+	inviterId, err := GetInviterId(userid)
+	if err != nil {
+		return err
+	}
+
+	proportionsStr, _ := common.OptionMap["ProporTions"]
+	proportions, err := strconv.ParseFloat(proportionsStr, 64)
+	if err != nil {
+		return fmt.Errorf("invalid ProporTions value: %v", err)
+	}
+	quota := float64(affquota) * (proportions / 100.0)
+
+	if inviterId != 0 {
+		RecordLog(inviterId, LogTypeSystem, 0, fmt.Sprintf("邀请用户充值返现 %s", common.LogQuota(int(quota))))
+		_ = inviteUserVip(inviterId, int(quota))
+	}
+	return nil
+}
+
+func GetInviterId(userid int) (inviterId int, err error) {
+	var user User
+	err = DB.Select("inviter_id").Where("id = ?", userid).First(&user).Error
+	if err != nil {
+		return 0, err
+	}
+	return user.InviterId, nil
+}
+
+func inviteUserVip(inviterId int, affquota int) (err error) {
+	user, err := GetUserById(inviterId, true)
+	if err != nil {
+		return err
+	}
+	user.AffQuota += affquota
+	user.AffHistoryQuota += affquota
+	return DB.Save(user).Error
 }
 
 func (user *User) Update(updatePassword bool) error {

@@ -79,6 +79,7 @@ func Redeem(key string, userId int) (quota int, err error) {
 		return 0, errors.New("兑换失败，" + err.Error())
 	}
 	RecordLog(userId, LogTypeTopup, redemption.Quota, fmt.Sprintf("通过兑换码充值 %s", common.LogQuota(redemption.Quota)))
+	VipInsert(userId, redemption.Quota)
 	return redemption.Quota, nil
 }
 
