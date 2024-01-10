@@ -28,10 +28,8 @@ func UpdateQuotaData() {
 		}
 	}()
 	for {
-		if common.DataExportEnabled {
-			common.SysLog("正在更新数据看板数据...")
-			SaveQuotaDataCache()
-		}
+		common.SysLog("正在更新数据看板数据...")
+		SaveQuotaDataCache()
 		time.Sleep(time.Duration(common.DataExportInterval) * time.Minute)
 	}
 }
@@ -39,10 +37,10 @@ func UpdateQuotaData() {
 var CacheQuotaData = make(map[string]*QuotaData)
 var CacheQuotaDataLock = sync.Mutex{}
 
-func LogQuotaDataCache(userId int, username string, LogTypeConsume int, channelId int, modelName string, quota int, createdAt int64) {
+func LogQuotaDataCache(userId int, username string, LogType int, channelId int, modelName string, quota int, createdAt int64) {
 	// 只精确到小时
 	createdAt = createdAt - (createdAt % 3600)
-	key := fmt.Sprintf("%d-%s-%d-%d-%s-%d", userId, username, LogTypeConsume, channelId, modelName, createdAt)
+	key := fmt.Sprintf("%d-%s-%d-%d-%s-%d", userId, username, LogType, channelId, modelName, createdAt)
 	quotaData, ok := CacheQuotaData[key]
 	if ok {
 		quotaData.Count += 1
@@ -51,7 +49,7 @@ func LogQuotaDataCache(userId int, username string, LogTypeConsume int, channelI
 		quotaData = &QuotaData{
 			UserID:    userId,
 			Username:  username,
-			Type:      LogTypeConsume,
+			Type:      LogType,
 			ChannelId: channelId,
 			ModelName: modelName,
 			CreatedAt: createdAt,
@@ -62,10 +60,10 @@ func LogQuotaDataCache(userId int, username string, LogTypeConsume int, channelI
 	CacheQuotaData[key] = quotaData
 }
 
-func LogQuotaData(userId int, username string, LogTypeConsume int, channelId int, modelName string, quota int, createdAt int64) {
+func LogQuotaData(userId int, username string, LogType int, channelId int, modelName string, quota int, createdAt int64) {
 	CacheQuotaDataLock.Lock()
 	defer CacheQuotaDataLock.Unlock()
-	LogQuotaDataCache(userId, username, LogTypeConsume, channelId, modelName, quota, createdAt)
+	LogQuotaDataCache(userId, username, LogType, channelId, modelName, quota, createdAt)
 }
 
 func SaveQuotaDataCache() {

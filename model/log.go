@@ -139,9 +139,8 @@ func RecordLog(userId int, logType int, quota int, multiplier string) {
 	if err != nil {
 		common.SysError("failed to record log: " + err.Error())
 	}
-	if common.DataExportEnabled {
-		LogQuotaData(userId, GetUsernameById(userId), LogTypeConsume, 0, "", quota, common.GetTimestamp())
-	}
+
+	LogQuotaDataCache(userId, GetUsernameById(userId), logType, 0, "", quota, common.GetTimestamp())
 
 }
 
@@ -171,9 +170,9 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptToke
 	if err != nil {
 		common.LogError(ctx, "failed to record log: "+err.Error())
 	}
-	if common.DataExportEnabled {
-		LogQuotaData(userId, username, LogTypeConsume, channelId, modelName, quota, common.GetTimestamp())
-	}
+
+	LogQuotaData(userId, username, LogTypeConsume, channelId, modelName, quota, common.GetTimestamp())
+
 }
 
 func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int) (logs []*Log, err error) {
