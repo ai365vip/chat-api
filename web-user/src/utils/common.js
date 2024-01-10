@@ -146,14 +146,36 @@ export function calculateQuota(quota, digits = 2) {
   return (quota / quotaPerUnit).toFixed(digits);
 }
 
+export function getQuotaPerUnit() {
+  let quotaPerUnit = localStorage.getItem('quota_per_unit');
+  quotaPerUnit = parseFloat(quotaPerUnit);
+  return quotaPerUnit;
+}
+
+
+
 export function renderQuota(quota, digits = 2) {
+  let quotaPerUnit = localStorage.getItem('quota_per_unit');
   let displayInCurrency = localStorage.getItem('display_in_currency');
+  quotaPerUnit = parseFloat(quotaPerUnit);
   displayInCurrency = displayInCurrency === 'true';
   if (displayInCurrency) {
-    return '$' + calculateQuota(quota, digits);
+      return '$' + (quota / quotaPerUnit).toFixed(digits);
   }
   return renderNumber(quota);
 }
+
+export function inviteQuota(quota, digits = 2) {
+  let quotaPerUnit = localStorage.getItem('quota_per_unit');
+  let displayInCurrency = localStorage.getItem('display_in_currency');
+  quotaPerUnit = parseFloat(quotaPerUnit);
+  displayInCurrency = displayInCurrency === 'true';
+  if (displayInCurrency) {
+      return '￥' + (quota / quotaPerUnit).toFixed(digits);
+  }
+  return renderNumber(quota);
+}
+
 
 export const verifyJSON = (str) => {
   try {

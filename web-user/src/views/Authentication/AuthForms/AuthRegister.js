@@ -49,6 +49,8 @@ const RegisterForm = ({ ...others }) => {
 
   const [strength, setStrength] = useState(0);
   const [level, setLevel] = useState();
+  const [affCode, setAffCode] = useState('');
+
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
@@ -82,17 +84,20 @@ const RegisterForm = ({ ...others }) => {
   };
 
   useEffect(() => {
-    let affCode = searchParams.get('aff');
-    if (affCode) {
-      localStorage.setItem('aff', affCode);
-    }
+      let affCodeParam = searchParams.get('aff');
+      setAffCode(affCodeParam || '');
 
-    setShowEmailVerification(siteInfo.email_verification);
-    if (siteInfo.turnstile_check) {
-      setTurnstileEnabled(true);
-      setTurnstileSiteKey(siteInfo.turnstile_site_key);
-    }
-  }, [siteInfo]);
+      if (affCodeParam) {
+        localStorage.setItem('aff', affCodeParam);
+      }
+
+      setShowEmailVerification(siteInfo.email_verification);
+      if (siteInfo.turnstile_check) {
+        setTurnstileEnabled(true);
+        setTurnstileSiteKey(siteInfo.turnstile_site_key);
+      }
+  }, [searchParams, siteInfo]);
+
 
   return (
     <>
@@ -103,8 +108,10 @@ const RegisterForm = ({ ...others }) => {
           confirmPassword: '',
           email: showEmailVerification ? '' : undefined,
           verification_code: showEmailVerification ? '' : undefined,
+          aff_code: affCode, 
           submit: null
         }}
+        enableReinitialize={true} 
         validationSchema={Yup.object().shape({
           username: Yup.string().max(255).required('用户名是必填项'),
           password: Yup.string().max(255).required('密码是必填项'),
@@ -292,6 +299,23 @@ const RegisterForm = ({ ...others }) => {
             ) : (
               <></>
             )}
+            <FormControl fullWidth error={Boolean(touched.aff_code && errors.aff_code)} sx={{ ...theme.typography.customInput }}>
+              <InputLabel htmlFor="outlined-adornment-affCode-register">邀请码</InputLabel>
+              <OutlinedInput
+                  id="outlined-adornment-affCode-register"
+                  type="text"
+                  value={values.aff_code}
+                  name="affCode"
+                  onBlur={handleBlur}
+                  onChange={handleChange}
+                  inputProps={{}}
+              />
+              {touched.aff_code && errors.aff_code && (
+                  <FormHelperText error id="standard-weight-helper-text-affCode-register">
+                      {errors.aff_code}
+                  </FormHelperText>
+              )}
+          </FormControl>
 
             <Box sx={{ mt: 2 }}>
               <AnimateButton>
