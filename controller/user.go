@@ -336,6 +336,11 @@ type TransferAffQuotaRequest struct {
 	Quota int `json:"quota" binding:"required"`
 }
 
+type WithdrawalAffQuotaRequest struct {
+	Quota         int    `json:"quota" binding:"required"`
+	AlipayAccount string `json:"alipay_account" binding:"required"`
+}
+
 func TransferAffQuota(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, true)
@@ -378,7 +383,8 @@ func AffQuota(c *gin.Context) {
 		})
 		return
 	}
-	tran := TransferAffQuotaRequest{}
+
+	tran := WithdrawalAffQuotaRequest{}
 	if err := c.ShouldBindJSON(&tran); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -386,14 +392,26 @@ func AffQuota(c *gin.Context) {
 		})
 		return
 	}
-	err = user.AffQuotaToQuota(tran.Quota)
-	if err != nil {
+
+	// 确保传入了支付宝账号
+	if tran.AlipayAccount == "" {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "提交失败 " + err.Error(),
+			"message": "支付宝账号不能为空",
 		})
 		return
 	}
+
+	// 传递提现额度和支付宝账号到 AffQuotaToQuota 方法
+	err = user.AffQuotaToQuota(tran.Quota, tran.AlipayAccount)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "提交失败: " + err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "提交成功",

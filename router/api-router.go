@@ -50,7 +50,9 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/pay", controller.RequestEpay)
 				selfRoute.POST("/amount", controller.RequestAmount)
 				selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
+				selfRoute.POST("/aff_withdrawal", controller.AffQuota)
 				selfRoute.GET("/option", controller.GetUserOptions)
+				selfRoute.GET("/userwithdrawals", controller.GetWithdrawalOrdersEndpoint) // 获取用户自己的提现订单列表
 			}
 
 			adminRoute := userRoute.Group("/")
@@ -63,6 +65,8 @@ func SetApiRouter(router *gin.Engine) {
 				adminRoute.POST("/manage", controller.ManageUser)
 				adminRoute.PUT("/", controller.UpdateUser)
 				adminRoute.DELETE("/:id", controller.DeleteUser)
+				adminRoute.GET("/withdrawals", controller.GetAllWithdrawalOrdersEndpoint)                  // 获取所有用户的提现订单列表
+				adminRoute.POST("/withdrawals/:id/status", controller.UpdateWithdrawalOrderStatusEndpoint) // 更新提现订单状态
 			}
 		}
 		// 创建 /option 路由分组

@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"one-api/common"
 	"strconv"
 	"strings"
@@ -162,7 +163,7 @@ func (user *User) TransferAffQuotaToQuota(quota int) error {
 	return tx.Commit().Error
 }
 
-func (user *User) AffQuotaToQuota(quota int) error {
+func (user *User) AffQuotaToQuota(quota int, alipayAccount string) error {
 	transferAmount := int(float64(quota) * common.QuotaPerUnit)
 
 	// 开始数据库事务
@@ -180,11 +181,28 @@ func (user *User) AffQuotaToQuota(quota int) error {
 
 	// 再次检查用户的AffQuota是否足够
 	if user.AffQuota < transferAmount {
-		return errors.New("邀请额度不足！")
+		return errors.New("提现额度不足！")
 	}
 
 	// 更新用户额度
 	user.AffQuota -= transferAmount
+
+	// 创建提现订单
+	order := &WithdrawalOrder{
+		UserID:           uint(user.Id),
+		UserName:         user.Username,
+		OrderNumber:      generateOrderNumber(),   // 这个函数用于生成唯一的订单号
+		WithdrawalAmount: float64(transferAmount), // 注意转换类型，确认这里的单位是否正确
+		AlipayAccount:    alipayAccount,
+		Status:           StatusPending, // 提现订单的初始状态为'待处理'
+		CreatedAt:        time.Now().Unix(),
+		UpdatedAt:        time.Now().Unix(),
+	}
+
+	// 保存提现订单到数据库
+	if err := tx.Create(order).Error; err != nil {
+		return err
+	}
 
 	// 保存用户状态
 	if err := tx.Save(user).Error; err != nil {
@@ -192,7 +210,22 @@ func (user *User) AffQuotaToQuota(quota int) error {
 	}
 
 	// 提交事务
-	return tx.Commit().Error
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	// 操作成功，没有错误返回
+	return nil
+}
+
+func generateOrderNumber() string {
+	rand.Seed(time.Now().UnixNano()) // 初始化随机数种子
+	timestamp := time.Now().Unix()   // 获取当前时间戳
+	randomNumber := rand.Intn(9999)  // 生成一个随机数，这里假设为四位数
+
+	// 格式化订单号，例如 "202303241234560123"
+	orderNumber := fmt.Sprintf("%d%04d", timestamp, randomNumber)
+	return orderNumber
 }
 
 func (user *User) Insert(inviterId int) error {

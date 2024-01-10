@@ -10,9 +10,11 @@ import { API } from 'utils/api';
 import { showError, showSuccess,renderQuota,inviteQuota } from 'utils/common';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close'; 
+import { useNavigate } from 'react-router';
 
 const InviteCard = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [inviteUl, setInviteUrl] = useState('');
   const [openTransfer, setOpenTransfer] = useState(false);
   const [transferAmount, setTransferAmount] = useState(0);
@@ -21,22 +23,69 @@ const InviteCard = () => {
   const [userAffConut, setUserAffCount] = useState(0);
   const [options, setOptions] = useState({});
 
+  const [openWithdrawal, setOpenWithdrawal] = useState(false);
+  const [withdrawalAmount, setWithdrawalAmount] = useState(0);
+  const [alipayAccount, setAlipayAccount] = useState('');
+
+
   const handleInviteUrl = async () => {
-    if (inviteUl) {
-      navigator.clipboard.writeText(inviteUl);
+    try {
+      let link = inviteUl;
+      if (!link) {
+        const res = await API.get('/api/user/aff');
+        const { success, message, data } = res.data;
+        if (success) {
+          link = `${window.location.origin}/register?aff=${data}`;
+          setInviteUrl(link); 
+        } else {
+          showError(message);
+          return; 
+        }
+      }
+      await navigator.clipboard.writeText(link);
       showSuccess(`邀请链接已复制到剪切板`);
+    } catch (error) {
+      showError('复制到剪切板失败，请手动复制链接。');
+    }
+  };
+  
+
+  // 处理提现额度输入变化
+  const handleWithdrawalAmountChange = (event) => {
+    setWithdrawalAmount(event.target.value);
+  };
+
+  // 处理支付宝账号输入变化
+  const handleAlipayAccountChange = (event) => {
+    setAlipayAccount(event.target.value);
+  };
+
+  // 提交提现请求
+  const withdrawal = async () => {
+    if (withdrawalAmount <= 0 || alipayAccount.trim() === '') {
+      showError('请输入正确的提现金额和支付宝账号');
       return;
     }
-    const res = await API.get('/api/user/aff');
-    const { success, message, data } = res.data;
+    const res = await API.post('/api/user/aff_withdrawal', {
+      quota: parseFloat(withdrawalAmount),
+      alipay_account: alipayAccount.trim(),
+    });
+    const { success, message } = res.data;
     if (success) {
-      let link = `${window.location.origin}/register?aff=${data}`;
-      setInviteUrl(link);
-      navigator.clipboard.writeText(link);
-      showSuccess(`邀请链接已复制到剪切板`);
+      showSuccess(message);
+      setOpenWithdrawal(false);
+      getUserQuota();
     } else {
       showError(message);
     }
+  };
+
+  const handleOpenWithdrawal = () => {
+    setOpenWithdrawal(true);
+  };
+
+  const handleCloseWithdrawal = () => {
+    setOpenWithdrawal(false);
   };
 
   const getOptions = async () => {
@@ -113,11 +162,15 @@ const InviteCard = () => {
 
 
   useEffect(() => {
+    
     getOptions(); 
     getUserQuota(); 
     setTransferAmount(options.MiniQuota); 
   }, [options.MiniQuota]); 
-  
+
+  const goWithdrawal = () => {
+    navigate('/withdrawal');
+  };
 
   return (
     <Box component="div">
@@ -142,7 +195,7 @@ const InviteCard = () => {
             邀请奖励
           </Typography>
           <Typography variant="body" sx={{ color: theme.palette.primary.dark }}>
-            分享您的邀请链接，邀请好友注册，即可获得奖励!
+            邀请好友注册，好友充值得返现（{options.ProporTions}%）
           </Typography>
 
           <OutlinedInput
@@ -162,24 +215,93 @@ const InviteCard = () => {
             aria-describedby="helper-text-channel-quota-label"
             disabled={true}
           />
-          <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'20px'}>
-            <Stack direction="row" spacing={2}>
-              <Typography variant="h5">总收益:</Typography>
-              <Typography variant="h4">{inviteQuota(userAffHistor)}</Typography>
-              <Typography variant="h5">邀请人数:</Typography>
-              <Typography variant="h4">{userAffConut}</Typography>
-            </Stack>
+          <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'10px'}>
+          <Stack direction="row" spacing={2}>
+            <Typography variant="h5">总收益:</Typography>
+            <Typography variant="h4">{inviteQuota(userAffHistor)}</Typography>
+            <Typography variant="h5">邀请人数:</Typography>
+            <Typography variant="h4">{userAffConut}</Typography>
           </Stack>
-          <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'20px'}>
-            <Typography variant="h5">待使用收益:</Typography>
-            <Typography variant="h4">{inviteQuota(userAffQuota)}</Typography>
-            <Button variant='contained' onClick={handleOpenTransfer} size='small' sx={{marginLeft: 2}}>
-              划转
-            </Button>
-            <Button variant='contained' onClick={handleOpenTransfer} size='small' sx={{marginLeft: 2}}>
-              提现
-            </Button>
-          </Stack>
+        </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'10px'}>
+          <Typography variant="h5">待使用收益:</Typography>
+          <Typography variant="h4">{inviteQuota(userAffQuota)}</Typography>
+          <Button variant='contained' onClick={handleOpenTransfer} size='small' sx={{marginLeft: 2}}>
+            划转
+          </Button>
+          <Button variant='contained' onClick={handleOpenWithdrawal} size='small' sx={{marginLeft: 2}}>
+            提现
+          </Button>
+        </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'5px'}>
+          <Button variant="contained" onClick={goWithdrawal}>
+            提现记录
+          </Button>
+        </Stack>
+
+          {/* 模态对话框：提现 */}
+          <Modal
+            open={openWithdrawal}
+            onClose={handleCloseWithdrawal}
+            aria-labelledby="modal-withdrawal-title"
+            aria-describedby="modal-withdrawal-description"
+          >
+            <Paper sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 400,
+              p: 4,
+              borderRadius: 2,
+              bgcolor: 'background.paper',
+            }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography id="modal-withdrawal-title" variant="h3" component="h2">
+                  提现额度
+                </Typography>
+                <IconButton onClick={handleCloseWithdrawal}>
+                  <CloseIcon />
+                </IconButton>
+              </Stack>
+              <Typography id="modal-transfer-description" variant="h5" sx={{ mt: 1 }}>
+                可用额度: {inviteQuota(userAffQuota)}
+              </Typography>
+              <TextField
+                margin="normal"
+                fullWidth
+                name="withdrawalAmount"
+                label={`提现额度（最低${options.MiniQuota}）`}
+                type="number"
+                id="withdrawalAmount"
+                value={withdrawalAmount}
+                onChange={handleWithdrawalAmountChange}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">￥</InputAdornment>,
+                }}
+              />
+              <TextField
+                margin="normal"
+                fullWidth
+                name="alipayAccount"
+                label="支付宝账号"
+                type="text"
+                id="alipayAccount"
+                value={alipayAccount}
+                onChange={handleAlipayAccountChange}
+              />
+              <Box sx={{ mt: 4 }}>
+                <Button 
+                  variant="contained"
+                  fullWidth 
+                  onClick={withdrawal}
+                  disabled={!withdrawalAmount || withdrawalAmount <= 0 || !alipayAccount}
+                >
+                  提交提现
+                </Button>
+              </Box>
+            </Paper>
+          </Modal>
 
 
         <Modal
