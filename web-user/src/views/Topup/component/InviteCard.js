@@ -66,6 +66,14 @@ const InviteCard = () => {
       showError('请输入正确的提现金额和支付宝账号');
       return;
     }
+    if (withdrawalAmount < Number(options.MiniQuota)) {
+      showError('提现金额最低为:' + Number(options.MiniQuota));
+      return;
+  }
+  if (withdrawalAmount > userAffQuota) {
+    showError('超出当前余额：' + renderQuota(userAffQuota));
+    return;
+  }
     const res = await API.post('/api/user/aff_withdrawal', {
       quota: parseFloat(withdrawalAmount),
       alipay_account: alipayAccount.trim(),
@@ -89,11 +97,13 @@ const InviteCard = () => {
   };
 
   const getOptions = async () => {
+    
     const res = await API.get('/api/user/option');
     const { success, message, data } = res.data;
     if (success) {
       let newOptions = {};
       data.forEach((item) => {
+        
         newOptions[item.key] = item.value;
       });
       setOptions(newOptions); // 设置所有选项的状态
@@ -117,8 +127,8 @@ const InviteCard = () => {
   }
 
   const transfer = async () => {
-    if (transferAmount < options.MiniQuota) {
-        showError('划转金额最低为:' + options.MiniQuota);
+    if (transferAmount < Number(options.MiniQuota)) {
+        showError('划转金额最低为:' + Number(options.MiniQuota));
         return;
     }
     if (transferAmount > userAffQuota) {
@@ -166,7 +176,7 @@ const InviteCard = () => {
     getOptions(); 
     getUserQuota(); 
     setTransferAmount(options.MiniQuota); 
-  }, [options.MiniQuota]); 
+  }, []); 
 
   const goWithdrawal = () => {
     navigate('/withdrawal');
@@ -295,7 +305,7 @@ const InviteCard = () => {
                   variant="contained"
                   fullWidth 
                   onClick={withdrawal}
-                  disabled={!withdrawalAmount || withdrawalAmount <= 0 || !alipayAccount}
+                  disabled={!withdrawalAmount || withdrawalAmount < Number(options.MiniQuota) || !alipayAccount}
                 >
                   提交提现
                 </Button>
@@ -352,7 +362,7 @@ const InviteCard = () => {
                 variant="contained"
                 fullWidth 
                 onClick={transfer}
-                disabled={!transferAmount || transferAmount < options.MiniQuota || transferAmount > parseQuotaStringToNumber(inviteQuota(userAffQuota))}
+                disabled={!transferAmount || transferAmount < Number(options.MiniQuota) || transferAmount > parseQuotaStringToNumber(inviteQuota(userAffQuota))}
               >
                 提交划转
               </Button>

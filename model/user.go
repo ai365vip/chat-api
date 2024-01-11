@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"one-api/common"
 	"strconv"
@@ -150,6 +151,13 @@ func (user *User) TransferAffQuotaToQuota(quota int) error {
 		return errors.New("邀请额度不足！")
 	}
 
+	// 再次检查是否超出限额
+	log.Println(transferAmount)
+	log.Println(int(common.MiniQuota * common.QuotaPerUnit))
+	if transferAmount < int(common.MiniQuota*common.QuotaPerUnit) {
+		return errors.New("超出最低限额！")
+	}
+
 	// 更新用户额度
 	user.AffQuota -= transferAmount
 	user.Quota += transferAmount
@@ -182,6 +190,11 @@ func (user *User) AffQuotaToQuota(quota int, alipayAccount string) error {
 	// 再次检查用户的AffQuota是否足够
 	if user.AffQuota < transferAmount {
 		return errors.New("提现额度不足！")
+	}
+
+	// 再次检查是否超出限额
+	if transferAmount < int(common.MiniQuota*common.QuotaPerUnit) {
+		return errors.New("超出最低限额！")
 	}
 
 	// 更新用户额度
