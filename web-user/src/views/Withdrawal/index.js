@@ -9,7 +9,7 @@ import {
   TableCell,
   TableContainer,
   TableRow,
-  Paper,Box
+  Paper,Box,Tooltip
 } from '@mui/material';
 import WithdrawalTableHead from './component/TableHead';
 import { API } from 'utils/api';
@@ -103,8 +103,13 @@ export default function Log() {
                         withdrawals.alipay_account : '无'}
                     </TableCell>
                     <TableCell align="right">
-                      {withdrawals.comment !== undefined ?
-                        withdrawals.comment : '无'}
+                      {withdrawals.comment && withdrawals.comment.length > 10 ? (
+                        <Tooltip title={withdrawals.comment} placement="top">
+                          <Typography noWrap>{withdrawals.comment.slice(0, 10) + '...'}</Typography>
+                        </Tooltip>
+                      ) : (
+                        <Typography noWrap>{withdrawals.comment || '无'}</Typography>
+                      )}
                     </TableCell>
                     <TableCell align="right">
                     <Typography style={{ color: getStatusColor(withdrawals.status) }}>

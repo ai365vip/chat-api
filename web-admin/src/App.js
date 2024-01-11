@@ -21,6 +21,7 @@ import Redemption from './pages/Redemption';
 import TopUp from './pages/TopUp';
 import Log from './pages/Log';
 import LogAll from './pages/LogAll';
+import Withdrawal from './pages/WithdrawalTable';
 import Chat from './pages/Chat';
 import {Layout} from "@douyinfe/semi-ui";
 import Midjourney from "./pages/Midjourney";
@@ -239,6 +240,14 @@ function App() {
                     element={
                         <PrivateRoute>
                             <Detail />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path='/admin/withdrawal'
+                    element={
+                        <PrivateRoute>
+                            <Withdrawal />
                         </PrivateRoute>
                     }
                 />

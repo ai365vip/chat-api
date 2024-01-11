@@ -16,7 +16,7 @@ import {
     IconCreditCard,
     IconSemiLogo,
     IconHome,
-    IconImage,IconKanban
+    IconImage,IconKanban,IconBell
 } from '@douyinfe/semi-icons';
 import {Nav, Avatar, Dropdown, Layout} from '@douyinfe/semi-ui';
 
@@ -95,6 +95,13 @@ const SiderBar = () => {
             className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
         },
         {
+            text: '工单',
+            itemKey: 'withdrawal',
+            to: '/withdrawal',
+            icon: <IconBell />,
+            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        },
+        {
             text: '设置',
             itemKey: 'setting',
             to: '/setting',
@@ -139,6 +146,7 @@ const SiderBar = () => {
                                 log: "/admin/log",
                                 logall: "/admin/logall",
                                 midjourney: "/admin/midjourney",
+                                withdrawal: "/admin/withdrawal",
                                 setting: "/admin/setting",
                                 about: "/admin/about",
                                 detail: "/admin/detail",
