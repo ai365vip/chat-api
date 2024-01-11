@@ -75,7 +75,6 @@ const WithdrawalTable = () => {
         key: '',
         aff_quota:'',
         aff_history:'',
-
     });
     
     const columns = [
