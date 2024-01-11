@@ -105,7 +105,7 @@ var PreConsumedQuota = 500
 var RetryTimes = 0
 
 var RootUserEmail = ""
-
+var GeminiSafetySetting = GetOrDefaultString("GEMINI_SAFETY_SETTING", "BLOCK_NONE")
 var IsMasterNode = os.Getenv("NODE_TYPE") != "slave"
 
 var requestInterval, _ = strconv.Atoi(os.Getenv("POLLING_INTERVAL"))

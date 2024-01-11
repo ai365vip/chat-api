@@ -240,6 +240,9 @@ const WithdrawalTable = () => {
 
 
     const setOrderFormat = (order) => {
+        if (!order || !Array.isArray(order)) {
+            return;
+        }
         for (let i = 0; i < order.length; i++) {
             order[i].timestamp2string = timestamp2string(order[i].created_at);
             order[i].key = '' + order[i].id;
@@ -266,7 +269,6 @@ const WithdrawalTable = () => {
             if (res && res.data) {
                 const { success, message, data } = res.data;
                 if (success) {
-                    console.log(data);
                     if (startIdx === 0) {
                         setOrderFormat(data);
                     } else {
@@ -291,7 +293,7 @@ const WithdrawalTable = () => {
 
     const handlePageChange = page => {
         setActivePage(page);
-        if (page === Math.ceil(order.length / ITEMS_PER_PAGE) + 1) {
+        if (order && order.length > 0 && page === Math.ceil(order.length / ITEMS_PER_PAGE) + 1) {
             // In this case we have to load more data and then append them.
             loadOrder(page - 1).then(r => {
             });

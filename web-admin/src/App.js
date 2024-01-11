@@ -81,8 +81,6 @@ function App() {
     }
   }, []);
 
-
-
   return (
     <Layout>
         <Layout.Content>

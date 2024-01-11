@@ -418,8 +418,6 @@ const EditToken = (props) => {
                         />
                         </>
                     )}
-                    
-
                 </Spin>
             </SideSheet>
         </>

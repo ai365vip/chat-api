@@ -28,6 +28,7 @@
 12. 支持数据面板统计
 13. 支持新用户设置默认分组
 14. 支持充值用户设置默认分组
+15. 支持邀请用户充值返利
 
 
 ## 部署
@@ -125,7 +126,7 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/13fde0aa-aa19-4c2f-9ace-611fb9cd60b8)
 
-![image](https://github.com/ai365vip/chat-api/assets/154959065/327c6919-5fe6-4219-855d-1c09498ee567)
+![image](https://github.com/ai365vip/chat-api/assets/154959065/cc094241-e74c-43b3-ac7e-a889ae3c9cbd)
 
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/0017e8cb-645b-4c05-aefa-6cd538989278)
 
@@ -133,7 +134,7 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/8c4ea0cd-c4fb-4074-8080-4998b0fcda20)
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/ecdbd755-fc08-4ee4-a08c-fc179fca51f7)
-
+![image](https://github.com/ai365vip/chat-api/assets/154959065/e48e016e-6d92-47b1-ab9b-3d5fec53175f)
 ## 赞助
 
 如果觉得这个软件对你有所帮助，欢迎请作者喝可乐、喝咖啡～

@@ -230,3 +230,10 @@ func StringToByteSlice(s string) []byte {
 	tmp2 := [3]uintptr{tmp1[0], tmp1[1], tmp1[1]}
 	return *(*[]byte)(unsafe.Pointer(&tmp2))
 }
+
+func GetOrDefaultString(env string, defaultValue string) string {
+	if env == "" || os.Getenv(env) == "" {
+		return defaultValue
+	}
+	return os.Getenv(env)
+}

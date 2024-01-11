@@ -80,13 +80,13 @@ const SiderBar = () => {
             icon: <IconHistogram/>,
             className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
         },
-        {
-            text: '统计',
-            itemKey: 'logall',
-            to: '/logall',
-            icon: <IconKanban />,
-            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-        },
+       //{
+       //    text: '统计',
+       //    itemKey: 'logall',
+       //    to: '/logall',
+       //    icon: <IconKanban />,
+       //    className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+       //},
         {
             text: '绘图',
             itemKey: 'midjourney',

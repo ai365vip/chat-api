@@ -305,10 +305,12 @@ const RegisterForm = ({ ...others }) => {
                   id="outlined-adornment-affCode-register"
                   type="text"
                   value={values.aff_code}
-                  name="affCode"
+                  name="aff_code"
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  inputProps={{}}
+                  inputProps={{
+                    maxLength: 6 
+                  }}
               />
               {touched.aff_code && errors.aff_code && (
                   <FormHelperText error id="standard-weight-helper-text-affCode-register">

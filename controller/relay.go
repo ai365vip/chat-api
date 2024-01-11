@@ -106,23 +106,35 @@ const (
 	RelayModeMidjourneyTaskFetch
 	RelayModeMidjourneyTaskFetchByCondition
 	RelayModeAudio
+	RelayModeAudioSpeech
+	RelayModeAudioTranscription
+	RelayModeAudioTranslation
 )
 
-// https://platform.openai.com/docs/api-reference/chat
+type ResponseFormat struct {
+	Type string `json:"type,omitempty"`
+}
 
 type GeneralOpenAIRequest struct {
-	Model       string    `json:"model,omitempty"`
-	Messages    []Message `json:"messages,omitempty"`
-	Prompt      any       `json:"prompt,omitempty"`
-	Stream      bool      `json:"stream,omitempty"`
-	MaxTokens   uint      `json:"max_tokens,omitempty"`
-	Temperature float64   `json:"temperature,omitempty"`
-	TopP        float64   `json:"top_p,omitempty"`
-	N           int       `json:"n,omitempty"`
-	Input       any       `json:"input,omitempty"`
-	Instruction string    `json:"instruction,omitempty"`
-	Size        string    `json:"size,omitempty"`
-	Functions   any       `json:"functions,omitempty"`
+	Model            string          `json:"model,omitempty"`
+	Messages         []Message       `json:"messages,omitempty"`
+	Prompt           any             `json:"prompt,omitempty"`
+	Stream           bool            `json:"stream,omitempty"`
+	MaxTokens        uint            `json:"max_tokens,omitempty"`
+	Temperature      float64         `json:"temperature,omitempty"`
+	TopP             float64         `json:"top_p,omitempty"`
+	N                int             `json:"n,omitempty"`
+	Input            any             `json:"input,omitempty"`
+	Instruction      string          `json:"instruction,omitempty"`
+	Size             string          `json:"size,omitempty"`
+	Functions        any             `json:"functions,omitempty"`
+	FrequencyPenalty float64         `json:"frequency_penalty,omitempty"`
+	PresencePenalty  float64         `json:"presence_penalty,omitempty"`
+	ResponseFormat   *ResponseFormat `json:"response_format,omitempty"`
+	Seed             float64         `json:"seed,omitempty"`
+	Tools            any             `json:"tools,omitempty"`
+	ToolChoice       any             `json:"tool_choice,omitempty"`
+	User             string          `json:"user,omitempty"`
 }
 
 func (r GeneralOpenAIRequest) ParseInput() []string {
@@ -296,14 +308,22 @@ func Relay(c *gin.Context) {
 		relayMode = RelayModeImagesGenerations
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/edits") {
 		relayMode = RelayModeEdits
-	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/audio") {
-		relayMode = RelayModeAudio
+	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/audio/speech") {
+		relayMode = RelayModeAudioSpeech
+	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") {
+		relayMode = RelayModeAudioTranscription
+	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/audio/translations") {
+		relayMode = RelayModeAudioTranslation
 	}
 	var err *OpenAIErrorWithStatusCode
 	switch relayMode {
 	case RelayModeImagesGenerations:
 		err = relayImageHelper(c, relayMode)
-	case RelayModeAudio:
+	case RelayModeAudioSpeech:
+		fallthrough
+	case RelayModeAudioTranslation:
+		fallthrough
+	case RelayModeAudioTranscription:
 		err = relayAudioHelper(c, relayMode)
 	default:
 		err = relayTextHelper(c, relayMode)
@@ -316,7 +336,7 @@ func Relay(c *gin.Context) {
 			retryTimes = common.RetryTimes
 		}
 		if retryTimes > 0 {
-			c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?retry=%d", c.Request.URL.Path, retryTimes-1))
+			c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?retry=%d&error=%s", c.Request.URL.Path, retryTimes-1, err.Message))
 		} else {
 			if err.StatusCode == http.StatusTooManyRequests {
 				//err.OpenAIError.Message = "当前分组上游负载已饱和，请稍后再试"
