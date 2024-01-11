@@ -252,10 +252,12 @@ func (user *User) Insert(inviterId int) error {
 			RecordLog(user.Id, LogTypeSystem, 0, fmt.Sprintf("使用邀请码赠送 %s", common.LogQuota(common.QuotaForInvitee)))
 		}
 		if common.QuotaForInviter > 0 {
-			//_ = IncreaseUserQuota(inviterId, common.QuotaForInviter)
 			RecordLog(inviterId, LogTypeSystem, 0, fmt.Sprintf("邀请用户赠送 %s", common.LogQuota(common.QuotaForInviter)))
 			_ = inviteUser(inviterId)
+		} else if common.ProporTions > 0 {
+			_ = inviteUser(inviterId)
 		}
+
 	}
 	return nil
 }
