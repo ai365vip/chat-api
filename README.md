@@ -39,29 +39,44 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e TZ=Asia/Shanghai 
 docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" -e TZ=Asia/Shanghai ai365/chat-api:latest
 ```
 
+### 基于 Docker Compose 进行部署
+
+> 仅启动方式不同，参数设置不变，请参考基于 Docker 部署部分修改docker-compose.yml文件内容
+
+```sh
+# 执行
+docker-compose up -d
+
+# 查看部署状态
+docker-compose ps
+```
+
+
+
 ### 手动部署
 
 1. 从 [GitHub Releases ](https://github.com/ai365vip/chat-api/releases)下载可执行文件或者从源码编译：
 
    ```shell
    git clone https://github.com/ai365vip/chat-api.git
-
+   
    # 构建前端（管理端）
    cd chat-api/web-admin
    npm install
    npm run build
-
+   
    # 构建前端（C端）
    cd ..
    cd web-user
    npm install
    npm run build
-
+   
    # 构建后端
    cd ..
    go mod download
    go build -ldflags "-s -w" -o chat-api
    ```
+
 2. 运行：
 
    ```shell
@@ -69,7 +84,9 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
    .env //设置环境变量 放在同一目录下
    ./chat-api --port 3000 --log-dir ./logs
    ```
+
 3. 访问 [http://localhost:3000/](http://localhost:3000/) 并登录。初始账号用户名为 `root`，密码为 `123456`。
+
 4. 管理端访问 [http://localhost:3000/admin](http://localhost:3000/admin) 并登录。初始账号用户名为 `root`，密码为 `123456`。
 
 ### 环境变量
