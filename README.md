@@ -8,10 +8,6 @@
 > 本项目为个人学习使用，不保证稳定性，且不提供任何技术支持，使用者必须在遵循 OpenAI 的使用条款以及法律法规的情况下使用，不得用于非法用途。
 > 根据[《生成式人工智能服务管理暂行办法》](http://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm)的要求，请勿对中国地区公众提供一切未经备案的生成式人工智能服务。
 
-> [!NOTE]
-> 最新版Docker镜像 ai365/chat-api:latest
-> 更新指令 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower -cR
-
 ## 此分叉版本的主要变更
 
 1. 全新的UI界面，C端与管理端 (/admin)
@@ -50,11 +46,12 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
    ```shell
    git clone https://github.com/ai365vip/chat-api.git
 
-   # 构建前端
+   # 构建前端（管理端）
    cd chat-api/web-admin
    npm install
    npm run build
 
+   # 构建前端（C端）
    cd ..
    cd web-user
    npm install
