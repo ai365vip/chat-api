@@ -17,19 +17,19 @@
 1. 全新的UI界面，C端与管理端 (/admin)
 2. 支持在线支付按钮的启用关闭
 3. 支持模型按次数收费，可在 系统设置-运营设置 中设置
-4. 支持普通用户自行选择令牌按倍率、按次计费
+4. 支持普通用户自行选择令牌按倍率、按次计费（倍率和按次全启用）
 5. 支持令牌分组，**模型限制**
 6. 支持WxPusher消息推送，在线充值通知
 7. 支持通知更换邮箱
 8. 支持渠道自启时间设置
-9. 支持自定义渠道测试模型
-10. 管理员日志增加详细（接收与回复内容）
-11. 支持自定义**网站描述**
-12. 支持数据面板统计
-13. 支持新用户设置默认分组
-14. 支持充值用户设置默认分组
-15. 支持邀请用户充值返利s
-
+9. 支持显示新用户注册时间
+10. 支持自定义渠道测试模型
+11. 管理员日志增加详细（接收与回复内容）
+12. 支持自定义**网站描述**（TG网站预览）
+13. 支持数据面板统计
+14. 支持新用户设置默认分组
+15. 支持充值用户设置默认分组（充值后自动切换）
+16. 支持邀请用户充值返利（后台设置返利百分比。最低提现额度）
 
 ## 部署
 
@@ -37,10 +37,10 @@
 
 ```shell
 # 使用 SQLite 的部署命令：
-docker run --name chat-api -d --restart always -p 3000:3000 -e TZ=Asia/Shanghai -v /home/ubuntu/data/chat-api:/data ai365/chat-api:latest
+docker run --name chat-api -d --restart always -p 3000:3000 -e TZ=Asia/Shanghai ai365/chat-api:latest
 # 使用 MySQL 的部署命令，在上面的基础上添加 `-e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi"`，请自行修改数据库连接参数。
 # 例如：
-docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" -e TZ=Asia/Shanghai -v /home/ubuntu/data/chat-api:/data ai365/chat-api:latest
+docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" -e TZ=Asia/Shanghai ai365/chat-api:latest
 ```
 
 ### 手动部署
@@ -135,6 +135,7 @@ docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/8c4ea0cd-c4fb-4074-8080-4998b0fcda20)
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/ecdbd755-fc08-4ee4-a08c-fc179fca51f7)
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/e48e016e-6d92-47b1-ab9b-3d5fec53175f)
+
 ## 赞助
 
 如果觉得这个软件对你有所帮助，欢迎请作者喝可乐、喝咖啡～

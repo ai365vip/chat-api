@@ -420,9 +420,6 @@ const Detail = (props) => {
         typeChart.reLayout();
     };
     
-    
-    
-
 
     useEffect(() => {
         if (!initialized.current) {
