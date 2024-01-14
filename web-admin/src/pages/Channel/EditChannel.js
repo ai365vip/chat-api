@@ -48,6 +48,7 @@ const EditChannel = (props) => {
         model_test: '', 
         tested_time:'',
         priority:'',
+        weight:'',
         groups: ['default']
     };
     const [batch, setBatch] = useState(false);
@@ -64,6 +65,9 @@ const EditChannel = (props) => {
     const [proxyInputs, setProxyInputs] = useState(''); // 新增状态来存储批量代理输入
     const [restartDelay, setRestartDelay] = useState(0); 
     const [priority, setPriority] = useState(0);
+    const [weight, setWeight] = useState(0);
+    const [rateLimited, setRateLimited] = useState(false);
+
     const handleInputChange = (name, value) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
         if (name === 'type' && inputs.models.length === 0) {
@@ -130,6 +134,8 @@ const EditChannel = (props) => {
             }
             setRestartDelay(data.tested_time || 0);
             setPriority(data.priority || 0);
+            setWeight(data.weight || 0);
+            setRateLimited(data.rate_limited || false);
             // console.log(data);
         } else {
             showError(message);
@@ -211,6 +217,8 @@ const EditChannel = (props) => {
         localInputs.auto_ban = autoBan ? 1 : 0;
         localInputs.tested_time = restartDelay;
         localInputs.priority = priority;
+        localInputs.weight = weight;
+        localInputs.rate_limited = rateLimited;
         
         if (localInputs.base_url && localInputs.base_url.endsWith('/')) {
             localInputs.base_url = localInputs.base_url.slice(0, localInputs.base_url.length - 1);
@@ -245,6 +253,8 @@ const EditChannel = (props) => {
                 group: inputs.groups.join(','), // 将群组数组转换为字符串
                 tested_time: parseInt(restartDelay, 10) || 0,
                 priority: parseInt(priority, 10) || 0, 
+                weight: parseInt(weight, 10) || 0, 
+                rate_limited: rateLimited
             };
             });
     
@@ -594,6 +604,15 @@ const EditChannel = (props) => {
                                 strong>是否自动禁用（仅当自动禁用开启时有效），关闭后不会自动禁用该渠道：</Typography.Text>
                         </Space>
                     </div>
+                    <div style={{marginTop: 10, display: 'flex'}}>
+                        <Space>
+                            <Checkbox
+                                checked={rateLimited}
+                                onChange={() => setRateLimited(!rateLimited)}
+                            />
+                            <Typography.Text strong>启用频率限制（开启后渠道每分钟限制三次）</Typography.Text>
+                        </Space>
+                    </div>
                     <div style={{marginTop: 20, display: 'flex', alignItems: 'center'}}>
                         <div style={{flex: 1}}>
                                 <Typography.Text>优先级：</Typography.Text>
@@ -612,9 +631,27 @@ const EditChannel = (props) => {
                                     { value: 7, label: '7' },
                                     ]}
                                 />
-                            </div>
+                        </div>
                         <div style={{flex: 1,marginLeft: 20}}>
-                            <Typography.Text>重启时间（秒）：</Typography.Text>
+                                <Typography.Text>权重：</Typography.Text>
+                                <AutoComplete
+                                    style={{ width: '100%', marginTop: 8 }}
+                                    placeholder={'请选择或输入'}
+                                    onChange={(value) => setWeight(Number(value))}
+                                    onSelect={(value) => setWeight(Number(value))}
+                                    value={String(weight)} 
+                                    autoComplete='off'
+                                    type='number'
+                                    data={[
+                                    { value: 0, label: '0' },
+                                    { value: 2, label: '2' },
+                                    { value: 5, label: '5' },
+                                    { value: 10, label: '10' },
+                                    ]}
+                                />
+                        </div>
+                        <div style={{flex: 1,marginLeft: 20}}>
+                            <Typography.Text>重启：</Typography.Text>
                             <AutoComplete
                                 style={{ width: '100%', marginTop: 8 }}
                                 placeholder={'请选择或输入'}

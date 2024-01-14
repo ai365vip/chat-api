@@ -225,23 +225,52 @@ func CacheGetRandomSatisfiedChannel(group string, model string) (*Channel, error
 		totalWeight += channel.GetWeight()
 	}
 
-	if totalWeight == 0 {
-		// If all weights are 0, select a channel randomly
-		return channels[rand.Intn(endIdx)], nil
-	}
+	var selectedChannel *Channel
+	for {
+		if totalWeight == 0 {
+			// 如果所有渠道的权重都为0，则随机选择一个
+			selectedChannel = channels[rand.Intn(endIdx)]
+		} else {
+			// 在权重范围内生成一个随机值
+			randomWeight := rand.Intn(totalWeight)
 
-	// Generate a random value in the range [0, totalWeight)
-	randomWeight := rand.Intn(totalWeight)
-
-	// Find a channel based on its weight
-	for _, channel := range channels[:endIdx] {
-		randomWeight -= channel.GetWeight()
-		if randomWeight <= 0 {
-			return channel, nil
+			// 根据权重选择渠道
+			for _, channel := range channels[:endIdx] {
+				randomWeight -= channel.GetWeight()
+				if randomWeight <= 0 {
+					selectedChannel = channel
+					break
+				}
+			}
+			// 如果没有基于权重找到渠道，则选择最后一个渠道
+			if selectedChannel == nil {
+				selectedChannel = channels[endIdx-1]
+			}
 		}
+
+		// 检查选定的渠道是否开启了频率限制并且是否达到了频率限制
+		if selectedChannel.RateLimited != nil && *selectedChannel.RateLimited {
+			_, ok := checkRateLimit(selectedChannel.Id)
+			if !ok { // 如果已经达到频率限制
+				// 如果当前渠道的频率限制被打开且达到限制，则从列表中移除并重新进行选择
+				channels = append(channels[:endIdx], channels[endIdx+1:]...)
+				endIdx--
+				if endIdx == 0 {
+					return nil, errors.New("no channels available within rate limits")
+				}
+				// 回到循环的开始，重新选择渠道
+				continue
+			}
+
+			// 更新频率限制状态，因为通过了检查并且能够使用该渠道
+			updateRateLimitStatus(selectedChannel.Id)
+		}
+
+		break // 找到合适的渠道，跳出循环
 	}
-	// return the last channel if no channel is found
-	return channels[endIdx-1], nil
+
+	// 返回最终选定的渠道
+	return selectedChannel, nil
 }
 
 func CacheGetChannel(id int) (*Channel, error) {

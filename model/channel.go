@@ -29,6 +29,7 @@ type Channel struct {
 	AutoBan            *int    `json:"auto_ban" gorm:"default:1"`
 	TestedTime         *int    `json:"tested_time" gorm:"bigint"`
 	ModelTest          string  `json:"model_test"`
+	RateLimited        *bool   `json:"rate_limited" gorm:"default:false"`
 }
 
 func GetAllChannels(startIdx int, num int, selectAll bool, idSort bool) ([]*Channel, error) {
@@ -60,13 +61,16 @@ func SearchChannels(keyword string, group string) (channels []*Channel, err erro
 }
 
 func GetChannelById(id int, selectAll bool) (*Channel, error) {
-	channel := Channel{Id: id}
-	var err error = nil
+	var channel Channel
+	db := DB.Session(&gorm.Session{NewDB: true})
+
+	var err error
 	if selectAll {
-		err = DB.First(&channel, "id = ?", id).Error
+		err = db.First(&channel, "id = ?", id).Error
 	} else {
-		err = DB.Omit("key").First(&channel, "id = ?", id).Error
+		err = db.Omit("key").First(&channel, "id = ?", id).Error
 	}
+
 	return &channel, err
 }
 
