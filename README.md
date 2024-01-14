@@ -26,6 +26,7 @@
 14. 支持新用户设置默认分组
 15. 支持充值用户设置默认分组（充值后自动切换）
 16. 支持邀请用户充值返利（后台设置返利百分比。最低提现额度）
+17. 支持设置普号渠道每分钟限制使用3次
 
 ## 部署
 
@@ -51,32 +52,29 @@ docker-compose up -d
 docker-compose ps
 ```
 
-
-
 ### 手动部署
 
 1. 从 [GitHub Releases ](https://github.com/ai365vip/chat-api/releases)下载可执行文件或者从源码编译：
 
    ```shell
    git clone https://github.com/ai365vip/chat-api.git
-   
+
    # 构建前端（管理端）
    cd chat-api/web-admin
    npm install
    npm run build
-   
+
    # 构建前端（C端）
    cd ..
    cd web-user
    npm install
    npm run build
-   
+
    # 构建后端
    cd ..
    go mod download
    go build -ldflags "-s -w" -o chat-api
    ```
-
 2. 运行：
 
    ```shell
@@ -84,9 +82,7 @@ docker-compose ps
    .env //设置环境变量 放在同一目录下
    ./chat-api --port 3000 --log-dir ./logs
    ```
-
 3. 访问 [http://localhost:3000/](http://localhost:3000/) 并登录。初始账号用户名为 `root`，密码为 `123456`。
-
 4. 管理端访问 [http://localhost:3000/admin](http://localhost:3000/admin) 并登录。初始账号用户名为 `root`，密码为 `123456`。
 
 ### 环境变量
