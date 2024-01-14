@@ -252,6 +252,8 @@ func GetRandomSatisfiedChannel(group string, model string) (*Channel, error) {
 
 		selectedAbility := abilities[selectedIdx]
 
+		//log.Println("查询ID", selectedAbility.ChannelId)
+
 		// 使用 GetChannelById 函数并对返回的指针进行解引用
 		channelPtr, err := GetChannelById(selectedAbility.ChannelId, true)
 		if err != nil {
@@ -280,6 +282,7 @@ func GetRandomSatisfiedChannel(group string, model string) (*Channel, error) {
 			if !ok { // 如果达到频率限制
 				rateLimitedAbilities = append(rateLimitedAbilities, selectedIdx)
 				// 移除当前渠道，继续选择下一个渠道
+				//log.Println("ID限制", selectedAbility.ChannelId)
 				abilities = append(abilities[:selectedIdx], abilities[selectedIdx+1:]...)
 				// 如果移除后没有剩余渠道，则尝试获取次优先级的渠道
 				if len(abilities) == 0 {

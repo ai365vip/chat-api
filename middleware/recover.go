@@ -17,7 +17,7 @@ func RelayPanicRecover() gin.HandlerFunc {
 				common.SysError(fmt.Sprintf("stacktrace from panic: %s", string(debug.Stack())))
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error": gin.H{
-						"message": fmt.Sprintf("Panic detected, error: %v. Please submit a issue here: https://github.com/Calcium-Ion/new-api", err),
+						"message": fmt.Sprintf("Panic detected, error: %v. Please submit a issue here: https://github.com/ai365vip/chat-api", err),
 						"type":    "chat_api_panic",
 					},
 				})

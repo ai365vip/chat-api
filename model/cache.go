@@ -202,75 +202,100 @@ func CacheGetRandomSatisfiedChannel(group string, model string) (*Channel, error
 	if !common.MemoryCacheEnabled {
 		return GetRandomSatisfiedChannel(group, model)
 	}
+
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
-	channels := group2model2channels[group][model]
-	if len(channels) == 0 {
+
+	allChannels := group2model2channels[group][model]
+	if len(allChannels) == 0 {
 		return nil, errors.New("channel not found")
 	}
-	endIdx := len(channels)
-	// choose by priority
-	firstChannel := channels[0]
-	if firstChannel.GetPriority() > 0 {
-		for i := range channels {
-			if channels[i].GetPriority() != firstChannel.GetPriority() {
-				endIdx = i
-				break
-			}
-		}
-	}
-	// Calculate the total weight of all channels up to endIdx
-	totalWeight := 0
-	for _, channel := range channels[:endIdx] {
-		totalWeight += channel.GetWeight()
-	}
 
-	var selectedChannel *Channel
+	// 对所有频道按优先级和权重进行排序
+	sort.SliceStable(allChannels, func(i, j int) bool {
+		if allChannels[i].GetPriority() == allChannels[j].GetPriority() {
+			return allChannels[i].GetWeight() > allChannels[j].GetWeight()
+		}
+		return allChannels[i].GetPriority() > allChannels[j].GetPriority()
+	})
+
+	// 初始化当前优先级变量
+	var currentPriority int64 = allChannels[0].GetPriority()
+
 	for {
-		if totalWeight == 0 {
-			// 如果所有渠道的权重都为0，则随机选择一个
-			selectedChannel = channels[rand.Intn(endIdx)]
-		} else {
-			// 在权重范围内生成一个随机值
-			randomWeight := rand.Intn(totalWeight)
+		var priorityChannels []*Channel
+		var totalWeight int
 
-			// 根据权重选择渠道
-			for _, channel := range channels[:endIdx] {
-				randomWeight -= channel.GetWeight()
-				if randomWeight <= 0 {
-					selectedChannel = channel
-					break
-				}
-			}
-			// 如果没有基于权重找到渠道，则选择最后一个渠道
-			if selectedChannel == nil {
-				selectedChannel = channels[endIdx-1]
+		// 筛选出当前优先级的所有频道
+		for _, ch := range allChannels {
+			if ch.GetPriority() == currentPriority {
+				priorityChannels = append(priorityChannels, ch)
+				totalWeight += ch.GetWeight()
 			}
 		}
 
-		// 检查选定的渠道是否开启了频率限制并且是否达到了频率限制
-		if selectedChannel.RateLimited != nil && *selectedChannel.RateLimited {
-			_, ok := checkRateLimit(selectedChannel.Id)
-			if !ok { // 如果已经达到频率限制
-				// 如果当前渠道的频率限制被打开且达到限制，则从列表中移除并重新进行选择
-				channels = append(channels[:endIdx], channels[endIdx+1:]...)
-				endIdx--
-				if endIdx == 0 {
-					return nil, errors.New("no channels available within rate limits")
-				}
-				// 回到循环的开始，重新选择渠道
-				continue
-			}
-
-			// 更新频率限制状态，因为通过了检查并且能够使用该渠道
-			updateRateLimitStatus(selectedChannel.Id)
+		if len(priorityChannels) == 0 {
+			break // 如果没有剩下的频道，则跳出循环
 		}
 
-		break // 找到合适的渠道，跳出循环
+		// 尝试在当前优先级找到一个可以使用的频道
+		for len(priorityChannels) > 0 {
+			index := chooseIndexByWeight(priorityChannels, totalWeight)
+			selectedChannel := priorityChannels[index]
+			//log.Println("当前渠道", selectedChannel.Id)
+
+			// 检查选定频道是否启用了频率限制
+			if selectedChannel.RateLimited != nil && *selectedChannel.RateLimited {
+				_, ok := checkRateLimit(selectedChannel.Id)
+				if !ok {
+					// 频道超过频率限制，从列表中移除该频道
+					//log.Println("渠道被限制", selectedChannel.Id)
+					priorityChannels = append(priorityChannels[:index], priorityChannels[index+1:]...)
+					continue
+				} else {
+					updateRateLimitStatus(selectedChannel.Id)
+					return selectedChannel, nil
+				}
+			} else {
+				return selectedChannel, nil
+			}
+		}
+
+		// 寻找下一个较低的优先级继续循环
+		nextPriority := getNextLowerPriority(allChannels, currentPriority)
+		if nextPriority == -1 {
+			return nil, errors.New("no channels available within rate limits")
+		}
+		currentPriority = nextPriority
 	}
 
-	// 返回最终选定的渠道
-	return selectedChannel, nil
+	return nil, errors.New("no channels available within rate limits")
+}
+
+// 辅助函数，根据权重选择索引
+func chooseIndexByWeight(channels []*Channel, totalWeight int) int {
+	if totalWeight == 0 {
+		return rand.Intn(len(channels))
+	}
+
+	randomWeight := rand.Intn(totalWeight)
+	for i, ch := range channels {
+		randomWeight -= ch.GetWeight()
+		if randomWeight < 0 {
+			return i
+		}
+	}
+	return len(channels) - 1
+}
+
+// 辅助函数，获取下一个较低的优先级
+func getNextLowerPriority(channels []*Channel, currentPriority int64) int64 {
+	for _, ch := range channels {
+		if ch.GetPriority() < currentPriority {
+			return ch.GetPriority()
+		}
+	}
+	return -1
 }
 
 func CacheGetChannel(id int) (*Channel, error) {
