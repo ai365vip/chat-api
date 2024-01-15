@@ -11,10 +11,9 @@ import Alert from '@mui/material/Alert';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Toolbar from '@mui/material/Toolbar';
 
-import { Button, Card, Box, Stack, Container, Typography } from '@mui/material';
+import { Button, Card, Box, Stack, Container, Typography,TextField } from '@mui/material';
 import TokensTableRow from './component/TableRow';
 import TokenTableHead from './component/TableHead';
-import TableToolBar from 'ui-component/TableToolBar';
 import { API } from 'utils/api';
 import { ITEMS_PER_PAGE } from 'constants';
 import { IconRefresh, IconPlus,IconTrash } from '@tabler/icons-react';
@@ -34,7 +33,7 @@ export default function Token() {
   const [options, setOptions] = useState({});
   const [selected, setSelected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(ITEMS_PER_PAGE);
-
+  const [searchToken, setSearchToken] = useState('');
 
 
   const loadTokens = async (startIdx, rowsPerPage = ITEMS_PER_PAGE) => {
@@ -106,21 +105,29 @@ export default function Token() {
 
   const searchTokens = async (event) => {
     event.preventDefault();
-    if (searchKeyword === '') {
-      await loadTokens(0);
-      setActivePage(0);
-      return;
-    }
     setSearching(true);
-    const res = await API.get(`/api/token/search?keyword=${searchKeyword}`);
-    const { success, message, data } = res.data;
-    if (success) {
-      setTokens(data);
-      setActivePage(0);
-    } else {
-      showError(message);
+    try {
+      const query = new URLSearchParams({
+        keyword: searchKeyword,
+        token: searchToken // 使用 searchToken 状态值
+      }).toString();
+      const res = await API.get(`/api/token/search?${query}`);
+      const { success, message, data } = res.data;
+      if (success) {
+        setTokens(data);
+        setActivePage(0);
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      showError(`搜索时出错: ${error}`);
     }
     setSearching(false);
+  };
+  
+
+  const handleSearchTokenChange = (event) => {
+    setSearchToken(event.target.value);
   };
 
   const handleSearchKeyword = (event) => {
@@ -269,9 +276,35 @@ export default function Token() {
         </Alert>
       </Stack>
       <Card>
-        <Box component="form" onSubmit={searchTokens} noValidate>
-          <TableToolBar filterName={searchKeyword} handleFilterName={handleSearchKeyword} placeholder={'搜索令牌的名称...'} />
-        </Box>
+      <Box component="form" onSubmit={searchTokens} mt={2} noValidate sx={{ display: 'flex', alignItems: 'center', gap: 4, padding: 2 }}>
+        {/* 搜索名称的输入框 - 设置边距 */}
+        <TextField
+          label="名称"
+          value={searchKeyword}
+          onChange={handleSearchKeyword}
+          variant="outlined"
+          size="small"
+          placeholder="搜索令牌的名称..."
+          fullWidth // 输入框全宽
+          sx={{ flex: 1, minWidth: '150px', marginX: 1 }} // 增加左右外边距
+        />
+        {/* 搜索 Token 的输入框 - 设置边距 */}
+        <TextField
+          label="令牌"
+          value={searchToken}
+          onChange={handleSearchTokenChange}
+          variant="outlined"
+          size="small"
+          placeholder="搜索令牌的 key..."
+          fullWidth // 输入框全宽
+          sx={{ flex: 1, minWidth: '150px', marginX: 1 }} // 增加左右外边距
+        />
+        {/* 搜索按钮 - 设置边距 */}
+        <Button type="submit" variant="contained" color="primary" sx={{ marginX: 1 }}>
+          搜索
+        </Button>
+      </Box>
+
         <Toolbar
           sx={{
             textAlign: 'right',
