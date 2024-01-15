@@ -24,6 +24,7 @@ type Channel struct {
 	Models             string  `json:"models"`
 	Group              string  `json:"group" gorm:"type:varchar(64);default:'default'"`
 	UsedQuota          int64   `json:"used_quota" gorm:"bigint;default:0"`
+	UsedCount          int     `json:"used_count" gorm:"default:0"`
 	ModelMapping       *string `json:"model_mapping" gorm:"type:varchar(1024);default:''"`
 	Priority           *int64  `json:"priority" gorm:"bigint;default:0"`
 	AutoBan            *int    `json:"auto_ban" gorm:"default:1"`
@@ -219,9 +220,13 @@ func UpdateChannelUsedQuota(id int, quota int) {
 }
 
 func updateChannelUsedQuota(id int, quota int) {
-	err := DB.Model(&Channel{}).Where("id = ?", id).Update("used_quota", gorm.Expr("used_quota + ?", quota)).Error
+	err := DB.Model(&Channel{}).Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"used_quota": gorm.Expr("used_quota + ?", quota),
+			"used_count": gorm.Expr("used_count + 1"),
+		}).Error
 	if err != nil {
-		common.SysError("failed to update channel used quota: " + err.Error())
+		common.SysError("failed to update channel used quota and count: " + err.Error())
 	}
 }
 

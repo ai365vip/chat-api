@@ -126,7 +126,7 @@ const ChannelsTable = () => {
             },
         },
         {
-            title: '已用/剩余',
+            title: '已用/剩余/次数',
             dataIndex: 'expired_time',
             render: (text, record, index) => {
                 return (
@@ -137,6 +137,9 @@ const ChannelsTable = () => {
                             </Tooltip>
                             <Tooltip content={'剩余额度' + record.balance + '，点击更新'}>
                                 <Tag color='white' type='ghost' size='large' onClick={() => {updateChannelBalance(record)}}>${renderNumberWithPoint(record.balance)}</Tag>
+                            </Tooltip>
+                            <Tooltip content={'调用次数'}>
+                                <Tag color='white' type='ghost' size='large' >{record.used_count}</Tag>
                             </Tooltip>
                         </Space>
                     </div>
