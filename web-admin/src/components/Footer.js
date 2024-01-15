@@ -7,7 +7,7 @@ import {Layout} from "@douyinfe/semi-ui";
 const Footer = () => {
   const systemName = getSystemName();
   const [footer, setFooter] = useState(getFooterHTML());
-  const appVersion = process.env.REACT_APP_VERSION || 'v0.0.27';
+  const appVersion = process.env.REACT_APP_VERSION || 'v0.0.29';
   let remainCheckTimes = 5;
 
   const loadFooter = () => {
@@ -40,11 +40,10 @@ const Footer = () => {
         ) : (
           <div className='custom-footer'>
             当前版本 {appVersion} {/* 这里显示版本信息 */}
-            ，本项目根据{' '}
-            <a href='https://opensource.org/licenses/mit-license.php'>
-              MIT 许可证
+            ，项目地址{' '}
+            <a href='https://github.com/ai365vip/chat-api'>
+            GitHub
             </a>{' '}
-            授权
           </div>
         )}
       </Layout.Content>

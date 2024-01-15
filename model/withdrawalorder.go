@@ -132,3 +132,10 @@ func RevertQuotaForRejectedOrder(orderID uint) error {
 	// 提交事务
 	return tx.Commit().Error
 }
+
+// GetWithdrawalOrdersCount 获取待处理合计条数
+func GetWithdrawalOrdersCount() (int64, error) {
+	var count int64
+	result := DB.Model(&WithdrawalOrder{}).Where("status = ?", 1).Count(&count)
+	return count, result.Error
+}

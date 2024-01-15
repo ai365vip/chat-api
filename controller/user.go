@@ -416,6 +416,7 @@ func AffQuota(c *gin.Context) {
 		"success": true,
 		"message": "提交成功",
 	})
+
 }
 
 func GetAffCode(c *gin.Context) {

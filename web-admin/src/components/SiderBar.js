@@ -94,13 +94,13 @@ const SiderBar = () => {
             icon: <IconImage/>,
             className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
         },
-        {
-            text: '工单',
-            itemKey: 'withdrawal',
-            to: '/withdrawal',
-            icon: <IconBell />,
-            className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
-        },
+        //{
+        //    text: '工单',
+        //    itemKey: 'withdrawal',
+        //    to: '/withdrawal',
+        //    icon: <IconBell />,
+        //    className: isAdmin()?'semi-navigation-item-normal':'tableHiddle',
+        //},
         {
             text: '设置',
             itemKey: 'setting',

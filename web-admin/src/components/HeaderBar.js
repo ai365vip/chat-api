@@ -11,18 +11,18 @@ import fireworks from 'react-fireworks';
 import {
     IconKey,
     IconUser,
-    IconHelpCircle
+    IconHelpCircle,IconBell
 } from '@douyinfe/semi-icons';
-import {Nav, Avatar, Dropdown, Layout, Switch} from '@douyinfe/semi-ui';
+import {Nav, Avatar, Dropdown, Layout, Switch,Badge } from '@douyinfe/semi-ui';
 import {stringToColor} from "../helpers/render";
 
 // HeaderBar Buttons
 let headerButtons = [
     {
         text: '关于',
-        itemKey: 'about',
-        to: '/admin/about',
-        icon: <IconHelpCircle/>
+        itemKey: 'withdrawal',
+        to: '/admin/withdrawal',
+        icon: <IconBell/>,
     },
 ];
 
@@ -40,11 +40,13 @@ const HeaderBar = () => {
 
     const [showSidebar, setShowSidebar] = useState(false);
     const [dark, setDark] = useState(false);
+    const [withdrawalCount, setWithdrawalCount] = useState(0); // 初始化为0
     const systemName = getSystemName();
+    const isAdminUser = isAdmin();
     const logo = getLogo();
     var themeMode = localStorage.getItem('theme-mode');
-    const currentDate = new Date();
-    const isNewYear = currentDate.getMonth() === 0 && currentDate.getDate() === 1;
+
+
 
     async function logout() {
         setShowSidebar(false);
@@ -55,25 +57,34 @@ const HeaderBar = () => {
         navigate('/admin/login');
     }
 
-    const handleNewYearClick = () => {
-        fireworks.init("root",{});
-        fireworks.start();
-        setTimeout(() => {
-            fireworks.stop();
-            setTimeout(() => {
-                window.location.reload();
-            }, 10000);
-        }, 3000);
-    };
+    const loadWithdrawalCount = async () => {
+        try {
+          let res = await API.get('/api/log/withdrawalscount');
+          const { success, message, data } = res.data;
+          if (success) {
+            setWithdrawalCount(data); 
+          } else {
+            setWithdrawalCount(0);
+          }
+        } catch (err) {
+          setWithdrawalCount(0);
+        }
+      };
 
-    useEffect(() => {
+      useEffect(() => {
+        // 只有当用户已登录且是管理员时，才调用 loadWithdrawalCount
+        if (userState.user && isAdminUser) {
+            loadWithdrawalCount();
+        }
+    }, [userState.user,isAdminUser]); 
+
+
+      useEffect(() => {
         if (themeMode === 'dark') {
             switchMode(true);
         }
-        if (isNewYear) {
-            console.log('Happy New Year!');
-        }
-    }, []);
+    }, []); 
+    
 
     const switchMode = (model) => {
         const body = document.body;
@@ -95,7 +106,7 @@ const HeaderBar = () => {
                         // bodyStyle={{ height: 100 }}
                         renderWrapper={({itemElement, isSubNav, isInSubNav, props}) => {
                             const routerMap = {
-                                about: "/admin/about",
+                                withdrawal: "/admin/withdrawal",
                                 login: "/admin/login",
                                 register: "/admin/register",
                             };
@@ -114,21 +125,21 @@ const HeaderBar = () => {
 
                         }}
                         footer={
-                            <>
-                                {isNewYear &&
-                                    // happy new year
-                                    <Dropdown
-                                        position="bottomRight"
-                                        render={
-                                            <Dropdown.Menu>
-                                                <Dropdown.Item onClick={handleNewYearClick}>Happy New Year!!!</Dropdown.Item>
-                                            </Dropdown.Menu>
+                            <> 
+                                {isAdminUser && (
+                                    <Nav.Item
+                                        itemKey={'withdrawal'}
+                                        icon={
+                                        withdrawalCount > 0 ? (
+                                            <Badge count={withdrawalCount} type='danger'>
+                                            <IconBell size="large" />
+                                            </Badge>
+                                        ) : (
+                                            <IconBell size="large" />
+                                        )
                                         }
-                                    >
-                                        <Nav.Item itemKey={'new-year'} text={'🏮'}/>
-                                    </Dropdown>
-                                }
-                                <Nav.Item itemKey={'about'} icon={<IconHelpCircle />} />
+                                    />
+                                    )}
                                 <Switch checkedText="🌞" size={'large'} checked={dark} uncheckedText="🌙" onChange={switchMode} />
                                 {userState.user ?
                                     <>

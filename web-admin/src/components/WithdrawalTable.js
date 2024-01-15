@@ -29,7 +29,7 @@ const colors = ['amber', 'blue', 'cyan', 'green', 'grey', 'indigo',
 function renderStatus(code) {
   switch (code) {
     case 1:
-      return <Tag color="orange" size='large'>已提交</Tag>;
+      return <Tag color="orange" size='large'>待处理</Tag>;
     case 2:
       return <Tag color="lime" size='large'>已批准</Tag>;
     case 3:

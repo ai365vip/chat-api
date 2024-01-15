@@ -128,3 +128,20 @@ func UpdateWithdrawalOrderStatusEndpoint(c *gin.Context) {
 		"message": "提现订单状态更新成功",
 	})
 }
+
+func GetWithdrawalOrdersCount(c *gin.Context) {
+
+	count, err := model.GetWithdrawalOrdersCount()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "无法获取提现订单",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    count,
+	})
+}

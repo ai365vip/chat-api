@@ -67,6 +67,7 @@ func SetApiRouter(router *gin.Engine) {
 				adminRoute.DELETE("/:id", controller.DeleteUser)
 				adminRoute.GET("/withdrawals", controller.GetAllWithdrawalOrdersEndpoint)                  // 获取所有用户的提现订单列表
 				adminRoute.POST("/withdrawals/:id/status", controller.UpdateWithdrawalOrderStatusEndpoint) // 更新提现订单状态
+
 			}
 		}
 		// 创建 /option 路由分组
@@ -137,6 +138,7 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			logRoute.GET("/token", controller.GetLogByKey)
 			logRoute.GET("/tokenmj", controller.GetLogMjByKey)
+			logRoute.GET("/withdrawalscount", controller.GetWithdrawalOrdersCount)
 
 		}
 
