@@ -20,14 +20,14 @@ func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var channel *model.Channel
 		tokenGroup, exists := c.Get("group")
-		Model, exists := c.Get("model")
 		if !exists || tokenGroup == nil || tokenGroup == "" {
 			log.Printf("无法获取 token 分组信息，tokenGroup: %#v, exists: %t\n", tokenGroup, exists)
 			userId := c.GetInt("id")
-			userGroup, _ := model.CacheGetUserGroup(userId)
+			userGroup, _ := model.GetUserGroup(userId)
 			tokenGroup = userGroup
 			c.Set("group", tokenGroup)
 		}
+		Model, ok := c.Get("model")
 
 		channelId, ok := c.Get("channelId")
 		if ok {

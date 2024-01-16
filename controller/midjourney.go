@@ -133,7 +133,7 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 		log.Println(task.MjId + " 构建失败，" + task.FailReason)
 		task.Progress = "100%"
 		err = model.CacheUpdateUserQuota(task.UserId)
-		group, _ := model.CacheGetUserGroup(task.UserId)
+		group, _ := model.GetUserGroup(task.UserId)
 		if err != nil {
 			log.Println("error update user quota cache: " + err.Error())
 		} else {
@@ -255,7 +255,7 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 				common.LogInfo(ctx, task.MjId+" 构建失败，"+task.FailReason)
 				task.Progress = "100%"
 				err = model.CacheUpdateUserQuota(task.UserId)
-				group, _ := model.CacheGetUserGroup(task.UserId)
+				group, _ := model.GetUserGroup(task.UserId)
 				if err != nil {
 					common.LogError(ctx, "error update user quota cache: "+err.Error())
 				} else {

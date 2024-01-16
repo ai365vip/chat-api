@@ -152,7 +152,8 @@ func EpayNotify(c *gin.Context) {
 			}
 			//user, _ := model.GetUserById(topUp.UserId, false)
 			//user.Quota += topUp.Amount * 500000
-			err = model.IncreaseUserQuota(topUp.UserId, topUp.Amount*500000)
+			multipliedQuota := float64(topUp.Amount) * common.QuotaPerUnit
+			err = model.IncreaseUserQuota(topUp.UserId, int(multipliedQuota))
 			if err != nil {
 				log.Printf("易支付回调更新用户失败: %v", topUp)
 				return
@@ -165,7 +166,7 @@ func EpayNotify(c *gin.Context) {
 			}
 			notifyEmail(topUp)
 			notifyWxPusher(topUp)
-			model.RecordLog(topUp.UserId, model.LogTypeTopup, topUp.Amount, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", common.LogQuota(topUp.Amount*500000), topUp.Money))
+			model.RecordLog(topUp.UserId, model.LogTypeTopup, int(multipliedQuota), fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", common.LogQuota(int(multipliedQuota)), topUp.Money))
 			model.VipInsert(topUp.UserId, topUp.Amount)
 		}
 		_, writeErr := c.Writer.Write([]byte("success")) // 确保发送 success 响应

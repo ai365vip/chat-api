@@ -572,6 +572,10 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		midjourneyTask.FailReason = midjResponse.Description
 		consumeQuota = false
 	}
+	if midjResponse.Result == "" {
+		//没有返回id
+		midjourneyTask.Progress = "100%"
+	}
 
 	if midjResponse.Code == 21 { //21-任务已存在（处理中或者有结果了）
 		// 将 properties 转换为一个 map

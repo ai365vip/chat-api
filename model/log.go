@@ -140,7 +140,7 @@ func RecordLog(userId int, logType int, quota int, multiplier string) {
 		common.SysError("failed to record log: " + err.Error())
 	}
 
-	LogQuotaData(userId, GetUsernameById(userId), logType, 0, "", quota, common.GetTimestamp())
+	LogQuotaData(userId, GetUsernameById(userId), LogTypeTopup, 0, "", quota, common.GetTimestamp())
 
 }
 
