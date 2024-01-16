@@ -49,7 +49,7 @@ function renderStatus(statusKey) {
 }
 
 function renderTimestamp(timestampInSeconds) {
-  const date = new Date(timestampInSeconds * 1000);
+  const date = new Date(timestampInSeconds);
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const day = date.getDate().toString().padStart(2, '0');
