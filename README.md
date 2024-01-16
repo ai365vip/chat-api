@@ -28,6 +28,7 @@
 16. 支持充值用户设置默认分组（充值后自动切换）
 17. 支持邀请用户充值返利（后台设置返利百分比。最低提现额度）
 18. 支持设置普号渠道每分钟限制使用3次
+19. 支持渠道显示可用模型，可自定义排序
 
 ## 部署
 
@@ -142,8 +143,9 @@ docker-compose ps
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/0017e8cb-645b-4c05-aefa-6cd538989278)
 
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/e40cf5fd-0cd3-4065-8c81-b88275ecd8d0)
+![image](https://github.com/ai365vip/chat-api/assets/154959065/95a66dec-fe0d-4446-9d76-fe2f3e59e2ea)
 
-![image](https://github.com/ai365vip/chat-api/assets/154959065/8c4ea0cd-c4fb-4074-8080-4998b0fcda20)
+![image](https://github.com/ai365vip/chat-api/assets/154959065/e182c58f-0957-4705-8f9a-14f02acd1b9a)
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/ecdbd755-fc08-4ee4-a08c-fc179fca51f7)
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/e48e016e-6d92-47b1-ab9b-3d5fec53175f)
 

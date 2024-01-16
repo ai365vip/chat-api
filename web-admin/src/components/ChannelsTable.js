@@ -75,14 +75,17 @@ const ChannelsTable = () => {
         {
             title: 'ID',
             dataIndex: 'id',
+            sorter: (a, b) => a.id - b.id
         },
         {
             title: '名称',
             dataIndex: 'name',
+            sorter: (a, b) => a.name.localeCompare(b.name), 
         },
         {
             title: '状态',
             dataIndex: 'status',
+            sorter: (a, b) => a.status - b.status,
             render: (text, record, index) => {
                 const isOn = record.status === 1;
                 const statusText = isOn ? '已启用' : (record.status === 3 ? '程序自动禁用' : '手动禁用');
@@ -140,6 +143,7 @@ const ChannelsTable = () => {
         {
             title: '类型',
             dataIndex: 'type',
+            sorter: (a, b) => a.type - b.type,
             render: (text, record, index) => {
                 return (
                     <div>
@@ -152,6 +156,7 @@ const ChannelsTable = () => {
         {
             title: '响应时间',
             dataIndex: 'response_time',
+            sorter: (a, b) => a.response_time - b.response_time,
             render: (text, record, index) => {
                 return (
                     <div>
@@ -163,6 +168,7 @@ const ChannelsTable = () => {
         {
             title: '已用/剩余/次数',
             dataIndex: 'expired_time',
+            sorter: (a, b) => a.used_quota - b.used_quota,
             render: (text, record, index) => {
                 return (
                     <div>
@@ -184,6 +190,7 @@ const ChannelsTable = () => {
         {
             title: '优先级',
             dataIndex: 'priority',
+            sorter: (a, b) => a.priority - b.priority,
             render: (text, record, index) => {
                 return (
                     <div>
@@ -704,44 +711,10 @@ const ChannelsTable = () => {
                             searchChannels(searchKeyword, v)
                             
                         }}/>
-                       {/*  <Space>
-                            <Typography.Text>测试模型：</Typography.Text>
-                            <AutoComplete
-                                placeholder={'选择或输入 GPT 版本'}
-                                onChange={onGptVersionChange}
-                                value={gptVersion}
-                                data={[
-                                    {value: 'gpt-3.5-turbo', label: 'gpt-3.5-turbo'},
-                                    {value: 'gpt-3.5-turbo-1106', label: 'gpt-3.5-turbo-1106'},
-                                    {value: 'gpt-3.5-turbo-16k', label: 'gpt-3.5-turbo-16k'},
-                                    {value: 'gpt-4', label: 'gpt-4'},
-                                    {value: 'gpt-4-1106-preview', label: 'gpt-4-1106-preview'},
-                                ]}
-                            />
-                        </Space>
-                        */}
-
 
                     </Space>
                 </div>
             </Form>
-            
-            {/*
-            <div style={{marginTop: 10, display: 'flex'}}>
-                <Space>
-                    <Typography.Text strong>使用ID排序</Typography.Text>
-                    <Switch checked={idSort} label='使用ID排序' uncheckedText="关" aria-label="是否用ID排序" onChange={(v) => {
-                        localStorage.setItem('id-sort', v + '')
-                        setIdSort(v)
-                        loadChannels(0, pageSize, v)
-                            .then()
-                            .catch((reason) => {
-                                showError(reason);
-                            })
-                    }}></Switch>
-                </Space>
-            </div>
-                */}
 
             <Table
                 rowSelection={{
