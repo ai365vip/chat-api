@@ -30,7 +30,12 @@ import { API } from 'utils/api';
 const validationSchema = Yup.object().shape({
   is_edit: Yup.boolean(),
   name: Yup.string().required('名称 不能为空'),
-  remain_quota: Yup.number().min(0.5, '必须大于等于0.5'),
+  remain_quota: Yup.number()
+    .when('unlimited_quota', {
+      is: true, 
+      then: Yup.number().min(0, '额度不能小于0'), 
+      otherwise: Yup.number().min(0.5, '必须大于等于0.5')
+    }),
   expired_time: Yup.number(),
   unlimited_quota: Yup.boolean(),
   billing_enabled: Yup.boolean(),
@@ -40,7 +45,7 @@ const validationSchema = Yup.object().shape({
 const originInputs = {
   is_edit: false,
   name: '',
-  remain_quota: 0,
+  remain_quota: 1,
   expired_time: -1,
   unlimited_quota: false,
   billing_enabled:false
@@ -53,7 +58,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
   const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
   const [options, setOptions] = useState({});
   const [models, setModels] = useState([]);
-
+  let quotaPerUnit = localStorage.getItem('quota_per_unit');
   const generateRandomSuffix = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
@@ -75,8 +80,10 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
       const submissions = [];
       for (let i = 0; i < batchAddCount; i++) {
         let adjustedValues = { ...values };
-        if (!adjustedValues.unlimited_quota) {
-          adjustedValues.remain_quota = parseInt(adjustedValues.remain_quota) * 500000;
+        if (adjustedValues.unlimited_quota) {
+          adjustedValues.remain_quota = 0;
+        } else {
+          adjustedValues.remain_quota = parseFloat(adjustedValues.remain_quota) * quotaPerUnit;
         }
         adjustedValues.models = values.models.join(',');
 
@@ -144,7 +151,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
       data.is_edit = true;
       setInputs({
         ...data,
-        remain_quota: data.remain_quota/500000, 
+        remain_quota: parseFloat(data.remain_quota)/quotaPerUnit, 
         models: data.models ? data.models.split(',') : [] 
       });
     } else {
