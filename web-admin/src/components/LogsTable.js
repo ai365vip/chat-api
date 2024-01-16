@@ -205,31 +205,19 @@ const LogsTable = () => {
             render: (text, record, index) => {
                 return (
                     text.length > 10 ?
-                        <>
-                            {text.slice(0, 10)}
-                            <Button
-                            theme="light"
-                                style={{
-                                    marginLeft: '8px',
-                                    padding: '2px 8px',
-                                    fontSize: '0.8em', // 设置字体大小
-                                    color: '#1890ff', // 设置字体颜色
-                                    display: 'inline-flex', // 设置为弹性盒子布局
-                                    alignItems: 'center', // 垂直居中
-                                }}
-                                onClick={() => {
-                                    setModalContent(text);
-                                    setIsModalOpen(true);
-                                }}
-                            >
-                                查看
-                            </Button>
-                        </>
-                        : text
+                        <span 
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => {
+                                setModalContent(text);
+                                setIsModalOpen(true);
+                            }}
+                        >
+                            {`${text.slice(0, 10)}...`}
+                        </span>
+                        : <span>{text}</span>
                 );
             },
         }
-
     ];
 
     const [logs, setLogs] = useState([]);

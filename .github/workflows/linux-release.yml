@@ -44,7 +44,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install gcc-aarch64-linux-gnu
           CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X 'chat-api/common.Version=$(git describe --tags)' -extldflags '-static'" -o chat-api-arm64
-
+      - name: Generate Release Notes
+            id: generate_notes
+            run: |
+              echo "Generating release notes..."
+              git fetch --tags
+              latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+              previous_tag=$(git describe --tags `git rev-list --tags --skip=1 --max-count=1`)
+              echo "Latest tag: $latest_tag"
+              echo "Previous tag: $previous_tag"
+              release_notes=$(git log $previous_tag..$latest_tag --pretty=format:"- %s")
+              release_notes="${release_notes//'%'/'%25'}"
+              release_notes="${release_notes//$'\n'/'%0A'}"
+              release_notes="${release_notes//$'\r'/'%0D'}"
+              echo "::set-output name=release_notes::$release_notes"
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
@@ -53,6 +66,5 @@ jobs:
             chat-api
             chat-api-arm64
           draft: true
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
