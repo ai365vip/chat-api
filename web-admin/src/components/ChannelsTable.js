@@ -38,16 +38,35 @@ import EditChannel from "../pages/Channel/EditChannel";
 let type2label = undefined;
 
 
-function renderType(type) {
+function renderType(type, models) {
     if (!type2label) {
-        type2label = new Map;
+        type2label = new Map();
         for (let i = 0; i < CHANNEL_OPTIONS.length; i++) {
             type2label[CHANNEL_OPTIONS[i].value] = CHANNEL_OPTIONS[i];
         }
-        type2label[0] = {value: 0, text: '未知类型', color: 'grey'};
+        type2label[0] = { value: 0, text: '未知类型', color: 'grey' };
     }
-    return <Tag size='large' color={type2label[type]?.color}>{type2label[type]?.text}</Tag>;
+
+    const modelsArray = models.split(',');
+    const tooltipContent = (
+        <div>
+            <strong>模型:</strong>
+            {modelsArray.map((model, index) => (
+                <div key={index} style={{ padding: '3px 0' }}>{model.trim()}</div> 
+            ))}
+        </div>
+    );
+
+    return (
+        <Tooltip content={tooltipContent} position="top">
+            <Tag size='large' color={type2label[type]?.color}>
+                {type2label[type]?.text}
+            </Tag>
+        </Tooltip>
+    );
 }
+
+
 
 
 const ChannelsTable = () => {
@@ -90,17 +109,32 @@ const ChannelsTable = () => {
             title: '分组',
             dataIndex: 'group',
             render: (text, record, index) => {
-                return (
-                    <div>
+                const groups = text.split(',').map((item) => item.trim()).sort();
+                if (groups.length > 3) {
+                    const tooltipContent = (
+                        <div>
+                            {groups.slice(2).map((group, idx) => (
+                                <p key={idx} style={{ margin: '5px 0' }}>{group}</p>
+                            ))}
+                        </div>
+                    );
+                    return (
                         <Space spacing={2}>
-                            {
-                                text.split(',').map((item, index) => {
-                                    return (renderGroup(item))
-                                })
-                            }
+                            {groups.slice(0, 2).map((group) => (
+                                renderGroup(group)
+                            ))}
+                            <Tooltip content={tooltipContent} position="top">
+                                <Tag size='large'>更多...</Tag>
+                            </Tooltip>
                         </Space>
-                    </div>
-                );
+                    );
+                } else {
+                    return (
+                        <Space spacing={2}>
+                            {groups.map(group => renderGroup(group))}
+                        </Space>
+                    );
+                }
             },
         },
         {
@@ -109,11 +143,12 @@ const ChannelsTable = () => {
             render: (text, record, index) => {
                 return (
                     <div>
-                        {renderType(text)}
+                        {renderType(text, record.models)} 
                     </div>
                 );
             },
-        },      
+        },
+             
         {
             title: '响应时间',
             dataIndex: 'response_time',

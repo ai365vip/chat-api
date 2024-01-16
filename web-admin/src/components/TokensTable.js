@@ -19,7 +19,7 @@ import {
 } from "@douyinfe/semi-ui";
 
 import {
-    IconTreeTriangleDown,IconKey 
+    IconTreeTriangleDown,IconEyeOpened
 } from '@douyinfe/semi-icons';
 import EditToken from "../pages/Token/EditToken";
 
@@ -191,7 +191,7 @@ const TokensTable = () => {
                         style={{ padding: 20 }}
                         position="top"
                     >
-                        <Button theme='light' type='tertiary' icon={<IconKey />} style={{ marginRight: 1 }} />
+                        <Button theme='light' type='tertiary' icon={<IconEyeOpened />} style={{ marginRight: 1 }} />
                     </Popover>
 
                     <Button theme='light' type='secondary' style={{marginRight: 1}}
