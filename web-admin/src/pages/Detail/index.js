@@ -63,7 +63,7 @@ const Detail = (props) => {
                 content: [
                     {
                         key: datum => datum['username'],
-                        value: datum => renderQuotaNumberWithDigit(datum['Quota'], 4)
+                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 4)} (${datum['Count']} 次)`
                     }
                 ]
             },
@@ -71,7 +71,7 @@ const Detail = (props) => {
                 content: [
                     {
                         key: datum => datum['username'],
-                        value: datum => renderQuotaNumberWithDigit(datum['Quota'], 4)
+                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 4)} (${datum['Count']} 次)`
                     }
                 ]
             }
@@ -109,7 +109,7 @@ const Detail = (props) => {
                 content: [
                     {
                         key: datum => datum['channel'],
-                        value: datum => renderQuotaNumberWithDigit(datum['Quota'], 4)
+                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 4)} (${datum['Count']} 次)`
                     }
                 ]
             },
@@ -117,7 +117,7 @@ const Detail = (props) => {
                 content: [
                     {
                         key: datum => datum['channel'],
-                        value: datum => renderQuotaNumberWithDigit(datum['Quota'], 4)
+                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 4)} (${datum['Count']} 次)`
                     }
                 ]
             }
@@ -172,8 +172,12 @@ const Detail = (props) => {
             mark: {
                 content: [
                     {
-                        key: datum => datum['type'],
-                        value: datum => renderNumber(datum['value'])
+                        key: datum => `${datum['type']}额度`,
+                        value: datum => `$${renderNumber(datum['value'])}`
+                    },
+                    {
+                        key: datum => `${datum['type']}次数`,
+                        value: datum => `${datum['count']}次`
                     }
                 ]
             }
@@ -229,7 +233,7 @@ const Detail = (props) => {
                 content: [
                     {
                         key: datum => datum['model_name'],
-                        value: datum => renderNumber(datum['value'])
+                        value: datum => `${renderQuotaNumberWithDigit(datum['quota'], 4)} (${datum['value']} 次) `
                     }
                 ]
             }
@@ -303,52 +307,55 @@ const Detail = (props) => {
     }
 
     const updateChartModel = (pieChart, data) => {
-        // 初始化用户、channel 和 model 的使用量统计对象
-        let modelCount = {};
+        let modelStatistics = {};
     
         for (let i = 0; i < data.length; i++) {
             const item = data[i];
             if (item.type === 2) { // 只考虑 type=2 的数据
-                // 统计每个 model 的 count
-                if (!modelCount[item.model_name]) {
-                    modelCount[item.model_name] = 0;
+                if (!modelStatistics[item.model_name]) {
+                    modelStatistics[item.model_name] = { count: 0, quota: 0 };
                 }
-                modelCount[item.model_name] += item.count;
+                modelStatistics[item.model_name].count += item.count;
+                modelStatistics[item.model_name].quota += parseFloat(getQuotaWithUnit(item.quota)); 
             }
         }
-        let modelUsageArray = Object.keys(modelCount).map(model_name => ({
+        let modelUsageArray = Object.keys(modelStatistics).map(model_name => ({
             model_name,
-            value: modelCount[model_name]
+            value: modelStatistics[model_name].count,
+            quota: modelStatistics[model_name].quota, // 累加金额
         }));
     
         pieChart.updateData('id0', modelUsageArray);
         pieChart.reLayout();
-    
     };
+    
 
     const updateChartUser = (lineChart, data) => {
         // 初始化用户的使用量统计对象
         let userQuotaUsage = {};
     
+    
         for (let i = 0; i < data.length; i++) {
             const item = data[i];
             if (item.type === 2) { // 只考虑 type=2 的数据
                 if (!userQuotaUsage[item.username]) {
-                    userQuotaUsage[item.username] = 0;
+                    userQuotaUsage[item.username] = { Quota: 0, Count: 0 }; 
                 }
-                userQuotaUsage[item.username] += parseFloat(getQuotaWithUnit(item.quota));
+                userQuotaUsage[item.username].Quota += parseFloat(getQuotaWithUnit(item.quota)); 
+                userQuotaUsage[item.username].Count += item.count;                             
             }
         }
     
-        // 转换为数组并排序用户的 Quota 使用量
+        // 转换为数组并排序用户的 Quota 使用量和调用次数
         let topUsersArray = Object.keys(userQuotaUsage).map(username => ({
             username,
-            Quota: userQuotaUsage[username],
+            ...userQuotaUsage[username] // 展开Quota和Count
         })).sort((a, b) => b.Quota - a.Quota).slice(0, 10); // 取前10个元素
         
         lineChart.updateData('barData', topUsersArray);
         lineChart.reLayout();
     };
+    
 
     const updateChartChannel = (channelChart, data) => {
         // 初始化 channel 的使用量统计对象
@@ -358,67 +365,91 @@ const Detail = (props) => {
             const item = data[i];
             if (item.type === 2) { // 只考虑 type=2 的数据
                 if (!channelQuotaUsage[item.channel]) {
-                    channelQuotaUsage[item.channel] = 0;
+                    channelQuotaUsage[item.channel] = { Quota: 0, Count: 0 };
                 }
-                channelQuotaUsage[item.channel] += parseFloat(getQuotaWithUnit(item.quota));
+                channelQuotaUsage[item.channel].Quota += parseFloat(getQuotaWithUnit(item.quota));
+                channelQuotaUsage[item.channel].Count += item.count;
             }
         }
     
-        // 转换为数组并排序 channel 的 Quota 使用量
+        // 转换为数组并排序 channel 的 Quota 使用量和调用次数
         let topChannelsArray = Object.keys(channelQuotaUsage).map(channel => ({
             channel,
-            Quota: channelQuotaUsage[channel],
+            ...channelQuotaUsage[channel] // 展开Quota和Count
         })).sort((a, b) => b.Quota - a.Quota).slice(0, 10); // 取前10个元素
         
-        // 确保使用 channelChart 而不是 lineChart
         channelChart.updateData('channelData', topChannelsArray);
         channelChart.reLayout();
     };
+    
+
 
     
     const updateQuotaComparisonChart = (typeChart, data) => {
-        // 初始化类型的使用量统计对象
+        // 初始化类型的使用量和次数统计对象
         let typeUsage = {
-            recharge: 0, // 充值总额
-            consumption: 0, // 消费总额
-            admin: 0, // 管理总额
-            system: 0 // 系统总额
+            recharge: { quota: 0, count: 0 },
+            consumption: { quota: 0, count: 0 },
+            admin: { quota: 0, count: 0 },
+            system: { quota: 0, count: 0 }
         };
     
         for (let i = 0; i < data.length; i++) {
             const item = data[i];
             const quotaValue = parseFloat(getQuotaWithUnit(item.quota));
+            // 假设 item.count 表示次数
+            const countValue = item.count;
             switch (item.type) {
                 case 1: // 充值
-                    typeUsage.recharge += quotaValue;
+                    typeUsage.recharge.quota += quotaValue;
+                    typeUsage.recharge.count += countValue;
                     break;
                 case 2: // 消费
-                    typeUsage.consumption += quotaValue;
+                    typeUsage.consumption.quota += quotaValue;
+                    typeUsage.consumption.count += countValue;
                     break;
                 case 3: // 管理
-                    typeUsage.admin += quotaValue;
+                    typeUsage.admin.quota += quotaValue;
+                    typeUsage.admin.count += countValue;
                     break;
                 case 4: // 系统
-                    typeUsage.system += quotaValue;
+                    typeUsage.system.quota += quotaValue;
+                    typeUsage.system.count += countValue;
                     break;
-                default:
-                    // 如果有未知类型，可以在这里处理
-                    break;
+                // ... 其他case
             }
         }
     
         // 转换为类型数据数组，用于图表
         let typeDataArray = [
-            { type: '充值', value: typeUsage.recharge.toFixed(4) },
-            { type: '消费', value: typeUsage.consumption.toFixed(4) },
-            { type: '管理', value: typeUsage.admin.toFixed(4) },
-            { type: '系统', value: typeUsage.system.toFixed(4) }
+            {
+                type: '充值',
+                value: typeUsage.recharge.quota.toFixed(4),
+                count: typeUsage.recharge.count
+            },
+            {
+                type: '消费',
+                value: typeUsage.consumption.quota.toFixed(4),
+                count: typeUsage.consumption.count
+            },
+            {
+                type: '管理',
+                value: typeUsage.admin.quota.toFixed(4),
+                count: typeUsage.admin.count
+            },
+            {
+                type: '系统',
+                value: typeUsage.system.quota.toFixed(4),
+                count: typeUsage.system.count
+            }
         ];
+
     
         // 使用 typeChart 更新数据
         typeChart.updateData('typeData', typeDataArray);
         typeChart.reLayout();
     };
+    
     
 
     useEffect(() => {
