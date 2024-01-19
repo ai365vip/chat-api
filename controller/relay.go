@@ -1,332 +1,56 @@
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/relay/channel/midjourney"
+	"one-api/relay/channel/openai"
+	"one-api/relay/constant"
+	"one-api/relay/controller"
+	"one-api/relay/util"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Message struct {
-	Role    string          `json:"role"`
-	Content json.RawMessage `json:"content"`
-	Name    *string         `json:"name,omitempty"`
-}
-
-type MediaMessage struct {
-	Type     string `json:"type"`
-	Text     string `json:"text"`
-	ImageUrl any    `json:"image_url,omitempty"`
-}
-
-type MessageImageUrl struct {
-	Url    string `json:"url"`
-	Detail string `json:"detail"`
-}
-
-// MediaMessageImage 包含图像信息，包括URL和可选的Detail字段
-type MediaMessageImage struct {
-	Type     string          `json:"type"`
-	ImageUrl MessageImageUrl `json:"image_url"`
-}
-
-const (
-	ContentTypeText     = "text"
-	ContentTypeImageURL = "image_url"
-)
-
-func (m Message) ParseContent() []MediaMessage {
-	var contentList []MediaMessage
-	var stringContent string
-	if err := json.Unmarshal(m.Content, &stringContent); err == nil {
-		contentList = append(contentList, MediaMessage{
-			Type: ContentTypeText,
-			Text: stringContent,
-		})
-		return contentList
-	}
-	var arrayContent []json.RawMessage
-	if err := json.Unmarshal(m.Content, &arrayContent); err == nil {
-		for _, contentItem := range arrayContent {
-			var contentMap map[string]any
-			if err := json.Unmarshal(contentItem, &contentMap); err != nil {
-				continue
-			}
-			switch contentMap["type"] {
-			case ContentTypeText:
-				if subStr, ok := contentMap["text"].(string); ok {
-					contentList = append(contentList, MediaMessage{
-						Type: ContentTypeText,
-						Text: subStr,
-					})
-				}
-			case ContentTypeImageURL:
-				if subObj, ok := contentMap["image_url"].(map[string]any); ok {
-					detail, ok := subObj["detail"]
-					if ok {
-						subObj["detail"] = detail.(string)
-					} else {
-						subObj["detail"] = "auto"
-					}
-					contentList = append(contentList, MediaMessage{
-						Type: ContentTypeImageURL,
-						ImageUrl: MessageImageUrl{
-							Url:    subObj["url"].(string),
-							Detail: subObj["detail"].(string),
-						},
-					})
-				}
-			}
-		}
-		return contentList
-	}
-
-	return nil
-}
-
-const (
-	RelayModeUnknown = iota
-	RelayModeChatCompletions
-	RelayModeCompletions
-	RelayModeEmbeddings
-	RelayModeModerations
-	RelayModeImagesGenerations
-	RelayModeEdits
-	RelayModeMidjourneyImagine
-	RelayModeMidjourneyDescribe
-	RelayModeMidjourneyBlend
-	RelayModeMidjourneyChange
-	RelayModeMidjourneySimpleChange
-	RelayModeMidjourneyNotify
-	RelayModeMidjourneyTaskFetch
-	RelayModeMidjourneyTaskFetchByCondition
-	RelayModeAudio
-	RelayModeAudioSpeech
-	RelayModeAudioTranscription
-	RelayModeAudioTranslation
-)
-
-type ResponseFormat struct {
-	Type string `json:"type,omitempty"`
-}
-
-type GeneralOpenAIRequest struct {
-	Model            string          `json:"model,omitempty"`
-	Messages         []Message       `json:"messages,omitempty"`
-	Prompt           any             `json:"prompt,omitempty"`
-	Stream           bool            `json:"stream,omitempty"`
-	MaxTokens        uint            `json:"max_tokens,omitempty"`
-	Temperature      float64         `json:"temperature,omitempty"`
-	TopP             float64         `json:"top_p,omitempty"`
-	N                int             `json:"n,omitempty"`
-	Input            any             `json:"input,omitempty"`
-	Instruction      string          `json:"instruction,omitempty"`
-	Size             string          `json:"size,omitempty"`
-	Functions        any             `json:"functions,omitempty"`
-	FrequencyPenalty float64         `json:"frequency_penalty,omitempty"`
-	PresencePenalty  float64         `json:"presence_penalty,omitempty"`
-	ResponseFormat   *ResponseFormat `json:"response_format,omitempty"`
-	Seed             float64         `json:"seed,omitempty"`
-	Tools            any             `json:"tools,omitempty"`
-	ToolChoice       any             `json:"tool_choice,omitempty"`
-	User             string          `json:"user,omitempty"`
-}
-
-func (r GeneralOpenAIRequest) ParseInput() []string {
-	if r.Input == nil {
-		return nil
-	}
-	var input []string
-	switch r.Input.(type) {
-	case string:
-		input = []string{r.Input.(string)}
-	case []any:
-		input = make([]string, 0, len(r.Input.([]any)))
-		for _, item := range r.Input.([]any) {
-			if str, ok := item.(string); ok {
-				input = append(input, str)
-			}
-		}
-	}
-	return input
-}
-
-type AudioRequest struct {
-	Model string `json:"model"`
-	Voice string `json:"voice"`
-	Input string `json:"input"`
-}
-
-type ChatRequest struct {
-	Model     string    `json:"model"`
-	Messages  []Message `json:"messages"`
-	MaxTokens uint      `json:"max_tokens"`
-}
-
-type TextRequest struct {
-	Model     string    `json:"model"`
-	Messages  []Message `json:"messages"`
-	Prompt    string    `json:"prompt"`
-	MaxTokens uint      `json:"max_tokens"`
-	//Stream   bool      `json:"stream"`
-}
-
-type ImageRequest struct {
-	Model          string `json:"model"`
-	Prompt         string `json:"prompt"`
-	N              int    `json:"n"`
-	Size           string `json:"size"`
-	Quality        string `json:"quality,omitempty"`
-	ResponseFormat string `json:"response_format,omitempty"`
-	Style          string `json:"style,omitempty"`
-}
-
-type AudioResponse struct {
-	Text string `json:"text,omitempty"`
-}
-
-type Usage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
-}
-
-type OpenAIError struct {
-	Message string `json:"message"`
-	Type    string `json:"type"`
-	Param   string `json:"param"`
-	Code    any    `json:"code"`
-}
-
-type OpenAIErrorWithStatusCode struct {
-	OpenAIError
-	StatusCode int `json:"status_code"`
-}
-
-type TextResponse struct {
-	Choices []OpenAITextResponseChoice `json:"choices"`
-	Usage   `json:"usage"`
-	Error   OpenAIError `json:"error"`
-}
-
-type OpenAITextResponseChoice struct {
-	Index        int `json:"index"`
-	Message      `json:"message"`
-	FinishReason string `json:"finish_reason"`
-}
-
-type OpenAITextResponse struct {
-	Id      string                     `json:"id"`
-	Object  string                     `json:"object"`
-	Created int64                      `json:"created"`
-	Choices []OpenAITextResponseChoice `json:"choices"`
-	Usage   `json:"usage"`
-}
-
-type OpenAIEmbeddingResponseItem struct {
-	Object    string    `json:"object"`
-	Index     int       `json:"index"`
-	Embedding []float64 `json:"embedding"`
-}
-
-type OpenAIEmbeddingResponse struct {
-	Object string                        `json:"object"`
-	Data   []OpenAIEmbeddingResponseItem `json:"data"`
-	Model  string                        `json:"model"`
-	Usage  `json:"usage"`
-}
-
-type ImageResponse struct {
-	Created int `json:"created"`
-	Data    []struct {
-		Url     string `json:"url"`
-		B64Json string `json:"b64_json"`
-	}
-}
-
-type ChatCompletionsStreamResponseChoice struct {
-	Delta struct {
-		Content string `json:"content"`
-	} `json:"delta"`
-	FinishReason *string `json:"finish_reason"`
-}
-
-type ChatCompletionsStreamResponse struct {
-	Id      string                                `json:"id"`
-	Object  string                                `json:"object"`
-	Created int64                                 `json:"created"`
-	Model   string                                `json:"model"`
-	Choices []ChatCompletionsStreamResponseChoice `json:"choices"`
-}
-type ChatCompletionsStreamResponseSimple struct {
-	Choices []ChatCompletionsStreamResponseChoice `json:"choices"`
-}
-
-type CompletionsStreamResponse struct {
-	Choices []struct {
-		Text         string `json:"text"`
-		FinishReason string `json:"finish_reason"`
-	} `json:"choices"`
-}
-
-type MidjourneyRequest struct {
-	Prompt      string   `json:"prompt"`
-	NotifyHook  string   `json:"notifyHook"`
-	Action      string   `json:"action"`
-	Index       int      `json:"index"`
-	State       string   `json:"state"`
-	TaskId      string   `json:"taskId"`
-	Base64Array []string `json:"base64Array"`
-	Content     string   `json:"content"`
-}
-
-type MidjourneyResponse struct {
-	Code        int         `json:"code"`
-	Description string      `json:"description"`
-	Properties  interface{} `json:"properties"`
-	Result      string      `json:"result"`
-}
-
 func Relay(c *gin.Context) {
-	relayMode := RelayModeUnknown
+	relayMode := constant.RelayModeUnknown
 	if strings.HasPrefix(c.Request.URL.Path, "/v1/chat/completions") {
-		relayMode = RelayModeChatCompletions
+		relayMode = constant.RelayModeChatCompletions
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/completions") {
-		relayMode = RelayModeCompletions
+		relayMode = constant.RelayModeCompletions
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/embeddings") {
-		relayMode = RelayModeEmbeddings
+		relayMode = constant.RelayModeEmbeddings
 	} else if strings.HasSuffix(c.Request.URL.Path, "embeddings") {
-		relayMode = RelayModeEmbeddings
+		relayMode = constant.RelayModeEmbeddings
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/moderations") {
-		relayMode = RelayModeModerations
+		relayMode = constant.RelayModeModerations
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/images/generations") {
-		relayMode = RelayModeImagesGenerations
+		relayMode = constant.RelayModeImagesGenerations
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/edits") {
-		relayMode = RelayModeEdits
+		relayMode = constant.RelayModeEdits
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/audio/speech") {
-		relayMode = RelayModeAudioSpeech
+		relayMode = constant.RelayModeAudioSpeech
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") {
-		relayMode = RelayModeAudioTranscription
+		relayMode = constant.RelayModeAudioTranscription
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/audio/translations") {
-		relayMode = RelayModeAudioTranslation
+		relayMode = constant.RelayModeAudioTranslation
 	}
-	var err *OpenAIErrorWithStatusCode
+	var err *openai.ErrorWithStatusCode
 	switch relayMode {
-	case RelayModeImagesGenerations:
-		err = relayImageHelper(c, relayMode)
-	case RelayModeAudioSpeech:
+	case constant.RelayModeImagesGenerations:
+		err = controller.RelayImageHelper(c, relayMode)
+	case constant.RelayModeAudioSpeech:
 		fallthrough
-	case RelayModeAudioTranslation:
+	case constant.RelayModeAudioTranslation:
 		fallthrough
-	case RelayModeAudioTranscription:
-		err = relayAudioHelper(c, relayMode)
+	case constant.RelayModeAudioTranscription:
+		err = controller.RelayAudioHelper(c, relayMode)
 	default:
-		err = relayTextHelper(c, relayMode)
+		err = controller.RelayTextHelper(c, relayMode)
 	}
 	if err != nil {
 		requestId := c.GetString(common.RequestIdKey)
@@ -341,9 +65,9 @@ func Relay(c *gin.Context) {
 			if err.StatusCode == http.StatusTooManyRequests {
 				//err.OpenAIError.Message = "当前分组上游负载已饱和，请稍后再试"
 			}
-			err.OpenAIError.Message = common.MessageWithRequestId(err.OpenAIError.Message, requestId)
+			err.Error.Message = common.MessageWithRequestId(err.Error.Message, requestId)
 			c.JSON(err.StatusCode, gin.H{
-				"error": err.OpenAIError,
+				"error": err.Error,
 			})
 		}
 		channelId := c.GetInt("channel_id")
@@ -351,7 +75,7 @@ func Relay(c *gin.Context) {
 		common.LogError(c.Request.Context(), fmt.Sprintf("relay error (channel #%d): %s", channelId, err.Message))
 
 		// https://platform.openai.com/docs/guides/error-codes/api-errors
-		if shouldDisableChannel(&err.OpenAIError, err.StatusCode) && autoBan {
+		if util.ShouldDisableChannel(&err.Error, err.StatusCode) && autoBan {
 			channelId := c.GetInt("channel_id")
 			channelName := c.GetString("channel_name")
 			disableChannel(channelId, channelName, err.Message)
@@ -360,33 +84,33 @@ func Relay(c *gin.Context) {
 }
 
 func RelayMidjourney(c *gin.Context) {
-	relayMode := RelayModeUnknown
+	relayMode := constant.RelayModeUnknown
 	if strings.HasPrefix(c.Request.URL.Path, "/mj/submit/imagine") {
-		relayMode = RelayModeMidjourneyImagine
+		relayMode = constant.RelayModeMidjourneyImagine
 	} else if strings.HasPrefix(c.Request.URL.Path, "/mj/submit/blend") {
-		relayMode = RelayModeMidjourneyBlend
+		relayMode = constant.RelayModeMidjourneyBlend
 	} else if strings.HasPrefix(c.Request.URL.Path, "/mj/submit/describe") {
-		relayMode = RelayModeMidjourneyDescribe
+		relayMode = constant.RelayModeMidjourneyDescribe
 	} else if strings.HasPrefix(c.Request.URL.Path, "/mj/notify") {
-		relayMode = RelayModeMidjourneyNotify
+		relayMode = constant.RelayModeMidjourneyNotify
 	} else if strings.HasPrefix(c.Request.URL.Path, "/mj/submit/change") {
-		relayMode = RelayModeMidjourneyChange
+		relayMode = constant.RelayModeMidjourneyChange
 	} else if strings.HasPrefix(c.Request.URL.Path, "/mj/submit/simple-change") {
-		relayMode = RelayModeMidjourneyChange
+		relayMode = constant.RelayModeMidjourneyChange
 	} else if strings.HasSuffix(c.Request.URL.Path, "/fetch") {
-		relayMode = RelayModeMidjourneyTaskFetch
+		relayMode = constant.RelayModeMidjourneyTaskFetch
 	} else if strings.HasSuffix(c.Request.URL.Path, "/list-by-condition") {
-		relayMode = RelayModeMidjourneyTaskFetchByCondition
+		relayMode = constant.RelayModeMidjourneyTaskFetchByCondition
 	}
 
-	var err *MidjourneyResponse
+	var err *midjourney.MidjourneyResponse
 	switch relayMode {
-	case RelayModeMidjourneyNotify:
-		err = relayMidjourneyNotify(c)
-	case RelayModeMidjourneyTaskFetch, RelayModeMidjourneyTaskFetchByCondition:
-		err = relayMidjourneyTask(c, relayMode)
+	case constant.RelayModeMidjourneyNotify:
+		err = midjourney.RelayMidjourneyNotify(c)
+	case constant.RelayModeMidjourneyTaskFetch, constant.RelayModeMidjourneyTaskFetchByCondition:
+		err = midjourney.RelayMidjourneyTask(c, relayMode)
 	default:
-		err = relayMidjourneySubmit(c, relayMode)
+		err = midjourney.RelayMidjourneySubmit(c, relayMode)
 	}
 	//err = relayMidjourneySubmit(c, relayMode)
 	log.Println(err)
@@ -415,9 +139,8 @@ func RelayMidjourney(c *gin.Context) {
 		//};''''''''''''''''''''''''''''''''
 	}
 }
-
 func RelayNotImplemented(c *gin.Context) {
-	err := OpenAIError{
+	err := openai.Error{
 		Message: "API not implemented",
 		Type:    "chat_api_error",
 		Param:   "",
@@ -429,7 +152,7 @@ func RelayNotImplemented(c *gin.Context) {
 }
 
 func RelayNotFound(c *gin.Context) {
-	err := OpenAIError{
+	err := openai.Error{
 		Message: fmt.Sprintf("Invalid URL (%s %s)", c.Request.Method, c.Request.URL.Path),
 		Type:    "invalid_request_error",
 		Param:   "",

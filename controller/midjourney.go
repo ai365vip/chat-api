@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/model"
+	"one-api/relay/channel/midjourney"
+	"one-api/relay/util"
 	"strconv"
 	"strings"
 	"time"
@@ -81,7 +83,7 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	req.Header.Set("Content-Type", "application/json")
 	//req.Header.Set("Authorization", "Bearer midjourney-proxy")
 	req.Header.Set("mj-api-secret", midjourneyChannel.Key)
-	resp, err := httpClient.Do(req)
+	resp, err := util.HTTPClient.Do(req)
 	if err != nil {
 		log.Printf("UpdateMidjourneyTask error: %v", err)
 		return
@@ -89,13 +91,13 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	responseBody, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	log.Printf("responseBody: %s", string(responseBody))
-	var responseItem Midjourney
+	var responseItem midjourney.Midjourney
 	// err = json.NewDecoder(resp.Body).Decode(&responseItem)
 	err = json.Unmarshal(responseBody, &responseItem)
 	if err != nil {
 		if strings.Contains(err.Error(), "cannot unmarshal number into Go struct field Midjourney.status of type string") {
-			var responseWithoutStatus MidjourneyWithoutStatus
-			var responseStatus MidjourneyStatus
+			var responseWithoutStatus midjourney.MidjourneyWithoutStatus
+			var responseStatus midjourney.MidjourneyStatus
 			err1 := json.Unmarshal(responseBody, &responseWithoutStatus)
 			err2 := json.Unmarshal(responseBody, &responseStatus)
 			if err1 == nil && err2 == nil {
@@ -215,7 +217,7 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 		req = req.WithContext(ctx)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("mj-api-secret", midjourneyChannel.Key)
-		resp, err := httpClient.Do(req)
+		resp, err := util.HTTPClient.Do(req)
 		if err != nil {
 			common.LogError(ctx, fmt.Sprintf("Get Task Do req error: %v", err))
 			return false
@@ -225,7 +227,7 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 			common.LogError(ctx, fmt.Sprintf("Get Task parse body error: %v", err))
 			return false
 		}
-		var responseItems []Midjourney
+		var responseItems []midjourney.Midjourney
 		err = json.Unmarshal(responseBody, &responseItems)
 		if err != nil {
 			common.LogError(ctx, fmt.Sprintf("Get Task parse body error2: %v", err))
@@ -285,7 +287,7 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 	return true
 }
 
-func checkMjTaskNeedUpdate(oldTask *model.Midjourney, newTask Midjourney) bool {
+func checkMjTaskNeedUpdate(oldTask *model.Midjourney, newTask midjourney.Midjourney) bool {
 	if oldTask.Code != 1 {
 		return true
 	}

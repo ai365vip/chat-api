@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/model"
@@ -21,7 +20,7 @@ func Distribute() func(c *gin.Context) {
 		var channel *model.Channel
 		tokenGroup, exists := c.Get("group")
 		if !exists || tokenGroup == nil || tokenGroup == "" {
-			log.Printf("无法获取 token 分组信息，tokenGroup: %#v, exists: %t\n", tokenGroup, exists)
+			//log.Printf("无法获取 token 分组信息，tokenGroup: %#v, exists: %t\n", tokenGroup, exists)
 			userId := c.GetInt("id")
 			userGroup, _ := model.GetUserGroup(userId)
 			tokenGroup = userGroup

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"one-api/relay/channel/openai"
 
 	"github.com/gin-gonic/gin"
 )
@@ -649,7 +650,7 @@ func RetrieveModel(c *gin.Context) {
 	if model, ok := openAIModelsMap[modelId]; ok {
 		c.JSON(200, model)
 	} else {
-		openAIError := OpenAIError{
+		openAIError := openai.Error{
 			Message: fmt.Sprintf("The model '%s' does not exist", modelId),
 			Type:    "invalid_request_error",
 			Param:   "model",

@@ -5,15 +5,24 @@ import {useEffectOnce} from "usehooks-ts";
 import {API, isAdmin, showError, timestamp2string, timestamp2string1} from "../../helpers";
 import {getQuotaWithUnit, renderNumber, renderQuotaNumberWithDigit} from "../../helpers/render";
 
+
 const Detail = (props) => {
 
-    let now = new Date();
+    const now = new Date();
+
+    // 设置开始时间为今天的0点
+    now.setHours(0, 0, 0, 0); 
+    const startOfTodayTimestamp = now.getTime() / 1000; 
+
+    // 设置结束时间为当前时间加上10分钟
+    const endTimestamp = new Date().getTime() / 1000 + 600; 
+
     const [inputs, setInputs] = useState({
         username: '',
         token_name: '',
         model_name: '',
-        start_timestamp: timestamp2string(now.getTime() / 1000 - 86400),
-        end_timestamp: timestamp2string(now.getTime() / 1000 + 3600),
+        start_timestamp: timestamp2string(startOfTodayTimestamp),
+        end_timestamp: timestamp2string(endTimestamp),
         channel: '',
         type: ''
     });
@@ -25,7 +34,6 @@ const Detail = (props) => {
     const [loading, setLoading] = useState(true);
     const [quotaData, setQuotaData] = useState([]);
     const [channelDataChart, setChannelDataChart] = useState(null);
-    const [quotaComparisonData, setQuotaComparisonData] = useState({consumption: [], recharge: []});
     const [typeDataChart, setTypelDataChart] = useState(null);
 
     const handleInputChange = (value, name) => {
@@ -62,16 +70,18 @@ const Detail = (props) => {
             mark: {
                 content: [
                     {
-                        key: datum => datum['username'],
-                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 4)} (${datum['Count']} 次)`
+                       // key: datum => datum['username'],
+                        key: `消费`,
+                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 3)} (${datum['Count']} 次)`
                     }
                 ]
             },
             dimension: {
                 content: [
                     {
-                        key: datum => datum['username'],
-                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 4)} (${datum['Count']} 次)`
+                       // key: datum => datum['username'],
+                        key: `消费`,
+                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 3)} (${datum['Count']} 次)`
                     }
                 ]
             }
@@ -108,16 +118,18 @@ const Detail = (props) => {
             mark: {
                 content: [
                     {
-                        key: datum => datum['channel'],
-                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 4)} (${datum['Count']} 次)`
+                        //key: datum => datum['channel'],
+                        key: `消费`,
+                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 3)} (${datum['Count']} 次)`
                     }
                 ]
             },
             dimension: {
                 content: [
                     {
-                        key: datum => datum['channel'],
-                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 4)} (${datum['Count']} 次)`
+                        //key: datum => datum['channel'],
+                        key: `消费`,
+                        value: datum => `${renderQuotaNumberWithDigit(datum['Quota'], 3)} (${datum['Count']} 次)`
                     }
                 ]
             }
@@ -232,8 +244,9 @@ const Detail = (props) => {
             mark: {
                 content: [
                     {
-                        key: datum => datum['model_name'],
-                        value: datum => `${renderQuotaNumberWithDigit(datum['quota'], 4)} (${datum['value']} 次) `
+                        //key: datum => datum['model_name'],
+                        key: `消费`,
+                        value: datum => `${renderQuotaNumberWithDigit(datum['quota'], 3)} (${datum['value']} 次) `
                     }
                 ]
             }

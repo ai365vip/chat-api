@@ -1,4 +1,4 @@
-package controller
+package midjourney
 
 import (
 	"bytes"
@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/model"
+	"one-api/relay/constant"
+	"one-api/relay/util"
 	"strconv"
 	"strings"
 	"time"
@@ -103,7 +105,7 @@ func RelayMidjourneyImage(c *gin.Context) {
 	return
 }
 
-func relayMidjourneyNotify(c *gin.Context) *MidjourneyResponse {
+func RelayMidjourneyNotify(c *gin.Context) *MidjourneyResponse {
 	var midjRequest Midjourney
 	err := common.UnmarshalBodyReusable(c, &midjRequest)
 	if err != nil {
@@ -166,12 +168,12 @@ func getMidjourneyTaskModel(c *gin.Context, originTask *model.Midjourney) (midjo
 	return
 }
 
-func relayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
+func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 	userId := c.GetInt("id")
 	var err error
 	var respBody []byte
 	switch relayMode {
-	case RelayModeMidjourneyTaskFetch:
+	case constant.RelayModeMidjourneyTaskFetch:
 		taskId := c.Param("id")
 		originTask := model.GetByMJId(userId, taskId)
 		if originTask == nil {
@@ -188,7 +190,7 @@ func relayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 				Description: "unmarshal_response_body_failed",
 			}
 		}
-	case RelayModeMidjourneyTaskFetchByCondition:
+	case constant.RelayModeMidjourneyTaskFetchByCondition:
 		var condition = struct {
 			IDs []string `json:"ids"`
 		}{}
@@ -243,7 +245,7 @@ const (
 	MJSubmitActionUpscale  = "UPSCALE" // 放大
 )
 
-func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
+func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	imageModel := "midjourney"
 
 	tokenId := c.GetInt("token_id")
@@ -263,7 +265,7 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		}
 	}
 
-	if relayMode == RelayModeMidjourneyImagine { //绘画任务，此类任务可重复
+	if relayMode == constant.RelayModeMidjourneyImagine { //绘画任务，此类任务可重复
 		if midjRequest.Prompt == "" {
 			return &MidjourneyResponse{
 				Code:        4,
@@ -271,13 +273,13 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 		}
 		midjRequest.Action = "IMAGINE"
-	} else if relayMode == RelayModeMidjourneyDescribe { //按图生文任务，此类任务可重复
+	} else if relayMode == constant.RelayModeMidjourneyDescribe { //按图生文任务，此类任务可重复
 		midjRequest.Action = "DESCRIBE"
-	} else if relayMode == RelayModeMidjourneyBlend { //绘画任务，此类任务可重复
+	} else if relayMode == constant.RelayModeMidjourneyBlend { //绘画任务，此类任务可重复
 		midjRequest.Action = "BLEND"
 	} else if midjRequest.TaskId != "" { //放大、变换任务，此类任务，如果重复且已有结果，远端api会直接返回最终结果
 		mjId := ""
-		if relayMode == RelayModeMidjourneyChange {
+		if relayMode == constant.RelayModeMidjourneyChange {
 			if midjRequest.TaskId == "" {
 				return &MidjourneyResponse{
 					Code:        4,
@@ -296,7 +298,7 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 			//action = midjRequest.Action
 			mjId = midjRequest.TaskId
-		} else if relayMode == RelayModeMidjourneySimpleChange {
+		} else if relayMode == constant.RelayModeMidjourneySimpleChange {
 			if midjRequest.Content == "" {
 				return &MidjourneyResponse{
 					Code:        4,
@@ -462,7 +464,7 @@ func relayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	//req.Header.Set("mj-api-secret", strings.Split(c.Request.Header.Get("Authorization"), " ")[1])
 	// print request header
 
-	resp, err := httpClient.Do(req)
+	resp, err := util.HTTPClient.Do(req)
 	if err != nil {
 		return &MidjourneyResponse{
 			Code:        4,

@@ -3,6 +3,7 @@ package controller
 import (
 	"one-api/common"
 	"one-api/model"
+	"one-api/relay/channel/openai"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +29,7 @@ func GetSubscription(c *gin.Context) {
 		expiredTime = 0
 	}
 	if err != nil {
-		openAIError := OpenAIError{
+		openAIError := openai.Error{
 			Message: err.Error(),
 			Type:    "upstream_error",
 		}
@@ -70,7 +71,7 @@ func GetUsage(c *gin.Context) {
 		quota, err = model.GetUserUsedQuota(userId)
 	}
 	if err != nil {
-		openAIError := OpenAIError{
+		openAIError := openai.Error{
 			Message: err.Error(),
 			Type:    "chat_api_error",
 		}

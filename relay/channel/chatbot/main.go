@@ -1,4 +1,4 @@
-package controller
+package chatbot
 
 import (
 	"bufio"
@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"one-api/common"
+	"one-api/relay/channel/openai"
 	"strings"
 	"time"
 
@@ -19,6 +21,23 @@ type ChatbotMessage struct {
 	Content string `json:"content"`
 }
 
+func randomID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, 10)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return "chatcmpl-" + string(b)
+}
+func calculatePromptTokens(str string) int {
+	return len([]rune(str))
+}
+
+func CalculateCompletionTokens(messagesMap []map[string]string) int {
+	// adjust the calculation according to your requirements
+	return len(messagesMap)
+}
 func streamResponseChatbot2OpenAI(ChatbotResponse string, model string) *ChatCompletionsStreamResponse {
 	var choice ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = ChatbotResponse
@@ -32,7 +51,7 @@ func streamResponseChatbot2OpenAI(ChatbotResponse string, model string) *ChatCom
 	return &response
 }
 
-func chatbotStreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*OpenAIErrorWithStatusCode, string) {
+func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, string) {
 	responseText := ""
 	scanner := bufio.NewScanner(resp.Body)
 	var contentBuilder strings.Builder
@@ -51,7 +70,7 @@ func chatbotStreamHandler(c *gin.Context, resp *http.Response, promptTokens int,
 		stopChan <- true
 	}()
 
-	setEventStreamHeaders(c)
+	common.SetEventStreamHeaders(c)
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case data := <-dataChan:
@@ -114,28 +133,25 @@ func chatbotStreamHandler(c *gin.Context, resp *http.Response, promptTokens int,
 
 }
 
-func botHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*OpenAIErrorWithStatusCode, *Usage) {
-	var textResponse TextResponse
-
+func BotHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, *openai.Usage, string) {
+	var textResponse openai.SlimTextResponse
 	responseBody, err := io.ReadAll(resp.Body)
-
 	if err != nil {
-		return errorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	err = resp.Body.Close()
 	if err != nil {
-		return errorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 
 	if textResponse.Error.Type != "" {
-		return &OpenAIErrorWithStatusCode{
-			OpenAIError: textResponse.Error,
-			StatusCode:  resp.StatusCode,
-		}, nil
+		return &openai.ErrorWithStatusCode{
+			Error:      textResponse.Error,
+			StatusCode: resp.StatusCode,
+		}, nil, ""
 	}
 	// Reset response body
-	fmt.Println(string(responseBody))
-	usage := &Usage{
+	usage := &openai.Usage{
 		PromptTokens:     promptTokens,
 		CompletionTokens: calculatePromptTokens(string(responseBody)),
 		TotalTokens:      promptTokens + calculatePromptTokens(string(responseBody)),
@@ -159,16 +175,16 @@ func botHandler(c *gin.Context, resp *http.Response, promptTokens int, model str
 		},
 	}
 	if err != nil {
-		return errorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	err = resp.Body.Close()
 	if err != nil {
-		return errorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 
 	jsonData, err := json.Marshal(jsonResponse)
 	if err != nil {
-		return errorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 
 	// Reset response body
@@ -176,7 +192,7 @@ func botHandler(c *gin.Context, resp *http.Response, promptTokens int, model str
 
 	err = json.Unmarshal(jsonData, &textResponse)
 	if err != nil {
-		return errorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 
 	for k, v := range resp.Header {
@@ -185,23 +201,31 @@ func botHandler(c *gin.Context, resp *http.Response, promptTokens int, model str
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
-		return errorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	err = resp.Body.Close()
 	if err != nil {
-		return errorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	if textResponse.Usage.TotalTokens == 0 {
 		completionTokens := 0
+
 		for _, choice := range textResponse.Choices {
-			completionTokens += countTokenText(string(choice.Message.Content), model)
+			content, ok := choice.Message.Content.(string) // 进行类型断言
+			if !ok {
+				// 如果断言失败，处理错误或跳过此次循环
+				continue
+			}
+
+			completionTokens += CountTokenText(content, model)
 		}
-		textResponse.Usage = Usage{
+
+		textResponse.Usage = openai.Usage{
 			PromptTokens:     promptTokens,
 			CompletionTokens: completionTokens,
 			TotalTokens:      promptTokens + completionTokens,
 		}
 	}
 
-	return nil, &textResponse.Usage
+	return nil, &textResponse.Usage, string(responseBody)
 }

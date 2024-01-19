@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/model"
+	"one-api/relay/channel/openai"
+	"one-api/relay/util"
 	"strconv"
 	"sync"
 	"time"
@@ -25,8 +27,8 @@ type BotResponse struct {
 	Usage   BotUsage      `json:"usage"`
 	Model   string        `json:"model"`
 	// added Error field here
-	Error        OpenAIError `json:"error"`
-	FinishReason interface{} `json:"finish_reason,omitempty"`
+	Error        openai.Error `json:"error"`
+	FinishReason interface{}  `json:"finish_reason,omitempty"`
 }
 
 type BotUsage struct {
@@ -47,7 +49,7 @@ func calculateCompletionTokens(messagesMap []map[string]string) int {
 func calculateTotalTokens(promptTokens int, completionTokens int) int {
 	return promptTokens + completionTokens
 }
-func testChannel(channel *model.Channel, request ChatRequest, gptVersion string) (err error, openaiErr *OpenAIError) {
+func testChannel(channel *model.Channel, request openai.ChatRequest, gptVersion string) (err error, openaiErr *openai.Error) {
 	type RequestType struct {
 		Model     string
 		Messages  []map[string]string
@@ -102,14 +104,21 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 		requestURL = channel.GetBaseURL()
 		messagesMap := make([]map[string]string, len(request.Messages))
 		for i, msg := range request.Messages {
+			var contentString string
+			if content, ok := msg.Content.(string); ok {
+				contentString = content
+			} else {
+				// 处理错误或执行一个合适的动作（比如设置一个默认字符串）
+				contentString = "hi"
+			}
 			messagesMap[i] = map[string]string{
 				"role":    msg.Role,
-				"content": string(msg.Content),
+				"content": contentString,
 			}
-
 		}
+
 		requestChatbot := RequestTypeChatBot{
-			Model:    json.RawMessage(`{"id":"gpt-3.5-turbo"}`),
+			Model:    json.RawMessage(`{"id":"gpt-4"}`),
 			Messages: messagesMap,
 		}
 		jsonData, err = json.Marshal(requestChatbot)
@@ -119,7 +128,7 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 			requestURL = baseURL
 		}
 
-		requestURL = getFullRequestURL(requestURL, "/v1/chat/completions", channel.Type)
+		requestURL = util.GetFullRequestURL(requestURL, "/v1/chat/completions", channel.Type)
 		jsonData, err = json.Marshal(request)
 	}
 
@@ -149,7 +158,7 @@ func testChannel(channel *model.Channel, request ChatRequest, gptVersion string)
 
 	completionTokens := calculateCompletionTokens(messagesMap)
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := httpClient.Do(req)
+	resp, err := util.HTTPClient.Do(req)
 
 	if err != nil {
 		return err, nil
@@ -203,13 +212,13 @@ func randomID() string {
 	return "chatcmpl-" + string(b)
 }
 
-func buildTestRequest() *ChatRequest {
-	testRequest := &ChatRequest{
+func buildTestRequest() *openai.ChatRequest {
+	testRequest := &openai.ChatRequest{
 		Model:     "", // this will be set later
 		MaxTokens: 1,
 	}
 	content, _ := json.Marshal("hi")
-	testMessage := Message{
+	testMessage := openai.Message{
 		Role:    "user",
 		Content: content,
 	}
@@ -343,7 +352,7 @@ func testAllChannels(notify bool) error {
 
 			// ban := false
 			// 标记是否应该禁用通道
-			ban := (openaiErr != nil || milliseconds > disableThreshold) && shouldDisableChannel(openaiErr, -1)
+			ban := (openaiErr != nil || milliseconds > disableThreshold) && util.ShouldDisableChannel(openaiErr, -1)
 
 			if milliseconds > disableThreshold {
 				err = errors.New(fmt.Sprintf("响应时间 %.2fs 超过阈值 %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0))
@@ -416,12 +425,12 @@ func TestAllChannels(c *gin.Context) {
 }
 
 func AutomaticallyTestDisabledChannels(frequency int) {
-	common.SysLog("Starting the auto-disabled channels testing goroutine")
+	//common.SysLog("Starting the auto-disabled channels testing goroutine")
 	ticker := time.NewTicker(time.Duration(frequency) * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		common.SysLog("Testing all auto-disabled channels")
+		//common.SysLog("Testing all auto-disabled channels")
 		channels, err := model.GetAllChannels(0, 0, true, false)
 		if err != nil {
 			common.SysError(fmt.Sprintf("Error retrieving channels: %s", err.Error()))
