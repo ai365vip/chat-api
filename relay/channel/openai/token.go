@@ -1,11 +1,13 @@
 package openai
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	"log"
 	"math"
 	"one-api/common"
-	"one-api/common/image"
 	"strings"
 
 	"github.com/pkoukk/tiktoken-go"
@@ -56,10 +58,63 @@ func getTokenEncoder(model string) *tiktoken.Tiktoken {
 }
 
 func getTokenNum(tokenEncoder *tiktoken.Tiktoken, text string) int {
-	return int(float64(len(text)) * 0.38)
+	return len(tokenEncoder.Encode(text, nil, nil))
 }
+func getImageToken(imageUrl *MessageImageUrl) (int, error) {
+	if imageUrl.Detail == "low" {
+		return 85, nil
+	}
+	var config image.Config
+	var err error
+	var format string
+	if strings.HasPrefix(imageUrl.Url, "http") {
+		common.SysLog(fmt.Sprintf("downloading image: %s", imageUrl.Url))
+		config, format, err = common.DecodeUrlImageData(imageUrl.Url)
+	} else {
+		common.SysLog(fmt.Sprintf("decoding image"))
+		config, format, err = common.DecodeBase64ImageData(imageUrl.Url)
+	}
+	if err != nil {
+		return 0, err
+	}
 
+	if config.Width == 0 || config.Height == 0 {
+		return 0, errors.New(fmt.Sprintf("fail to decode image config: %s", imageUrl.Url))
+	}
+	// TODO: 适配官方auto计费
+	if config.Width < 512 && config.Height < 512 {
+		if imageUrl.Detail == "auto" || imageUrl.Detail == "" {
+			// 如果图片尺寸小于512，强制使用low
+			imageUrl.Detail = "low"
+			return 85, nil
+		}
+	}
+
+	shortSide := config.Width
+	otherSide := config.Height
+	log.Printf("format: %s, width: %d, height: %d", format, config.Width, config.Height)
+	// 缩放倍数
+	scale := 1.0
+	if config.Height < shortSide {
+		shortSide = config.Height
+		otherSide = config.Width
+	}
+
+	// 将最小变的尺寸缩小到768以下，如果大于768，则缩放到768
+	if shortSide > 768 {
+		scale = float64(shortSide) / 768
+		shortSide = 768
+	}
+	// 将另一边按照相同的比例缩小，向上取整
+	otherSide = int(math.Ceil(float64(otherSide) / scale))
+	//log.Printf("shortSide: %d, otherSide: %d, scale: %f", shortSide, otherSide, scale)
+	// 计算图片的token数量(边的长度除以512，向上取整)
+	tiles := (shortSide + 511) / 512 * ((otherSide + 511) / 512)
+	//log.Printf("tiles: %d", tiles)
+	return tiles*170 + 85, nil
+}
 func CountTokenMessages(messages []Message, model string) (int, error) {
+	//recover when panic
 	tokenEncoder := getTokenEncoder(model)
 	// Reference:
 	// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
@@ -78,37 +133,50 @@ func CountTokenMessages(messages []Message, model string) (int, error) {
 	tokenNum := 0
 	for _, message := range messages {
 		tokenNum += tokensPerMessage
-		switch v := message.Content.(type) {
-		case string:
-			tokenNum += getTokenNum(tokenEncoder, v)
-		case []any:
-			for _, it := range v {
-				m := it.(map[string]any)
-				switch m["type"] {
-				case "text":
-					tokenNum += getTokenNum(tokenEncoder, m["text"].(string))
-				case "image_url":
-					imageUrl, ok := m["image_url"].(map[string]any)
-					if ok {
-						url := imageUrl["url"].(string)
-						detail := ""
-						if imageUrl["detail"] != nil {
-							detail = imageUrl["detail"].(string)
-						}
-						imageTokens, err := countImageTokens(url, detail)
-						if err != nil {
-							common.SysError("error counting image tokens: " + err.Error())
-						} else {
-							tokenNum += imageTokens
-						}
-					}
+		tokenNum += getTokenNum(tokenEncoder, message.Role)
+		var arrayContent []MediaMessage
+		if err := json.Unmarshal(message.Content, &arrayContent); err != nil {
+
+			var stringContent string
+			if err := json.Unmarshal(message.Content, &stringContent); err != nil {
+				return 0, err
+			} else {
+				tokenNum += getTokenNum(tokenEncoder, stringContent)
+				if message.Name != nil {
+					tokenNum += tokensPerName
+					tokenNum += getTokenNum(tokenEncoder, *message.Name)
 				}
 			}
-		}
-		tokenNum += getTokenNum(tokenEncoder, message.Role)
-		if message.Name != nil {
-			tokenNum += tokensPerName
-			tokenNum += getTokenNum(tokenEncoder, *message.Name)
+		} else {
+			for _, m := range arrayContent {
+				if m.Type == "image_url" {
+					var imageTokenNum int
+					if str, ok := m.ImageUrl.(string); ok {
+						imageTokenNum, err = getImageToken(&MessageImageUrl{Url: str, Detail: "auto"})
+					} else {
+						imageUrlMap := m.ImageUrl.(map[string]interface{})
+						detail, ok := imageUrlMap["detail"]
+						if ok {
+							imageUrlMap["detail"] = detail.(string)
+						} else {
+							imageUrlMap["detail"] = "auto"
+						}
+						imageUrl := MessageImageUrl{
+							Url:    imageUrlMap["url"].(string),
+							Detail: imageUrlMap["detail"].(string),
+						}
+						imageTokenNum, err = getImageToken(&imageUrl)
+					}
+					if err != nil {
+						return 0, err
+					}
+
+					tokenNum += imageTokenNum
+					//log.Printf("image token num: %d", imageTokenNum)
+				} else {
+					tokenNum += getTokenNum(tokenEncoder, m.Text)
+				}
+			}
 		}
 	}
 	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>
@@ -120,68 +188,6 @@ const (
 	highDetailCostPerTile = 170
 	additionalCost        = 85
 )
-
-// https://platform.openai.com/docs/guides/vision/calculating-costs
-// https://github.com/openai/openai-cookbook/blob/05e3f9be4c7a2ae7ecf029a7c32065b024730ebe/examples/How_to_count_tokens_with_tiktoken.ipynb
-func countImageTokens(url string, detail string) (_ int, err error) {
-	var fetchSize = true
-	var width, height int
-	// Reference: https://platform.openai.com/docs/guides/vision/low-or-high-fidelity-image-understanding
-	// detail == "auto" is undocumented on how it works, it just said the model will use the auto setting which will look at the image input size and decide if it should use the low or high setting.
-	// According to the official guide, "low" disable the high-res model,
-	// and only receive low-res 512px x 512px version of the image, indicating
-	// that image is treated as low-res when size is smaller than 512px x 512px,
-	// then we can assume that image size larger than 512px x 512px is treated
-	// as high-res. Then we have the following logic:
-	// if detail == "" || detail == "auto" {
-	// 	width, height, err = image.GetImageSize(url)
-	// 	if err != nil {
-	// 		return 0, err
-	// 	}
-	// 	fetchSize = false
-	// 	// not sure if this is correct
-	// 	if width > 512 || height > 512 {
-	// 		detail = "high"
-	// 	} else {
-	// 		detail = "low"
-	// 	}
-	// }
-
-	// However, in my test, it seems to be always the same as "high".
-	// The following image, which is 125x50, is still treated as high-res, taken
-	// 255 tokens in the response of non-stream chat completion api.
-	// https://upload.wikimedia.org/wikipedia/commons/1/10/18_Infantry_Division_Messina.jpg
-	if detail == "" || detail == "auto" {
-		// assume by test, not sure if this is correct
-		detail = "high"
-	}
-	switch detail {
-	case "low":
-		return lowDetailCost, nil
-	case "high":
-		if fetchSize {
-			width, height, err = image.GetImageSize(url)
-			if err != nil {
-				return 0, err
-			}
-		}
-		if width > 2048 || height > 2048 { // max(width, height) > 2048
-			ratio := float64(2048) / math.Max(float64(width), float64(height))
-			width = int(float64(width) * ratio)
-			height = int(float64(height) * ratio)
-		}
-		if width > 768 && height > 768 { // min(width, height) > 768
-			ratio := float64(768) / math.Min(float64(width), float64(height))
-			width = int(float64(width) * ratio)
-			height = int(float64(height) * ratio)
-		}
-		numSquares := int(math.Ceil(float64(width)/512) * math.Ceil(float64(height)/512))
-		result := numSquares*highDetailCostPerTile + additionalCost
-		return result, nil
-	default:
-		return 0, errors.New("invalid detail option")
-	}
-}
 
 func CountTokenInput(input any, model string) int {
 	switch v := input.(type) {

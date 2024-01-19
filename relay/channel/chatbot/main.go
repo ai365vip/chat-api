@@ -211,13 +211,7 @@ func BotHandler(c *gin.Context, resp *http.Response, promptTokens int, model str
 		completionTokens := 0
 
 		for _, choice := range textResponse.Choices {
-			content, ok := choice.Message.Content.(string) // 进行类型断言
-			if !ok {
-				// 如果断言失败，处理错误或跳过此次循环
-				continue
-			}
-
-			completionTokens += CountTokenText(content, model)
+			completionTokens += countTokenText(string(choice.Message.Content), model)
 		}
 
 		textResponse.Usage = openai.Usage{

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
@@ -12,6 +11,8 @@ import (
 	"one-api/relay/constant"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // https://docs.aiproxy.io/dev/library#使用已经定制好的知识库进行对话问答
@@ -40,7 +41,7 @@ func aiProxyDocuments2Markdown(documents []LibraryDocument) string {
 }
 
 func responseAIProxyLibrary2OpenAI(response *LibraryResponse) *openai.TextResponse {
-	content := response.Answer + aiProxyDocuments2Markdown(response.Documents)
+	content, _ := json.Marshal(response.Answer + aiProxyDocuments2Markdown(response.Documents))
 	choice := openai.TextResponseChoice{
 		Index: 0,
 		Message: openai.Message{

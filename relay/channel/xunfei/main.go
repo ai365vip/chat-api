@@ -6,8 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
 	"net/url"
@@ -16,6 +14,9 @@ import (
 	"one-api/relay/constant"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 // https://console.xfyun.cn/services/cbm
@@ -58,11 +59,12 @@ func responseXunfei2OpenAI(response *ChatResponse) *openai.TextResponse {
 			},
 		}
 	}
+	content, _ := json.Marshal(response.Payload.Choices.Text[0].Content)
 	choice := openai.TextResponseChoice{
 		Index: 0,
 		Message: openai.Message{
 			Role:    "assistant",
-			Content: response.Payload.Choices.Text[0].Content,
+			Content: content,
 		},
 		FinishReason: constant.StopFinishReason,
 	}

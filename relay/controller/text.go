@@ -245,7 +245,7 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 		// 在发送请求之前，检查模型并对 gpt-4-vision-completions 模型特殊处理
 		if textRequest.Model == "gpt-4-vision" {
 			for i, msg := range textRequest.Messages {
-				contentStr := msg.Content.(string)
+				contentStr := string(msg.Content)
 
 				// 使用正则表达式查找所有URL
 				re := regexp.MustCompile(`http[s]?:\/\/[^\s]+`)
@@ -275,7 +275,9 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 
 				// 更新 textRequest 中的消息内容
 				textRequest.Messages[i].Content = json.RawMessage(newContentBytes)
+
 			}
+
 		}
 		promptTokens, err = openai.CountTokenMessages(textRequest.Messages, textRequest.Model)
 		if err != nil {

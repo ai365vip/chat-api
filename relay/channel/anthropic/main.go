@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
 	"one-api/relay/channel/openai"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func stopReasonClaude2OpenAI(reason string) string {
@@ -68,11 +69,12 @@ func streamResponseClaude2OpenAI(claudeResponse *Response) *openai.ChatCompletio
 }
 
 func responseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
+	content, _ := json.Marshal(strings.TrimPrefix(claudeResponse.Completion, " "))
 	choice := openai.TextResponseChoice{
 		Index: 0,
 		Message: openai.Message{
 			Role:    "assistant",
-			Content: strings.TrimPrefix(claudeResponse.Completion, " "),
+			Content: content,
 			Name:    nil,
 		},
 		FinishReason: stopReasonClaude2OpenAI(claudeResponse.StopReason),

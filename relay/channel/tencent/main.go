@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
@@ -17,6 +16,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // https://cloud.tencent.com/document/product/1729/97732
@@ -63,11 +64,12 @@ func responseTencent2OpenAI(response *ChatResponse) *openai.TextResponse {
 		Usage:   response.Usage,
 	}
 	if len(response.Choices) > 0 {
+		content, _ := json.Marshal(response.Choices[0].Messages.Content)
 		choice := openai.TextResponseChoice{
 			Index: 0,
 			Message: openai.Message{
 				Role:    "assistant",
-				Content: response.Choices[0].Messages.Content,
+				Content: content,
 			},
 			FinishReason: response.Choices[0].FinishReason,
 		}

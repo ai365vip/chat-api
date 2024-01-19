@@ -1,9 +1,23 @@
 package openai
 
+import "encoding/json"
+
+type VisionMessage struct {
+	Role    string          `json:"role"`
+	Content json.RawMessage `json:"content"`
+	Name    *string         `json:"name,omitempty"`
+}
+
+type MediaMessage struct {
+	Type     string `json:"type"`
+	Text     string `json:"text"`
+	ImageUrl any    `json:"image_url,omitempty"`
+}
+
 type Message struct {
-	Role    string  `json:"role"`
-	Content any     `json:"content"`
-	Name    *string `json:"name,omitempty"`
+	Role    string          `json:"role"`
+	Content json.RawMessage `json:"content"`
+	Name    *string         `json:"name,omitempty"`
 }
 
 type ImageURL struct {
@@ -38,20 +52,27 @@ type MediaMessageImage struct {
 }
 
 func (m Message) IsStringContent() bool {
-	_, ok := m.Content.(string)
+	var content interface{}
+	if err := json.Unmarshal(m.Content, &content); err != nil {
+		return false
+	}
+	_, ok := content.(string)
 	return ok
 }
 
 func (m Message) StringContent() string {
-	content, ok := m.Content.(string)
-	if ok {
-		return content
+	var content interface{}
+	if err := json.Unmarshal(m.Content, &content); err != nil {
+		return ""
 	}
-	contentList, ok := m.Content.([]any)
-	if ok {
+
+	switch v := content.(type) {
+	case string:
+		return v
+	case []interface{}:
 		var contentStr string
-		for _, contentItem := range contentList {
-			contentMap, ok := contentItem.(map[string]any)
+		for _, contentItem := range v {
+			contentMap, ok := contentItem.(map[string]interface{})
 			if !ok {
 				continue
 			}
@@ -62,41 +83,49 @@ func (m Message) StringContent() string {
 			}
 		}
 		return contentStr
+	default:
+		return ""
 	}
-	return ""
 }
 
-func (m Message) ParseContent() []OpenAIMessageContent {
-	var contentList []OpenAIMessageContent
-	content, ok := m.Content.(string)
-	if ok {
-		contentList = append(contentList, OpenAIMessageContent{
+func (m Message) ParseContent() []MediaMessage {
+	var contentList []MediaMessage
+	var stringContent string
+	if err := json.Unmarshal(m.Content, &stringContent); err == nil {
+		contentList = append(contentList, MediaMessage{
 			Type: ContentTypeText,
-			Text: content,
+			Text: stringContent,
 		})
 		return contentList
 	}
-	anyList, ok := m.Content.([]any)
-	if ok {
-		for _, contentItem := range anyList {
-			contentMap, ok := contentItem.(map[string]any)
-			if !ok {
+	var arrayContent []json.RawMessage
+	if err := json.Unmarshal(m.Content, &arrayContent); err == nil {
+		for _, contentItem := range arrayContent {
+			var contentMap map[string]any
+			if err := json.Unmarshal(contentItem, &contentMap); err != nil {
 				continue
 			}
 			switch contentMap["type"] {
 			case ContentTypeText:
 				if subStr, ok := contentMap["text"].(string); ok {
-					contentList = append(contentList, OpenAIMessageContent{
+					contentList = append(contentList, MediaMessage{
 						Type: ContentTypeText,
 						Text: subStr,
 					})
 				}
 			case ContentTypeImageURL:
 				if subObj, ok := contentMap["image_url"].(map[string]any); ok {
-					contentList = append(contentList, OpenAIMessageContent{
+					detail, ok := subObj["detail"]
+					if ok {
+						subObj["detail"] = detail.(string)
+					} else {
+						subObj["detail"] = "auto"
+					}
+					contentList = append(contentList, MediaMessage{
 						Type: ContentTypeImageURL,
-						ImageURL: &ImageURL{
-							Url: subObj["url"].(string),
+						ImageUrl: MessageImageUrl{
+							Url:    subObj["url"].(string),
+							Detail: subObj["detail"].(string),
 						},
 					})
 				}
@@ -104,6 +133,7 @@ func (m Message) ParseContent() []OpenAIMessageContent {
 		}
 		return contentList
 	}
+
 	return nil
 }
 

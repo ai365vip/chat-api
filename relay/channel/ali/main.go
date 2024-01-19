@@ -3,12 +3,13 @@ package ali
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
 	"one-api/relay/channel/openai"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // https://help.aliyun.com/document_detail/613695.html?spm=a2c4g.2399480.0.0.1adb778fAdzP9w#341800c0f8w0r
@@ -107,11 +108,12 @@ func embeddingResponseAli2OpenAI(response *EmbeddingResponse) *openai.EmbeddingR
 }
 
 func responseAli2OpenAI(response *ChatResponse) *openai.TextResponse {
+	content, _ := json.Marshal(response.Output.Text)
 	choice := openai.TextResponseChoice{
 		Index: 0,
 		Message: openai.Message{
 			Role:    "assistant",
-			Content: response.Output.Text,
+			Content: content,
 		},
 		FinishReason: response.Output.FinishReason,
 	}

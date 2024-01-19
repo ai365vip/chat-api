@@ -79,7 +79,7 @@ func ConvertGeminiRequest(textRequest openai.GeneralOpenAIRequest) *GeminiChatRe
 				if imageNum > GeminiVisionMaxImageNum {
 					continue
 				}
-				mimeType, data, _ := image.GetImageFromUrl(part.ImageURL.Url)
+				mimeType, data, _ := image.GetImageFromUrl(part.ImageUrl.(openai.MessageImageUrl).Url)
 				parts = append(parts, GeminiPart{
 					InlineData: &GeminiInlineData{
 						MimeType: mimeType,
@@ -156,17 +156,19 @@ func responseGeminiChat2OpenAI(response *GeminiChatResponse) *openai.TextRespons
 		Created: common.GetTimestamp(),
 		Choices: make([]openai.TextResponseChoice, 0, len(response.Candidates)),
 	}
+	content, _ := json.Marshal("")
 	for i, candidate := range response.Candidates {
 		choice := openai.TextResponseChoice{
 			Index: i,
 			Message: openai.Message{
 				Role:    "assistant",
-				Content: "",
+				Content: content,
 			},
 			FinishReason: constant.StopFinishReason,
 		}
+		content, _ = json.Marshal(candidate.Content.Parts[0].Text)
 		if len(candidate.Content.Parts) > 0 {
-			choice.Message.Content = candidate.Content.Parts[0].Text
+			choice.Message.Content = content
 		}
 		fullTextResponse.Choices = append(fullTextResponse.Choices, choice)
 	}

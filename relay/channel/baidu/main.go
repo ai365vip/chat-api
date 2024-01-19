@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // https://cloud.baidu.com/doc/WENXINWORKSHOP/s/flfmc9do2
@@ -68,11 +69,12 @@ func ConvertRequest(request openai.GeneralOpenAIRequest) *BaiduChatRequest {
 }
 
 func responseBaidu2OpenAI(response *ChatResponse) *openai.TextResponse {
+	content, _ := json.Marshal(response.Result)
 	choice := openai.TextResponseChoice{
 		Index: 0,
 		Message: openai.Message{
 			Role:    "assistant",
-			Content: response.Result,
+			Content: content,
 		},
 		FinishReason: "stop",
 	}

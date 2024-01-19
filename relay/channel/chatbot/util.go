@@ -47,3 +47,7 @@ func getTokenEncoder(model string) *tiktoken.Tiktoken {
 func getTokenNum(tokenEncoder *tiktoken.Tiktoken, text string) int {
 	return len(tokenEncoder.Encode(text, nil, nil))
 }
+func countTokenText(text string, model string) int {
+	tokenEncoder := getTokenEncoder(model)
+	return getTokenNum(tokenEncoder, text)
+}

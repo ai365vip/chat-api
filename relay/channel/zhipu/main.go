@@ -3,8 +3,6 @@ package zhipu
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
 	"io"
 	"net/http"
 	"one-api/common"
@@ -13,6 +11,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
 )
 
 // https://open.bigmodel.cn/doc/api#chatglm_std
@@ -106,11 +107,12 @@ func responseZhipu2OpenAI(response *Response) *openai.TextResponse {
 		Usage:   response.Data.Usage,
 	}
 	for i, choice := range response.Data.Choices {
+		content, _ := json.Marshal(strings.Trim(choice.Content, "\""))
 		openaiChoice := openai.TextResponseChoice{
 			Index: i,
 			Message: openai.Message{
 				Role:    choice.Role,
-				Content: strings.Trim(choice.Content, "\""),
+				Content: content,
 			},
 			FinishReason: "",
 		}

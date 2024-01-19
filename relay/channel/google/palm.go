@@ -3,12 +3,13 @@ package google
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
+
+	"github.com/gin-gonic/gin"
 )
 
 // https://developers.generativeai.google/api/rest/generativelanguage/models/generateMessage#request-body
@@ -43,11 +44,12 @@ func responsePaLM2OpenAI(response *PaLMChatResponse) *openai.TextResponse {
 		Choices: make([]openai.TextResponseChoice, 0, len(response.Candidates)),
 	}
 	for i, candidate := range response.Candidates {
+		content, _ := json.Marshal(candidate.Content)
 		choice := openai.TextResponseChoice{
 			Index: i,
 			Message: openai.Message{
 				Role:    "assistant",
-				Content: candidate.Content,
+				Content: content,
 			},
 			FinishReason: "stop",
 		}

@@ -104,17 +104,11 @@ func testChannel(channel *model.Channel, request openai.ChatRequest, gptVersion 
 		requestURL = channel.GetBaseURL()
 		messagesMap := make([]map[string]string, len(request.Messages))
 		for i, msg := range request.Messages {
-			var contentString string
-			if content, ok := msg.Content.(string); ok {
-				contentString = content
-			} else {
-				// 处理错误或执行一个合适的动作（比如设置一个默认字符串）
-				contentString = "hi"
-			}
 			messagesMap[i] = map[string]string{
 				"role":    msg.Role,
-				"content": contentString,
+				"content": string(msg.Content),
 			}
+
 		}
 
 		requestChatbot := RequestTypeChatBot{
