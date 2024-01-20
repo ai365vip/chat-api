@@ -60,6 +60,7 @@ func InitOptionMap() {
 	common.OptionMap["EpayKey"] = ""
 	common.OptionMap["Price"] = strconv.FormatFloat(common.Price, 'f', -1, 64)
 	common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
+	common.OptionMap["TopupRatio"] = common.TopupRatioJSONString()
 	common.OptionMap["GitHubClientId"] = ""
 	common.OptionMap["GitHubClientSecret"] = ""
 	common.OptionMap["WeChatServerAddress"] = ""
@@ -93,6 +94,7 @@ func InitOptionMap() {
 	common.OptionMap["VipUserGroup"] = common.VipUserGroup
 	common.OptionMap["MiniQuota"] = strconv.FormatFloat(common.MiniQuota, 'f', -1, 64)
 	common.OptionMap["ProporTions"] = strconv.Itoa(common.ProporTions)
+	common.OptionMap["RedempTionCount"] = strconv.Itoa(common.RedempTionCount)
 
 	common.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
@@ -222,6 +224,8 @@ func updateOptionMap(key string, value string) (err error) {
 		common.MiniQuota, _ = strconv.ParseFloat(value, 64)
 	case "TopupGroupRatio":
 		err = common.UpdateTopupGroupRatioByJSONString(value)
+	case "TopupRatio":
+		err = common.UpdateTopupRatioByJSONString(value)
 	case "GitHubClientId":
 		common.GitHubClientId = value
 	case "GitHubClientSecret":
@@ -260,6 +264,8 @@ func updateOptionMap(key string, value string) (err error) {
 		common.DataExportInterval, _ = strconv.Atoi(value)
 	case "ProporTions":
 		common.ProporTions, _ = strconv.Atoi(value)
+	case "RedempTionCount":
+		common.RedempTionCount, _ = strconv.Atoi(value)
 	case "ModelRatio":
 		err = common.UpdateModelRatioByJSONString(value)
 	case "ModelPrice":

@@ -81,6 +81,8 @@ func main() {
 
 	// 数据看板
 	go model.UpdateQuotaData()
+	// 额度有效期
+	go model.UpdateUserQuotaData()
 
 	if os.Getenv("CHANNEL_UPDATE_FREQUENCY") != "" {
 		frequency, err := strconv.Atoi(os.Getenv("CHANNEL_UPDATE_FREQUENCY"))

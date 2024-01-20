@@ -132,6 +132,10 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
+		err = db.AutoMigrate(&RechargeRecord{})
+		if err != nil {
+			return err
+		}
 		err = db.AutoMigrate(&WithdrawalOrder{})
 		if err != nil {
 			return err

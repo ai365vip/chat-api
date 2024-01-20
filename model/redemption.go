@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"one-api/common"
+	"strconv"
 
 	"gorm.io/gorm"
 )
@@ -56,6 +57,7 @@ func Redeem(key string, userId int) (quota int, err error) {
 	if common.UsingPostgreSQL {
 		keyCol = `"key"`
 	}
+	RedempTionCount := strconv.Itoa(common.RedempTionCount)
 
 	err = DB.Transaction(func(tx *gorm.DB) error {
 		err := tx.Set("gorm:query_option", "FOR UPDATE").Where(keyCol+" = ?", key).First(redemption).Error
@@ -65,21 +67,36 @@ func Redeem(key string, userId int) (quota int, err error) {
 		if redemption.Status != common.RedemptionCodeStatusEnabled {
 			return errors.New("该兑换码已被使用")
 		}
+
+		// 更新用户的总配额
 		err = tx.Model(&User{}).Where("id = ?", userId).Update("quota", gorm.Expr("quota + ?", redemption.Quota)).Error
 		if err != nil {
 			return err
 		}
+		err = IncreaseRechargeQuota(userId, RedempTionCount, redemption.Quota)
+		if err != nil {
+			return err
+		}
+		// 标记兑换码为已用
 		redemption.RedeemedTime = common.GetTimestamp()
 		redemption.Status = common.RedemptionCodeStatusUsed
 		redemption.UsedUserId = userId
 		err = tx.Save(redemption).Error
-		return err
+		if err != nil {
+			return err
+		}
+
+		return nil
 	})
+
 	if err != nil {
 		return 0, errors.New("兑换失败，" + err.Error())
 	}
+
+	// 这里可以记录日志和其他相关的操作
 	RecordLog(userId, LogTypeTopup, redemption.Quota, fmt.Sprintf("通过兑换码充值 %s", common.LogQuota(redemption.Quota)))
 	VipInsert(userId, redemption.Quota)
+
 	return redemption.Quota, nil
 }
 

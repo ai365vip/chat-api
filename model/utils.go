@@ -55,7 +55,7 @@ func batchUpdate() {
 		for key, value := range store {
 			switch i {
 			case BatchUpdateTypeUserQuota:
-				err := increaseUserQuota(key, value)
+				err := IncreaseUserQuota(key, value)
 				if err != nil {
 					common.SysError("failed to batch update user quota: " + err.Error())
 				}

@@ -40,6 +40,16 @@ type User struct {
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
 }
 
+type RechargeRecord struct {
+	ID        uint  `gorm:"primaryKey" json:"id"` // 充值记录ID
+	UserID    uint  `gorm:"index" json:"user_id"` // 对应的用户ID
+	Amount    int   `json:"amount"`               // 充值额度
+	StartDate int64 `json:"start_date"`           // 充值的起始时间
+	EndDate   int64 `json:"end_date"`             // 充值的结束时间
+	CreatedAt int64 `json:"created_at"`           // 创建时间戳
+	UpdatedAt int64 `json:"updated_at"`           // 更新时间戳
+}
+
 // CheckUserExistOrDeleted check if user exist or deleted, if not exist, return false, nil, if deleted or exist, return true, nil
 func CheckUserExistOrDeleted(username string, email string) (bool, error) {
 	var user User
@@ -351,14 +361,18 @@ func (user *User) HardDelete() error {
 
 // ValidateAndFill check password & user status
 func (user *User) ValidateAndFill() (err error) {
-	// When querying with struct, GORM will only query with non-zero fields,
-	// that means if your field’s value is 0, '', false or other zero values,
-	// it won’t be used to build query conditions
+
 	password := user.Password
 	if user.Username == "" || password == "" {
 		return errors.New("用户名或密码为空")
 	}
-	DB.Where(User{Username: user.Username}).First(user)
+	err = DB.Where("username = ?", user.Username).First(user).Error
+	if err != nil {
+		err := DB.Where("email = ?", user.Username).First(user).Error
+		if err != nil {
+			return errors.New("用户名或密码错误，或用户已被封禁")
+		}
+	}
 	okay := common.ValidatePasswordAndHash(password, user.Password)
 	if !okay || user.Status != common.UserStatusEnabled {
 		return errors.New("用户名或密码错误，或用户已被封禁")
@@ -514,7 +528,52 @@ func VipUserQuota(id int) (err error) {
 }
 
 func increaseUserQuota(id int, quota int) (err error) {
-	err = DB.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota + ?", quota)).Error
+	// 启动一个事务处理增加配额
+	err = DB.Transaction(func(tx *gorm.DB) error {
+		// 更新用户配额
+		if err := tx.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota + ?", quota)).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+
+	return err
+}
+
+func IncreaseRechargeQuota(id int, topupratio string, quota int) (err error) {
+	var endQuotaAt int64
+
+	// 如果topupratio不为空且不是"-1"，计算结束时间戳；如果是"-1"，则设置无限期。
+	if topupratio != "" && topupratio != "-1" {
+		days, convErr := strconv.Atoi(topupratio)
+		if convErr != nil {
+			return convErr
+		}
+		currentTime := time.Now().Unix()
+		endQuotaAt = currentTime + int64(days*24*60*60)
+	} else if topupratio == "-1" {
+		endQuotaAt = -1 // 表示无限期
+	}
+
+	// 启动一个事务处理增加配额和插入充值记录
+	err = DB.Transaction(func(tx *gorm.DB) error {
+
+		// 只有当topupratio不为空时，才添加充值记录
+		if topupratio != "" {
+			record := &RechargeRecord{
+				UserID:    uint(id),
+				Amount:    quota,
+				StartDate: time.Now().Unix(), // 使用当前时间作为StartDate
+				EndDate:   endQuotaAt,        // 根据topupratio设置EndDate
+			}
+			if err := tx.Create(&record).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
 	return err
 }
 
@@ -529,8 +588,38 @@ func DecreaseUserQuota(id int, quota int) (err error) {
 	return decreaseUserQuota(id, quota)
 }
 
-func decreaseUserQuota(id int, quota int) (err error) {
-	err = DB.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota - ?", quota)).Error
+func decreaseUserQuota(userID int, quotaToDecrease int) (err error) {
+	// 启动事务处理配额减少和辅助表记录更新
+	err = DB.Transaction(func(tx *gorm.DB) error {
+		var records []RechargeRecord
+		err := tx.Where("user_id = ?", userID).Order("end_date ASC").Find(&records).Error
+		if err != nil {
+			return err
+		}
+		// 更新用户主表中的配额，减去所有记录中减去的总额
+		if err := tx.Model(&User{}).Where("id = ?", userID).Update("quota", gorm.Expr("quota - ?", quotaToDecrease)).Error; err != nil {
+			return err
+		}
+
+		// 逐条减去每个记录的配额
+		for _, record := range records {
+			// 只处理剩余额度大于0的记录
+			if record.Amount > 0 {
+				if record.Amount <= quotaToDecrease {
+					record.Amount = 0
+				} else {
+					record.Amount -= quotaToDecrease
+				}
+
+				// 更新辅助表中的记录，反映新的剩余额度
+				if err := tx.Save(&record).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
 	return err
 }
 
@@ -581,4 +670,61 @@ func updateUserRequestCount(id int, count int) {
 func GetUsernameById(id int) (username string) {
 	DB.Model(&User{}).Where("id = ?", id).Select("username").Find(&username)
 	return username
+}
+
+func UpdateUserQuotaData() {
+	// recover
+	defer func() {
+		if r := recover(); r != nil {
+			common.SysLog(fmt.Sprintf("UpdateUserQuotaData panic: %s", r))
+		}
+	}()
+	for {
+		common.SysLog("正在更新用户余额日期...")
+
+		// 获取当前时间戳
+		currentTime := time.Now().Unix()
+
+		// 启动一个事务来更新用户余额和处理过期的充值记录
+		err := DB.Transaction(func(tx *gorm.DB) error {
+			// 查找所有已经过期且金额大于0的充值记录
+			var expiredRecords []RechargeRecord
+			err := tx.Where("end_date <= ? AND end_date != -1 AND amount > 0", currentTime).Find(&expiredRecords).Error
+			if err != nil {
+				return err
+			}
+
+			// 对于每个过期的充值记录，减少对应用户在User主表中的配额，并将充值记录的Amount更新为0表示已处理
+			for _, record := range expiredRecords {
+				err = tx.Model(&User{}).Where("id = ?", record.UserID).
+					Update("quota", gorm.Expr("quota - ?", record.Amount)).Error
+				if err != nil {
+					return err
+				}
+
+				// 设置过期记录的金额为0，表示已经从用户余额中扣除
+				record.Amount = 0
+				err = tx.Save(&record).Error
+				if err != nil {
+					return err
+				}
+			}
+
+			// 执行删除所有处理过的过期记录（即金额为0的记录）
+			err = tx.Where("amount = 0").Delete(&RechargeRecord{}).Error
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			common.SysLog(fmt.Sprintf("更新用户余额失败：%s", err))
+		} else {
+			common.SysLog("成功更新用户余额并清理过期充值记录。")
+		}
+
+		time.Sleep(time.Duration(60) * time.Minute) // 每小时运行一次
+	}
 }

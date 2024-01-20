@@ -34,7 +34,7 @@ func GetOptions(c *gin.Context) {
 func GetUserOptions(c *gin.Context) {
 	var options []*model.Option
 	common.OptionMapRWMutex.RLock() // 使用读锁
-	keys := []string{"TopUpLink", "YzfZfb", "YzfWx", "BillingByRequestEnabled", "ModelRatioEnabled", "MiniQuota", "ProporTions"}
+	keys := []string{"TopUpLink", "YzfZfb", "YzfWx", "BillingByRequestEnabled", "ModelRatioEnabled", "MiniQuota", "ProporTions", "TopupRatio"}
 
 	for _, key := range keys {
 		if value, exists := common.OptionMap[key]; exists {

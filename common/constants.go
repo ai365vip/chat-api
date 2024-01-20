@@ -18,6 +18,7 @@ var PayAddress = ""
 var EpayId = ""
 var EpayKey = ""
 var Price = 7.3
+var RedempTionCount = 30
 var Footer = ""
 var Logo = ""
 var TopUpLink = ""

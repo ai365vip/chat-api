@@ -17,11 +17,13 @@ const TopupCard = () => {
   const [userQuota, setUserQuota] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [topUpCount, setTopUpCount] = useState(10); 
-  const [amount, setAmount] = useState(0.0);  
+  const [amount, setAmount] = useState(0.0); 
   const [open, setOpen] = useState(false);
   const [payWay, setPayWay] = useState('');
   const [topUpCode, setTopUpCode] = useState(''); 
   const isMobile = useMediaQuery('(max-width:600px)');
+  const [topUpDays, setTopUpDays] = useState(''); // 默认充值天数
+  const [paymentMultiplier, setPaymentMultiplier] = useState({}); 
 
 
   const topUp = async () => {
@@ -101,27 +103,40 @@ const TopupCard = () => {
     if (options.YzfZfb) { 
       setZfb(options.YzfZfb);
     }
+    if (options.TopupRatio) {
+      const parsedRatio = JSON.parse(options.TopupRatio);
+      setPaymentMultiplier(parsedRatio);
+    }
   }, [options]);
   
+  useEffect(() => {
+    updateActualAmount();
+  }, [topUpDays, topUpCount]);
+  
+  const updateActualAmount = () => {
 
-  const preTopUp = async (payment) => {
-    if (amount === 0) {
-      await getAmount(topUpCount);
-    }
-    setPayWay(payment);
-    setOpen(true);
+    return getAmount(topUpCount); 
   };
+  
+  const preTopUp = async (payment) => {
+    setPayWay(payment);
+    updateActualAmount();
+    setOpen(true); // 打开模态框
+  };
+  
   
   const onlineTopUp = async () => {
     if (amount === 0) {
-        await getAmount();
-    }
+      await getAmount();
+  }
     setOpen(false);
     try {
         const res = await API.post('/api/user/pay', {
             amount: parseInt(topUpCount),
             top_up_code: topUpCode, 
-            payment_method: payWay
+            payment_method: payWay,
+            top_up_days: parseInt(topUpDays),
+            topup_ratio: topUpDays 
         });
         if (res !== undefined) {
             const {message, data} = res.data;
@@ -162,9 +177,11 @@ const TopupCard = () => {
     }
   };
 
+  
   const renderAmount = () => {
     return amount + '元';
   };
+
 
   const getAmount = async (value = topUpCount) => {
     if (value === undefined) {
@@ -173,6 +190,8 @@ const TopupCard = () => {
     try {
         const res = await API.post('/api/user/amount', {
             amount: parseFloat(value),
+            topup_ratio: topUpDays ,
+            
             top_up_code: setTopUpCode 
         });
         if (res !== undefined) {
@@ -192,7 +211,52 @@ const TopupCard = () => {
     } 
   };
 
+  // 在组件的顶部添加style定义（如果您有单独的样式文件，请将它们放在那里）
+  const optionButtonStyle = {
+    my: 1, // margin top & bottom
+    mx: 0.5, // margin left & right
+  };
 
+  // 弹窗内容
+  const renderModalContent = () => (
+    <Box sx={{
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: 400,
+      bgcolor: 'background.paper',
+      boxShadow: 24,
+      p: 4,
+      borderRadius: 1,
+    }}>
+      <Typography sx={{ mt: 2 }}>充值金额：{topUpCount}$</Typography>
+      <Typography sx={{ mt: 2 }}>实付金额：{renderAmount()}</Typography>
+
+      {/* 显示所有充值天数及其对应倍率 */}
+      <Stack spacing={1} direction="column" sx={{ mt: 2 }}>
+      {Object.entries(paymentMultiplier).map(([days, multiplier]) => (
+        <Button
+          key={days}
+          variant={topUpDays === days ? "contained" : "outlined"}
+          onClick={() => {
+            setTopUpDays(days); // 直接设置状态，useEffect 将负责调用 updateActualAmount
+          }}
+          sx={optionButtonStyle}
+        >
+          {days === "-1" ? `无限期 - ${multiplier}x` : `有效期：${days} 天 - ${multiplier}x`}
+        </Button>
+      ))}
+      </Stack>
+
+      <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 3 }}>
+        <Button onClick={() => setOpen(false)} color="error">取消</Button>
+        <Button onClick={() => onlineTopUp()} variant="contained" disabled={isSubmitting}>
+          {isSubmitting ? '处理中...' : '确认充值'}
+        </Button>
+      </Stack>
+    </Box>
+  );
 
   return (
     <UserCard>
@@ -303,30 +367,8 @@ const TopupCard = () => {
           }
         </SubCard>
           <Modal open={open} onClose={() => setOpen(false)}>
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 400,
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          borderRadius: 1,
-        }}>
-          <Typography variant="h6" component="h2">
-            确定要充值吗
-          </Typography>
-          <Typography sx={{ mt: 2 }}>充值金额：{topUpCount}$</Typography>
-          <Typography sx={{ mt: 2 }}>实付金额：{renderAmount()}</Typography>
-          <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 3 }}>
-            <Button onClick={() => setOpen(false)} color="error">取消</Button>
-            <Button onClick={() => onlineTopUp()} variant="contained" disabled={isSubmitting}>
-              {isSubmitting ? '处理中...' : '确认充值'}
-            </Button>
-          </Stack>
-        </Box>
-      </Modal>
+            {renderModalContent()}
+          </Modal>
       </SubCard>
     </UserCard>
   );

@@ -19,8 +19,9 @@ const SystemSetting = () => {
         ServerAddress: '',
         EpayId: '',
         EpayKey: '',
-        Price: 7.3,
+        RedempTionCount: 30,
         TopupGroupRatio: '',
+        TopupRatio: '',
         PayAddress: '',
         Footer: '',
         WeChatAuthEnabled: '',
@@ -54,7 +55,7 @@ const SystemSetting = () => {
         if (success) {
             let newInputs = {};
             data.forEach((item) => {
-                if (item.key === 'TopupGroupRatio') {
+                if (item.key === 'TopupGroupRatio' || item.key === 'TopupRatio') {
                     item.value = JSON.stringify(JSON.parse(item.value), null, 2);
                 }
                 newInputs[item.key] = item.value;
@@ -107,7 +108,7 @@ const SystemSetting = () => {
             if (key === 'EmailDomainWhitelist') {
                 value = value.split(',');
             }
-            if (key === 'Price') {
+            if (key === 'RedempTionCount') {
                 value = parseFloat(value);
             }
             setInputs((inputs) => ({
@@ -144,7 +145,7 @@ const SystemSetting = () => {
             name === 'ServerAddress' ||
             name === 'EpayId' ||
             name === 'EpayKey' ||
-            name === 'Price' ||
+            name === 'RedempTionCount' ||
             name === 'PayAddress' ||
             name === 'GitHubClientId' ||
             name === 'GitHubClientSecret' ||
@@ -155,6 +156,7 @@ const SystemSetting = () => {
             name === 'TurnstileSecretKey' ||
             name === 'EmailDomainWhitelist' ||
             name === 'TopupGroupRatio' ||
+            name === 'TopupRatio' ||
             name === 'AppToken' || // 新增 AppToken 条件
             name === 'Uids' ||         // 新增 Uids 条件
             name === 'NotificationEmail'||
@@ -184,6 +186,13 @@ const SystemSetting = () => {
             }
             await updateOption('TopupGroupRatio', inputs.TopupGroupRatio);
         }
+        if (originInputs['TopupRatio'] !== inputs.TopupRatio) {
+            if (!verifyJSON(inputs.TopupRatio)) {
+                showError('充值倍率不是合法的 JSON 字符串');
+                return;
+            }
+            await updateOption('TopupRatio', inputs.TopupRatio);
+        }
         let PayAddress = removeTrailingSlash(inputs.PayAddress);
         await updateOption('PayAddress', PayAddress);
         if (inputs.EpayId !== '') {
@@ -192,7 +201,7 @@ const SystemSetting = () => {
         if (inputs.EpayKey !== '') {
             await updateOption('EpayKey', inputs.EpayKey);
         }
-        await updateOption('Price', "" + inputs.Price);
+        await updateOption('RedempTionCount', "" + inputs.RedempTionCount);
     };
 
     const submitSMTP = async () => {
@@ -354,10 +363,10 @@ const SystemSetting = () => {
                             onChange={handleInputChange}
                         />
                         <Form.Input
-                            label='充值价格（x元/美金）'
-                            placeholder='例如：7，就是7元/美金'
-                            value={inputs.Price}
-                            name='Price'
+                            label='兑换码有效期（-1为无期限）'
+                            placeholder='例如：30，就是30天'
+                            value={inputs.RedempTionCount}
+                            name='RedempTionCount'
 
                             min={0}
                             onChange={handleInputChange}
@@ -369,10 +378,21 @@ const SystemSetting = () => {
                             label='充值分组倍率'
                             name='TopupGroupRatio'
                             onChange={handleInputChange}
-                            style={{minHeight: 250, fontFamily: 'JetBrains Mono, Consolas'}}
+                            style={{minHeight: 200, fontFamily: 'JetBrains Mono, Consolas'}}
                             autoComplete='new-password'
                             value={inputs.TopupGroupRatio}
                             placeholder='为一个 JSON 文本，键为组名称，值为倍率'
+                        />
+                    </Form.Group>
+                    <Form.Group widths='equal'>
+                        <Form.TextArea
+                            label='充值天数倍率（-1为无期限）'
+                            name='TopupRatio'
+                            onChange={handleInputChange}
+                            style={{minHeight: 200, fontFamily: 'JetBrains Mono, Consolas'}}
+                            autoComplete='new-password'
+                            value={inputs.TopupRatio}
+                            placeholder='为一个 JSON 文本，键为天数，值为倍率'
                         />
                     </Form.Group>
                     <Form.Button onClick={submitPayAddress}>
