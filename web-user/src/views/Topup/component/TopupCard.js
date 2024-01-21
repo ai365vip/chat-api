@@ -109,9 +109,13 @@ const TopupCard = () => {
     }
   }, [options]);
   
+
   useEffect(() => {
-    updateActualAmount();
-  }, [topUpDays, topUpCount]);
+    if (open) { 
+      updateActualAmount();
+    }
+  }, [topUpDays, open]);
+
   
   const updateActualAmount = () => {
 
@@ -120,9 +124,15 @@ const TopupCard = () => {
   
   const preTopUp = async (payment) => {
     setPayWay(payment);
-    updateActualAmount();
-    setOpen(true); // 打开模态框
+    
+    const firstDayOption = Object.keys(paymentMultiplier)[0];
+    setTopUpDays(firstDayOption, async () => {
+      await updateActualAmount();
+    });
+
+    setOpen(true);
   };
+  
   
   
   const onlineTopUp = async () => {
@@ -240,7 +250,7 @@ const TopupCard = () => {
           key={days}
           variant={topUpDays === days ? "contained" : "outlined"}
           onClick={() => {
-            setTopUpDays(days); // 直接设置状态，useEffect 将负责调用 updateActualAmount
+            setTopUpDays(days); 
           }}
           sx={optionButtonStyle}
         >
