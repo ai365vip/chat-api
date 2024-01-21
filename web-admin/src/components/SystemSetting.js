@@ -17,12 +17,6 @@ const SystemSetting = () => {
         SMTPFrom: '',
         SMTPToken: '',
         ServerAddress: '',
-        EpayId: '',
-        EpayKey: '',
-        RedempTionCount: 30,
-        TopupGroupRatio: '',
-        TopupRatio: '',
-        PayAddress: '',
         Footer: '',
         WeChatAuthEnabled: '',
         WeChatServerAddress: '',
@@ -36,8 +30,6 @@ const SystemSetting = () => {
         EmailDomainWhitelist: '',
         EmailNotificationsEnabled: '',
         WxPusherNotificationsEnabled: '',
-        YzfZfb: '',
-        YzfWx: '',
         UserGroup:'',
         VipUserGroup:'',
 
@@ -55,9 +47,6 @@ const SystemSetting = () => {
         if (success) {
             let newInputs = {};
             data.forEach((item) => {
-                if (item.key === 'TopupGroupRatio' || item.key === 'TopupRatio') {
-                    item.value = JSON.stringify(JSON.parse(item.value), null, 2);
-                }
                 newInputs[item.key] = item.value;
             });
             setInputs({
@@ -91,8 +80,6 @@ const SystemSetting = () => {
             case 'EmailDomainRestrictionEnabled':
             case 'EmailNotificationsEnabled':
             case 'WxPusherNotificationsEnabled':
-            case 'YzfZfb':
-            case 'YzfWx':    
             case 'RegisterEnabled':
                 value = inputs[key] === 'true' ? 'false' : 'true';
                 break;
@@ -107,9 +94,6 @@ const SystemSetting = () => {
         if (success) {
             if (key === 'EmailDomainWhitelist') {
                 value = value.split(',');
-            }
-            if (key === 'RedempTionCount') {
-                value = parseFloat(value);
             }
             setInputs((inputs) => ({
                 ...inputs, [key]: value
@@ -143,10 +127,6 @@ const SystemSetting = () => {
             name === 'Notice' ||
             name.startsWith('SMTP') ||
             name === 'ServerAddress' ||
-            name === 'EpayId' ||
-            name === 'EpayKey' ||
-            name === 'RedempTionCount' ||
-            name === 'PayAddress' ||
             name === 'GitHubClientId' ||
             name === 'GitHubClientSecret' ||
             name === 'WeChatServerAddress' ||
@@ -174,35 +154,6 @@ const SystemSetting = () => {
         await updateOption('ServerAddress', ServerAddress);
     };
 
-    const submitPayAddress = async () => {
-        if (inputs.ServerAddress === '') {
-            showError('请先填写服务器地址');
-            return
-        }
-        if (originInputs['TopupGroupRatio'] !== inputs.TopupGroupRatio) {
-            if (!verifyJSON(inputs.TopupGroupRatio)) {
-                showError('充值分组倍率不是合法的 JSON 字符串');
-                return;
-            }
-            await updateOption('TopupGroupRatio', inputs.TopupGroupRatio);
-        }
-        if (originInputs['TopupRatio'] !== inputs.TopupRatio) {
-            if (!verifyJSON(inputs.TopupRatio)) {
-                showError('充值倍率不是合法的 JSON 字符串');
-                return;
-            }
-            await updateOption('TopupRatio', inputs.TopupRatio);
-        }
-        let PayAddress = removeTrailingSlash(inputs.PayAddress);
-        await updateOption('PayAddress', PayAddress);
-        if (inputs.EpayId !== '') {
-            await updateOption('EpayId', inputs.EpayId);
-        }
-        if (inputs.EpayKey !== '') {
-            await updateOption('EpayKey', inputs.EpayKey);
-        }
-        await updateOption('RedempTionCount', "" + inputs.RedempTionCount);
-    };
 
     const submitSMTP = async () => {
         if (originInputs['SMTPServer'] !== inputs.SMTPServer) {
@@ -338,81 +289,6 @@ const SystemSetting = () => {
                     <Form.Button onClick={submitServerAddress}>
                         更新服务器地址
                     </Form.Button>
-                    <Divider/>
-                    <Header as='h3'>支付设置（当前仅支持易支付接口，使用上方服务器地址作为回调地址！）</Header>
-                    <Form.Group widths='equal'>
-                        <Form.Input
-                            label='支付地址，不填写则不启用在线支付'
-                            placeholder='例如：https://yourdomain.com'
-                            value={inputs.PayAddress}
-                            name='PayAddress'
-                            onChange={handleInputChange}
-                        />
-                        <Form.Input
-                            label='易支付商户ID'
-                            placeholder='例如：0001'
-                            value={inputs.EpayId}
-                            name='EpayId'
-                            onChange={handleInputChange}
-                        />
-                        <Form.Input
-                            label='易支付商户密钥'
-                            placeholder='例如：dejhfueqhujasjmndbjkqaw'
-                            value={inputs.EpayKey}
-                            name='EpayKey'
-                            onChange={handleInputChange}
-                        />
-                        <Form.Input
-                            label='兑换码有效期（-1为无期限）'
-                            placeholder='例如：30，就是30天'
-                            value={inputs.RedempTionCount}
-                            name='RedempTionCount'
-
-                            min={0}
-                            onChange={handleInputChange}
-                        />
-                    </Form.Group>
-                    
-                    <Form.Group widths='equal'>
-                        <Form.TextArea
-                            label='充值分组倍率'
-                            name='TopupGroupRatio'
-                            onChange={handleInputChange}
-                            style={{minHeight: 200, fontFamily: 'JetBrains Mono, Consolas'}}
-                            autoComplete='new-password'
-                            value={inputs.TopupGroupRatio}
-                            placeholder='为一个 JSON 文本，键为组名称，值为倍率'
-                        />
-                    </Form.Group>
-                    <Form.Group widths='equal'>
-                        <Form.TextArea
-                            label='充值天数倍率（-1为无期限）'
-                            name='TopupRatio'
-                            onChange={handleInputChange}
-                            style={{minHeight: 200, fontFamily: 'JetBrains Mono, Consolas'}}
-                            autoComplete='new-password'
-                            value={inputs.TopupRatio}
-                            placeholder='为一个 JSON 文本，键为天数，值为倍率'
-                        />
-                    </Form.Group>
-                    <Form.Button onClick={submitPayAddress}>
-                        更新支付设置
-                    </Form.Button>
-                    <Form.Group inline>
-                    <label>支付通道</label>
-                        <Form.Checkbox
-                            label='支付宝'
-                            checked={inputs.YzfZfb === 'true'}
-                            name='YzfZfb'
-                            onChange={handleInputChange}
-                        />
-                        <Form.Checkbox
-                            label='微信'
-                            checked={inputs.YzfWx === 'true'}
-                            name='YzfWx'
-                            onChange={handleInputChange}
-                        />
-                    </Form.Group>
                     <Divider/>
                     <Header as='h3'>配置登录注册</Header>
                     <Form.Group inline>

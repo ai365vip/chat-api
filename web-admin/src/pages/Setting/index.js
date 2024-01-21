@@ -4,6 +4,7 @@ import {isRoot} from '../../helpers';
 import OtherSetting from '../../components/OtherSetting';
 import PersonalSetting from '../../components/PersonalSetting';
 import OperationSetting from '../../components/OperationSetting';
+import PaymentSetting from '../../components/PaymentSettings';
 import {Layout, TabPane, Tabs} from "@douyinfe/semi-ui";
 
 const Setting = () => {
@@ -22,14 +23,19 @@ const Setting = () => {
             itemKey: '2'
         });
         panes.push({
+            tab: '支付设置',
+            content: <PaymentSetting/>,
+            itemKey: '3'
+        });
+        panes.push({
             tab: '系统设置',
             content: <SystemSetting/>,
-            itemKey: '3'
+            itemKey: '4'
         });
         panes.push({
             tab: '其他设置',
             content: <OtherSetting/>,
-            itemKey: '4'
+            itemKey: '5'
         });
     }
 

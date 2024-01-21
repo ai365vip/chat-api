@@ -171,15 +171,7 @@ const OperationSetting = () => {
                         通用设置
                     </Header>
                     <Form.Group widths={4}>
-                        <Form.Input
-                            label='充值链接'
-                            name='TopUpLink'
-                            onChange={handleInputChange}
-                            autoComplete='new-password'
-                            value={inputs.TopUpLink}
-                            type='link'
-                            placeholder='例如发卡网站的购买链接'
-                        />
+                        
                         <Form.Input
                             label='聊天页面链接'
                             name='ChatLink'
