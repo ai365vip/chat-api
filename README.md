@@ -30,7 +30,7 @@
 18. 支持设置普号渠道每分钟限制使用3次
 19. 支持渠道显示可用模型，可自定义排序
 20. 支持gpt-4v通用格式（添加模型gpt-4-vision，对话中放入图像链接即可）
-
+21. 支持按日期设置充值不同倍率
 ## 部署
 
 ### 基于 Docker 进行部署
@@ -139,7 +139,7 @@ docker-compose ps
 
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/13fde0aa-aa19-4c2f-9ace-611fb9cd60b8)
 
-![image](https://github.com/ai365vip/chat-api/assets/154959065/cc094241-e74c-43b3-ac7e-a889ae3c9cbd)
+![image](https://github.com/ai365vip/chat-api/assets/154959065/23bf7267-6fac-4ca0-b6c4-2151e486f6a0)
 
 ![image](https://github.com/ai365vip/chat-api/assets/154959065/0017e8cb-645b-4c05-aefa-6cd538989278)
 

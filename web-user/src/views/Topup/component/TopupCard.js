@@ -254,7 +254,7 @@ const TopupCard = () => {
           }}
           sx={optionButtonStyle}
         >
-          {days === "-1" ? `无限期 - ${multiplier}x` : `有效期：${days} 天 - ${multiplier}x`}
+          {days === "-1" ? `永不过期 - ${multiplier}x` : `有效期：${days} 天 - ${multiplier}x`}
         </Button>
       ))}
       </Stack>
