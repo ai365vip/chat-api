@@ -38,7 +38,6 @@ jobs:
         run: |
           go mod download
           go build -ldflags "-s -w -X 'one-api/common.Version=$(git describe --tags)' -extldflags '-static'" -o chat-api
-
       - name: Build Backend (arm64)
         run: |
           sudo apt-get update
