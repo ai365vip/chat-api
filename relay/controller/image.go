@@ -15,6 +15,7 @@ import (
 	"one-api/relay/util"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,7 +40,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 	userId := c.GetInt("id")
 	group := c.GetString("group")
 	consumeQuota := c.GetBool("consume_quota")
-
+	startTime := time.Now()
 	var imageRequest openai.ImageRequest
 	if consumeQuota {
 		err := common.UnmarshalBodyReusable(c, &imageRequest)
@@ -221,6 +222,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 	var textResponse openai.ImageResponse
 
 	defer func(ctx context.Context) {
+		useTimeSeconds := time.Now().Unix() - startTime.Unix()
 		if resp.StatusCode != http.StatusOK {
 			return
 		}
@@ -236,7 +238,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 			tokenName := c.GetString("token_name")
 			multiplier := fmt.Sprintf(" %s，分组倍率 %.2f", modelRatioString, groupRatio)
 			logContent := fmt.Sprintf(" ")
-			model.RecordConsumeLog(ctx, userId, channelId, 0, 0, imageRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota)
+			model.RecordConsumeLog(ctx, userId, channelId, 0, 0, imageRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota, int(useTimeSeconds), false)
 			model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 			channelId := c.GetInt("channel_id")
 			model.UpdateChannelUsedQuota(channelId, quota)

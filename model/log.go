@@ -23,6 +23,8 @@ type Log struct {
 	CompletionTokens int    `json:"completion_tokens" gorm:"default:0"`
 	ChannelId        int    `json:"channel" gorm:"index"`
 	TokenId          int    `json:"token_id" gorm:"default:0;index"`
+	UseTime          int    `json:"use_time" gorm:"bigint;default:0"`
+	IsStream         bool   `json:"is_stream" gorm:"default:false"`
 	Multiplier       string `json:"multiplier"`
 	UserQuota        int    `json:"userQuota"`
 }
@@ -42,6 +44,8 @@ type Logs struct {
 	PromptTokens     int    `json:"prompt_tokens"`     // 匹配 SUM(prompt_tokens) AS prompt_tokens
 	CompletionTokens int    `json:"completion_tokens"` // 匹配 SUM(completion_tokens) AS completion_tokens
 	Quota            int    `json:"quota"`             // 匹配 SUM(quota/500000) AS quota
+	UseTime          int    `json:"use_time" gorm:"bigint;default:0"`
+	IsStream         bool   `json:"is_stream" gorm:"default:false"`
 	Multiplier       string `json:"multiplier"`
 	UserQuota        int    `json:"userQuota"`
 }
@@ -144,7 +148,7 @@ func RecordLog(userId int, logType int, quota int, multiplier string) {
 
 }
 
-func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int, multiplier string, userQuota int) {
+func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int, multiplier string, userQuota int, useTimeSeconds int, isStream bool) {
 	common.LogInfo(ctx, fmt.Sprintf("record consume log: userId=%d, 用户调用前余额=%d, channelId=%d, promptTokens=%d, completionTokens=%d, modelName=%s, tokenName=%s, quota=%d,multiplier=%s", userId, userQuota, channelId, promptTokens, completionTokens, modelName, tokenName, quota, multiplier))
 	if !common.LogConsumeEnabled {
 		return
@@ -165,6 +169,8 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptToke
 		TokenId:          tokenId,
 		Multiplier:       multiplier,
 		UserQuota:        userQuota,
+		UseTime:          useTimeSeconds,
+		IsStream:         isStream,
 	}
 	err := DB.Create(log).Error
 	if err != nil {

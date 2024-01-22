@@ -1,40 +1,13 @@
 import React, {useEffect, useState} from 'react';
-import {Label} from 'semantic-ui-react';
 import {API, copy, isAdmin, showError, showSuccess, timestamp2string} from '../helpers';
 
-import {Table, Avatar, Tag, Form, Button, Layout, Select, Popover, Modal } from '@douyinfe/semi-ui';
+import {Table, Avatar, Tag, Form, Button, Layout, Select, Popover, Modal,Space } from '@douyinfe/semi-ui';
 import {ITEMS_PER_PAGE} from '../constants';
 import {renderNumber, renderQuota, stringToColor} from '../helpers/render';
-import {
-    IconAt,
-    IconHistogram,
-    IconGift,
-    IconKey,
-    IconUser,
-    IconLayers,
-    IconSetting,
-    IconCreditCard,
-    IconSemiLogo,
-    IconHome,
-    IconMore
-} from '@douyinfe/semi-icons';
-
-const {Sider, Content, Header} = Layout;
-const {Column} = Table;
 
 
-function renderTimestamp(timestamp) {
-    return (
-        <>
-            {timestamp2string(timestamp)}
-        </>
-    );
-}
+const { Header} = Layout;
 
-const MODE_OPTIONS = [
-    {key: 'all', text: '全部用户', value: 'all'},
-    {key: 'self', text: '当前用户', value: 'self'}
-];
 
 const colors = ['amber', 'blue', 'cyan', 'green', 'grey', 'indigo',
     'light-blue', 'lime', 'orange', 'pink',
@@ -56,6 +29,26 @@ function renderType(type) {
     }
 }
 
+function renderIsStream(bool) {
+    if (bool) {
+        return <Tag color='blue' size='large'>流</Tag>;
+    } else {
+        return <Tag color='purple' size='large'>非流</Tag>;
+    }	
+}
+		
+
+		
+function renderUseTime(type) {
+    const time = parseInt(type);
+    if (time < 101) {
+        return <Tag color='green' size='large'> {time} s </Tag>;
+    } else if (time < 300) {
+        return <Tag color='orange' size='large'> {time} s </Tag>;
+    } else {
+        return <Tag color='red' size='large'> {time} s </Tag>;
+    }	
+}
 const LogsTable = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalContent, setModalContent] = useState('');
@@ -143,6 +136,20 @@ const LogsTable = () => {
                         </div>
                         :
                         <></>
+                );
+            },
+        },
+        {
+            title: '用时',
+            dataIndex: 'use_time',
+            render: (text, record, index) => {
+                return (
+                    <div>
+                        <Space>
+                            {renderUseTime(text)}
+                            {renderIsStream(record.is_stream)}
+                        </Space>
+                    </div>
                 );
             },
         },

@@ -9,6 +9,7 @@ import (
 	"one-api/relay/channel/openai"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 )
@@ -130,4 +131,11 @@ func GetAPIVersion(c *gin.Context) string {
 		apiVersion = c.GetString("api_version")
 	}
 	return apiVersion
+}
+func CountAudioToken(text string, model string) int {
+	if strings.HasPrefix(model, "tts") {
+		return utf8.RuneCountInString(text)
+	} else {
+		return openai.CountTokenText(text, model)
+	}
 }

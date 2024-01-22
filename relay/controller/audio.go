@@ -17,6 +17,7 @@ import (
 	"one-api/relay/util"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,6 +31,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 	userId := c.GetInt("id")
 	group := c.GetString("group")
 	tokenName := c.GetString("token_name")
+	startTime := time.Now()
 
 	var ttsRequest openai.TextToSpeechRequest
 	if relayMode == constant.RelayModeAudioSpeech {
@@ -240,7 +242,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 	}
 	defer func(ctx context.Context) {
 		go func() {
-
+			useTimeSeconds := time.Now().Unix() - startTime.Unix()
 			quotaDelta := quota - preConsumedQuota
 			err = model.PostConsumeTokenQuota(tokenId, userQuota, quotaDelta, preConsumedQuota, true)
 			if err != nil {
@@ -253,7 +255,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 			if quota != 0 {
 				multiplier := fmt.Sprintf("%s，分组倍率 %.2f", modelRatioString, groupRatio)
 				logContent := fmt.Sprintf(" ")
-				model.RecordConsumeLog(ctx, userId, channelId, quota, 0, ttsRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota)
+				model.RecordConsumeLog(ctx, userId, channelId, quota, 0, ttsRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota, int(useTimeSeconds), false)
 				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 				channelId := c.GetInt("channel_id")
 				model.UpdateChannelUsedQuota(channelId, quota)

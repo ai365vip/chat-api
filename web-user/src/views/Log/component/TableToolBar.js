@@ -1,7 +1,7 @@
 require('dayjs/locale/zh-cn');
 import PropTypes from 'prop-types';
 import { useTheme } from '@mui/material/styles';
-import { IconUser, IconKey, IconBrandGithubCopilot, IconSitemap } from '@tabler/icons-react';
+import { IconKey, IconBrandGithubCopilot } from '@tabler/icons-react';
 import { InputAdornment, OutlinedInput, Stack, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import LogType from '../type/LogType';
 // ----------------------------------------------------------------------
 
-export default function TableToolBar({ filterName, handleFilterName, userIsAdmin }) {
+export default function TableToolBar({ filterName, handleFilterName }) {
   const theme = useTheme();
   const grey500 = theme.palette.grey[500];
 
@@ -54,7 +54,34 @@ export default function TableToolBar({ filterName, handleFilterName, userIsAdmin
             }
           />
         </FormControl>
-
+        <FormControl sx={{ minWidth: '22%' }}>
+          <InputLabel htmlFor="channel-type-label">类型</InputLabel>
+          <Select
+            id="channel-type-label"
+            label="类型"
+            value={filterName.type}
+            name="type"
+            onChange={handleFilterName}
+            sx={{
+              minWidth: '100%'
+            }}
+            MenuProps={{
+              PaperProps: {
+                style: {
+                  maxHeight: 200
+                }
+              }
+            }}
+          >
+            {Object.values(LogType).map((option) => {
+              return (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.text}
+                </MenuItem>
+              );
+            })}
+          </Select>
+        </FormControl>
         <FormControl>
           <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'zh-cn'}>
             <DateTimePicker
@@ -100,81 +127,12 @@ export default function TableToolBar({ filterName, handleFilterName, userIsAdmin
             />
           </LocalizationProvider>
         </FormControl>
+        
       </Stack>
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 3, sm: 2, md: 4 }} padding={'24px'}>
-        {userIsAdmin && (
-          <FormControl>
-            <InputLabel htmlFor="channel-channel-label">渠道ID</InputLabel>
-            <OutlinedInput
-              id="channel"
-              name="channel"
-              sx={{
-                minWidth: '100%'
-              }}
-              label="渠道ID"
-              value={filterName.channel}
-              onChange={handleFilterName}
-              placeholder="渠道ID"
-              startAdornment={
-                <InputAdornment position="start">
-                  <IconSitemap stroke={1.5} size="20px" color={grey500} />
-                </InputAdornment>
-              }
-            />
-          </FormControl>
-        )}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 3, sm: 2, md: 4 }} padding={'10px'}>
 
-        {userIsAdmin && (
-          <FormControl>
-            <InputLabel htmlFor="channel-username-label">用户名称</InputLabel>
-            <OutlinedInput
-              id="username"
-              name="username"
-              sx={{
-                minWidth: '100%'
-              }}
-              label="用户名称"
-              value={filterName.username}
-              onChange={handleFilterName}
-              placeholder="用户名称"
-              startAdornment={
-                <InputAdornment position="start">
-                  <IconUser stroke={1.5} size="20px" color={grey500} />
-                </InputAdornment>
-              }
-            />
-          </FormControl>
-        )}
-
-        <FormControl sx={{ minWidth: '22%' }}>
-          <InputLabel htmlFor="channel-type-label">类型</InputLabel>
-          <Select
-            id="channel-type-label"
-            label="类型"
-            value={filterName.type}
-            name="type"
-            onChange={handleFilterName}
-            sx={{
-              minWidth: '100%'
-            }}
-            MenuProps={{
-              PaperProps: {
-                style: {
-                  maxHeight: 200
-                }
-              }
-            }}
-          >
-            {Object.values(LogType).map((option) => {
-              return (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.text}
-                </MenuItem>
-              );
-            })}
-          </Select>
-        </FormControl>
+       
       </Stack>
     </>
   );
@@ -183,5 +141,4 @@ export default function TableToolBar({ filterName, handleFilterName, userIsAdmin
 TableToolBar.propTypes = {
   filterName: PropTypes.object,
   handleFilterName: PropTypes.func,
-  userIsAdmin: PropTypes.bool
 };
