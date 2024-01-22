@@ -709,7 +709,7 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 			}
 			aitext = responseText
 			textResponse.Usage.PromptTokens = promptTokens
-			textResponse.Usage.CompletionTokens = chatbot.CountTokenText(responseText, textRequest.Model)
+			textResponse.Usage.CompletionTokens = openai.CountTokenText(responseText, textRequest.Model)
 			return nil
 		} else {
 			err, usage, responseText := chatbot.BotHandler(c, resp, promptTokens, textRequest.Model)

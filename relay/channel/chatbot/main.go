@@ -208,11 +208,7 @@ func BotHandler(c *gin.Context, resp *http.Response, promptTokens int, model str
 		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	if textResponse.Usage.TotalTokens == 0 {
-		completionTokens := 0
-
-		for _, choice := range textResponse.Choices {
-			completionTokens += countTokenText(string(choice.Message.Content), model)
-		}
+		completionTokens := openai.CountTokenText(string(responseBody), model)
 
 		textResponse.Usage = openai.Usage{
 			PromptTokens:     promptTokens,
