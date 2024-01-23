@@ -39,7 +39,6 @@ var ModelRatio = map[string]float64{
 	"text-babbage-001":          0.25,
 	"text-curie-001":            1,
 	"text-davinci-002":          10,
-	"text-davinci-003":          10,
 	"text-davinci-edit-001":     10,
 	"code-davinci-edit-001":     10,
 	"whisper-1":                 15,  // $0.006 / minute -> $0.006 / 150 words -> $0.006 / 200 tokens -> $0.03 / 1k tokens

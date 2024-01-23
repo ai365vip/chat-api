@@ -62,6 +62,9 @@ const EditToken = (props) => {
             if (data.expired_time !== -1) {
                 data.expired_time = timestamp2string(data.expired_time);
             }
+            if (data.models && typeof data.models === 'string') {
+                data.models = data.models.split(',');
+            }
             setInputs(data);
             setSelectedGroup(data.group || userState?.user?.group || 'default');// 根据加载的数据设置分组
         } else {
