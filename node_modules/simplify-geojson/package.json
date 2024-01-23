@@ -1,0 +1,44 @@
+{
+  "name": "simplify-geojson",
+  "description": "Apply Ramer-Douglas-Peucker line simplification to GeoJSON features or feature collections in JS or on the CLI",
+  "version": "1.0.5",
+  "author": "max ogden",
+  "bin": {
+    "simplify-geojson": "./cli.js"
+  },
+  "bugs": {
+    "url": "https://github.com/maxogden/simplify-geojson/issues"
+  },
+  "dependencies": {
+    "concat-stream": "~1.4.1",
+    "minimist": "1.2.6",
+    "simplify-geometry": "0.0.2"
+  },
+  "devDependencies": {
+    "standard": "^8.3.0",
+    "tape": "^4.4.0"
+  },
+  "homepage": "https://github.com/maxogden/simplify-geojson",
+  "keywords": [
+    "Ramer-Douglas-Peucker",
+    "feature",
+    "featurecollection",
+    "geojson",
+    "line",
+    "linestring",
+    "multilinestring",
+    "multipolygon",
+    "polygon",
+    "simplification",
+    "simplify"
+  ],
+  "license": "BSD-2-Clause",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxogden/simplify-geojson.git"
+  },
+  "scripts": {
+    "test": "standard && node test.js"
+  }
+}

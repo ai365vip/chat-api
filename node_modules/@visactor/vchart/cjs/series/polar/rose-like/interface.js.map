@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/series/polar/rose-like/interface.ts"],"names":[],"mappings":"","file":"interface.js","sourcesContent":["import type { IPolarSeriesSpec, IPolarSeriesTheme } from '../interface';\n\nexport type IRoseLikeSeriesSpec = IPolarSeriesSpec;\n\nexport type IRoseLikeSeriesTheme = IPolarSeriesTheme;\n"]}

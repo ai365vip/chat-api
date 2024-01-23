@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/series/geo/interface.ts"],"names":[],"mappings":"","file":"interface.js","sourcesContent":["import type { ISeriesSpec } from '../../typings';\n\nexport interface IGeoSeriesSpec extends ISeriesSpec {\n  /** 数值字段 */\n  valueField?: string;\n}\n"]}

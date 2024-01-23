@@ -1,7 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {Button, Col, Form, Layout, Row, Spin,Divider} from "@douyinfe/semi-ui";
 import VChart from '@visactor/vchart';
-import {useEffectOnce} from "usehooks-ts";
 import {API, isAdmin, showError, timestamp2string, timestamp2string1} from "../../helpers";
 import {getQuotaWithUnit, renderNumber, renderQuotaNumberWithDigit} from "../../helpers/render";
 

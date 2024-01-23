@@ -1,0 +1,34 @@
+import type { ISymbolGraphicAttribute } from '@visactor/vrender-core';
+import { AbstractComponent } from '../../core/base';
+import type { ControllerAttributes } from './type';
+import type { ComponentOptions } from '../../interface';
+export declare class Controller extends AbstractComponent<Required<ControllerAttributes>> {
+    static defaultControllerAttr: ISymbolGraphicAttribute;
+    static defaultAttributes: ControllerAttributes;
+    private _isPaused;
+    private _playController;
+    private _forwardController;
+    private _backwardController;
+    private _layout;
+    private _startAttr;
+    private _pauseAttr;
+    private _forwardAttr;
+    private _backwardAttr;
+    constructor(attributes: ControllerAttributes, options?: ComponentOptions);
+    updateAttributes: () => void;
+    private updateLayout;
+    private _initPlay;
+    private _initBackward;
+    private _initForward;
+    private _initEvents;
+    render(): void;
+    renderPlay: () => void;
+    renderBackward: () => void;
+    renderForward: () => void;
+    play: () => void;
+    pause: () => void;
+    forward: () => void;
+    backward: () => void;
+    togglePlay: () => void;
+    togglePause: () => void;
+}

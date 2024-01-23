@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/common/toNumber.ts"],"names":[],"mappings":";;;AAAA,SAAgB,QAAQ,CAAC,CAAM;IAC7B,OAAO,MAAM,CAAC,CAAC,CAAC,CAAC;AACnB,CAAC;AAFD,4BAEC","file":"toNumber.js","sourcesContent":["export function toNumber(a: any) {\n  return Number(a);\n}\n"]}

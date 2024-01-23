@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/common/isUndefined.ts"],"names":[],"mappings":";;AAAA,MAAM,WAAW,GAAG,CAAC,KAAU,EAAsB,EAAE;IACrD,OAAO,KAAK,KAAK,SAAS,CAAC;AAC7B,CAAC,CAAC;AAEF,kBAAe,WAAW,CAAC","file":"isUndefined.js","sourcesContent":["const isUndefined = (value: any): value is undefined => {\n  return value === undefined;\n};\n\nexport default isUndefined;\n"]}

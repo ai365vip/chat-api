@@ -1,0 +1,69 @@
+{
+  "name": "@turf/boolean-clockwise",
+  "version": "6.5.0",
+  "description": "turf boolean-clockwise module",
+  "author": "Turf Authors",
+  "contributors": [
+    "Morgan Herlocker <@morganherlocker>",
+    "Rowan Winsemius <@rowanwins>",
+    "Denis Carriere <@DenisCarriere>",
+    "Stefano Borghi <@stebogit>"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Turfjs/turf/issues"
+  },
+  "homepage": "https://github.com/Turfjs/turf",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Turfjs/turf.git"
+  },
+  "funding": "https://opencollective.com/turf",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "turf",
+    "clockwise",
+    "boolean"
+  ],
+  "main": "dist/js/index.js",
+  "module": "dist/es/index.js",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": "./dist/es/index.js",
+      "require": "./dist/js/index.js"
+    }
+  },
+  "types": "dist/js/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "bench": "ts-node bench.js",
+    "build": "npm-run-all build:*",
+    "build:es": "tsc --outDir dist/es --module esnext --declaration false && echo '{\"type\":\"module\"}' > dist/es/package.json",
+    "build:js": "tsc",
+    "docs": "node ../../scripts/generate-readmes",
+    "test": "npm-run-all test:*",
+    "test:tape": "ts-node -r esm test.js"
+  },
+  "devDependencies": {
+    "@types/tape": "*",
+    "benchmark": "*",
+    "glob": "*",
+    "load-json-file": "*",
+    "npm-run-all": "*",
+    "tape": "*",
+    "ts-node": "*",
+    "tslint": "*",
+    "typescript": "*"
+  },
+  "dependencies": {
+    "@turf/helpers": "^6.5.0",
+    "@turf/invariant": "^6.5.0"
+  },
+  "gitHead": "5375941072b90d489389db22b43bfe809d5e451e"
+}

@@ -1,0 +1,113 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: !0
+}), exports.normalTransform = exports.Matrix = void 0;
+
+const angle_1 = require("../angle"), math_1 = require("../math");
+
+class Matrix {
+    constructor(a = 1, b = 0, c = 0, d = 1, e = 0, f = 0) {
+        this.a = a, this.b = b, this.c = c, this.d = d, this.e = e, this.f = f;
+    }
+    equalToMatrix(m2) {
+        return !(this.e !== m2.e || this.f !== m2.f || this.a !== m2.a || this.d !== m2.d || this.b !== m2.b || this.c !== m2.c);
+    }
+    equalTo(a, b, c, d, e, f) {
+        return !(this.e !== e || this.f !== f || this.a !== a || this.d !== d || this.b !== b || this.c !== c);
+    }
+    setValue(a, b, c, d, e, f) {
+        return this.a = a, this.b = b, this.c = c, this.d = d, this.e = e, this.f = f, this;
+    }
+    reset() {
+        return this.a = 1, this.b = 0, this.c = 0, this.d = 1, this.e = 0, this.f = 0, this;
+    }
+    getInverse() {
+        const a = this.a, b = this.b, c = this.c, d = this.d, e = this.e, f = this.f, m = new Matrix, dt = a * d - b * c;
+        return m.a = d / dt, m.b = -b / dt, m.c = -c / dt, m.d = a / dt, m.e = (c * f - d * e) / dt, 
+        m.f = -(a * f - b * e) / dt, m;
+    }
+    rotate(rad) {
+        const c = Math.cos(rad), s = Math.sin(rad), m11 = this.a * c + this.c * s, m12 = this.b * c + this.d * s, m21 = this.a * -s + this.c * c, m22 = this.b * -s + this.d * c;
+        return this.a = m11, this.b = m12, this.c = m21, this.d = m22, this;
+    }
+    rotateByCenter(rad, cx, cy) {
+        const cos = Math.cos(rad), sin = Math.sin(rad), rotateM13 = (1 - cos) * cx + sin * cy, rotateM23 = (1 - cos) * cy - sin * cx, m11 = cos * this.a - sin * this.b, m21 = sin * this.a + cos * this.b, m12 = cos * this.c - sin * this.d, m22 = sin * this.c + cos * this.d, m13 = cos * this.e - sin * this.f + rotateM13, m23 = sin * this.e + cos * this.f + rotateM23;
+        return this.a = m11, this.b = m21, this.c = m12, this.d = m22, this.e = m13, this.f = m23, 
+        this;
+    }
+    scale(sx, sy) {
+        return this.a *= sx, this.b *= sx, this.c *= sy, this.d *= sy, this;
+    }
+    setScale(sx, sy) {
+        return this.b = this.b / this.a * sx, this.c = this.c / this.d * sy, this.a = sx, 
+        this.d = sy, this;
+    }
+    transform(a, b, c, d, e, f) {
+        return this.multiply(a, b, c, d, e, f), this;
+    }
+    translate(x, y) {
+        return this.e += this.a * x + this.c * y, this.f += this.b * x + this.d * y, this;
+    }
+    transpose() {
+        const {a: a, b: b, c: c, d: d, e: e, f: f} = this;
+        return this.a = b, this.b = a, this.c = d, this.d = c, this.e = f, this.f = e, this;
+    }
+    multiply(a2, b2, c2, d2, e2, f2) {
+        const a1 = this.a, b1 = this.b, c1 = this.c, d1 = this.d, m11 = a1 * a2 + c1 * b2, m12 = b1 * a2 + d1 * b2, m21 = a1 * c2 + c1 * d2, m22 = b1 * c2 + d1 * d2, dx = a1 * e2 + c1 * f2 + this.e, dy = b1 * e2 + d1 * f2 + this.f;
+        return this.a = m11, this.b = m12, this.c = m21, this.d = m22, this.e = dx, this.f = dy, 
+        this;
+    }
+    interpolate(m2, t) {
+        const m = new Matrix;
+        return m.a = this.a + (m2.a - this.a) * t, m.b = this.b + (m2.b - this.b) * t, m.c = this.c + (m2.c - this.c) * t, 
+        m.d = this.d + (m2.d - this.d) * t, m.e = this.e + (m2.e - this.e) * t, m.f = this.f + (m2.f - this.f) * t, 
+        m;
+    }
+    transformPoint(source, target) {
+        const {a: a, b: b, c: c, d: d, e: e, f: f} = this, dt = a * d - b * c, nextA = d / dt, nextB = -b / dt, nextC = -c / dt, nextD = a / dt, nextE = (c * f - d * e) / dt, nextF = -(a * f - b * e) / dt, {x: x, y: y} = source;
+        target.x = x * nextA + y * nextC + nextE, target.y = x * nextB + y * nextD + nextF;
+    }
+    onlyTranslate(scale = 1) {
+        return this.a === scale && 0 === this.b && 0 === this.c && this.d === scale;
+    }
+    clone() {
+        return new Matrix(this.a, this.b, this.c, this.d, this.e, this.f);
+    }
+    toTransformAttrs() {
+        const a = this.a, b = this.b, c = this.c, d = this.d, delta = a * d - b * c, result = {
+            x: this.e,
+            y: this.f,
+            rotateDeg: 0,
+            scaleX: 0,
+            scaleY: 0,
+            skewX: 0,
+            skewY: 0
+        };
+        if (0 !== a || 0 !== b) {
+            const r = Math.sqrt(a * a + b * b);
+            result.rotateDeg = b > 0 ? Math.acos(a / r) : -Math.acos(a / r), result.scaleX = r, 
+            result.scaleY = delta / r, result.skewX = (a * c + b * d) / delta, result.skewY = 0;
+        } else if (0 !== c || 0 !== d) {
+            const s = Math.sqrt(c * c + d * d);
+            result.rotateDeg = Math.PI / 2 - (d > 0 ? Math.acos(-c / s) : -Math.acos(c / s)), 
+            result.scaleX = delta / s, result.scaleY = s, result.skewX = 0, result.skewY = (a * c + b * d) / delta;
+        }
+        return result.rotateDeg = (0, angle_1.radianToDegree)(result.rotateDeg), result;
+    }
+}
+
+function normalTransform(out, origin, x, y, scaleX, scaleY, angle, rotateCenter) {
+    const oa = origin.a, ob = origin.b, oc = origin.c, od = origin.d, oe = origin.e, of = origin.f, cosTheta = (0, 
+    math_1.cos)(angle), sinTheta = (0, math_1.sin)(angle);
+    let rotateCenterX, rotateCenterY;
+    rotateCenter ? (rotateCenterX = rotateCenter[0], rotateCenterY = rotateCenter[1]) : (rotateCenterX = x, 
+    rotateCenterY = y);
+    const offsetX = rotateCenterX - x, offsetY = rotateCenterY - y, a1 = oa * cosTheta + oc * sinTheta, b1 = ob * cosTheta + od * sinTheta, c1 = oc * cosTheta - oa * sinTheta, d1 = od * cosTheta - ob * sinTheta;
+    out.a = scaleX * a1, out.b = scaleX * b1, out.c = scaleY * c1, out.d = scaleY * d1, 
+    out.e = oe + oa * rotateCenterX + oc * rotateCenterY - a1 * offsetX - c1 * offsetY, 
+    out.f = of + ob * rotateCenterX + od * rotateCenterY - b1 * offsetX - d1 * offsetY;
+}
+
+exports.Matrix = Matrix, exports.normalTransform = normalTransform;
+//# sourceMappingURL=matrix.js.map

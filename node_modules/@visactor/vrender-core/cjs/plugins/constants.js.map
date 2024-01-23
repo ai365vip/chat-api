@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/plugins/constants.ts"],"names":[],"mappings":";;;AAAa,QAAA,iBAAiB,GAAG,MAAM,CAAC,GAAG,CAAC,mBAAmB,CAAC,CAAC;AACpD,QAAA,aAAa,GAAG,MAAM,CAAC,GAAG,CAAC,eAAe,CAAC,CAAC","file":"constants.js","sourcesContent":["export const AutoEnablePlugins = Symbol.for('AutoEnablePlugins');\nexport const PluginService = Symbol.for('PluginService');\n"]}

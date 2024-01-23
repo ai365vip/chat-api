@@ -1,0 +1,17 @@
+import type { ContinuousPlayerAttributes, DataLabelAttrs, LineDataLabelAttrs, DataZoomAttributes, DiscretePlayerAttributes, LineLabelAttrs, RectLabelAttrs, SymbolLabelAttrs, ArcLabelAttrs, TooltipAttributes, BaseLabelAttrs, TitleAttrs, ScrollBarAttributes, AreaLabelAttrs } from '@visactor/vrender-components';
+import type { IComponentTheme, RecursivePartial } from '../../types';
+export declare const dataLabel: RecursivePartial<DataLabelAttrs>;
+export declare const lineDataLabel: RecursivePartial<LineDataLabelAttrs>;
+export declare const lineLabel: RecursivePartial<LineLabelAttrs>;
+export declare const areaLabel: RecursivePartial<AreaLabelAttrs>;
+export declare const rectLabel: RecursivePartial<RectLabelAttrs>;
+export declare const symbolLabel: RecursivePartial<SymbolLabelAttrs>;
+export declare const arcLabel: RecursivePartial<ArcLabelAttrs>;
+export declare const pointLabel: RecursivePartial<BaseLabelAttrs>;
+export declare const datazoom: RecursivePartial<DataZoomAttributes>;
+export declare const continuousPlayer: RecursivePartial<ContinuousPlayerAttributes>;
+export declare const discretePlayer: RecursivePartial<DiscretePlayerAttributes>;
+export declare const tooltip: RecursivePartial<TooltipAttributes>;
+export declare const title: RecursivePartial<TitleAttrs>;
+export declare const scrollbar: RecursivePartial<ScrollBarAttributes>;
+export declare const defaultComponentTheme: IComponentTheme;

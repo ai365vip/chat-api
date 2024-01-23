@@ -1,0 +1,65 @@
+import { isString, isFunction, isNil, array, Color } from "@visactor/vutils";
+
+export function parseReference(dependency, view) {
+    return array(dependency).reduce(((refs, dep) => {
+        const ref = isString(dep) ? view.getGrammarById(dep) : dep;
+        return ref && refs.push(ref), refs;
+    }), []);
+}
+
+function isSignalReferenceType(signal) {
+    return !isFunction(signal) && !!(null == signal ? void 0 : signal.signal);
+}
+
+function isSignalFunctionType(signal) {
+    return !isFunction(signal) && !!(null == signal ? void 0 : signal.callback);
+}
+
+export function parseFunctionType(spec, view) {
+    if (isNil(spec)) return [];
+    if (isSignalReferenceType(spec)) {
+        const signal = spec.signal;
+        if (isString(signal)) return array(view.getGrammarById(signal));
+        if ("signal" === (null == signal ? void 0 : signal.grammarType)) return [ signal ];
+    } else if (isSignalFunctionType(spec)) return parseReference(spec.dependency, view);
+    return [];
+}
+
+export function isFunctionType(spec) {
+    return isFunction(spec) || (null == spec ? void 0 : spec.signal) || !!(null == spec ? void 0 : spec.callback);
+}
+
+export function invokeFunctionType(spec, parameters, datumOrGrammarInstance, element) {
+    if (isNil(spec)) return spec;
+    if (isFunction(spec)) return element ? spec.call(null, datumOrGrammarInstance, element, parameters) : spec.call(null, datumOrGrammarInstance, parameters);
+    if (spec.signal) {
+        const signal = spec.signal;
+        return isString(signal) ? null == parameters ? void 0 : parameters[signal] : signal.output();
+    }
+    return spec.callback ? element ? spec.callback.call(null, datumOrGrammarInstance, element, parameters) : spec.callback.call(null, datumOrGrammarInstance, parameters) : spec;
+}
+
+export function invokeParameterFunctionType(spec, parameters) {
+    if (isNil(spec)) return spec;
+    if (isFunction(spec)) return spec.call(null, parameters);
+    if (spec.signal) {
+        const signal = spec.signal;
+        return isString(signal) ? null == parameters ? void 0 : parameters[signal] : signal.output();
+    }
+    return spec.callback ? spec.callback.call(null, parameters) : spec;
+}
+
+export function getGrammarOutput(grammar, parameters) {
+    return isGrammar(grammar) ? grammar.output() : parameters[grammar];
+}
+
+export function isSignal(obj) {
+    return obj && (obj.signal || obj.callback);
+}
+
+export const isGrammar = el => el && !isNil(el.grammarType);
+
+export const parseField = field => isFunction(field) ? field : datum => datum[field];
+
+export const parseColor = color => isString(color) && Color.parseColorString(color) ? color : null;
+//# sourceMappingURL=util.js.map

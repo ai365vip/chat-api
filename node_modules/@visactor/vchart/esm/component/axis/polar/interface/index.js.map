@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/component/axis/polar/interface/index.ts"],"names":[],"mappings":"AAAA,cAAc,UAAU,CAAC;AACzB,cAAc,QAAQ,CAAC;AACvB,cAAc,SAAS,CAAC;AACxB,cAAc,kCAAkC,CAAC","file":"index.js","sourcesContent":["export * from './common';\nexport * from './spec';\nexport * from './theme';\nexport * from '../../cartesian/interface/common';\n"]}

@@ -1,0 +1,13 @@
+import type { IElement } from '../types/element';
+import type { FunctionCallback, SignalDependency, SignalReference, IView, GenericFunctionType, SignalFunction, ParameterFunctionType, Nil } from '../types';
+import type { IGrammarBase } from '../types/grammar';
+export declare function parseReference(dependency: SignalDependency | SignalDependency[], view: IView): IGrammarBase[];
+export declare function parseFunctionType<Callback extends FunctionCallback<T>, T>(spec: GenericFunctionType<Callback, T> | Nil, view: IView): IGrammarBase[];
+export declare function isFunctionType<Callback extends FunctionCallback<T>, T>(spec: any): spec is Callback | SignalReference | SignalFunction<Callback, T>;
+export declare function invokeFunctionType<Callback extends FunctionCallback<T>, T>(spec: GenericFunctionType<Callback, T> | Nil, parameters: any, datumOrGrammarInstance?: any | IGrammarBase, element?: IElement | any): T;
+export declare function invokeParameterFunctionType<T>(spec: ParameterFunctionType<T>, parameters: any): T;
+export declare function getGrammarOutput(grammar: IGrammarBase | string, parameters: any): any;
+export declare function isSignal(obj: any): any;
+export declare const isGrammar: (el: any) => el is IGrammarBase;
+export declare const parseField: <T>(field: string | symbol | ((datum: T) => symbol | string)) => (datum: T) => any;
+export declare const parseColor: (color: any) => string | null;

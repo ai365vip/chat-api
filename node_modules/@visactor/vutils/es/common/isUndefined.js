@@ -1,0 +1,4 @@
+const isUndefined = value => void 0 === value;
+
+export default isUndefined;
+//# sourceMappingURL=isUndefined.js.map

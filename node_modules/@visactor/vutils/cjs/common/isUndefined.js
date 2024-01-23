@@ -1,0 +1,10 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: !0
+});
+
+const isUndefined = value => void 0 === value;
+
+exports.default = isUndefined;
+//# sourceMappingURL=isUndefined.js.map

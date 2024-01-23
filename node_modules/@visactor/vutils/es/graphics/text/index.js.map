@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/graphics/text/index.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,IAAI,WAAW,EAAE,sBAAsB,EAAE,MAAM,eAAe,CAAC;AAC/E,cAAc,WAAW,CAAC","file":"index.js","sourcesContent":["export { default as stringWidth, eastAsianCharacterInfo } from './stringWidth';\nexport * from './measure';\n"]}

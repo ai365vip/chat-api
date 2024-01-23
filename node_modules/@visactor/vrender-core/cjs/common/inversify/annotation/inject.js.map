@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/common/inversify/annotation/inject.ts"],"names":[],"mappings":";;;AAAA,oDAA8C;AAC9C,+CAA2C;AAE9B,QAAA,MAAM,GAAG,IAAA,wBAAU,EAAC,0BAAU,CAAC,CAAC","file":"inject.js","sourcesContent":["import { INJECT_TAG } from '../metadata_keys';\nimport { injectBase } from './inject_base';\n\nexport const inject = injectBase(INJECT_TAG);\n"]}

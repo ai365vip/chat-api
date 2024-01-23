@@ -1,0 +1,32 @@
+import { LegendEvent } from "@visactor/vrender-components";
+
+import { DataFilterRank, GrammarMarkType } from "../graph/enums";
+
+import { isString } from "@visactor/vutils";
+
+import { Filter } from "./filter";
+
+export class LegendFilter extends Filter {
+    constructor(view, options) {
+        super(view, options), this.type = LegendFilter.type, this.options = Object.assign({}, LegendFilter.defaultOptions, options), 
+        this._marks = view.getMarksBySelector(this.options.source).filter((mark => mark.markType === GrammarMarkType.component && "legend" === mark.componentType)), 
+        this._data = isString(this.options.target.data) ? view.getDataById(this.options.target.data) : this.options.target.data;
+    }
+    getEvents() {
+        if (!this._marks || 0 === this._marks.length) return [];
+        const legend = this._marks[0];
+        if (!this._data || !legend) return [];
+        const isContinuous = legend.isContinuousLegend(), filter = this.options.target.filter, transform = this.options.target.transform, dataFilter = isString(filter) ? isContinuous ? (datum, filterValue) => datum[filter] >= filterValue.start && datum[filter] <= filterValue.end : (datum, filterValue) => filterValue.includes(datum[filter]) : filter;
+        this._filterData(this._data, legend, DataFilterRank.legend, (event => isContinuous ? {
+            start: event.detail.value[0],
+            end: event.detail.value[1]
+        } : event.detail.currentSelected), dataFilter, transform);
+        return [ {
+            type: isContinuous ? "change" : LegendEvent.legendItemClick,
+            handler: this.handleFilter
+        } ];
+    }
+}
+
+LegendFilter.type = "legend-filter", LegendFilter.defaultOptions = {};
+//# sourceMappingURL=legend-filter.js.map

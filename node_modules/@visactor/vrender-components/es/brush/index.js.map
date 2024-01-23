@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/brush/index.ts"],"names":[],"mappings":"AAAA,cAAc,SAAS,CAAC;AACxB,cAAc,QAAQ,CAAC","file":"index.js","sourcesContent":["export * from './brush';\nexport * from './type';\n"]}

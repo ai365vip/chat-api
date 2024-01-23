@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/interface/graphic/shadow-root.ts"],"names":[],"mappings":"","file":"shadow-root.js","sourcesContent":["import type { IGraphic } from '../graphic';\nimport type { IGroup } from './group';\n\nexport interface IShadowRoot extends IGroup {\n  shadowHost: IGraphic;\n}\n"]}

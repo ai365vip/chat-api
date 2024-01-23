@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/interface/creator.ts"],"names":[],"mappings":"","file":"creator.js","sourcesContent":["import type { ILayer } from './layer';\nimport type { IStage } from './stage';\n\nexport declare function createLayer(canvasId?: string): ILayer;\nexport declare function createStage(w: number, h: number): IStage;\n"]}

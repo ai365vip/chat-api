@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/transform/index.ts"],"names":[],"mappings":"","file":"index.js","sourcesContent":["export type Transform = (data: any, options?: any) => any;\n\ntype TransformName = string;\nexport interface ITransformOptions {\n  type: TransformName;\n  options?: any;\n  level?: number;\n}\n"]}

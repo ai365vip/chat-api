@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/poptip/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;;AAAA,2CAAyB;AACzB,yCAAuB;AACvB,uCAA4C;AAAnC,0GAAA,cAAc,OAAA;AACvB,mCAAsC;AAA7B,oGAAA,UAAU,OAAA","file":"index.js","sourcesContent":["export * from './poptip';\nexport * from './type';\nexport { setPoptipTheme } from './register';\nexport { loadPoptip } from './module';\n"]}

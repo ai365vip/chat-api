@@ -1,0 +1,4 @@
+const isValid = value => null != value;
+
+export default isValid;
+//# sourceMappingURL=isValid.js.map

@@ -1,0 +1,65 @@
+import { isNil } from "@visactor/vutils";
+
+import { CartesianCoordinate, PolarCoordinate } from "@visactor/vgrammar-coordinate";
+
+import { invokeFunctionType, parseFunctionType } from "./util";
+
+export function createCoordinate(type) {
+    switch (type) {
+      case "cartesian":
+      default:
+        return new CartesianCoordinate;
+
+      case "polar":
+        return new PolarCoordinate;
+    }
+}
+
+export function parseCoordinate(spec, view) {
+    let dependencies = [];
+    return [ "start", "end", "origin", "translate", "rotate", "scale", "transpose" ].forEach((key => {
+        dependencies = dependencies.concat(parseFunctionType(spec[key], view));
+    })), dependencies;
+}
+
+export function configureCoordinate(spec, coordinate, parameters) {
+    var _a, _b, _c, _d, _e, _f, _g;
+    !isNil(spec.start) && coordinate.start(null !== (_a = invokeFunctionType(spec.start, parameters)) && void 0 !== _a ? _a : [ 0, 0 ]), 
+    !isNil(spec.end) && coordinate.end(null !== (_b = invokeFunctionType(spec.end, parameters)) && void 0 !== _b ? _b : [ 0, 0 ]), 
+    !isNil(spec.origin) && coordinate.origin(null !== (_c = invokeFunctionType(spec.origin, parameters)) && void 0 !== _c ? _c : [ 0, 0 ]);
+    const transforms = [];
+    if (!isNil(spec.translate)) {
+        const translate = invokeFunctionType(spec.translate, parameters);
+        transforms.push({
+            type: "translate",
+            offset: {
+                x: null !== (_d = null == translate ? void 0 : translate[0]) && void 0 !== _d ? _d : 0,
+                y: null !== (_e = null == translate ? void 0 : translate[1]) && void 0 !== _e ? _e : 0
+            }
+        });
+    }
+    if (!isNil(spec.rotate)) {
+        const rotate = invokeFunctionType(spec.rotate, parameters);
+        transforms.push({
+            type: "rotate",
+            angle: null != rotate ? rotate : 0
+        });
+    }
+    if (!isNil(spec.scale)) {
+        const scale = invokeFunctionType(spec.scale, parameters);
+        transforms.push({
+            type: "scale",
+            scale: {
+                x: null !== (_f = null == scale ? void 0 : scale[0]) && void 0 !== _f ? _f : 1,
+                y: null !== (_g = null == scale ? void 0 : scale[1]) && void 0 !== _g ? _g : 1
+            }
+        });
+    }
+    if (!isNil(spec.transpose)) {
+        invokeFunctionType(spec.transpose, parameters) && transforms.push({
+            type: "transpose"
+        });
+    }
+    coordinate.applyTransforms(transforms);
+}
+//# sourceMappingURL=coordinate.js.map

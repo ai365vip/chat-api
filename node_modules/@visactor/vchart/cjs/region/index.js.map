@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/region/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AAAA,8CAA4B;AAC5B,2CAAyB;AACzB,uDAAqC","file":"index.js","sourcesContent":["export * from './interface';\nexport * from './region';\nexport * from './region-transformer';\n"]}

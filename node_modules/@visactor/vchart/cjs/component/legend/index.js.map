@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/component/legend/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AAAA,6CAA2B;AAC3B,+CAA6B;AAC7B,8CAA4B","file":"index.js","sourcesContent":["export * from './discrete';\nexport * from './continuous';\nexport * from './interface';\n"]}

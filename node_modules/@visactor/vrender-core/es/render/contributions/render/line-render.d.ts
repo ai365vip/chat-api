@@ -1,0 +1,11 @@
+import type { IContext2d, ILine, ILineGraphicAttribute, IMarkAttribute, IGraphicAttribute, IThemeAttribute, IClipRangeByDimensionType, ISegPath2D, IDrawContext, IRenderService, IGraphicRender, IGraphicRenderDrawParams } from '../../../interface';
+import { BaseRender } from './base-render';
+export declare class DefaultCanvasLineRender extends BaseRender<ILine> implements IGraphicRender {
+    type: 'line';
+    numberType: number;
+    z: number;
+    draw(line: ILine, renderService: IRenderService, drawContext: IDrawContext, params?: IGraphicRenderDrawParams): void;
+    protected drawSegmentItem(context: IContext2d, cache: ISegPath2D, fill: boolean, stroke: boolean, fillOpacity: number, strokeOpacity: number, attribute: Partial<ILineGraphicAttribute>, defaultAttribute: Required<ILineGraphicAttribute> | Partial<ILineGraphicAttribute>[], clipRange: number, clipRangeByDimension: IClipRangeByDimensionType, offsetX: number, offsetY: number, line: ILine, fillCb?: (ctx: IContext2d, lineAttribute: Partial<IMarkAttribute & IGraphicAttribute>, themeAttribute: IThemeAttribute | IThemeAttribute[]) => boolean, strokeCb?: (ctx: IContext2d, lineAttribute: Partial<IMarkAttribute & IGraphicAttribute>, themeAttribute: IThemeAttribute | IThemeAttribute[]) => boolean): boolean;
+    drawLinearLineHighPerformance(line: ILine, context: IContext2d, fill: boolean, stroke: boolean, fillOpacity: number, strokeOpacity: number, offsetX: number, offsetY: number, lineAttribute: Required<ILineGraphicAttribute>, drawContext: IDrawContext, params?: IGraphicRenderDrawParams, fillCb?: (ctx: IContext2d, lineAttribute: Partial<IMarkAttribute & IGraphicAttribute>, themeAttribute: IThemeAttribute) => boolean, strokeCb?: (ctx: IContext2d, lineAttribute: Partial<IMarkAttribute & IGraphicAttribute>, themeAttribute: IThemeAttribute) => boolean): void;
+    drawShape(line: ILine, context: IContext2d, x: number, y: number, drawContext: IDrawContext, params?: IGraphicRenderDrawParams, fillCb?: (ctx: IContext2d, lineAttribute: Partial<IMarkAttribute & IGraphicAttribute>, themeAttribute: IThemeAttribute) => boolean, strokeCb?: (ctx: IContext2d, lineAttribute: Partial<IMarkAttribute & IGraphicAttribute>, themeAttribute: IThemeAttribute) => boolean): void;
+}

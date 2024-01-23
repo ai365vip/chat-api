@@ -1,0 +1,99 @@
+import { isNumber, Bounds } from "@visactor/vutils";
+
+import { DefaultAnimationDelay, DefaultAnimationDuration, DefaultAnimationEasing, DefaultAnimationOneByOne, DefaultEnableExitAnimation, DefaultMorph, DefaultMorphAll, DefaultReuse, DefaultSplitPath } from "../graph/constants";
+
+import { SIGNAL_AUTOFIT, SIGNAL_HEIGHT, SIGNAL_PADDING, SIGNAL_VIEW_HEIGHT, SIGNAL_VIEW_WIDTH, SIGNAL_WIDTH, SIGNAL_VIEW_BOX } from "../view/constants";
+
+let markBaseId = -1;
+
+export const BuiltInSignalID = [ SIGNAL_WIDTH, SIGNAL_HEIGHT, SIGNAL_PADDING, SIGNAL_VIEW_WIDTH, SIGNAL_VIEW_HEIGHT, SIGNAL_VIEW_BOX, SIGNAL_AUTOFIT ];
+
+export const builtInSignals = (option, config, theme) => {
+    var _a, _b, _c, _d, _e;
+    return [ {
+        id: SIGNAL_WIDTH,
+        value: null !== (_a = option[SIGNAL_WIDTH]) && void 0 !== _a ? _a : 0
+    }, {
+        id: SIGNAL_HEIGHT,
+        value: null !== (_b = option[SIGNAL_HEIGHT]) && void 0 !== _b ? _b : 0
+    }, {
+        id: SIGNAL_PADDING,
+        value: normalizePadding(null !== (_d = null !== (_c = option[SIGNAL_PADDING]) && void 0 !== _c ? _c : config[SIGNAL_PADDING]) && void 0 !== _d ? _d : null == theme ? void 0 : theme.padding)
+    }, {
+        id: SIGNAL_VIEW_WIDTH,
+        update: {
+            callback: (signal, params) => {
+                const padding = normalizePadding(params[SIGNAL_PADDING]);
+                return params[SIGNAL_WIDTH] - padding.left - padding.right;
+            },
+            dependency: [ SIGNAL_WIDTH, SIGNAL_PADDING ]
+        }
+    }, {
+        id: SIGNAL_VIEW_HEIGHT,
+        update: {
+            callback: (signal, params) => {
+                const padding = normalizePadding(params[SIGNAL_PADDING]);
+                return params[SIGNAL_HEIGHT] - padding.top - padding.bottom;
+            },
+            dependency: [ SIGNAL_HEIGHT, SIGNAL_PADDING ]
+        }
+    }, {
+        id: SIGNAL_VIEW_BOX,
+        update: {
+            callback: (signal, params) => {
+                const padding = normalizePadding(params[SIGNAL_PADDING]);
+                return (signal || new Bounds).setValue(padding.left, padding.top, padding.left + params[SIGNAL_VIEW_WIDTH], padding.top + params[SIGNAL_VIEW_HEIGHT]);
+            },
+            dependency: [ SIGNAL_VIEW_WIDTH, SIGNAL_VIEW_HEIGHT, SIGNAL_PADDING ]
+        }
+    }, {
+        id: SIGNAL_AUTOFIT,
+        value: null !== (_e = option[SIGNAL_AUTOFIT]) && void 0 !== _e ? _e : config[SIGNAL_AUTOFIT]
+    } ];
+};
+
+export const normalizePadding = value => {
+    var _a, _b, _c, _d;
+    return isNumber(value) ? {
+        top: value,
+        bottom: value,
+        left: value,
+        right: value
+    } : {
+        top: null !== (_a = null == value ? void 0 : value.top) && void 0 !== _a ? _a : 0,
+        bottom: null !== (_b = null == value ? void 0 : value.bottom) && void 0 !== _b ? _b : 0,
+        left: null !== (_c = null == value ? void 0 : value.left) && void 0 !== _c ? _c : 0,
+        right: null !== (_d = null == value ? void 0 : value.right) && void 0 !== _d ? _d : 0
+    };
+};
+
+export const normalizeMarkTree = spec => {
+    var _a;
+    const traverse = (spec, group) => {
+        var _a, _b;
+        spec.group = group;
+        const id = null !== (_a = spec.id) && void 0 !== _a ? _a : "VGRAMMAR_MARK_" + ++markBaseId;
+        spec.id = id, (null !== (_b = spec.marks) && void 0 !== _b ? _b : []).forEach((child => traverse(child, id)));
+    };
+    return (null !== (_a = spec.marks) && void 0 !== _a ? _a : []).forEach((mark => traverse(mark, "root"))), 
+    spec;
+};
+
+export const normalizeRunningConfig = runningConfig => {
+    var _a, _b, _c, _d, _e;
+    const {reuse: reuse = DefaultReuse, morph: morph = DefaultMorph, morphAll: morphAll = DefaultMorphAll, animation: animation = {}, enableExitAnimation: enableExitAnimation = DefaultEnableExitAnimation} = null != runningConfig ? runningConfig : {};
+    return {
+        reuse: reuse,
+        morph: morph,
+        morphAll: morphAll,
+        animation: {
+            easing: null !== (_a = animation.easing) && void 0 !== _a ? _a : DefaultAnimationEasing,
+            delay: null !== (_b = animation.delay) && void 0 !== _b ? _b : DefaultAnimationDelay,
+            duration: null !== (_c = animation.duration) && void 0 !== _c ? _c : DefaultAnimationDuration,
+            oneByOne: null !== (_d = animation.oneByOne) && void 0 !== _d ? _d : DefaultAnimationOneByOne,
+            splitPath: null !== (_e = animation.splitPath) && void 0 !== _e ? _e : DefaultSplitPath
+        },
+        enableExitAnimation: enableExitAnimation
+    };
+};
+//# sourceMappingURL=view.js.map

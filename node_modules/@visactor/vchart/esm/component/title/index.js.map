@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/component/title/index.ts"],"names":[],"mappings":"AAAA,cAAc,SAAS,CAAC;AACxB,cAAc,aAAa,CAAC","file":"index.js","sourcesContent":["export * from './title';\nexport * from './interface';\n"]}

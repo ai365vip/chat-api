@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/types/layout.ts"],"names":[],"mappings":"","file":"layout.js","sourcesContent":["interface LayoutParams {\n  role: 'container' | 'item';\n}\n\nexport type LayoutSpec = LayoutParams;\n"]}

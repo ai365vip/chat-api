@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/typings/event.ts"],"names":[],"mappings":"","file":"event.js","sourcesContent":["export type IDelayType = 'debounce' | 'throttle';\n"]}

@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/core/util.ts"],"names":[],"mappings":";;;AAAA,kCAAsC;AAGzB,QAAA,YAAY,GAAG;IAC1B,WAAW,EAAX,kBAAW;CACZ,CAAC","file":"util.js","sourcesContent":["import { measureText } from '../util';\n\n/** 存放一些业务方可能会在扩展功能里用到的工具方法 */\nexport const VCHART_UTILS = {\n  measureText\n};\n"]}

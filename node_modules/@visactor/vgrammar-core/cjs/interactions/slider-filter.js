@@ -1,0 +1,32 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: !0
+}), exports.SliderFilter = void 0;
+
+const enums_1 = require("../graph/enums"), vutils_1 = require("@visactor/vutils"), filter_1 = require("./filter");
+
+class SliderFilter extends filter_1.Filter {
+    constructor(view, options) {
+        super(view, options), this.type = SliderFilter.type, this.options = Object.assign({}, SliderFilter.defaultOptions, options), 
+        this._marks = view.getMarksBySelector(this.options.source).filter((mark => mark.markType === enums_1.GrammarMarkType.component && "slider" === mark.componentType)), 
+        this._data = (0, vutils_1.isString)(this.options.target.data) ? view.getDataById(this.options.target.data) : this.options.target.data;
+    }
+    getEvents() {
+        if (!this._marks || 0 === this._marks.length) return [];
+        const slider = this._marks[0];
+        if (!this._data || !slider) return [];
+        const filter = this.options.target.filter, transform = this.options.target.transform, dataFilter = (0, 
+        vutils_1.isString)(filter) ? (datum, filterValue) => datum[filter] >= filterValue.start && datum[filter] <= filterValue.end : filter;
+        return this._filterData(this._data, slider, enums_1.DataFilterRank.slider, (event => ({
+            start: event.detail.value[0],
+            end: event.detail.value[1]
+        })), dataFilter, transform), [ {
+            type: "change",
+            handler: this.handleFilter
+        } ];
+    }
+}
+
+exports.SliderFilter = SliderFilter, SliderFilter.type = "slider-filter", SliderFilter.defaultOptions = {};
+//# sourceMappingURL=slider-filter.js.map

@@ -113,7 +113,7 @@ func getImageToken(imageUrl *MessageImageUrl) (int, error) {
 	//log.Printf("tiles: %d", tiles)
 	return tiles*170 + 85, nil
 }
-func CountTokenMessages(messages []Message, model string) (int, error) {
+func CountTokenMessages(messages []Message, model string) int {
 	//recover when panic
 	tokenEncoder := getTokenEncoder(model)
 	// Reference:
@@ -139,7 +139,7 @@ func CountTokenMessages(messages []Message, model string) (int, error) {
 
 			var stringContent string
 			if err := json.Unmarshal(message.Content, &stringContent); err != nil {
-				return 0, err
+				return 0
 			} else {
 				tokenNum += getTokenNum(tokenEncoder, stringContent)
 				if message.Name != nil {
@@ -168,7 +168,7 @@ func CountTokenMessages(messages []Message, model string) (int, error) {
 						imageTokenNum, err = getImageToken(&imageUrl)
 					}
 					if err != nil {
-						return 0, err
+						return 0
 					}
 
 					tokenNum += imageTokenNum
@@ -180,7 +180,7 @@ func CountTokenMessages(messages []Message, model string) (int, error) {
 		}
 	}
 	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>
-	return tokenNum, nil
+	return tokenNum
 }
 
 const (

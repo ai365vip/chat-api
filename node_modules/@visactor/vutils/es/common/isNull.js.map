@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/common/isNull.ts"],"names":[],"mappings":"AAAA,MAAM,MAAM,GAAG,CAAC,KAAU,EAAiB,EAAE;IAC3C,OAAO,KAAK,KAAK,IAAI,CAAC;AACxB,CAAC,CAAC;AAEF,eAAe,MAAM,CAAC","file":"isNull.js","sourcesContent":["const isNull = (value: any): value is null => {\n  return value === null;\n};\n\nexport default isNull;\n"]}

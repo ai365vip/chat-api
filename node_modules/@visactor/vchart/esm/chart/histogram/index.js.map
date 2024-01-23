@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/chart/histogram/index.ts"],"names":[],"mappings":"AAAA,cAAc,aAAa,CAAC;AAC5B,cAAc,MAAM,CAAC;AACrB,cAAc,aAAa,CAAC;AAC5B,cAAc,yBAAyB,CAAC","file":"index.js","sourcesContent":["export * from './histogram';\nexport * from './3d';\nexport * from './interface';\nexport * from './histogram-transformer';\n"]}

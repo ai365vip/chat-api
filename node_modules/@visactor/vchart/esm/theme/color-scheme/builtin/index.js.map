@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/theme/color-scheme/builtin/index.ts"],"names":[],"mappings":"AAAA,cAAc,WAAW,CAAC;AAC1B,cAAc,aAAa,CAAC","file":"index.js","sourcesContent":["export * from './default';\nexport * from './interface';\n"]}

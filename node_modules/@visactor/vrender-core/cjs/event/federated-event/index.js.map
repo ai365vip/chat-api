@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/event/federated-event/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AAAA,+CAA6B;AAC7B,gDAA8B;AAC9B,kDAAgC;AAChC,gDAA8B;AAC9B,iDAA+B","file":"index.js","sourcesContent":["export * from './base-event';\nexport * from './mouse-event';\nexport * from './pointer-event';\nexport * from './wheel-event';\nexport * from './custom-event';\n"]}

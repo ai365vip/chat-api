@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/event/constant.ts"],"names":[],"mappings":";;;AAAa,QAAA,QAAQ,GAAG,GAAG,CAAC","file":"constant.js","sourcesContent":["export const WILDCARD = '*';\n"]}

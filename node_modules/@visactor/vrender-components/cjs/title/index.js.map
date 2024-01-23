@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/title/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AAAA,0CAAwB;AACxB,yCAAuB","file":"index.js","sourcesContent":["export * from './title';\nexport * from './type';\n"]}

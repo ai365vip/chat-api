@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/render/contributions/render-module.ts"],"names":[],"mappings":"","file":"render-module.js","sourcesContent":["// import { Container } from 'inversify';\n// import roughModule from './rough/module';\n\n// export default function load(container: Container) {\n//   container.load(roughModule);\n// }\n"]}

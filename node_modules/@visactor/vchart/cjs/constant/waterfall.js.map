@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/constant/waterfall.ts"],"names":[],"mappings":";;;AAAA,iCAAgC;AAEnB,QAAA,2BAA2B,GAAG,GAAG,aAAM,gCAAgC,CAAC","file":"waterfall.js","sourcesContent":["import { PREFIX } from './base';\n\nexport const WaterfallDefaultSeriesField = `${PREFIX}_waterfall_default_seriesField`;\n"]}

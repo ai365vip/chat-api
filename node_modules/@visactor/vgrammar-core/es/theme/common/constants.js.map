@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/theme/common/constants.ts"],"names":[],"mappings":"AAAA,MAAM,CAAC,MAAM,eAAe,GAAG,CAAC,CAAC","file":"constants.js","sourcesContent":["export const DEFAULT_PADDING = 5;\n"]}

@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/canvas/contributions/wx/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AACA,2CAAyB;AACzB,4CAA0B","file":"index.js","sourcesContent":["// 依然导出canvas和context，便于指定环境直接使用\nexport * from './canvas';\nexport * from './context';\n"]}

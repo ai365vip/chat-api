@@ -1,0 +1,1 @@
+export declare const multiInject: <T = unknown>(serviceIdentifier: any) => (target: import("./inject_base").DecoratorTarget<T>, targetKey?: string | symbol, indexOrPropertyDescriptor?: number) => void;

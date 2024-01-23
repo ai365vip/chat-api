@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/interface/light.ts"],"names":[],"mappings":"","file":"light.js","sourcesContent":["import type { vec3 } from './matrix';\n\nexport interface IDirectionLight {\n  dir: vec3;\n  color: string;\n  computeColor: (normal: vec3, color: string | vec3) => string;\n}\n"]}

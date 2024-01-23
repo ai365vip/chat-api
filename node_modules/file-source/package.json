@@ -1,0 +1,32 @@
+{
+  "name": "file-source",
+  "version": "0.6.1",
+  "description": "Read binary files in chunks, on demand, with promises.",
+  "keywords": [
+    "binary",
+    "file",
+    "reader",
+    "fs"
+  ],
+  "homepage": "https://github.com/mbostock/file-source",
+  "license": "BSD-3-Clause",
+  "author": {
+    "name": "Mike Bostock",
+    "url": "https://bost.ocks.org/mike"
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/mbostock/file-source.git"
+  },
+  "scripts": {
+    "test": "tape 'test/**/*-test.js'",
+    "postpublish": "git push && git push --tags"
+  },
+  "dependencies": {
+    "stream-source": "0.3"
+  },
+  "devDependencies": {
+    "tape": "4"
+  }
+}

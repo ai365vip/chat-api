@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/constant/sunburst.ts"],"names":[],"mappings":";;;AAAa,QAAA,uCAAuC,GAAG,EAAE,CAAC","file":"sunburst.js","sourcesContent":["export const SUNBURST_AUTO_VISIBLE_DEFAULT_THRESHOLD = 10;\n"]}

@@ -1,0 +1,32 @@
+import type { IPointLike, IMatrix } from '@visactor/vutils';
+import type { CoordinateTransform, CoordinateType, IBaseCoordinate, IDimensionType } from './interface';
+export declare abstract class Coordinate implements IBaseCoordinate {
+    readonly type: CoordinateType;
+    protected startPoint: IPointLike;
+    protected endPoint: IPointLike;
+    protected originPoint: IPointLike;
+    protected width: number;
+    protected height: number;
+    protected transforms: CoordinateTransform[];
+    protected convertMatrix: IMatrix | null;
+    protected invertMatrix: IMatrix | null;
+    start(): IPointLike;
+    start(point: IPointLike): this;
+    start(point: [number, number]): this;
+    start(x: number, y: number): this;
+    end(): IPointLike;
+    end(point: IPointLike): this;
+    end(point: [number, number]): this;
+    end(x: number, y: number): this;
+    abstract convert(...args: any[]): any;
+    abstract invert(...args: any[]): any;
+    abstract getRangeByDimension(dim: IDimensionType, isSubshaft?: boolean, reversed?: boolean): [number, number];
+    abstract getVisualPositionByDimension(dim: IDimensionType, isSubshaft?: boolean, reversed?: boolean): string;
+    abstract getAxisPointsByDimension(dim: IDimensionType, isSubshaft?: boolean, reversed?: boolean, baseValue?: number): [IPointLike, IPointLike] | null;
+    protected _parsePoint(x: number | IPointLike | [number, number], y?: number): IPointLike;
+    protected _updateSize(): void;
+    isTransposed(): boolean;
+    isMainDimension(dim: IDimensionType): boolean;
+    applyTransforms(transforms: CoordinateTransform[]): this;
+    protected _invokeTransforms(): void;
+}

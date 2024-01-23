@@ -1,0 +1,17 @@
+#map {
+
+  height: 100% ;
+  width: 100%;
+  top: 0;
+  left: 0;
+  position: absolute;
+
+}
+
+#tolerance {
+
+  width: 200px;
+  height: 100px;
+  font-size: xx-large;
+
+}

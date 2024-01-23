@@ -1,0 +1,62 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: !0
+}), exports.smartInvertStrategy = exports.contrastAccessibilityChecker = exports.labelSmartInvert = void 0;
+
+const vutils_1 = require("@visactor/vutils"), defaultAlternativeColors = [ "#ffffff", "#000000" ];
+
+function labelSmartInvert(foregroundColorOrigin, backgroundColorOrogin, textType, contrastRatiosThreshold, alternativeColors, mode) {
+    if ("string" != typeof foregroundColorOrigin || "string" != typeof backgroundColorOrogin) return foregroundColorOrigin;
+    const foregroundColor = new vutils_1.Color(foregroundColorOrigin).toHex(), backgroundColor = new vutils_1.Color(backgroundColorOrogin).toHex();
+    return contrastAccessibilityChecker(foregroundColor, backgroundColor, textType, contrastRatiosThreshold, mode) ? foregroundColor : improveContrastReverse(foregroundColor, backgroundColor, textType, contrastRatiosThreshold, alternativeColors, mode);
+}
+
+function improveContrastReverse(foregroundColor, backgroundColor, textType, contrastRatiosThreshold, alternativeColors, mode) {
+    const alternativeColorPalletes = [];
+    alternativeColors && (alternativeColors instanceof Array ? alternativeColorPalletes.push(...alternativeColors) : alternativeColorPalletes.push(alternativeColors)), 
+    alternativeColorPalletes.push(...defaultAlternativeColors);
+    for (const alternativeColor of alternativeColorPalletes) if (foregroundColor !== alternativeColor && contrastAccessibilityChecker(alternativeColor, backgroundColor, textType, contrastRatiosThreshold, mode)) return alternativeColor;
+}
+
+function contrastAccessibilityChecker(foregroundColor, backgroundColor, textType, contrastRatiosThreshold, mode) {
+    if ("lightness" === mode) {
+        const backgroundColorLightness = vutils_1.Color.getColorBrightness(new vutils_1.Color(backgroundColor));
+        return vutils_1.Color.getColorBrightness(new vutils_1.Color(foregroundColor)) < .5 ? backgroundColorLightness >= .5 : backgroundColorLightness < .5;
+    }
+    return contrastRatiosThreshold ? contrastRatios(foregroundColor, backgroundColor) > contrastRatiosThreshold : "largeText" === textType ? contrastRatios(foregroundColor, backgroundColor) > 3 : contrastRatios(foregroundColor, backgroundColor) > 4.5;
+}
+
+function contrastRatios(foregroundColor, backgroundColor) {
+    const foregroundColorLuminance = getColorLuminance(foregroundColor), backgroundColorLuminance = getColorLuminance(backgroundColor);
+    return ((foregroundColorLuminance > backgroundColorLuminance ? foregroundColorLuminance : backgroundColorLuminance) + .05) / ((foregroundColorLuminance > backgroundColorLuminance ? backgroundColorLuminance : foregroundColorLuminance) + .05);
+}
+
+function getColorLuminance(color) {
+    const rgb8bit = (0, vutils_1.hexToRgb)(color), RsRGB = rgb8bit[0] / 255, GsRGB = rgb8bit[1] / 255, BsRGB = rgb8bit[2] / 255;
+    let R, G, B;
+    R = RsRGB <= .03928 ? RsRGB / 12.92 : Math.pow((RsRGB + .055) / 1.055, 2.4), G = GsRGB <= .03928 ? GsRGB / 12.92 : Math.pow((GsRGB + .055) / 1.055, 2.4), 
+    B = BsRGB <= .03928 ? BsRGB / 12.92 : Math.pow((BsRGB + .055) / 1.055, 2.4);
+    return .2126 * R + .7152 * G + .0722 * B;
+}
+
+function smartInvertStrategy(fillStrategy, baseColor, invertColor, similarColor) {
+    let result;
+    switch (fillStrategy) {
+      case "base":
+        result = baseColor;
+        break;
+
+      case "invertBase":
+        result = invertColor;
+        break;
+
+      case "similarBase":
+        result = similarColor;
+    }
+    return result;
+}
+
+exports.labelSmartInvert = labelSmartInvert, exports.contrastAccessibilityChecker = contrastAccessibilityChecker, 
+exports.smartInvertStrategy = smartInvertStrategy;
+//# sourceMappingURL=label-smartInvert.js.map

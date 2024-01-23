@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+
+var encode = require('../encode'),
+    Pbf = require('pbf'),
+    fs = require('fs'),
+    concat = require('concat-stream');
+
+var input = process.stdin.isTTY ? fs.createReadStream(process.argv[2]) : process.stdin;
+
+input.pipe(concat(function(buf) {
+    // console.time('JSON.parse');
+    var geojson = JSON.parse(buf.toString());
+    // console.timeEnd('JSON.parse');
+
+    // console.time('JSON.stringify');
+    // JSON.stringify(geojson);
+    // console.timeEnd('JSON.stringify');
+
+    // console.time('encode');
+    var pbf = encode(geojson, new Pbf());
+    var buffer = Buffer.allocUnsafe ? Buffer.from(pbf) : new Buffer(pbf);
+    // console.timeEnd('encode');
+
+    process.stdout.write(buffer);
+}));

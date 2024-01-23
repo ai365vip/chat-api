@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/common/inversify-lite/utils/id.ts"],"names":[],"mappings":"AAAA,IAAI,SAAS,GAAG,CAAC,CAAC;AAElB,SAAS,EAAE;IACT,OAAO,SAAS,EAAE,CAAC;AACrB,CAAC;AAED,OAAO,EAAE,EAAE,EAAE,CAAC","file":"id.js","sourcesContent":["let idCounter = 0;\n\nfunction id(): number {\n  return idCounter++;\n}\n\nexport { id };\n"]}

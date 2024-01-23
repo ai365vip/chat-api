@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/label/overlap/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AAAA,2CAAyB;AACzB,0CAAwB;AACxB,2CAAyB","file":"index.js","sourcesContent":["export * from './bitmap';\nexport * from './place';\nexport * from './scaler';\n"]}

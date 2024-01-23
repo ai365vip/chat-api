@@ -153,19 +153,19 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatus
 	return nil, responseText
 }
 
-func Handler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, *openai.Usage) {
+func Handler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, *openai.Usage, string) {
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	err = resp.Body.Close()
 	if err != nil {
-		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	var claudeResponse Response
 	err = json.Unmarshal(responseBody, &claudeResponse)
 	if err != nil {
-		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	if claudeResponse.Error.Type != "" {
 		return &openai.ErrorWithStatusCode{
@@ -176,7 +176,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, model string
 				Code:    claudeResponse.Error.Type,
 			},
 			StatusCode: resp.StatusCode,
-		}, nil
+		}, nil, ""
 	}
 	fullTextResponse := responseClaude2OpenAI(&claudeResponse)
 	fullTextResponse.Model = model
@@ -189,10 +189,10 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, model string
 	fullTextResponse.Usage = usage
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
-		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = c.Writer.Write(jsonResponse)
-	return nil, &usage
+	return nil, &usage, claudeResponse.Completion
 }

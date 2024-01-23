@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/interface/graphic/face3d.ts"],"names":[],"mappings":"","file":"face3d.js","sourcesContent":["import type { vec2, vec3 } from '../matrix';\n\nexport type IFace3d = {\n  polygons: IPolygonItem[];\n  edges: vec2[];\n  vertices: vec3[];\n};\n\nexport type IPolygonItem = {\n  polygon: number[];\n  normal: vec3;\n  ave_z?: number;\n};\n"]}

@@ -237,3 +237,9 @@ func GetOrDefaultString(env string, defaultValue string) string {
 	}
 	return os.Getenv(env)
 }
+func AssignOrDefault(value string, defaultValue string) string {
+	if len(value) != 0 {
+		return value
+	}
+	return defaultValue
+}

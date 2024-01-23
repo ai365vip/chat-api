@@ -1,0 +1,34 @@
+import type { IBaseScale, TickData, ScaleFishEyeOptions } from '@visactor/vscale';
+import type { IGrammarBase, IView } from '../types';
+import type { Nil } from '../types/base';
+import type { GrammarType, IScale } from '../types/grammar';
+import type { ScaleConfigureSpec, ScaleCoordinate, ScaleData, ScaleFunctionType, ScaleSpec, GrammarScaleType, MultiScaleData } from '../types/scale';
+import { GrammarBase } from './grammar-base';
+export declare class Scale extends GrammarBase implements IScale {
+    readonly grammarType: GrammarType;
+    protected spec: ScaleSpec;
+    private scale;
+    private _rangeFactor?;
+    private _fishEyeOptions?;
+    constructor(view: IView, scaleType: GrammarScaleType);
+    parse(spec: ScaleSpec): this;
+    evaluate(upstream: any, parameters: any): this;
+    output(): IBaseScale;
+    getScaleType(): "ordinal" | "band" | "point" | "linear" | "log" | "pow" | "sqrt" | "symlog" | "time" | "quantile" | "quantize" | "threshold" | "identity" | "utc";
+    getScale(): IBaseScale;
+    ticks(count?: number): TickData[];
+    domain(domain: ScaleFunctionType<any[]> | ScaleData | MultiScaleData | Nil): this;
+    range(range: ScaleFunctionType<any[]> | ScaleData | MultiScaleData | ScaleCoordinate | Nil): this;
+    tickCount(tickCount: ScaleFunctionType<number> | Nil): this;
+    setRangeFactor(range?: [number, number]): this;
+    getRangeFactor(): [number, number];
+    setFishEye(fishEyeOptions?: ScaleFishEyeOptions): this;
+    getFishEye(): ScaleFishEyeOptions;
+    getCoordinateAxisPosition(): any;
+    getCoordinateAxisPoints(baseValue?: number): any;
+    getCoordinate(): any;
+    configure(config: ScaleConfigureSpec | Nil): this;
+    reuse(grammar: IGrammarBase): this;
+    clear(): void;
+}
+export declare const registerScale: () => void;

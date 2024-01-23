@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/common/inversify-lite/bindings/binding_count.ts"],"names":[],"mappings":";;;AAAa,QAAA,YAAY,GAAG;IAC1B,yBAAyB,EAAE,CAAC;IAC5B,mBAAmB,EAAE,CAAC;IACtB,uBAAuB,EAAE,CAAC;CAC3B,CAAC","file":"binding_count.js","sourcesContent":["export const BindingCount = {\n  MultipleBindingsAvailable: 2,\n  NoBindingsAvailable: 0,\n  OnlyOneBindingAvailable: 1\n};\n"]}

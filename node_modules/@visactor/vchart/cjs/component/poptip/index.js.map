@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/component/poptip/index.ts"],"names":[],"mappings":";;;AAAA,qEAA0D;AAEnD,MAAM,cAAc,GAAG,GAAG,EAAE;IACjC,IAAA,+BAAU,GAAE,CAAC;AACf,CAAC,CAAC;AAFW,QAAA,cAAc,kBAEzB","file":"index.js","sourcesContent":["import { loadPoptip } from '@visactor/vrender-components';\n\nexport const registerPoptip = () => {\n  loadPoptip();\n};\n"]}

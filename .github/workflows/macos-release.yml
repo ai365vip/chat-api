@@ -23,7 +23,6 @@ jobs:
           CI: ""
         run: |
           cd web-admin
-          npm install @visactor/vchart@latest @visactor/vchart-semi-theme@latest
           npm install
           REACT_APP_VERSION=$(git describe --tags) npm run build
           cd ..

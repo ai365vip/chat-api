@@ -1,0 +1,49 @@
+{
+  "name": "geojson-flatten",
+  "version": "0.2.4",
+  "description": "transform geojson into single-parts",
+  "source": "index.js",
+  "main": "dist/index.js",
+  "files": [
+    "index.js",
+    "dist",
+    "geojson-flatten"
+  ],
+  "directories": {
+    "test": "test"
+  },
+  "bin": {
+    "geojson-flatten": "./geojson-flatten"
+  },
+  "scripts": {
+    "test": "eslint index.js && tap test/flatten.js",
+    "pretest": "microbundle --name geojsonFlatten",
+    "prepare": "microbundle --name geojsonFlatten",
+    "release": "standard-version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/node-geojson/geojson-flatten.git"
+  },
+  "keywords": [
+    "geojson",
+    "maps",
+    "flatten"
+  ],
+  "author": "Tom MacWright",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/node-geojson/geojson-flatten/issues"
+  },
+  "homepage": "https://github.com/node-geojson/geojson-flatten",
+  "dependencies": {
+    "get-stdin": "^6.0.0",
+    "minimist": "1.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.12.1",
+    "microbundle": "^0.9.0",
+    "standard-version": "^4.4.0",
+    "tap": "^12.5.0"
+  }
+}

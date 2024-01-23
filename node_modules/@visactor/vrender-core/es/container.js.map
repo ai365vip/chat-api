@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/container.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,MAAM,yBAAyB,CAAC;AACpD,MAAM,CAAC,MAAM,SAAS,GAAG,IAAI,SAAS,EAAE,CAAC","file":"container.js","sourcesContent":["import { Container } from './common/inversify-lite';\nexport const container = new Container();\n"]}

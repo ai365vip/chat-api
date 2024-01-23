@@ -130,19 +130,19 @@ func PaLMStreamHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithSt
 	return nil, responseText
 }
 
-func PaLMHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, *openai.Usage) {
+func PaLMHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, *openai.Usage, string) {
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	err = resp.Body.Close()
 	if err != nil {
-		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	var palmResponse PaLMChatResponse
 	err = json.Unmarshal(responseBody, &palmResponse)
 	if err != nil {
-		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	if palmResponse.Error.Code != 0 || len(palmResponse.Candidates) == 0 {
 		return &openai.ErrorWithStatusCode{
@@ -153,7 +153,7 @@ func PaLMHandler(c *gin.Context, resp *http.Response, promptTokens int, model st
 				Code:    palmResponse.Error.Code,
 			},
 			StatusCode: resp.StatusCode,
-		}, nil
+		}, nil, ""
 	}
 	fullTextResponse := responsePaLM2OpenAI(&palmResponse)
 	fullTextResponse.Model = model
@@ -166,10 +166,10 @@ func PaLMHandler(c *gin.Context, resp *http.Response, promptTokens int, model st
 	fullTextResponse.Usage = usage
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
-		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = c.Writer.Write(jsonResponse)
-	return nil, &usage
+	return nil, &usage, palmResponse.Candidates[0].Content
 }

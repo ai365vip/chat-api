@@ -1,0 +1,47 @@
+{
+  "name": "topojson-server",
+  "version": "3.0.1",
+  "description": "Convert GeoJSON to TopoJSON for smaller files and the power of topology!",
+  "keywords": [
+    "topojson",
+    "geojson"
+  ],
+  "homepage": "https://github.com/topojson/topojson-server",
+  "license": "ISC",
+  "author": {
+    "name": "Mike Bostock",
+    "url": "https://bost.ocks.org/mike"
+  },
+  "main": "dist/topojson-server.js",
+  "unpkg": "dist/topojson-server.min.js",
+  "jsdelivr": "dist/topojson-server.min.js",
+  "module": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/topojson/topojson-server.git"
+  },
+  "bin": {
+    "geo2topo": "bin/geo2topo"
+  },
+  "files": [
+    "bin/geo*",
+    "dist/**/*.js",
+    "src/**/*.js"
+  ],
+  "scripts": {
+    "pretest": "rollup -c",
+    "test": "tape 'test/**/*-test.js' && eslint src test",
+    "prepublishOnly": "rm -rf dist && yarn test",
+    "postpublish": "git push && git push --tags && zip -j dist/${npm_package_name}.zip -- LICENSE README.md dist/${npm_package_name}.js dist/${npm_package_name}.min.js"
+  },
+  "dependencies": {
+    "commander": "2"
+  },
+  "devDependencies": {
+    "eslint": "6",
+    "rollup": "1",
+    "rollup-plugin-terser": "5",
+    "tape": "4",
+    "topojson-client": "3"
+  }
+}

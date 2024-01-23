@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/event/util.ts"],"names":[],"mappings":"AAAA,MAAM,CAAC,MAAM,KAAK,GAAG,OAAO,WAAW,KAAK,QAAQ,IAAK,WAAmB,CAAC,GAAG,CAAC,CAAC,CAAC,WAAW,CAAC,CAAC,CAAC,IAAI,CAAC","file":"util.js","sourcesContent":["export const clock = typeof performance === 'object' && (performance as any).now ? performance : Date;\n"]}

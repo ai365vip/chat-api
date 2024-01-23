@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/region/index.ts"],"names":[],"mappings":"AAAA,cAAc,aAAa,CAAC;AAC5B,cAAc,UAAU,CAAC;AACzB,cAAc,sBAAsB,CAAC","file":"index.js","sourcesContent":["export * from './interface';\nexport * from './region';\nexport * from './region-transformer';\n"]}

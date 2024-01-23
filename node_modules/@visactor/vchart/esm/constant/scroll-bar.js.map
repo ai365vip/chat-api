@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/constant/scroll-bar.ts"],"names":[],"mappings":"AAAA,MAAM,CAAC,MAAM,uBAAuB,GAAG,EAAE,CAAC","file":"scroll-bar.js","sourcesContent":["export const SCROLL_BAR_DEFAULT_SIZE = 12;\n"]}

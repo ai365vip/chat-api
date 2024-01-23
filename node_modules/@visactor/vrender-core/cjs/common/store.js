@@ -1,0 +1,2 @@
+class StageStore {}
+//# sourceMappingURL=store.js.map

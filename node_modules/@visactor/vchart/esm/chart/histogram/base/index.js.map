@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/chart/histogram/base/index.ts"],"names":[],"mappings":"AAAA,cAAc,QAAQ,CAAC;AACvB,cAAc,8BAA8B,CAAC","file":"index.js","sourcesContent":["export * from './base';\nexport * from './histogram-base-transformer';\n"]}

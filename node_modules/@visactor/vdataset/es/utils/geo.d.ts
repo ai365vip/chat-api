@@ -1,0 +1,10 @@
+export declare const RELATIVE_EARTH_RADIUS: number;
+export declare const WORLD_SIZE: number;
+export declare const BASE_RESOLUTION: number;
+export declare function distanceToZoom(distance: number): number;
+export declare function getResolution(canvasHeight: number, zoom: number): number;
+export declare function getCameraHeight(zoom: number): number;
+export declare function project(lnglat: [number, number]): [number, number];
+export declare function project(lnglatheight: [number, number, number]): [number, number, number];
+export declare function unproject(point: [number, number]): [number, number];
+export declare function unproject(point: [number, number, number]): [number, number, number];

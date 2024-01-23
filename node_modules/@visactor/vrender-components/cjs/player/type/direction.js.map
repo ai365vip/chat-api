@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/player/type/direction.ts"],"names":[],"mappings":";;;AAAA,IAAY,aAGX;AAHD,WAAY,aAAa;IACvB,oCAAmB,CAAA;IACnB,oCAAmB,CAAA;AACrB,CAAC,EAHW,aAAa,GAAb,qBAAa,KAAb,qBAAa,QAGxB","file":"direction.js","sourcesContent":["export enum DirectionEnum {\n  Default = 'default',\n  Reverse = 'reverse'\n}\n\nexport type DirectionType = 'default' | 'reverse';\n"]}

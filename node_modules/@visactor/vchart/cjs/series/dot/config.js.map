@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/series/dot/config.ts"],"names":[],"mappings":";;;AAAa,QAAA,uBAAuB,GAAG;IACrC,IAAI,EAAE,MAAM;IACZ,WAAW,EAAE,GAAG;CACjB,CAAC","file":"config.js","sourcesContent":["export const DEFAULT_GRID_BACKGROUND = {\n  fill: '#bbb',\n  fillOpacity: 0.2\n};\n"]}

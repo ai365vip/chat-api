@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/typings/geo.ts"],"names":[],"mappings":"","file":"geo.js","sourcesContent":["// TODO: geojson类型补充\nexport type GeoJSON = any;\n\nexport type TopoJSON = any;\n\nexport type GeoSourceType = GeoJSON | TopoJSON;\n"]}

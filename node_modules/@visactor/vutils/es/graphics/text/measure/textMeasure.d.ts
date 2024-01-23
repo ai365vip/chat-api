@@ -1,0 +1,38 @@
+import type { Maybe } from '../../../type';
+import type { ITextMeasureOption, ITextMeasureSpec, ITextSize, TextMeasureInput, TextMeasureMethod } from './interface';
+export declare class TextMeasure<T extends Partial<ITextMeasureSpec>> {
+    static readonly ALPHABET_CHAR_SET = "abcdefghijklmnopqrstuvwxyz";
+    static readonly NUMBERS_CHAR_SET = "0123456789";
+    static readonly FULL_SIZE_CHAR = "\u5B57";
+    _numberCharSize: Maybe<ITextSize>;
+    _fullCharSize: Maybe<ITextSize>;
+    _letterCharSize: Maybe<ITextSize>;
+    _specialCharSizeMap: Record<string, ITextSize>;
+    protected _canvas: Maybe<HTMLCanvasElement>;
+    protected _context: Maybe<CanvasRenderingContext2D>;
+    protected _contextSaved: boolean;
+    protected _notSupportCanvas: boolean;
+    protected _notSupportVRender: boolean;
+    protected readonly _userSpec: Partial<T>;
+    textSpec: ITextMeasureSpec;
+    protected readonly _option: ITextMeasureOption;
+    protected readonly _standardMethod: (text: TextMeasureInput) => ITextSize;
+    specialCharSet: string;
+    constructor(option: ITextMeasureOption, textSpec?: Partial<T>);
+    initContext(): boolean;
+    protected _initSpec(): ITextMeasureSpec;
+    measure(text: TextMeasureInput, method?: TextMeasureMethod): ITextSize;
+    fullMeasure(text: TextMeasureInput): ITextSize;
+    measureWithNaiveCanvas(text: TextMeasureInput): ITextSize;
+    protected _measureWithNaiveCanvas(text: string): ITextSize;
+    quickMeasure(text: TextMeasureInput): ITextSize;
+    protected _quickMeasure(text: string): ITextSize;
+    quickMeasureWithoutCanvas(text: TextMeasureInput): ITextSize;
+    protected _quickMeasureWithoutCanvas(text: string): ITextSize;
+    protected _measureReduce(text: TextMeasureInput, processor: (str: string) => ITextSize): ITextSize;
+    protected _measureNumberChar(): ITextSize;
+    protected _measureFullSizeChar(): ITextSize;
+    protected _measureLetterChar(): ITextSize;
+    protected _measureSpecialChar(char: string): Maybe<ITextSize>;
+    release(): void;
+}

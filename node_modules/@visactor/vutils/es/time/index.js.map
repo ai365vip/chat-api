@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/time/index.ts"],"names":[],"mappings":"AAAA,cAAc,eAAe,CAAC;AAC9B,cAAc,YAAY,CAAC","file":"index.js","sourcesContent":["export * from './formatUtils';\nexport * from './interval';\n"]}

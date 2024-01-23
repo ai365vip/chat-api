@@ -1,0 +1,17 @@
+import type { DateLikeType } from '../common/toDate';
+export declare function fullYearGetterName(isUTC?: boolean): "getUTCFullYear" | "getFullYear";
+export declare function monthGetterName(isUTC?: boolean): "getUTCMonth" | "getMonth";
+export declare function dateGetterName(isUTC?: boolean): "getUTCDate" | "getDate";
+export declare function hoursGetterName(isUTC?: boolean): "getUTCHours" | "getHours";
+export declare function minutesGetterName(isUTC?: boolean): "getUTCMinutes" | "getMinutes";
+export declare function secondsGetterName(isUTC?: boolean): "getUTCSeconds" | "getSeconds";
+export declare function millisecondsGetterName(isUTC?: boolean): "getUTCMilliseconds" | "getMilliseconds";
+export declare function fullYearSetterName(isUTC?: boolean): "setUTCFullYear" | "setFullYear";
+export declare function monthSetterName(isUTC?: boolean): "setUTCMonth" | "setMonth";
+export declare function dateSetterName(isUTC?: boolean): "setUTCDate" | "setDate";
+export declare function hoursSetterName(isUTC?: boolean): "setUTCHours" | "setHours";
+export declare function minutesSetterName(isUTC?: boolean): "setUTCMinutes" | "setMinutes";
+export declare function secondsSetterName(isUTC?: boolean): "setUTCSeconds" | "setSeconds";
+export declare function millisecondsSetterName(isUTC?: boolean): "setUTCMilliseconds" | "setMilliseconds";
+export declare function getFormatFromValue(value: DateLikeType, isUTC?: boolean): "YYYY" | "YYYY-MM" | "YYYY-MM-DD" | "HH" | "HH:mm" | "HH:mm:ss" | "HH:mm:ss SSS";
+export declare function getTimeFormatter(template: string, isUTC?: boolean): (time: DateLikeType) => string;

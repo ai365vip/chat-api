@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/model/index.ts"],"names":[],"mappings":"AAAA,cAAc,cAAc,CAAC;AAC7B,cAAc,gBAAgB,CAAC;AAC/B,cAAc,0BAA0B,CAAC","file":"index.js","sourcesContent":["export * from './base-model';\nexport * from './layout-model';\nexport * from './base-model-transformer';\n"]}

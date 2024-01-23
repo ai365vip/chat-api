@@ -1,0 +1,90 @@
+var __decorate = this && this.__decorate || function(decorators, target, key, desc) {
+    var d, c = arguments.length, r = c < 3 ? target : null === desc ? desc = Object.getOwnPropertyDescriptor(target, key) : desc;
+    if ("object" == typeof Reflect && "function" == typeof Reflect.decorate) r = Reflect.decorate(decorators, target, key, desc); else for (var i = decorators.length - 1; i >= 0; i--) (d = decorators[i]) && (r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r);
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+
+import { injectable, BaseEnvContribution, rafBasedSto } from "@visactor/vrender-core";
+
+let NodeEnvContribution = class extends BaseEnvContribution {
+    constructor() {
+        super(...arguments), this.type = "node", this._lastTime = 0, this.supportEvent = !1;
+    }
+    configure(service, pkg) {
+        service.env === this.type && (service.setActiveEnvContribution(this), this.pkg = pkg);
+    }
+    getDynamicCanvasCount() {
+        return 0;
+    }
+    getStaticCanvasCount() {
+        return 999;
+    }
+    loadJson(url) {
+        const jsonPromise = fetch(url).then((data => data.json()));
+        return jsonPromise.then((json => ({
+            data: json,
+            state: "success"
+        }))).catch((() => ({
+            data: null,
+            state: "fail"
+        }))), jsonPromise;
+    }
+    loadArrayBuffer(url) {
+        return fetch(url).then((data => data.arrayBuffer())).then((arrayBuffer => ({
+            data: arrayBuffer,
+            loadState: "success"
+        }))).catch((() => ({
+            data: null,
+            loadState: "fail"
+        })));
+    }
+    loadImage(url) {
+        const {loadImage: loadImage} = this.pkg;
+        return loadImage ? loadImage(url).then((image => ({
+            loadState: image ? "success" : "fail",
+            data: image
+        }))).catch((() => ({
+            loadState: "fail",
+            data: null
+        }))) : Promise.reject(new Error("node-canvas loadImage could not be found!"));
+    }
+    loadSvg(svgStr) {
+        const Resvg = this.pkg.Resvg;
+        if (!Resvg) return Promise.reject(new Error("@resvg/resvg-js svgParser could not be found!"));
+        const pngData = new Resvg(svgStr).render().asPng();
+        return this.loadImage(pngData);
+    }
+    createCanvas(params) {
+        return this.pkg.createCanvas(params.width, params.height);
+    }
+    releaseCanvas(canvas) {}
+    getDevicePixelRatio() {
+        return 1;
+    }
+    getRequestAnimationFrame() {
+        return function(callback) {
+            return rafBasedSto.call(callback);
+        };
+    }
+    getCancelAnimationFrame() {
+        return h => {
+            rafBasedSto.clear(h);
+        };
+    }
+    addEventListener(type, listener, options) {}
+    removeEventListener(type, listener, options) {}
+    getElementById(str) {
+        return null;
+    }
+    getRootElement() {
+        return null;
+    }
+    dispatchEvent(event) {}
+    release(...params) {}
+    createOffscreenCanvas(params) {}
+};
+
+NodeEnvContribution = __decorate([ injectable() ], NodeEnvContribution);
+
+export { NodeEnvContribution };
+//# sourceMappingURL=node-contribution.js.map

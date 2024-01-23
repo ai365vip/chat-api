@@ -1,0 +1,7 @@
+import type { IPoint } from '@visactor/vutils';
+import type { IGraphicPicker, IImage, IPickParams } from '@visactor/vrender-core';
+export declare class DefaultMathImagePicker implements IGraphicPicker {
+    type: string;
+    numberType: number;
+    contains(image: IImage, point: IPoint, params?: IPickParams): boolean;
+}

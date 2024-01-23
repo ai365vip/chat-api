@@ -1,0 +1,65 @@
+import isNumber from "../common/isNumber";
+
+import { pow, sqrt } from "../math";
+
+export class Point {
+    constructor(x = 0, y = 0, x1, y1) {
+        this.x = 0, this.y = 0, this.x = x, this.y = y, this.x1 = x1, this.y1 = y1;
+    }
+    clone() {
+        return new Point(this.x, this.y);
+    }
+    copyFrom(p) {
+        return this.x = p.x, this.y = p.y, this.x1 = p.x1, this.y1 = p.y1, this.defined = p.defined, 
+        this.context = p.context, this;
+    }
+    set(x, y) {
+        return this.x = x, this.y = y, this;
+    }
+    add(point) {
+        return isNumber(point) ? (this.x += point, void (this.y += point)) : (this.x += point.x, 
+        this.y += point.y, this);
+    }
+    sub(point) {
+        return isNumber(point) ? (this.x -= point, void (this.y -= point)) : (this.x -= point.x, 
+        this.y -= point.y, this);
+    }
+    multi(point) {
+        throw new Error("暂不支持");
+    }
+    div(point) {
+        throw new Error("暂不支持");
+    }
+}
+
+export class PointService {
+    static distancePP(p1, p2) {
+        return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+    }
+    static distanceNN(x, y, x1, y1) {
+        return sqrt(pow(x - x1, 2) + pow(y - y1, 2));
+    }
+    static distancePN(point, x, y) {
+        return sqrt(pow(x - point.x, 2) + pow(y - point.y, 2));
+    }
+    static pointAtPP(p1, p2, t) {
+        return new Point((p2.x - p1.x) * t + p1.x, (p2.y - p1.y) * t + p1.y);
+    }
+}
+
+export class PolarPoint {
+    constructor(r = 0, theta = 0, r1, theta1) {
+        this.r = 0, this.theta = 0, this.r = r, this.theta = theta, this.r1 = r1, this.theta1 = theta1;
+    }
+    clone() {
+        return new PolarPoint(this.r, this.theta);
+    }
+    copyFrom(p) {
+        return this.r = p.r, this.theta = p.theta, this.r1 = p.r1, this.theta1 = p.theta1, 
+        this.defined = p.defined, this.context = p.context, this;
+    }
+    set(r, theta) {
+        return this.r = r, this.theta = theta, this;
+    }
+}
+//# sourceMappingURL=point.js.map

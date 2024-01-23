@@ -1,0 +1,9 @@
+export declare const CanvasAllocate: unique symbol;
+export declare const RectAllocate: unique symbol;
+export declare const ArcAllocate: unique symbol;
+export declare const AreaAllocate: unique symbol;
+export declare const CircleAllocate: unique symbol;
+export declare const LineAllocate: unique symbol;
+export declare const PathAllocate: unique symbol;
+export declare const SymbolAllocate: unique symbol;
+export declare const TextAllocate: unique symbol;

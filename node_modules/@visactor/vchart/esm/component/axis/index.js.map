@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/component/axis/index.ts"],"names":[],"mappings":"AAAA,cAAc,aAAa,CAAC;AAC5B,cAAc,6BAA6B,CAAC;AAC5C,cAAc,yBAAyB,CAAC","file":"index.js","sourcesContent":["export * from './interface';\nexport * from './cartesian/interface/index';\nexport * from './polar/interface/index';\n"]}

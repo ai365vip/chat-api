@@ -1,0 +1,10 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: !0
+});
+
+const isValid = value => null != value;
+
+exports.default = isValid;
+//# sourceMappingURL=isValid.js.map

@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/jsx/index.ts"],"names":[],"mappings":"AAAA,cAAc,kBAAkB,CAAC","file":"index.js","sourcesContent":["export * from './component-type';\n"]}

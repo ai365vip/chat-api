@@ -256,19 +256,19 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatus
 	return nil, responseText
 }
 
-func GeminiHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, *openai.Usage) {
+func GeminiHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, *openai.Usage, string) {
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	err = resp.Body.Close()
 	if err != nil {
-		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	var geminiResponse GeminiChatResponse
 	err = json.Unmarshal(responseBody, &geminiResponse)
 	if err != nil {
-		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	if len(geminiResponse.Candidates) == 0 {
 		return &openai.ErrorWithStatusCode{
@@ -279,7 +279,7 @@ func GeminiHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 				Code:    500,
 			},
 			StatusCode: resp.StatusCode,
-		}, nil
+		}, nil, ""
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse)
 	fullTextResponse.Model = model
@@ -292,10 +292,10 @@ func GeminiHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 	fullTextResponse.Usage = usage
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
-		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = c.Writer.Write(jsonResponse)
-	return nil, &usage
+	return nil, &usage, geminiResponse.GetResponseText()
 }

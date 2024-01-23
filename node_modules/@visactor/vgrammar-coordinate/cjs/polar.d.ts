@@ -1,0 +1,31 @@
+import type { IPointLike } from '@visactor/vutils';
+import { Coordinate } from './base';
+import type { IPolarCoordinate, IDimensionType, IPolarPointLike } from './interface';
+export declare class PolarCoordinate extends Coordinate implements IPolarCoordinate {
+    readonly type = "polar";
+    private _isUserOrigin;
+    private _isUserRadius;
+    protected startAngle: number;
+    protected endAngle: number;
+    protected innerRadius: number;
+    protected outerRadius: number;
+    private _updateStartEndPoint;
+    protected _updateSize(): void;
+    angle(): [number, number];
+    angle(startAngle: number, endAngle: number): this;
+    angle(angle: [number, number]): this;
+    radius(): [number, number];
+    radius(innerRadius: number, outerRadius: number): this;
+    radius(radius: [number, number]): this;
+    origin(): IPointLike;
+    origin(point: IPointLike): this;
+    origin(point: [number, number]): this;
+    origin(x: number, y: number): this;
+    convert(point: IPolarPointLike | IPointLike | [number, number]): IPointLike;
+    invert(point: IPointLike): IPolarPointLike;
+    getRangeByDimension(dim: IDimensionType, isSubshaft?: boolean, reversed?: boolean): [number, number];
+    getVisualPositionByDimension(dim: IDimensionType, isSubshaft?: boolean, reversed?: boolean): "inside" | "outside" | "end" | "start";
+    getAxisPointsByDimension(dim: IDimensionType, isSubshaft?: boolean, reversed?: boolean, baseValue?: number): [IPointLike, IPointLike];
+    private convertPoint;
+    private invertPoint;
+}

@@ -1,0 +1,2 @@
+Usage: simplify-geojson file [options]
+    --tolerance, -t       Tolerance in degrees. 1 degree is roughly equivalent to 69 miles. (default: 0.001)

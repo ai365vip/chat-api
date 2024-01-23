@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+
+var encode = require('../encode'),
+  Pbf = require('pbf'),
+  shapefile = require('shapefile')
+
+shapefile.read(process.argv[2]).then(geojson => {
+  const encoded = encode(geojson, new Pbf())
+  process.stdout.write(Buffer.from(encoded))
+})

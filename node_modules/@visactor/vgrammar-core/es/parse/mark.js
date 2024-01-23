@@ -1,0 +1,19 @@
+import { array } from "@visactor/vutils";
+
+import { isGrammar, parseFunctionType } from "./util";
+
+export function isScaleEncode(encode) {
+    return !!(null == encode ? void 0 : encode.scale);
+}
+
+export function isFieldEncode(encode) {
+    return !!(null == encode ? void 0 : encode.field);
+}
+
+export function parseEncodeType(encoder, view) {
+    if (!encoder) return [];
+    let dependencies = [];
+    return encoder.scale && (dependencies = isGrammar(encoder.scale) ? [ encoder.scale ] : array(view.getScaleById(encoder.scale))), 
+    dependencies.concat(parseFunctionType(encoder, view));
+}
+//# sourceMappingURL=mark.js.map

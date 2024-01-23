@@ -1,0 +1,32 @@
+import { DataFilterRank, GrammarMarkType } from "../graph/enums";
+
+import { isString } from "@visactor/vutils";
+
+import { Filter } from "./filter";
+
+import { PlayerEventEnum } from "@visactor/vrender-components";
+
+export class PlayerFilter extends Filter {
+    constructor(view, options) {
+        super(view, options), this.type = PlayerFilter.type, this.options = Object.assign({}, PlayerFilter.defaultOptions, options), 
+        this._marks = view.getMarksBySelector(this.options.source).filter((mark => mark.markType === GrammarMarkType.component && "player" === mark.componentType)), 
+        this._data = isString(this.options.target.data) ? view.getDataById(this.options.target.data) : this.options.target.data;
+    }
+    getEvents() {
+        if (!this._marks || 0 === this._marks.length) return [];
+        const player = this._marks[0];
+        if (!this._data || !player) return [];
+        const transform = this.options.target.transform;
+        return this._filterData(this._data, player, DataFilterRank.player, (event => ({
+            index: event.detail.index,
+            value: event.detail.value
+        })), void 0, ((data, filterValue) => transform ? transform(data, filterValue) : filterValue.value)), 
+        [ {
+            type: PlayerEventEnum.OnChange,
+            handler: this.handleFilter
+        } ];
+    }
+}
+
+PlayerFilter.type = "player-filter", PlayerFilter.defaultOptions = {};
+//# sourceMappingURL=player-filter.js.map

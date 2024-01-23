@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/poptip/index.ts"],"names":[],"mappings":"AAAA,cAAc,UAAU,CAAC;AACzB,cAAc,QAAQ,CAAC;AACvB,OAAO,EAAE,cAAc,EAAE,MAAM,YAAY,CAAC;AAC5C,OAAO,EAAE,UAAU,EAAE,MAAM,UAAU,CAAC","file":"index.js","sourcesContent":["export * from './poptip';\nexport * from './type';\nexport { setPoptipTheme } from './register';\nexport { loadPoptip } from './module';\n"]}

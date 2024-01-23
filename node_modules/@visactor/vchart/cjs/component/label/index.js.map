@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/component/label/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AAAA,8CAA4B;AAC5B,0CAAwB;AACxB,gDAA8B;AAC9B,sDAAoC","file":"index.js","sourcesContent":["export * from './interface';\nexport * from './label';\nexport * from './total-label';\nexport * from './label-transformer';\n"]}

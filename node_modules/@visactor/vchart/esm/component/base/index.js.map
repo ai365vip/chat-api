@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/component/base/index.ts"],"names":[],"mappings":"AAAA,cAAc,kBAAkB,CAAC;AACjC,cAAc,8BAA8B,CAAC","file":"index.js","sourcesContent":["export * from './base-component';\nexport * from './base-component-transformer';\n"]}

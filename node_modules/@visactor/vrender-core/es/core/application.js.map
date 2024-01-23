@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/core/application.ts"],"names":[],"mappings":"AAAA,MAAM,CAAC,MAAM,uBAAuB,GAAG,MAAM,CAAC,yBAAyB,CAAC,CAAC","file":"application.js","sourcesContent":["export const ApplicationContribution = Symbol('ApplicationContribution');\n"]}

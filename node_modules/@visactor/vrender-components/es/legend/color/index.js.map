@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/legend/color/index.ts"],"names":[],"mappings":"AAAA,cAAc,SAAS,CAAC;AACxB,cAAc,QAAQ,CAAC","file":"index.js","sourcesContent":["export * from './color';\nexport * from './type';\n"]}

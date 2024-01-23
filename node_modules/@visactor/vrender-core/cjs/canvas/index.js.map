@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/canvas/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AAAA,8CAA4B;AAC5B,kDAAgC;AAChC,8DAA4C;AAC5C,qDAAmC","file":"index.js","sourcesContent":["export * from './constants';\nexport * from './empty-context';\nexport * from './contributions/base-canvas';\nexport * from './conical-gradient';\n"]}

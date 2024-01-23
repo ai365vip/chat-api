@@ -1,0 +1,102 @@
+import { isArray, isFunction, isNil } from "@visactor/vutils";
+
+import { Factory } from "../core/factory";
+
+import { isSignal, parseFunctionType, parseReference } from "./util";
+
+const parseSimpleOptionValue = (key, transformSpecValue, view) => {
+    var _a;
+    if ("callback" === key && isFunction(transformSpecValue)) return {
+        references: [],
+        value: {
+            callback: transformSpecValue,
+            dependency: []
+        }
+    };
+    if (!isNil(transformSpecValue.data)) {
+        const grammarInstance = view.getDataById(transformSpecValue.data);
+        return {
+            references: [ grammarInstance ],
+            value: grammarInstance
+        };
+    }
+    if (!isNil(transformSpecValue.customized)) {
+        const grammarInstance = view.getCustomizedById(transformSpecValue.customized);
+        return {
+            references: [ grammarInstance ],
+            value: grammarInstance
+        };
+    }
+    if (!isNil(transformSpecValue.scale)) {
+        const grammarInstance = view.getScaleById(transformSpecValue.scale);
+        return {
+            references: [ grammarInstance ],
+            value: grammarInstance
+        };
+    }
+    if (isSignal(transformSpecValue)) {
+        const references = parseFunctionType(transformSpecValue, view);
+        return {
+            references: references,
+            value: transformSpecValue.callback ? {
+                value: transformSpecValue.callback,
+                dependency: references
+            } : null !== (_a = null == references ? void 0 : references[0]) && void 0 !== _a ? _a : transformSpecValue
+        };
+    }
+    return {
+        value: transformSpecValue
+    };
+}, parseTransformOption = (key, transformSpecValue, view) => {
+    if (isNil(transformSpecValue)) return {
+        value: transformSpecValue
+    };
+    if (isArray(transformSpecValue)) {
+        const values = transformSpecValue.map((v => parseSimpleOptionValue(key, v, view)));
+        return {
+            references: values.reduce(((res, val) => (val.references && res.concat(val.references), 
+            res)), []),
+            value: values.map((entry => entry.value))
+        };
+    }
+    return parseSimpleOptionValue(key, transformSpecValue, view);
+}, parseTransform = (transformSpec, view) => {
+    const transformDef = Factory.getTransform(transformSpec.type);
+    if (!transformDef) return;
+    const options = {};
+    let references = [];
+    return Object.keys(transformSpec).forEach((specKey => {
+        var _a;
+        if ("type" === specKey) return;
+        const specValue = transformSpec[specKey];
+        if ("dependency" === specKey) return void ((null == specValue ? void 0 : specValue.length) && (references = references.concat(parseReference(specValue, view))));
+        const res = parseTransformOption(specKey, specValue, view);
+        res && ((null === (_a = res.references) || void 0 === _a ? void 0 : _a.length) && (references = references.concat(res.references)), 
+        options[specKey] = res.value);
+    })), {
+        markPhase: transformDef.markPhase,
+        transform: transformDef.transform,
+        canProgressive: transformDef.canProgressive,
+        type: transformDef.type,
+        options: options,
+        references: references
+    };
+};
+
+export const parseTransformSpec = (spec, view) => {
+    if (null == spec ? void 0 : spec.length) {
+        const transforms = [];
+        let refs = [];
+        return spec.forEach((transformSpec => {
+            var _a;
+            const transform = parseTransform(transformSpec, view);
+            transform && ((null === (_a = transform.references) || void 0 === _a ? void 0 : _a.length) && (refs = refs.concat(transform.references)), 
+            transforms.push(transform));
+        })), {
+            transforms: transforms,
+            refs: refs
+        };
+    }
+    return null;
+};
+//# sourceMappingURL=transform.js.map

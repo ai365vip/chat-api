@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/chart/funnel/index.ts"],"names":[],"mappings":"AAAA,cAAc,UAAU,CAAC;AACzB,cAAc,MAAM,CAAC;AACrB,cAAc,aAAa,CAAC;AAC5B,cAAc,sBAAsB,CAAC","file":"index.js","sourcesContent":["export * from './funnel';\nexport * from './3d';\nexport * from './interface';\nexport * from './funnel-transformer';\n"]}

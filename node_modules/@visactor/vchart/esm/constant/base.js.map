@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/constant/base.ts"],"names":[],"mappings":"AAAA,MAAM,CAAC,MAAM,MAAM,GAAG,UAAU,CAAC;AAEjC,MAAM,CAAC,MAAM,mBAAmB,GAAG,GAAG,CAAC;AACvC,MAAM,CAAC,MAAM,oBAAoB,GAAG,GAAG,CAAC","file":"base.js","sourcesContent":["export const PREFIX = '__VCHART';\n\nexport const DEFAULT_CHART_WIDTH = 500;\nexport const DEFAULT_CHART_HEIGHT = 500;\n"]}

@@ -139,3 +139,12 @@ func CountAudioToken(text string, model string) int {
 		return openai.CountTokenText(text, model)
 	}
 }
+
+func GetAzureAPIVersion(c *gin.Context) string {
+	query := c.Request.URL.Query()
+	apiVersion := query.Get("api-version")
+	if apiVersion == "" {
+		apiVersion = c.GetString("api_version")
+	}
+	return apiVersion
+}

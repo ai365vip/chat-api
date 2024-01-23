@@ -1,0 +1,11 @@
+import { isFunction, isObject } from "@visactor/vutils";
+
+import { isGrammar } from "./util";
+
+export const parseOptionValue = (value, params) => isGrammar(value) ? value.output() : value && isObject(value) ? isFunction(value.callback) ? datum => value.callback(datum, params) : isFunction(value.value) ? value.value(params) : value : value;
+
+export const parseOptions = (options, params) => options ? isObject(options) ? Object.keys(options).reduce(((res, key) => {
+    const option = options[key];
+    return res[key] = parseOptionValue(option, params), res;
+}), {}) : options.map((option => parseOptionValue(option, params))) : options;
+//# sourceMappingURL=option.js.map

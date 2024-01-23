@@ -1,0 +1,45 @@
+{
+  "name": "simplify-geometry",
+  "version": "0.0.2",
+  "description": "Simplify geometry using the Ramer–Douglas–Peucker algorithm.",
+  "main": "./lib/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/seabre/simplify-geometry.git"
+  },
+  "keywords": [
+    "geometry",
+    "Douglas–Peucker",
+    "simplify"
+  ],
+ "author": {
+    "name": "Sean Brewer",
+    "email": "seabre986@gmail.com",
+    "url": "https://github.com/seabre"
+  },
+  "testling": {
+    "browsers": [
+      "ie/6..latest",
+      "chrome/20..latest",
+      "firefox/10..latest",
+      "safari/latest",
+      "opera/11.0..latest",
+      "iphone/6",
+      "ipad/6",
+      "android-browser/4.2"
+    ],
+    "harness" : "mocha",
+    "files": "test/*.js"
+  },
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "devDependencies": {
+    "mocha": "~1.12.0"
+  }
+}

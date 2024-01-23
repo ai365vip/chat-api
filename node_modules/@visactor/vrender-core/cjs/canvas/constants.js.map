@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/canvas/constants.ts"],"names":[],"mappings":";;;AAAa,QAAA,aAAa,GAAG,MAAM,CAAC,GAAG,CAAC,eAAe,CAAC,CAAC;AAC5C,QAAA,gBAAgB,GAAG,MAAM,CAAC,GAAG,CAAC,kBAAkB,CAAC,CAAC","file":"constants.js","sourcesContent":["export const CanvasFactory = Symbol.for('CanvasFactory');\nexport const Context2dFactory = Symbol.for('Context2dFactory');\n"]}

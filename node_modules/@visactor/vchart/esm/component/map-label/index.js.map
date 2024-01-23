@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/component/map-label/index.ts"],"names":[],"mappings":"AAIA,cAAc,aAAa,CAAC;AAC5B,cAAc,aAAa,CAAC","file":"index.js","sourcesContent":["/**\n * @description 地图扩展 label 组件\n * @todo 待后续 vchart 整体稳定后再拆出\n */\nexport * from './component';\nexport * from './interface';\n"]}

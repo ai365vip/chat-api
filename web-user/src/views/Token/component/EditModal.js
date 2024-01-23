@@ -18,9 +18,8 @@ import {
   OutlinedInput,
   InputAdornment,
   Switch,
-  FormHelperText,TextField,Select, MenuItem
+  FormHelperText,TextField,Select, MenuItem,Chip
 } from '@mui/material';
-
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
@@ -306,18 +305,28 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
               />{' '}
               无限额度
               <FormControl fullWidth sx={{ ...theme.typography.otherInput, mt: 2 }}>
-                <InputLabel htmlFor="models-multiple-select">可用模型</InputLabel>
+
+              <InputLabel htmlFor="models-multiple-select">可用模型</InputLabel>
                 <Select
                   labelId="models-multiple-label"
                   id="models-multiple-select"
-                  label="可用模型"
-                  name="models"
                   multiple
                   value={values.models}
                   onChange={(event) => {
                     setFieldValue('models', event.target.value);
                   }}
-                  renderValue={(selected) => selected.join(', ')}
+                  renderValue={(selected) => (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                      {selected.map((value) => (
+                        <Chip
+                          key={value}
+                          label={value}
+                          // 添加 margin 来解决标签之间的间距问题
+                          style={{ margin: '1px' }}
+                        />
+                      ))}
+                    </div>
+                  )}
                   MenuProps={{
                     PaperProps: {
                       style: {
@@ -340,8 +349,6 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
                   </FormHelperText>
                 )}
               </FormControl>
-
-
 
               {/* 新增的计费方式选择框 */}
               {tokenId ? null : (

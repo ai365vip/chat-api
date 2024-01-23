@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/player/controller/index.ts"],"names":[],"mappings":"AAAA,cAAc,cAAc,CAAC;AAC7B,cAAc,QAAQ,CAAC","file":"index.js","sourcesContent":["export * from './controller';\nexport * from './type';\n"]}

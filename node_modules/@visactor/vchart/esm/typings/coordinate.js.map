@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/typings/coordinate.ts"],"names":[],"mappings":"","file":"coordinate.js","sourcesContent":["export type CoordinateType = 'cartesian' | 'polar' | 'geo' | 'none';\n\nexport interface IPoint {\n  x: number;\n  y: number;\n}\n\nexport interface IPolarPoint {\n  radius: number;\n  angle: number;\n}\n"]}

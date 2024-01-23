@@ -1,0 +1,6 @@
+import isNumber from "./isNumber";
+
+const isValidNumber = value => isNumber(value) && Number.isFinite(value);
+
+export default isValidNumber;
+//# sourceMappingURL=isValidNumber.js.map

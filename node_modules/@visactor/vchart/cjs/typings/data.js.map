@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/typings/data.ts"],"names":[],"mappings":"","file":"data.js","sourcesContent":["// TODO: 数据状态是否要放到dataView\n\nexport type IScatterInvalidType = 'zero' | 'ignore';\nexport type IInvalidType = 'zero' | 'ignore' | 'link' | 'break';\n"]}
