@@ -18,7 +18,7 @@ import {
   OutlinedInput,
   InputAdornment,
   Switch,
-  FormHelperText,TextField,Select, MenuItem,Chip
+  FormHelperText,TextField,Select, MenuItem,Chip,Checkbox,ListItemText
 } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -337,10 +337,11 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
                   }}
                 >
                   {models.map((model) => (
-                    <MenuItem key={model} value={model}>
-                      {model}
-                    </MenuItem>
-                  ))}
+            <MenuItem key={model} value={model}>
+              <Checkbox checked={values.models.indexOf(model) > -1} />
+              <ListItemText primary={model} />
+            </MenuItem>
+          ))}
                 </Select>
                 <FormHelperText>限制令牌可以使用的模型，为空表示全部可用。</FormHelperText>
                 {touched.models && errors.models && (
