@@ -239,11 +239,10 @@ export default function Profile() {
                         navigator.clipboard.writeText(model).then(() => {
                           showSuccess(`模型 ${model} 已复制到剪贴板`);
                         }).catch(() => {
-                          showError('复制失败，请手动复制！');
+                          showError(`复制失败，请手动复制！ ${model}`);
                         });
                       } else {
-
-                        showError('复制失败，请手动复制！');
+                        showError(`复制失败，请手动复制！ ${model}`);
                       }
                     }}
                     sx={{ margin: '3px' }} 

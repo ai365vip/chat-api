@@ -106,10 +106,10 @@ const OtherSetting = () => {
                     <Button onClick={submitNotice} style={{ marginTop: '10px' }}>保存公告</Button>
                   </div>
 
-                  <Divider />
+                  <Divider style={{ marginTop: '20px', marginBottom: '10px'  }}/>
 
                   {/* 系统名称模块 */}
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{ width: '40%',marginBottom: '20px' }}>
                   <Typography.Title heading={5}>个性化设置</Typography.Title>
                   <div style={{ marginTop: '10px' }}>
                     <Typography.Text strong>系统名称</Typography.Text>
@@ -139,7 +139,7 @@ const OtherSetting = () => {
                 </div>
 
                 {/* Logo 图片地址模块 */}
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{width: '40%', marginBottom: '20px' }}>
                 <div style={{ marginTop: '10px' }}>
                       <Typography.Text strong>Logo 图片地址</Typography.Text>
                     </div>
@@ -151,7 +151,7 @@ const OtherSetting = () => {
                   />
                   <Button onClick={submitLogo} style={{ marginTop: '10px' }}>设置 Logo</Button>
                 </div>
-                <Divider />
+                <Divider style={{ marginTop: '20px', marginBottom: '10px'  }}/>
 
                 {/* 首页内容模块 */}
                 <div style={{ marginBottom: '20px' }}>
@@ -169,7 +169,7 @@ const OtherSetting = () => {
                     保存首页内容
                   </Button>
                 </div>
-                <Divider />
+                <Divider style={{ marginTop: '20px', marginBottom: '10px'  }}/>
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ marginTop: '10px' }}>
                       <Typography.Text strong>关于</Typography.Text>
@@ -184,7 +184,7 @@ const OtherSetting = () => {
                   />
                   <Button onClick={submitAbout} style={{ marginTop: '10px' }}>保存关于</Button>
                   </div>
-                  <Divider />
+                  <Divider style={{ marginTop: '20px', marginBottom: '10px'  }}/>
 
                   <div style={{ marginBottom: '20px' }}>
                     <div style={{ marginTop: '10px' }}>

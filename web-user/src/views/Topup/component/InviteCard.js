@@ -42,8 +42,15 @@ const InviteCard = () => {
           return; 
         }
       }
-      await navigator.clipboard.writeText(link);
-      showSuccess(`邀请链接已复制到剪切板`);
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(link).then(() => {
+          showSuccess(`邀请链接已复制到剪切板`);
+        }).catch(() => {
+          showError(`复制失败，请手动复制！ ${link}`);
+        });
+      } else {
+        showError(`复制失败，请手动复制！ ${link}`);
+      }
     } catch (error) {
       showError('复制到剪切板失败，请手动复制链接。');
     }

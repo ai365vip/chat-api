@@ -19,19 +19,24 @@ const PaymentSetting = () => {
       let [loading, setLoading] = useState(false);
     const [originInputs, setOriginInputs] = useState({});
 
-    const getOptions = async () => {
+   
+      const getOptions = async () => {
         const res = await API.get('/api/option/');
-        const { success, message, data } = res.data;
+        const {success, message, data} = res.data;
         if (success) {
-          let newInputs = { ...inputs }; // 使用当前状态来初始化newInputs
-          data.forEach((item) => {
-            newInputs[item.key] = item.value; // 更新每个键的值，无论是否存在于当前状态中
-          });
-          setInputs(newInputs); // 使用更新后的状态
+            let newInputs = {};
+            data.forEach((item) => {
+                if (item.key === 'TopupRatio' || item.key === 'TopupGroupRatio' ) {
+                    item.value = JSON.stringify(JSON.parse(item.value), null, 2);
+                }
+                newInputs[item.key] = item.value;
+            });
+            setInputs(newInputs);
+            setOriginInputs(newInputs);
         } else {
-          showError(message);
+            showError(message);
         }
-      };
+    };
       
     
       useEffect(() => {
@@ -112,7 +117,7 @@ const PaymentSetting = () => {
           <Typography.Title heading={5}>易支付</Typography.Title>
  
                     <Form widths='equal'>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                        <div style={{ width: '60%', display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                             <div style={{ width: '30%', marginRight: '5%' }}>
                                 <div style={{ marginBottom: '10px' }}>
                                 <Typography.Text strong>支付地址，不填写则不启用在线支付</Typography.Text>
@@ -124,7 +129,7 @@ const PaymentSetting = () => {
                                 onChange={(value) => handleInputChange('PayAddress', value)}
                                 />
                             </div>
-                            <div style={{ width: '30%', marginRight: '5%' }}>
+                            <div style={{ width: '15%', marginRight: '5%' }}>
                                 <div style={{ marginBottom: '10px' }}>
                                 <Typography.Text strong>易支付商户ID</Typography.Text>
                                 </div>
@@ -176,9 +181,10 @@ const PaymentSetting = () => {
                         
                         <Button onClick={submitPayAddress} style={{ marginTop: '3px' }}>更新支付设置</Button>
                     </Form>
-                    <Divider style={{ marginTop: '20px' }}/>
+                    <Divider style={{ marginTop: '20px', marginBottom: '10px'  }}/>
                     <Form >
-                        <div style={{ marginBottom: '20px' }}>
+                    <div style={{ width: '60%',display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                        <div style={{  width: '40%', marginRight: '5%' }}>
                             <div style={{ marginTop: '10px' }}>
                                 <Typography.Text strong>充值天数倍率（-1为无期限）</Typography.Text>
                             </div>
@@ -191,7 +197,7 @@ const PaymentSetting = () => {
                                 />
                         </div>
 
-                        <div style={{ marginBottom: '20px' }}>
+                        <div style={{  width: '40%', marginRight: '5%' }}>
                             <div style={{ marginTop: '10px' }}>
                                 <Typography.Text strong>充值分组倍率</Typography.Text>
                             </div>
@@ -203,15 +209,16 @@ const PaymentSetting = () => {
                                 style={{ maxHeight: '200px', overflowY: 'auto' }} 
                                 />
                         </div>
+                    </div>
                         
                     <Button onClick={submitGroupRatio} style={{ marginTop: '3px' }}>
                         更新倍率设置
                     </Button>
                     {/* Divider组件下的空间与输入框间隔 */}
-                    <Divider style={{ marginTop: '20px' }}/>
+                    <Divider style={{ marginTop: '20px', marginBottom: '10px'  }}/>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                        <div style={{ width: '48%', marginRight: '2%' }}>
+                    <div style={{  width: '40%',display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                        <div style={{ width: '40%', marginRight: '2%' }}>
                             <div style={{ marginBottom: '10px' }}>
                                 <Typography.Text strong>兑换码链接</Typography.Text>
                             </div>
@@ -222,7 +229,7 @@ const PaymentSetting = () => {
                                 onChange={(value) => handleInputChange('TopUpLink', value)}
                             />
                         </div>
-                        <div style={{ width: '48%' }}>
+                        <div style={{ width: '40%' }}>
                             <div style={{ marginBottom: '10px' }}>
                                 <Typography.Text strong>兑换码额度有效期（-1为无期限）</Typography.Text>
                             </div>

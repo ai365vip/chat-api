@@ -358,7 +358,7 @@ const PersonalSetting = () => {
                         </Card>
                         <Card
                             footer={
-                                <div>
+                                <div style={{width: '40%',marginTop: 10}}>
                                     <Typography.Text>邀请链接</Typography.Text>
                                     <Input
                                         style={{marginTop: 10}}
