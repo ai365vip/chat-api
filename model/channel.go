@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+	"fmt"
 	"one-api/common"
 
 	"gorm.io/gorm"
@@ -142,11 +144,17 @@ func (channel *Channel) GetBaseURL() string {
 	return *channel.BaseURL
 }
 
-func (channel *Channel) GetModelMapping() string {
-	if channel.ModelMapping == nil {
-		return ""
+func (channel *Channel) GetModelMapping() map[string]string {
+	if channel.ModelMapping == nil || *channel.ModelMapping == "" || *channel.ModelMapping == "{}" {
+		return nil
 	}
-	return *channel.ModelMapping
+	modelMapping := make(map[string]string)
+	err := json.Unmarshal([]byte(*channel.ModelMapping), &modelMapping)
+	if err != nil {
+		common.SysError(fmt.Sprintf("failed to unmarshal model mapping for channel %d, error: %s", channel.Id, err.Error()))
+		return nil
+	}
+	return modelMapping
 }
 
 func (channel *Channel) Insert() error {

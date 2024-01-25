@@ -1,9 +1,10 @@
 package util
 
 import (
-	"github.com/gin-gonic/gin"
 	"one-api/common"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type RelayMeta struct {

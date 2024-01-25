@@ -42,6 +42,7 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 	var isModelMapped bool
 	textRequest.Model, isModelMapped = util.GetMappedModelName(textRequest.Model, meta.ModelMapping)
 	apiType := constant.ChannelType2APIType(meta.ChannelType)
+
 	fullRequestURL, err := GetRequestURL(c.Request.URL.String(), apiType, relayMode, meta, &textRequest)
 	if err != nil {
 		common.LogError(ctx, fmt.Sprintf("util.GetRequestURL failed: %s", err.Error()))
