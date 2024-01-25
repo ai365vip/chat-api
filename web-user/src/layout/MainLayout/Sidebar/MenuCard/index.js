@@ -1,6 +1,6 @@
 // import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
-
+import { useState, useEffect } from 'react';
 // material-ui
 import { styled, useTheme } from '@mui/material/styles';
 import {
@@ -13,11 +13,14 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
-  Typography
+  Typography,Box,Chip 
   // linearProgressClasses
 } from '@mui/material';
+
 import User1 from 'assets/images/users/user-round.svg';
 import { useNavigate } from 'react-router-dom';
+import { API } from 'utils/api';
+
 
 
 const CardStyle = styled(Card)(({ theme }) => ({
@@ -42,7 +45,21 @@ const MenuCard = () => {
   const theme = useTheme();
   const account = useSelector((state) => state.account);
   const navigate = useNavigate();
+  const [inputs, setInputs] = useState([]);
 
+  const loadUser = async () => {
+    let res = await API.get(`/api/user/self`);
+    const { success, message, data } = res.data;
+    if (success) {
+      setInputs(data);
+    } else {
+      showError(message);
+    }
+  };
+
+  useEffect(() => {
+    loadUser().then();
+  }, [account.user?.username]);
   return (
     <CardStyle>
       <CardContent sx={{ p: 2 }}>
@@ -67,11 +84,25 @@ const MenuCard = () => {
             <ListItemText
               sx={{ mt: 0 }}
               primary={
-                <Typography variant="subtitle1" sx={{ color: theme.palette.primary[800] }}>
-                  {account.user?.username}
+                <Typography variant="subtitle1" >
+                  <Box >
+                    <Chip 
+                      sx={{ cursor: 'pointer' }} 
+                      label={`${account.user?.username} - ${inputs.group}`} 
+                      color="primary"
+                      size="small"
+                      variant="outlined"
+                      type='ghost'
+                      onClick={() => navigate('/profile')}>
+                      
+                    </Chip>
+                  </Box>
+                  
                 </Typography>
+
+                
               }
-              secondary={<Typography variant="caption"> 欢迎回来 </Typography>}
+              secondary={<Typography sx={{ marginLeft: 1 }} variant="caption"> 欢迎回来 </Typography>}
             />
           </ListItem>
         </List>

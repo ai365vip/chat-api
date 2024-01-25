@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"one-api/common"
 	"strconv"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -73,7 +74,8 @@ func Redeem(key string, userId int) (quota int, err error) {
 		if err != nil {
 			return err
 		}
-		err = IncreaseRechargeQuota(userId, RedempTionCount, redemption.Quota)
+
+		err = redemptionIncreaseRechargeQuota(tx, userId, RedempTionCount, redemption.Quota)
 		if err != nil {
 			return err
 		}
@@ -134,4 +136,35 @@ func DeleteRedemptionById(id int) (err error) {
 		return err
 	}
 	return redemption.Delete()
+}
+
+func redemptionIncreaseRechargeQuota(tx *gorm.DB, id int, topupratio string, quota int) (err error) {
+	var endQuotaAt int64
+
+	// 如果topupratio不为空且不是"-1"，计算结束时间戳；如果是"-1"，则设置无限期。
+	if topupratio != "" && topupratio != "-1" {
+		days, convErr := strconv.Atoi(topupratio)
+		if convErr != nil {
+			return convErr
+		}
+		currentTime := time.Now().Unix()
+		endQuotaAt = currentTime + int64(days*24*60*60)
+	} else if topupratio == "-1" {
+		endQuotaAt = -1 // 表示无限期
+	}
+
+	// 启动一个事务处理增加配额和插入充值记录
+	if topupratio != "" {
+		record := &RechargeRecord{
+			UserID:    uint(id),
+			Amount:    quota,
+			StartDate: time.Now().Unix(), // 使用当前时间作为StartDate
+			EndDate:   endQuotaAt,        // 根据topupratio设置EndDate
+		}
+		if err := tx.Create(&record).Error; err != nil {
+			return err
+		}
+	}
+
+	return err
 }

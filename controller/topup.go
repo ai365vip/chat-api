@@ -166,6 +166,7 @@ func EpayNotify(c *gin.Context) {
 				log.Printf("用户分组更新失败: %v", topUp)
 				return
 			}
+
 			err = model.IncreaseRechargeQuota(topUp.UserId, topUp.TopupRatio, int(multipliedQuota))
 			if err != nil {
 				log.Printf("易支付回调更新用户失败: %v", topUp)
