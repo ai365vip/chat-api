@@ -174,7 +174,7 @@ func EpayNotify(c *gin.Context) {
 			}
 			notifyEmail(topUp)
 			notifyWxPusher(topUp)
-			model.RecordLog(topUp.UserId, model.LogTypeTopup, int(multipliedQuota), fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", common.LogQuota(int(multipliedQuota)), topUp.Money))
+			model.RecordLog(topUp.UserId, model.LogTypeTopup, int(multipliedQuota), fmt.Sprintf("在线充值成功，充值: %v，支付金额：%.2f", common.LogQuota(int(multipliedQuota)), topUp.Money))
 			model.VipInsert(topUp.UserId, topUp.Amount)
 		}
 		_, writeErr := c.Writer.Write([]byte("success")) // 确保发送 success 响应
@@ -201,8 +201,8 @@ func notifyEmail(topUp *model.TopUp) {
 			}
 			notificationEmail = common.RootUserEmail
 		}
-		subject := fmt.Sprintf("充值成功通知: 用户「%d」充值金额：%v，支付金额：%f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
-		content := fmt.Sprintf("用户「%d」使用在线充值成功。充值金额：%v，支付金额：%f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
+		subject := fmt.Sprintf("充值成功通知: 用户「%d」充值：%v，支付金额：%.2f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
+		content := fmt.Sprintf("用户「%d」使用在线充值成功。充值：%v，支付金额：%.2f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
 		err := common.SendEmail(subject, notificationEmail, content)
 		if err != nil {
 			common.SysError(fmt.Sprintf("failed to send email notification: %s", err.Error()))
@@ -213,8 +213,8 @@ func notifyEmail(topUp *model.TopUp) {
 func notifyWxPusher(topUp *model.TopUp) {
 	wxNotifEnabled, _ := strconv.ParseBool(common.OptionMap["WxPusherNotificationsEnabled"])
 	if wxNotifEnabled {
-		subject := fmt.Sprintf("充值成功通知: 用户「%d」充值金额：%v，支付金额：%f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
-		content := fmt.Sprintf("用户「%d」使用在线充值成功。充值金额：%v，支付金额：%f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
+		subject := fmt.Sprintf("充值成功通知: 用户「%d」充值：%v，支付金额：%.2f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
+		content := fmt.Sprintf("用户「%d」使用在线充值成功。充值：%v，支付金额：%.2f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
 		err := SendWxPusherNotification(subject, content)
 		if err != nil {
 			common.SysError(fmt.Sprintf("无法发送WxPusher通知: %s", err))

@@ -194,8 +194,10 @@ const TopupCard = () => {
 
 
   const getAmount = async (value = topUpCount) => {
-    if (value === undefined) {
-        value = topUpCount;
+    const intValue = parseInt(value, 10);
+    if (isNaN(intValue) || intValue.toString() !== value.toString()) {
+      showError('请输入有效的整数金额！');
+      return;
     }
     try {
         const res = await API.post('/api/user/amount', {
@@ -217,7 +219,6 @@ const TopupCard = () => {
         }
     } catch (err) {
       showError('请求失败');
-      console.error(err); // 输出错误到控制台
     } 
   };
 
@@ -326,12 +327,14 @@ const TopupCard = () => {
             <OutlinedInput
               id="amount"
               label="充值金额"
-              type="number"
+              type="text"
               value={topUpCount} 
               onChange={(e) => {
-                const newTopUpCount = e.target.value;
-                setTopUpCount(newTopUpCount); 
-                getAmount(newTopUpCount); 
+                const newValue = e.target.value;
+                if (/^\d*$/.test(newValue)) {
+                  setTopUpCount(newValue);
+                  getAmount(newValue); 
+                }
               }}
               startAdornment={<InputAdornment position="start">$</InputAdornment>}
               // 根据isMobile状态，决定endAdornment的内容
