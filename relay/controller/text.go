@@ -150,8 +150,6 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 		return openai.ErrorWrapper(err, "decrease_user_quota_failed", http.StatusInternalServerError)
 	}
 	if userQuota > 100*preConsumedQuota {
-		// in this case, we do not pre-consume quota
-		// because the user has enough quota
 		preConsumedQuota = 0
 		common.LogInfo(c.Request.Context(), fmt.Sprintf("user %d has enough quota %d, trusted and no need to pre-consume", meta.UserId, userQuota))
 		if !meta.TokenUnlimited {
