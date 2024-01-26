@@ -28,6 +28,7 @@ import (
 
 func GetRequestURL(requestURL string, apiType int, relayMode int, meta *util.RelayMeta, textRequest *openai.GeneralOpenAIRequest) (string, error) {
 	fullRequestURL := util.GetFullRequestURL(meta.BaseURL, requestURL, meta.ChannelType)
+
 	switch apiType {
 	case constant.APITypeOpenAI:
 		if meta.ChannelType == common.ChannelTypeAzure {

@@ -7,7 +7,7 @@ import {Layout} from "@douyinfe/semi-ui";
 const Footer = () => {
   const systemName = getSystemName();
   const [footer, setFooter] = useState(getFooterHTML());
-  const appVersion = process.env.REACT_APP_VERSION || 'v0.0.33';
+  const appVersion = process.env.REACT_APP_VERSION || 'v0.1.7';
   let remainCheckTimes = 5;
 
   const loadFooter = () => {
