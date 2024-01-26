@@ -3,7 +3,6 @@ package model
 import (
 	"errors"
 	"fmt"
-	"log"
 	"one-api/common"
 	"strconv"
 	"strings"
@@ -80,8 +79,6 @@ func ValidateUserToken(key string, model string) (token *Token, err error) {
 		}
 		if token.Models != "" {
 			models := strings.Split(token.Models, ",")
-			log.Println(models)
-			log.Println(model)
 			modelFound := false
 			for _, m := range models {
 				if m == model {

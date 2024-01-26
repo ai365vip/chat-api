@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/model"
@@ -104,11 +103,7 @@ func TokenAuth() func(c *gin.Context) {
 		}
 		var modelRequest ModelRequest
 		if !isMidJourneyKey {
-			if err := common.UnmarshalBodyReusable(c, &modelRequest); err != nil {
-				log.Printf("解析请求体时发生错误：%v", err)
-				abortWithMessage(c, http.StatusBadRequest, "请求体解析失败，请确保提交了有效的JSON")
-				return
-			}
+			_ = common.UnmarshalBodyReusable(c, &modelRequest)
 		} else {
 			modelRequest.Model = "midjourney"
 		}
