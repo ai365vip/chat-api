@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Install dependencies first to leverage Docker cache
 COPY web-user/package.json ./
+
 RUN npm install
 
 # Copy the source code and build the React applications
