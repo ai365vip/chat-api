@@ -4,7 +4,7 @@
 
 ## 使用的开源项目
 
-使用了以下开源项目作为我们项目的一部分：
+使用了以下开源项目作为我们项目的一部分： 
 
 - [Berry Free React Admin Template](https://github.com/codedthemes/berry-free-react-admin-template)
 - [minimal-ui-kit](minimal-ui-kit)
