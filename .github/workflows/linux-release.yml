@@ -6,6 +6,7 @@ on:
     tags:
       - '*'
       - '!*-alpha*'
+  workflow_dispatch: 
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -22,12 +23,12 @@ jobs:
           CI: ""
         run: |
           cd web-admin
-          rm -rf node_modules package-lock.json
+          npm install @visactor/vchart@1.8.8 @visactor/vchart-semi-theme@1.8.8
           npm install
           REACT_APP_VERSION=$(git describe --tags) npm run build
           cd ..
           cd web-user
-          rm -rf node_modules package-lock.json
+          npm install @visactor/vchart@1.8.8 @visactor/vchart-semi-theme@1.8.8
           npm install
           REACT_APP_VERSION=$(git describe --tags) npm run build
           cd ..
