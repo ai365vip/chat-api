@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Install dependencies first to leverage Docker cache
 COPY web-user/package.json ./
+npm install @visactor/vchart@latest @visactor/vchart-semi-theme@latest
 RUN npm install
 
 # Copy the source code and build the React applications
