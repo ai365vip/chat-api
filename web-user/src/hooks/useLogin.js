@@ -69,7 +69,7 @@ const useLogin = () => {
     await API.get('/api/user/logout');
     localStorage.removeItem('user');
     dispatch({ type: LOGIN, payload: null });
-    navigate('/');
+    navigate('/login');
   };
 
   return { login, logout, githubLogin, wechatLogin };

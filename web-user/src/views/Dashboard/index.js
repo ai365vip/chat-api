@@ -7,7 +7,7 @@ import { generateChartOptions, getLastSevenDays, getTodayDay } from 'utils/chart
 import { API } from 'utils/api';
 import { showError, calculateQuota, renderNumber } from 'utils/common';
 import UserCard from 'ui-component/cards/UserCard';
-
+import { useSelector } from 'react-redux';
 const Dashboard = () => {
   const [isLoading, setLoading] = useState(true);
   const [statisticalData, setStatisticalData] = useState({ data: [], xaxis: [] });
@@ -15,7 +15,7 @@ const Dashboard = () => {
   const [quotaChart, setQuotaChart] = useState(null);
   const [tokenChart, setTokenChart] = useState(null);
   const [users, setUsers] = useState([]);
-
+  const account = useSelector((state) => state.account);
   const userDashboard = async () => {
     try {
       const res = await API.get('/api/user/dashboard');
@@ -52,8 +52,11 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    userDashboard();
-    loadUser();
+    if (account.user) {
+      userDashboard();
+      loadUser();
+    }
+    
   }, []);
 
   return (

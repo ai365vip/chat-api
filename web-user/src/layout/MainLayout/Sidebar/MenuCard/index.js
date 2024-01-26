@@ -58,8 +58,11 @@ const MenuCard = () => {
   };
 
   useEffect(() => {
-    loadUser().then();
-  }, [account.user?.username]);
+    if (account.user) {
+      loadUser().then();
+    }
+  }, [account.user?.username]); 
+  
   return (
     <CardStyle>
       <CardContent sx={{ p: 2 }}>
