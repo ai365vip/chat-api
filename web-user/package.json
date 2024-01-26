@@ -4,7 +4,7 @@
   "homepage": "http://127.0.0.1:3000/panel",
   "private": true,
   "dependencies": {
-    "@douyinfe/semi-ui": "^2.49.1",
+    "@douyinfe/semi-ui": "^2.51.3",
     "@emotion/cache": "^11.9.3",
     "@emotion/react": "^11.9.3",
     "@emotion/styled": "^11.9.3",

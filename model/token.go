@@ -159,6 +159,7 @@ func DeleteTokenById(id int, userId int) (err error) {
 }
 
 func IncreaseTokenQuota(id int, quota int) (err error) {
+
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
