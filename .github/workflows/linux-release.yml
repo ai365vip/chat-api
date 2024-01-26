@@ -23,14 +23,12 @@ jobs:
           CI: ""
         run: |
           cd web-admin
-          npm install @visactor/vchart@1.8.8 @visactor/vchart-semi-theme@1.8.8
           npm install
-          REACT_APP_VERSION=$(git describe --tags) npm run build
+          npm run build
           cd ..
           cd web-user
-          npm install @visactor/vchart@1.8.8 @visactor/vchart-semi-theme@1.8.8
           npm install
-          REACT_APP_VERSION=$(git describe --tags) npm run build
+          npm run build
           cd ..
       - name: Set up Go
         uses: actions/setup-go@v3
