@@ -31,6 +31,7 @@
 19. 支持渠道显示可用模型，可自定义排序
 20. 支持gpt-4v通用格式（添加模型gpt-4-vision，对话中放入图像链接即可）
 21. 支持按日期设置充值不同倍率
+21. 支持分销查询页[chat-api-key-tool](https://github.com/ai365vip/chat-api-key-tool)（消费、MJ、设置发卡站）
 ## 部署
 
 ### 基于 Docker 进行部署
