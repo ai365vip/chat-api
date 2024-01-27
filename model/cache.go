@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"one-api/common"
 	"sort"
@@ -237,23 +238,21 @@ func CacheGetRandomSatisfiedChannel(group string, model string) (*Channel, error
 		if len(priorityChannels) == 0 {
 			break // 如果没有剩下的频道，则跳出循环
 		}
-
+		originalLength := len(priorityChannels)
 		// 尝试在当前优先级找到一个可以使用的频道
 		for len(priorityChannels) > 0 {
 			index := chooseIndexByWeight(priorityChannels, totalWeight)
 			selectedChannel := priorityChannels[index]
-			//log.Println("当前渠道", selectedChannel.Id)
-
 			// 检查选定频道是否启用了频率限制
 			if selectedChannel.RateLimited != nil && *selectedChannel.RateLimited {
-				_, ok := checkRateLimit(selectedChannel.Id)
+				_, ok := checkRateLimit(selectedChannel.Id, model)
 				if !ok {
 					// 频道超过频率限制，从列表中移除该频道
-					//log.Println("渠道被限制", selectedChannel.Id)
+					log.Println("渠道被限制", selectedChannel.Id, model)
 					priorityChannels = append(priorityChannels[:index], priorityChannels[index+1:]...)
 					continue
 				} else {
-					updateRateLimitStatus(selectedChannel.Id)
+					updateRateLimitStatus(selectedChannel.Id, model)
 					return selectedChannel, nil
 				}
 			} else {
@@ -262,11 +261,21 @@ func CacheGetRandomSatisfiedChannel(group string, model string) (*Channel, error
 		}
 
 		// 寻找下一个较低的优先级继续循环
-		nextPriority := getNextLowerPriority(allChannels, currentPriority)
-		if nextPriority == -1 {
-			return nil, errors.New("no channels available within rate limits")
+		if originalLength > 0 && len(priorityChannels) == 0 {
+			nextPriority := getNextLowerPriority(allChannels, currentPriority)
+			if nextPriority == -1 {
+				return nil, errors.New("no channels available within rate limits")
+			}
+			currentPriority = nextPriority
+			log.Println("111")
+		} else if originalLength == 0 { // 若此优先级无渠道，直接寻找下一优先级
+			log.Println("222")
+			nextPriority := getNextLowerPriority(allChannels, currentPriority)
+			if nextPriority == -1 {
+				return nil, errors.New("no channels available within rate limits")
+			}
+			currentPriority = nextPriority
 		}
-		currentPriority = nextPriority
 	}
 
 	return nil, errors.New("no channels available within rate limits")

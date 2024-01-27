@@ -85,13 +85,12 @@ func RootAuth() func(c *gin.Context) {
 
 func TokenAuth() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		isMidJourneyKey := false
+		var err error
 		key := c.Request.Header.Get("Authorization")
 		parts := make([]string, 0)
 		key = strings.TrimPrefix(key, "Bearer ")
 		if key == "" || key == "midjourney-proxy" {
 			key = c.Request.Header.Get("mj-api-secret")
-			isMidJourneyKey = true
 			key = strings.TrimPrefix(key, "Bearer ")
 			key = strings.TrimPrefix(key, "sk-")
 			parts = strings.Split(key, "-")
@@ -102,10 +101,42 @@ func TokenAuth() func(c *gin.Context) {
 			key = parts[0]
 		}
 		var modelRequest ModelRequest
-		if !isMidJourneyKey {
-			_ = common.UnmarshalBodyReusable(c, &modelRequest)
-		} else {
-			modelRequest.Model = "midjourney"
+		if strings.HasPrefix(c.Request.URL.Path, "/mj") {
+			// Midjourney
+			if modelRequest.Model == "" {
+				modelRequest.Model = "midjourney"
+			}
+		} else if !strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") {
+			err = common.UnmarshalBodyReusable(c, &modelRequest)
+		}
+		if err != nil {
+			abortWithMessage(c, http.StatusBadRequest, "无效的请求: "+err.Error())
+			return
+		}
+		if strings.HasPrefix(c.Request.URL.Path, "/v1/moderations") {
+			if modelRequest.Model == "" {
+				modelRequest.Model = "text-moderation-stable"
+			}
+		}
+		if strings.HasSuffix(c.Request.URL.Path, "embeddings") {
+			if modelRequest.Model == "" {
+				modelRequest.Model = c.Param("model")
+			}
+		}
+		if strings.HasPrefix(c.Request.URL.Path, "/v1/images/generations") {
+			if modelRequest.Model == "" {
+				modelRequest.Model = "dall-e-2"
+			}
+		}
+		if strings.HasPrefix(c.Request.URL.Path, "/v1/audio/speech") {
+			if modelRequest.Model == "" {
+				modelRequest.Model = "tts-1"
+			}
+		}
+		if strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") || strings.HasPrefix(c.Request.URL.Path, "/v1/audio/translations") {
+			if modelRequest.Model == "" {
+				modelRequest.Model = "whisper-1"
+			}
 		}
 		token, err := model.ValidateUserToken(key, modelRequest.Model)
 		if err != nil {

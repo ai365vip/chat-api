@@ -255,7 +255,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 			if quota != 0 {
 				multiplier := fmt.Sprintf("%s，分组倍率 %.2f", modelRatioString, groupRatio)
 				logContent := fmt.Sprintf(" ")
-				model.RecordConsumeLog(ctx, userId, channelId, quota, 0, ttsRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota, int(useTimeSeconds), false)
+				model.RecordConsumeLog(ctx, userId, channelId, quota, 0, audioModel, tokenName, quota, logContent, tokenId, multiplier, userQuota, int(useTimeSeconds), false)
 				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 				channelId := c.GetInt("channel_id")
 				model.UpdateChannelUsedQuota(channelId, quota)

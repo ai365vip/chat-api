@@ -85,48 +85,11 @@ func Distribute() func(c *gin.Context) {
 			}
 		} else {
 			// Select a channel for the user
-			var modelRequest ModelRequest
 			var err error
 
-			if strings.HasPrefix(c.Request.URL.Path, "/mj") {
-				// Midjourney
-				if modelRequest.Model == "" {
-					modelRequest.Model = "midjourney"
-				}
-			} else if !strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") {
-				err = common.UnmarshalBodyReusable(c, &modelRequest)
-			}
+			channel, err = model.CacheGetRandomSatisfiedChannel(tokenGroup.(string), Model.(string))
 			if err != nil {
-				abortWithMessage(c, http.StatusBadRequest, "无效的请求: "+err.Error())
-				return
-			}
-			if strings.HasPrefix(c.Request.URL.Path, "/v1/moderations") {
-				if modelRequest.Model == "" {
-					modelRequest.Model = "text-moderation-stable"
-				}
-			}
-			if strings.HasSuffix(c.Request.URL.Path, "embeddings") {
-				if modelRequest.Model == "" {
-					modelRequest.Model = c.Param("model")
-				}
-			}
-			if strings.HasPrefix(c.Request.URL.Path, "/v1/images/generations") {
-				if modelRequest.Model == "" {
-					modelRequest.Model = "dall-e"
-				}
-			}
-			if strings.HasPrefix(c.Request.URL.Path, "/v1/audio") {
-				if modelRequest.Model == "" {
-					if strings.HasPrefix(c.Request.URL.Path, "/v1/audio/speech") {
-						modelRequest.Model = "tts-1"
-					} else {
-						modelRequest.Model = "whisper-1"
-					}
-				}
-			}
-			channel, err = model.CacheGetRandomSatisfiedChannel(tokenGroup.(string), modelRequest.Model)
-			if err != nil {
-				message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", tokenGroup, modelRequest.Model)
+				message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", tokenGroup, Model)
 				if channel != nil {
 					common.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))
 					message = "数据库一致性已被破坏，请联系管理员"
@@ -156,6 +119,8 @@ func Distribute() func(c *gin.Context) {
 			c.Set("library_id", channel.Other)
 		case common.ChannelTypeGemini:
 			c.Set("api_version", channel.Other)
+		case common.ChannelTypeAli:
+			c.Set("plugin", channel.Other)
 		}
 		c.Next()
 	}

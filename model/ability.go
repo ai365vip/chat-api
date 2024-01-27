@@ -167,58 +167,63 @@ type ChannelRateLimit struct {
 	ResetTime time.Time // 上次重置时间
 }
 
-func checkRateLimit(channelId int) (*ChannelRateLimit, bool) {
-	now := time.Now()
-
-	rateLimitMutex.Lock()
-	val, _ := channelRateLimitStatus.Load(channelId)
-	rateLimitMutex.Unlock()
-
-	if val == nil { // 如果没有找到记录，则创建一个新的
-		val = &ChannelRateLimit{
-			Count:     0,
-			ResetTime: now,
-		}
-		channelRateLimitStatus.Store(channelId, val)
-	}
-
-	rl := val.(*ChannelRateLimit)
-
-	if now.Sub(rl.ResetTime) >= time.Minute {
-		// 如果已经过了重置时间，则重置频率限制状态
-		return &ChannelRateLimit{Count: 0, ResetTime: now}, true
-	}
-
-	if rl.Count < 3 {
-		return rl, true
-	}
-
-	// 当 Count 到达3时，说明已经超出限制
-	return rl, false
+type ChannelModelKey struct {
+	ChannelID int
+	Model     string
 }
 
-func updateRateLimitStatus(channelId int) {
+func checkRateLimit(channelId int, model string) (*ChannelRateLimit, bool) {
 	now := time.Now()
+	key := ChannelModelKey{ChannelID: channelId, Model: model}
 
 	rateLimitMutex.Lock()
 	defer rateLimitMutex.Unlock()
 
-	val, _ := channelRateLimitStatus.Load(channelId)
+	val, exists := channelRateLimitStatus.Load(key)
+	if !exists { // 如果没有找到记录，则创建一个新的
+		val = &ChannelRateLimit{
+			Count:     1,                    // 初始化为1，表示这次请求被计数
+			ResetTime: now.Add(time.Minute), // 设置下一个重置时间
+		}
+		channelRateLimitStatus.Store(key, val)
+		return val.(*ChannelRateLimit), true
+	}
+	rl := val.(*ChannelRateLimit)
+	if now.After(rl.ResetTime) {
+		rl.Count = 1
+		rl.ResetTime = now.Add(time.Minute)
+		return rl, true
+	} else if rl.Count < 5 {
+		rl.Count++
+		return rl, true
+	}
+
+	return rl, false
+}
+
+func updateRateLimitStatus(channelId int, model string) {
+	now := time.Now()
+	key := ChannelModelKey{ChannelID: channelId, Model: model}
+
+	rateLimitMutex.Lock()
+	defer rateLimitMutex.Unlock()
+
+	val, _ := channelRateLimitStatus.Load(key)
 	if val == nil {
-		return // 如果没有记录，则不执行任何操作
+		// 如果没有记录，则不执行任何操作
+		return
 	}
 
 	rl := val.(*ChannelRateLimit)
-	if now.Sub(rl.ResetTime) >= time.Minute {
+	if now.After(rl.ResetTime) {
 		// 重置频率限制状态
 		rl.Count = 1
-		rl.ResetTime = now
+		rl.ResetTime = now.Add(time.Minute) // 设置ResetTime为下一分钟，而非当前时间
 	} else {
-		// 增加使用次数
 		rl.Count++
 	}
 
-	channelRateLimitStatus.Store(channelId, rl)
+	channelRateLimitStatus.Store(key, rl)
 }
 
 func GetRandomSatisfiedChannel(group string, model string) (*Channel, error) {
@@ -249,24 +254,16 @@ func GetRandomSatisfiedChannel(group string, model string) (*Channel, error) {
 			}
 		}
 		var rateLimitedAbilities []int
-
 		selectedAbility := abilities[selectedIdx]
-
-		//log.Println("查询ID", selectedAbility.ChannelId)
-
 		// 使用 GetChannelById 函数并对返回的指针进行解引用
 		channelPtr, err := GetChannelById(selectedAbility.ChannelId, true)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				// 如果记录未找到，可能需要进行一些特定的处理
 				log.Printf("Channel with ID %d not found\n", selectedAbility.ChannelId)
 			} else {
 				// 对于除记录未找到外的其他错误，直接返回错误
 				return nil, err
 			}
-
-			// 移除当前渠道，继续选择下一个渠道
-			log.Println("无法获取渠道", selectedAbility.ChannelId)
 			abilities = append(abilities[:selectedIdx], abilities[selectedIdx+1:]...)
 			if len(abilities) == 0 { // 检查是否还有其他可用渠道
 				return nil, errors.New("no channels available within rate limits")
@@ -278,21 +275,17 @@ func GetRandomSatisfiedChannel(group string, model string) (*Channel, error) {
 		// 检查该渠道是否启用了频率限制以及是否达到了频率限制
 		rateLimited := channel.RateLimited != nil && *channel.RateLimited
 		if rateLimited {
-			_, ok := checkRateLimit(selectedAbility.ChannelId)
+			_, ok := checkRateLimit(selectedAbility.ChannelId, model)
 			if !ok { // 如果达到频率限制
 				rateLimitedAbilities = append(rateLimitedAbilities, selectedIdx)
-				// 移除当前渠道，继续选择下一个渠道
-				//log.Println("ID限制", selectedAbility.ChannelId)
+
 				abilities = append(abilities[:selectedIdx], abilities[selectedIdx+1:]...)
-				// 如果移除后没有剩余渠道，则尝试获取次优先级的渠道
 				if len(abilities) == 0 {
-					break // 跳出循环，后面处理获取次优先级渠道的逻辑
+					break
 				}
 				continue
 			}
-
-			// 更新频率限制状态
-			updateRateLimitStatus(selectedAbility.ChannelId)
+			updateRateLimitStatus(selectedAbility.ChannelId, model)
 		}
 
 		// 返回找到的 Channel，它既没有超过频率限制，也没有禁用频率限制
