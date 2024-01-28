@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -22,37 +21,54 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var availableVoices = []string{
+	"alloy",
+	"echo",
+	"fable",
+	"onyx",
+	"nova",
+	"shimmer",
+}
+
 func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode {
-	audioModel := "whisper-1"
 
 	tokenId := c.GetInt("token_id")
 	channelType := c.GetInt("channel")
 	channelId := c.GetInt("channel_id")
 	userId := c.GetInt("id")
 	group := c.GetString("group")
-	tokenName := c.GetString("token_name")
 	startTime := time.Now()
-
-	var ttsRequest openai.TextToSpeechRequest
-	if relayMode == constant.RelayModeAudioSpeech {
-		// Read JSON
-		err := common.UnmarshalBodyReusable(c, &ttsRequest)
-		// Check if JSON is valid
+	var audioRequest openai.TextToSpeechRequest
+	if !strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") {
+		err := common.UnmarshalBodyReusable(c, &audioRequest)
 		if err != nil {
-			return openai.ErrorWrapper(err, "invalid_json", http.StatusBadRequest)
+			return openai.ErrorWrapper(err, "bind_request_body_failed", http.StatusBadRequest)
 		}
-		audioModel = ttsRequest.Model
-		// Check if text is too long 4096
-		if len(ttsRequest.Input) > 4096 {
-			return openai.ErrorWrapper(errors.New("input is too long (over 4096 characters)"), "text_too_long", http.StatusBadRequest)
+	} else {
+		audioRequest = openai.TextToSpeechRequest{
+			Model: "whisper-1",
+		}
+	}
+	//err := common.UnmarshalBodyReusable(c, &audioRequest)
+
+	// request validation
+	if audioRequest.Model == "" {
+		return openai.ErrorWrapper(errors.New("model is required"), "required_field_missing", http.StatusBadRequest)
+	}
+
+	if strings.HasPrefix(audioRequest.Model, "tts-1") {
+		if audioRequest.Voice == "" {
+			return openai.ErrorWrapper(errors.New("voice is required"), "required_field_missing", http.StatusBadRequest)
+		}
+		if !common.StringsContains(availableVoices, audioRequest.Voice) {
+			return openai.ErrorWrapper(errors.New("voice must be one of "+strings.Join(availableVoices, ", ")), "invalid_field_value", http.StatusBadRequest)
 		}
 	}
 
 	preConsumedTokens := common.PreConsumedQuota
-	modelRatio := common.GetModelRatio(ttsRequest.Model)
+	modelRatio := common.GetModelRatio(audioRequest.Model)
 	groupRatio := common.GetGroupRatio(group)
 	ratio := modelRatio * groupRatio
-	modelRatioString := ""
 	preConsumedQuota := 0
 	token, err := model.GetTokenById(tokenId)
 	if err != nil {
@@ -65,43 +81,35 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 	if BillingByRequestEnabled && ModelRatioEnabled {
 		if token.BillingEnabled {
 			if token.BillingEnabled {
-				modelRatio2, ok := common.GetModelRatio2(ttsRequest.Model)
+				modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
 				if !ok {
 					preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 				} else {
 					ratio = modelRatio2 * groupRatio
 					preConsumedQuota = int(ratio * common.QuotaPerUnit)
-					modelRatioString = fmt.Sprintf("按次计费")
 				}
 			} else {
 				preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 			}
 		} else {
 			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-			modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 		}
 	} else if BillingByRequestEnabled {
-		modelRatio2, ok := common.GetModelRatio2(ttsRequest.Model)
+		modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
 		if !ok {
 			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-			modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 		} else {
 			ratio = modelRatio2 * groupRatio
 			preConsumedQuota = int(ratio * common.QuotaPerUnit)
-			modelRatioString = fmt.Sprintf("按次计费")
 		}
 	} else {
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-		modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 	}
+
 	userQuota, err := model.CacheGetUserQuota(userId)
 	if err != nil {
 		return openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
 	}
-
-	// Check if user quota is enough
 	if userQuota-preConsumedQuota < 0 {
 		return openai.ErrorWrapper(errors.New("user quota is not enough"), "insufficient_user_quota", http.StatusForbidden)
 	}
@@ -129,8 +137,8 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 		if err != nil {
 			return openai.ErrorWrapper(err, "unmarshal_model_mapping_failed", http.StatusInternalServerError)
 		}
-		if modelMap[audioModel] != "" {
-			audioModel = modelMap[audioModel]
+		if modelMap[audioRequest.Model] != "" {
+			audioRequest.Model = modelMap[audioRequest.Model]
 		}
 	}
 
@@ -144,22 +152,15 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 	if relayMode == constant.RelayModeAudioTranscription && channelType == common.ChannelTypeAzure {
 		// https://learn.microsoft.com/en-us/azure/ai-services/openai/whisper-quickstart?tabs=command-line#rest-api
 		apiVersion := util.GetAPIVersion(c)
-		fullRequestURL = fmt.Sprintf("%s/openai/deployments/%s/audio/transcriptions?api-version=%s", baseURL, audioModel, apiVersion)
+		fullRequestURL = fmt.Sprintf("%s/openai/deployments/%s/audio/transcriptions?api-version=%s", baseURL, audioRequest.Model, apiVersion)
 	}
-
-	requestBody := &bytes.Buffer{}
-	_, err = io.Copy(requestBody, c.Request.Body)
-	if err != nil {
-		return openai.ErrorWrapper(err, "new_request_body_failed", http.StatusInternalServerError)
-	}
-	c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody.Bytes()))
-	responseFormat := c.DefaultPostForm("response_format", "json")
+	requestBody := c.Request.Body
 
 	req, err := http.NewRequest(c.Request.Method, fullRequestURL, requestBody)
 	if err != nil {
 		return openai.ErrorWrapper(err, "new_request_failed", http.StatusInternalServerError)
 	}
-
+	req.Header.Set("Authorization", c.Request.Header.Get("Authorization"))
 	if relayMode == constant.RelayModeAudioTranscription && channelType == common.ChannelTypeAzure {
 		// https://learn.microsoft.com/en-us/azure/ai-services/openai/whisper-quickstart?tabs=command-line#rest-api
 		apiKey := c.Request.Header.Get("Authorization")
@@ -185,64 +186,60 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 	if err != nil {
 		return openai.ErrorWrapper(err, "close_request_body_failed", http.StatusInternalServerError)
 	}
-	var quota int
-	if relayMode != constant.RelayModeAudioSpeech {
-		responseBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError)
-		}
-		err = resp.Body.Close()
-		if err != nil {
-			return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError)
-		}
 
-		var openAIErr openai.SlimTextResponse
-		if err = json.Unmarshal(responseBody, &openAIErr); err == nil {
-			if openAIErr.Error.Message != "" {
-				return openai.ErrorWrapper(fmt.Errorf("type %s, code %v, message %s", openAIErr.Error.Type, openAIErr.Error.Code, openAIErr.Error.Message), "request_error", http.StatusInternalServerError)
-			}
-		}
-
-		var text string
-		switch responseFormat {
-		case "json":
-			text, err = getTextFromJSON(responseBody)
-		case "text":
-			text, err = getTextFromText(responseBody)
-		case "srt":
-			text, err = getTextFromSRT(responseBody)
-		case "verbose_json":
-			text, err = getTextFromVerboseJSON(responseBody)
-		case "vtt":
-			text, err = getTextFromVTT(responseBody)
-		default:
-			return openai.ErrorWrapper(errors.New("unexpected_response_format"), "unexpected_response_format", http.StatusInternalServerError)
-		}
-		if err != nil {
-			return openai.ErrorWrapper(err, "get_text_from_body_err", http.StatusInternalServerError)
-		}
-		quota = openai.CountTokenText(text, audioModel)
-		resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
-	}
-	quotaDelta := quota - preConsumedQuota
 	if resp.StatusCode != http.StatusOK {
-		if preConsumedQuota > 0 {
-			// we need to roll back the pre-consumed quota
-			defer func(ctx context.Context) {
-				go func() {
-					// negative means add quota back for token & user
-					err := model.PostConsumeTokenQuota(tokenId, userQuota, quotaDelta, preConsumedQuota, true)
-					if err != nil {
-						common.LogError(ctx, fmt.Sprintf("error rollback pre-consumed quota: %s", err.Error()))
-					}
-				}()
-			}(c.Request.Context())
-		}
-		return util.RelayErrorHandler(resp)
+		util.RelayErrorHandler(resp)
 	}
+
+	var audioResponse openai.AudioResponse
+
 	defer func(ctx context.Context) {
 		go func() {
 			useTimeSeconds := time.Now().Unix() - startTime.Unix()
+			quota := 0
+			var promptTokens = 0
+			if strings.HasPrefix(audioRequest.Model, "tts-1") {
+				quota = util.CountAudioToken(audioRequest.Input, audioRequest.Model)
+				promptTokens = quota
+			} else {
+				quota = util.CountAudioToken(audioResponse.Text, audioRequest.Model)
+				promptTokens = quota
+			}
+			modelRatioString := ""
+
+			if BillingByRequestEnabled && ModelRatioEnabled {
+				if token.BillingEnabled {
+					modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
+					if !ok {
+						quota = int(float64(quota) * ratio)
+						modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+					} else {
+						ratio = modelRatio2 * groupRatio
+						quota = int(ratio * common.QuotaPerUnit)
+						modelRatioString = fmt.Sprintf("按次计费")
+					}
+				} else {
+					quota = int(float64(quota) * ratio)
+					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+				}
+			} else if BillingByRequestEnabled {
+				modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
+				if !ok {
+					quota = int(float64(quota) * ratio)
+					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+				} else {
+					ratio = modelRatio2 * groupRatio
+					quota = int(ratio * common.QuotaPerUnit)
+					modelRatioString = fmt.Sprintf("按次计费")
+				}
+			} else {
+				quota = int(float64(quota) * ratio)
+				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+			}
+
+			if ratio != 0 && quota <= 0 {
+				quota = 1
+			}
 			quotaDelta := quota - preConsumedQuota
 			err = model.PostConsumeTokenQuota(tokenId, userQuota, quotaDelta, preConsumedQuota, true)
 			if err != nil {
@@ -253,15 +250,36 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 				common.SysError("error update user quota cache: " + err.Error())
 			}
 			if quota != 0 {
+				tokenName := c.GetString("token_name")
 				multiplier := fmt.Sprintf("%s，分组倍率 %.2f", modelRatioString, groupRatio)
 				logContent := fmt.Sprintf(" ")
-				model.RecordConsumeLog(ctx, userId, channelId, quota, 0, audioModel, tokenName, quota, logContent, tokenId, multiplier, userQuota, int(useTimeSeconds), false)
+				model.RecordConsumeLog(ctx, userId, channelId, promptTokens, 0, audioRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota, int(useTimeSeconds), false)
 				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 				channelId := c.GetInt("channel_id")
 				model.UpdateChannelUsedQuota(channelId, quota)
 			}
 		}()
 	}(c.Request.Context())
+
+	responseBody, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError)
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError)
+	}
+	if strings.HasPrefix(audioRequest.Model, "tts-1") {
+
+	} else {
+		err = json.Unmarshal(responseBody, &audioResponse)
+		if err != nil {
+			return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError)
+		}
+	}
+
+	resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
 
 	for k, v := range resp.Header {
 		c.Writer.Header().Set(k, v[0])
@@ -277,49 +295,4 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError)
 	}
 	return nil
-}
-
-func getTextFromVTT(body []byte) (string, error) {
-	return getTextFromSRT(body)
-}
-
-func getTextFromVerboseJSON(body []byte) (string, error) {
-	var whisperResponse openai.WhisperVerboseJSONResponse
-	if err := json.Unmarshal(body, &whisperResponse); err != nil {
-		return "", fmt.Errorf("unmarshal_response_body_failed err :%w", err)
-	}
-	return whisperResponse.Text, nil
-}
-
-func getTextFromSRT(body []byte) (string, error) {
-	scanner := bufio.NewScanner(strings.NewReader(string(body)))
-	var builder strings.Builder
-	var textLine bool
-	for scanner.Scan() {
-		line := scanner.Text()
-		if textLine {
-			builder.WriteString(line)
-			textLine = false
-			continue
-		} else if strings.Contains(line, "-->") {
-			textLine = true
-			continue
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-	return builder.String(), nil
-}
-
-func getTextFromText(body []byte) (string, error) {
-	return strings.TrimSuffix(string(body), "\n"), nil
-}
-
-func getTextFromJSON(body []byte) (string, error) {
-	var whisperResponse openai.WhisperJSONResponse
-	if err := json.Unmarshal(body, &whisperResponse); err != nil {
-		return "", fmt.Errorf("unmarshal_response_body_failed err :%w", err)
-	}
-	return whisperResponse.Text, nil
 }

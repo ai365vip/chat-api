@@ -254,6 +254,15 @@ func init() {
 			Parent:     nil,
 		},
 		{
+			Id:         "gpt-4-turbo-preview",
+			Object:     "model",
+			Created:    1699593571,
+			OwnedBy:    "openai",
+			Permission: permission,
+			Root:       "gpt-4-turbo-preview",
+			Parent:     nil,
+		},
+		{
 			Id:         "gpt-4-vision",
 			Object:     "model",
 			Created:    1699593571,

@@ -241,6 +241,10 @@ type TextToSpeechRequest struct {
 	ResponseFormat string  `json:"response_format"`
 }
 
+type AudioResponse struct {
+	Text string `json:"text,omitempty"`
+}
+
 type Usage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
