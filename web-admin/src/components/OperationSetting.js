@@ -15,6 +15,7 @@ const OperationSetting = () => {
         ModelRatio: '',
         ModelPrice : '',
         GroupRatio: '',
+        CompletionRatio: '',
         TopUpLink: '',
         ChatLink: '',
         QuotaPerUnit: 0,
@@ -53,7 +54,7 @@ const OperationSetting = () => {
         if (success) {
             let newInputs = {};
             data.forEach((item) => {
-                if (item.key === 'ModelRatio' || item.key === 'GroupRatio' || item.key === 'ModelPrice') {
+                if (item.key === 'ModelRatio' || item.key === 'GroupRatio' || item.key === 'ModelPrice' || item.key === 'CompletionRatio') {
                     item.value = JSON.stringify(JSON.parse(item.value), null, 2);
                 }
                 newInputs[item.key] = item.value;
@@ -150,6 +151,13 @@ const OperationSetting = () => {
                 return;
             }
             await updateOption('GroupRatio', inputs.GroupRatio);
+        }
+        if (originInputs['CompletionRatio'] !== inputs.CompletionRatio) {
+            if (!verifyJSON(inputs.GroupRatio)) {
+                showError('分组倍率不是合法的 JSON 字符串');
+                return;
+            }
+            await updateOption('CompletionRatio', inputs.CompletionRatio);
         }
         await updateOption('ModelRatioEnabled', inputs.ModelRatioEnabled);
         await updateOption('BillingByRequestEnabled', inputs.BillingByRequestEnabled);
@@ -418,7 +426,7 @@ const OperationSetting = () => {
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
 
-                        <div style={{ width: '30%', marginRight: '5%' }}>
+                        <div style={{ width: '25%', marginRight: '5%' }}>
                             <div style={{ marginBottom: '10px' }}>
                                 <Typography.Text strong>模型倍率</Typography.Text>
                             </div>
@@ -432,7 +440,21 @@ const OperationSetting = () => {
                                 />
                         </div>
 
-                        <div style={{ width: '30%', marginRight: '5%' }}>
+                        <div style={{ width: '25%', marginRight: '5%' }}>
+                            <div style={{ marginBottom: '10px' }}>
+                                <Typography.Text strong>补全倍率</Typography.Text>
+                            </div>
+                            
+                            <TextArea 
+                                placeholder='为一个 JSON 文本，键为模型名称，值为倍率'
+                                value={inputs.CompletionRatio}
+                                onChange={(value) => handleInputChange('CompletionRatio', value)}
+                                autosize={{ minRows: 6 }}
+                                style={{maxHeight: '400px', overflowY: 'auto' }} 
+                                />
+                        </div>
+
+                        <div style={{ width: '25%', marginRight: '5%' }}>
                             <div style={{ marginBottom: '10px' }}>
                                 <Tooltip
                                     content={

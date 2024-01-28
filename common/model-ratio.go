@@ -84,6 +84,7 @@ var ModelRatio = map[string]float64{
 	"semantic_similarity_s1_v1": 0.0715, // ¥0.001 / 1k tokens
 	"hunyuan":                   7.143,  // ¥0.1 / 1k tokens  // https://cloud.tencent.com/document/product/1729/97731#e0e6be58-60c8-469f-bdeb-6c264ce3b4d0
 }
+var CompletionRatio = map[string]float64{}
 
 var DalleSizeRatios = map[string]map[string]float64{
 	"dall-e-2": {
@@ -168,7 +169,22 @@ func GetModelRatio2(name string) (float64, bool) {
 	return ratio, ok
 }
 
+func CompletionRatio2JSONString() string {
+	jsonBytes, err := json.Marshal(CompletionRatio)
+	if err != nil {
+		SysError("error marshalling completion ratio: " + err.Error())
+	}
+	return string(jsonBytes)
+}
+func UpdateCompletionRatioByJSONString(jsonStr string) error {
+	CompletionRatio = make(map[string]float64)
+	return json.Unmarshal([]byte(jsonStr), &CompletionRatio)
+}
+
 func GetCompletionRatio(name string) float64 {
+	if ratio, ok := CompletionRatio[name]; ok {
+		return ratio
+	}
 	if strings.HasPrefix(name, "gpt-3.5") {
 		if strings.HasSuffix(name, "1106") {
 			return 2
