@@ -342,7 +342,7 @@ const EditToken = (props) => {
                     </div>
                     <Divider/>
                     <div style={{marginTop: 20}}>
-                        <Typography.Text>限制模型</Typography.Text>
+                        <Typography.Text>可用模型</Typography.Text>
                     </div>
                     <Select
                         style={{ marginTop: 20 }}

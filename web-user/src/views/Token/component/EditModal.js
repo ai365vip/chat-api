@@ -343,7 +343,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
             </MenuItem>
           ))}
                 </Select>
-                <FormHelperText>限制令牌可以使用的模型，为空表示全部可用。</FormHelperText>
+                <FormHelperText>选择令牌可以使用的模型，为空表示全部可用。</FormHelperText>
                 {touched.models && errors.models && (
                   <FormHelperText error id="helper-text-models">
                     {errors.models}
