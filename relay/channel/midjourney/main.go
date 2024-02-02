@@ -57,15 +57,6 @@ type MidjourneyWithoutStatus struct {
 	ChannelId   int    `json:"channel_id"`
 }
 
-var DefaultModelPrice = map[string]float64{
-	"mj_imagine":   0.1,
-	"mj_variation": 0.1,
-	"mj_reroll":    0.1,
-	"mj_blend":     0.1,
-	"mj_describe":  0.05,
-	"mj_upscale":   0.05,
-}
-
 func RelayMidjourneyImage(c *gin.Context) {
 	taskId := c.Param("id")
 	midjourneyTask := model.GetByOnlyMJId(taskId)
@@ -420,13 +411,11 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	modelRatio, ok := common.GetModelRatio2("mj_" + strings.ToLower(midjRequest.Action))
 	mjAction := "mj_" + strings.ToLower(midjRequest.Action)
 	// 如果没有配置价格，则使用默认价格
-	if modelRatio == -1 {
-		defaultPrice, ok := DefaultModelPrice[mjAction]
-		if !ok {
-			modelRatio = 0.1
-		} else {
-			modelRatio = defaultPrice
-		}
+	defaultPrice, ok := common.ModelPrice[mjAction]
+	if !ok {
+		modelRatio = 0.1
+	} else {
+		modelRatio = defaultPrice
 	}
 	groupRatio := common.GetGroupRatio(group)
 	if !ok {

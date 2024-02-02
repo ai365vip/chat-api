@@ -1,11 +1,9 @@
 FROM node:18-alpine as react-builder
 
-ARG GIT_TAG
-ENV REACT_APP_VERSION=$GIT_TAG
 
 # Create app directory
 WORKDIR /app
-
+COPY ./VERSION .
 # Install dependencies first to leverage Docker cache
 COPY web-user/package.json ./
 
@@ -15,10 +13,10 @@ RUN npm install
 COPY . .
 
 # Build web-user application
-RUN DISABLE_ESLINT_PLUGIN="true" npm run build --prefix web-user
+RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat VERSION) npm run build --prefix web-user
 
 # Build web-admin application
-RUN DISABLE_ESLINT_PLUGIN="true" npm run build --prefix web-admin
+RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat VERSION) npm run build --prefix web-admin
 
 FROM golang AS go-builder
 
@@ -33,7 +31,7 @@ COPY . .
 # 将 web-user 和 web-admin 的构建结果复制到指定位置
 COPY --from=react-builder /app/web-user/build ./web-user/build
 COPY --from=react-builder /app/web-admin/build ./web-admin/build
-RUN go build -ldflags "-s -w -X 'one-api/common.Version=${GIT_TAG}' -extldflags '-static'" -o chat-api
+RUN go build -ldflags "-s -w -X 'one-api/common.Version=$(cat VERSION)' -extldflags '-static'" -o chat-api
 
 # Use a minimal alpine image for the final stage
 FROM alpine
