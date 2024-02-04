@@ -16,6 +16,7 @@ const (
 	APITypeTencent
 	APITypeGemini
 	APITypeChatBot
+	APITypeLobeChat
 )
 
 func ChannelType2APIType(channelType int) int {
@@ -41,6 +42,8 @@ func ChannelType2APIType(channelType int) int {
 		apiType = APITypeGemini
 	case common.ChannelTypeChatBot:
 		apiType = APITypeChatBot
+	case common.ChannelTypeLobeChat:
+		apiType = APITypeLobeChat
 	}
 	return apiType
 }

@@ -15,6 +15,7 @@ import (
 	"one-api/relay/channel/baidu"
 	"one-api/relay/channel/chatbot"
 	"one-api/relay/channel/google"
+	"one-api/relay/channel/lobechat"
 	"one-api/relay/channel/openai"
 	"one-api/relay/channel/tencent"
 	"one-api/relay/channel/xunfei"
@@ -48,6 +49,8 @@ func GetRequestURL(requestURL string, apiType int, relayMode int, meta *util.Rel
 		}
 	case constant.APITypeChatBot:
 		fullRequestURL = meta.BaseURL
+	case constant.APITypeLobeChat:
+		fullRequestURL = fmt.Sprintf("%s/api/openai/chat", meta.BaseURL)
 	case constant.APITypeClaude:
 		fullRequestURL = fmt.Sprintf("%s/v1/complete", meta.BaseURL)
 	case constant.APITypeBaidu:
@@ -243,6 +246,10 @@ func SetupRequestHeaders(c *gin.Context, req *http.Request, apiType int, meta *u
 	case constant.APITypeChatBot:
 		req.Header.Set("Cache-Control", "no-cache")
 		req.Header.Set("Proxy-Connection", "keep-alive")
+	case constant.APITypeLobeChat:
+		req.Header.Set("User-Agent", "Apifox/1.0.0 (https://apifox.com)")
+		req.Header.Set("Accept", "*/*")
+		req.Header.Set("Connection", "keep-alive")
 	case constant.APITypeClaude:
 		req.Header.Set("x-api-key", apiKey)
 		anthropicVersion := c.Request.Header.Get("anthropic-version")
@@ -299,6 +306,15 @@ func DoResponse(c *gin.Context, textRequest *openai.GeneralOpenAIRequest, resp *
 			aitext = responseText
 		} else {
 			err, usage, aitext = chatbot.BotHandler(c, resp, promptTokens, textRequest.Model)
+
+		}
+	case constant.APITypeLobeChat:
+		if isStream {
+
+			err, responseText = lobechat.StreamHandler(c, resp, promptTokens, textRequest.Model)
+			aitext = responseText
+		} else {
+			err, usage, aitext = lobechat.LobeHandler(c, resp, promptTokens, textRequest.Model)
 
 		}
 	case constant.APITypeClaude:

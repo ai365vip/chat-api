@@ -117,6 +117,10 @@ func testChannel(channel *model.Channel, request openai.ChatRequest, gptVersion 
 		}
 		jsonData, err = json.Marshal(requestChatbot)
 
+	} else if channel.Type == common.ChannelTypeLobeChat {
+		requestURL = fmt.Sprintf("%s/api/openai/chat", channel.GetBaseURL())
+		jsonData, err = json.Marshal(request)
+
 	} else {
 		if baseURL := channel.GetBaseURL(); len(baseURL) > 0 {
 			requestURL = baseURL
@@ -140,14 +144,14 @@ func testChannel(channel *model.Channel, request openai.ChatRequest, gptVersion 
 	if channel.Key != "" {
 		if channel.Type == common.ChannelTypeAzure {
 			req.Header.Set("api-key", channel.Key)
-		} else if channel.Type == common.ChannelTypeOpenAI {
-			req.Header.Set("Authorization", "Bearer "+channel.Key)
-		} else if channel.Type == common.ChannelTypeChatBot {
-			req.Header.Set("Cache-Control", "no-cache")
-			req.Header.Set("Proxy-Connection", "keep-alive")
 		} else {
 			req.Header.Set("Authorization", "Bearer "+channel.Key)
 		}
+	}
+	if channel.Type == common.ChannelTypeLobeChat {
+		req.Header.Set("User-Agent", "Apifox/1.0.0 (https://apifox.com)")
+		req.Header.Set("Accept", "*/*")
+		req.Header.Set("Connection", "keep-alive")
 	}
 
 	completionTokens := calculateCompletionTokens(messagesMap)
@@ -168,6 +172,25 @@ func testChannel(channel *model.Channel, request openai.ChatRequest, gptVersion 
 			}
 			bodyStr := string(responseBody)
 			//fmt.Println(bodyStr)
+
+			promptTokens := calculatePromptTokens(bodyStr) // 根据bodyStr的值计算
+			completionTokens += promptTokens
+			totalTokens := calculateTotalTokens(promptTokens, completionTokens) // 这两个值相加
+
+			response.Usage = BotUsage{
+				PromptTokens:     promptTokens,
+				CompletionTokens: completionTokens,
+				TotalTokens:      totalTokens,
+			}
+		}
+	} else if channel.Type == common.ChannelTypeLobeChat {
+		if resp.StatusCode == http.StatusOK {
+			responseBody, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err, nil
+			}
+			bodyStr := string(responseBody)
+			fmt.Println(bodyStr)
 
 			promptTokens := calculatePromptTokens(bodyStr) // 根据bodyStr的值计算
 			completionTokens += promptTokens

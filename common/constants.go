@@ -210,6 +210,7 @@ const (
 	ChannelTypeTencent        = 23
 	ChannelTypeGemini         = 24
 	ChannelTypeChatBot        = 25
+	ChannelTypeLobeChat       = 26
 )
 
 var ChannelBaseURLs = []string{
@@ -239,4 +240,5 @@ var ChannelBaseURLs = []string{
 	"https://hunyuan.cloud.tencent.com", //23
 	"",                                  //24
 	"",                                  //25
+	"",                                  //26
 }

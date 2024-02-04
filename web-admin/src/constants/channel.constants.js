@@ -4,6 +4,7 @@ export const CHANNEL_OPTIONS = [
     {key: 14, text: 'Anthropic Claude', value: 14, color: 'black', label: 'Anthropic Claude'},
     {key: 3, text: 'Azure OpenAI', value: 3, color: 'blue', label: 'Azure OpenAI'},
     {key: 25, text: 'Chat Bot', value: 25, color: 'orange', label: 'Chat Bot' },
+    {key: 26, text: 'LobeChat', value: 26, color: 'blue', label: 'LobeChat' },
     {key: 11, text: 'Google PaLM2', value: 11, color: 'orange', label: 'Google PaLM2'},
     {key: 24, text: 'Google Gemini', value: 24, color: 'orange', label: 'Google Gemini'},
     {key: 15, text: '百度文心千帆', value: 15, color: 'blue', label: '百度文心千帆'},
