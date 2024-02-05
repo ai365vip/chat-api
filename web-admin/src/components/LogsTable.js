@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {API, copy, isAdmin, showError, showSuccess, timestamp2string} from '../helpers';
 
-import {Table, Avatar, Tag, Form, Button, Layout, Select, Popover, Modal,Space } from '@douyinfe/semi-ui';
+import {Table, Avatar, Tag, Form, Button, Layout, Select, Popover, Modal,Space,Tooltip } from '@douyinfe/semi-ui';
 import {ITEMS_PER_PAGE} from '../constants';
 import {renderNumber, renderQuota, stringToColor} from '../helpers/render';
 
@@ -62,13 +62,16 @@ const LogsTable = () => {
             dataIndex: 'channel',
             className: isAdmin() ? 'tableShow' : 'tableHiddle',
             render: (text, record, index) => {
+                let channelName = record.channel_name || '未知渠道名称'; // 若不存在，则默认显示“未知渠道名称”
                 return (
                     isAdminUser ?
                         (record.type === 0 || record.type === 2) ?
                             <div>
-                                <Tag color={colors[parseInt(text) % colors.length]} size='large' onClick={()=>{
-                                    copyText(text); // 假设copyText是用于文本复制的函数
-                                }}> {text} </Tag>
+                                <Tooltip content={channelName} position="top">
+                                    <Tag color={colors[parseInt(text) % colors.length]} size='large' onClick={()=>{
+                                        copyText(text); 
+                                    }}> {text} </Tag>
+                                </Tooltip>
                             </div>
                             :
                             <></>
@@ -76,7 +79,7 @@ const LogsTable = () => {
                         <></>
                 );
             },
-        },
+        },        
         {
             title: '用户',
             dataIndex: 'username',
@@ -303,6 +306,7 @@ const LogsTable = () => {
                 title: '用户信息',
                 content: <div style={{padding: 12}}>
                     <p>用户名: {data.username}</p>
+                    <p>分组: {data.group}</p>
                     <p>余额: {renderQuota(data.quota)}</p>
                     <p>已用额度：{renderQuota(data.used_quota)}</p>
                     <p>请求次数：{renderNumber(data.request_count)}</p>

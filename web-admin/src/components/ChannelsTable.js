@@ -12,7 +12,7 @@ import {
     showSuccess,
     timestamp2string
 } from '../helpers';
-
+import {IconTreeTriangleDown} from "@douyinfe/semi-icons";
 import {CHANNEL_OPTIONS, ITEMS_PER_PAGE} from '../constants';
 import {renderGroup, renderNumber, renderNumberWithPoint, renderQuota, renderQuotaWithPrompt} from '../helpers/render';
 import {
@@ -30,7 +30,7 @@ import {
     Typography, 
     InputNumber,
     Select,
-    AutoComplete
+    AutoComplete, Dropdown, SplitButtonGroup
 } from "@douyinfe/semi-ui";
 import EditChannel from "../pages/Channel/EditChannel";
 
@@ -252,7 +252,15 @@ const ChannelsTable = () => {
             dataIndex: 'operate',
             render: (text, record, index) => (
                 <div>
-                    <Button theme='light' type='primary' style={{marginRight: 1}} onClick={()=>testChannel(record)}>测试</Button>
+                     <SplitButtonGroup style={{marginRight: 1}} aria-label="测试操作">
+                        <Button theme="light" onClick={()=>{testChannel(record, '')}}>测试</Button>
+                        <Dropdown trigger="click" position="bottomRight" menu={record.test_models}
+                        >
+                            <Button style={ { padding: '8px 4px'}} type="primary" icon={<IconTreeTriangleDown />}></Button>
+                        </Dropdown>
+                    </SplitButtonGroup>
+
+                    {/*<Button theme='light' type='primary' style={{marginRight: 1}} onClick={()=>testChannel(record)}>测试</Button>*/}
                     <Popconfirm
                         title="确定是否要删除此渠道？"
                         content="此修改将不可逆"
@@ -338,18 +346,27 @@ const ChannelsTable = () => {
         }
     };
 
-    const setChannelFormat = (channels) => {
-        for (let i = 0; i < channels.length; i++) {
-            channels[i].key = '' + channels[i].id;
-        }
-        // data.key = '' + data.id
-        setChannels(channels);
-        if (channels.length >= pageSize) {
-            setChannelCount(channels.length + pageSize);
-        } else {
-            setChannelCount(channels.length);
-        }
-    }
+
+
+    const setChannelFormat = (channelsData) => {
+        const newChannels = channelsData.map((channel, i) => {
+            const test_models = channel.models.split(',').map((model, index) => ({
+                node: 'item',
+                name: model.trim(),
+                onClick: () => testChannel({ ...channel }, model.trim())
+            }));
+    
+            return {
+                ...channel, // 创建新对象以避免直接修改旧状态
+                key: String(channel.id),
+                test_models,
+            };
+        });
+    
+        setChannels(newChannels); // 现在这个 setState 调用的是全新的数组，因此不会影响原有状态
+        setChannelCount(newChannels.length >= pageSize ? newChannels.length + pageSize : newChannels.length);
+    };
+    
 
     const loadChannels = async (startIdx, pageSize, idSort) => {
         setLoading(true);
@@ -490,23 +507,25 @@ const ChannelsTable = () => {
     
         setSearching(false);
     };
-    
-    
-  
 
-    const testChannel = async (record) => {
-        const res = await API.get(`/api/channel/test/${record.id}/`);
+    
+    
+    const testChannel = async (record, model) => {
+        const res = await API.get(`/api/channel/test/${record.id}?model=${model}`);
         const {success, message, time} = res.data;
         if (success) {
-            let newChannels = [...channels];
-            record.response_time = time * 1000;
-            record.test_time = Date.now() / 1000;
-            setChannels(newChannels);
-            showInfo(`通道 ${record.name} 测试成功，耗时 ${time.toFixed(2)} 秒。`);
+            setChannels((prevChannels) => prevChannels.map(channel =>
+                channel.id === record.id
+                    ? { ...channel, response_time: time * 1000, test_time: Date.now() / 1000 }
+                    : channel
+            ));
+            showInfo(`通道 ${record.name}，${model} 测试成功，耗时 ${time.toFixed(2)} 秒。`);
         } else {
             showError(message);
         }
     };
+
+    
 
     const testAllChannels = async () => {
         const res = await API.get(`/api/channel/test`);
@@ -523,7 +542,6 @@ const ChannelsTable = () => {
         const {success, message, data} = res.data;
         if (success) {
             showSuccess(`已删除所有禁用渠道，共计 ${data} 个`);
-            await refresh();
         } else {
             showError(message);
         }
@@ -554,8 +572,6 @@ const ChannelsTable = () => {
                 if (failedDeletions.length < selectedChannels.size) {
                     showSuccess(`成功删除了 ${selectedChannels.size - failedDeletions.length} 个通道。`);
                 }
-    
-                await refresh();
                 setSelectedChannels(new Set());
             },
         });
@@ -607,16 +623,20 @@ const ChannelsTable = () => {
 
     const updateChannelBalance = async (record) => {
         const res = await API.get(`/api/channel/update_balance/${record.id}/`);
-        const {success, message, balance} = res.data;
-        if (success) {
-            record.balance = balance;
-            record.balance_updated_time = Date.now() / 1000;
+        if (res.data.success) {
+            const newChannels = channels.map(channel => {
+                if (channel.id === record.id) {
+                    return { ...channel, balance: res.data.balance, balance_updated_time: Date.now() / 1000 };
+                }
+                return channel;
+            });
+            setChannels(newChannels);
             showInfo(`通道 ${record.name} 余额更新成功！`);
-            await refresh();
         } else {
-            showError(message);
+            showError(res.data.message);
         }
     };
+    
 
     const updateAllChannelsBalance = async () => {
         setUpdatingBalance(true);

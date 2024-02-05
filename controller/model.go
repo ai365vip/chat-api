@@ -191,12 +191,12 @@ func init() {
 			Parent:     nil,
 		},
 		{
-			Id:         "net-gpt-4",
+			Id:         "gpt-4-gizmo-*",
 			Object:     "model",
 			Created:    1677649963,
 			OwnedBy:    "openai",
 			Permission: permission,
-			Root:       "net-gpt-4",
+			Root:       "gpt-4-gizmo-*",
 			Parent:     nil,
 		},
 		{

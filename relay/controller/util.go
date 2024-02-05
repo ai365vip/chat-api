@@ -247,9 +247,7 @@ func SetupRequestHeaders(c *gin.Context, req *http.Request, apiType int, meta *u
 		req.Header.Set("Cache-Control", "no-cache")
 		req.Header.Set("Proxy-Connection", "keep-alive")
 	case constant.APITypeLobeChat:
-		req.Header.Set("User-Agent", "Apifox/1.0.0 (https://apifox.com)")
-		req.Header.Set("Accept", "*/*")
-		req.Header.Set("Connection", "keep-alive")
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 	case constant.APITypeClaude:
 		req.Header.Set("x-api-key", apiKey)
 		anthropicVersion := c.Request.Header.Get("anthropic-version")

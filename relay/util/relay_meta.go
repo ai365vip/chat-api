@@ -10,6 +10,7 @@ import (
 type RelayMeta struct {
 	ChannelType    int
 	ChannelId      int
+	ChannelName    string
 	TokenId        int
 	TokenName      string
 	UserId         int
@@ -27,6 +28,7 @@ func GetRelayMeta(c *gin.Context) *RelayMeta {
 	meta := RelayMeta{
 		ChannelType:    c.GetInt("channel"),
 		ChannelId:      c.GetInt("channel_id"),
+		ChannelName:    c.GetString("channel_name"),
 		TokenId:        c.GetInt("token_id"),
 		TokenName:      c.GetString("token_name"),
 		UserId:         c.GetInt("id"),

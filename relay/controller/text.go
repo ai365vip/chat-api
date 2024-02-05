@@ -293,7 +293,7 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 				logContent += fmt.Sprintf("，模型 %s", textRequest.Model)
 			}
 			if quota != 0 {
-				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, promptTokens, completionTokens, textRequest.Model, meta.TokenName, quota, logContent, meta.TokenId, multiplier, userQuota, int(useTimeSeconds), isStream)
+				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, meta.ChannelName, promptTokens, completionTokens, textRequest.Model, meta.TokenName, quota, logContent, meta.TokenId, multiplier, userQuota, int(useTimeSeconds), isStream)
 				model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
 				model.UpdateChannelUsedQuota(meta.ChannelId, quota)
 			}

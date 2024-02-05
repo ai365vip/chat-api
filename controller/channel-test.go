@@ -149,9 +149,7 @@ func testChannel(channel *model.Channel, request openai.ChatRequest, gptVersion 
 		}
 	}
 	if channel.Type == common.ChannelTypeLobeChat {
-		req.Header.Set("User-Agent", "Apifox/1.0.0 (https://apifox.com)")
-		req.Header.Set("Accept", "*/*")
-		req.Header.Set("Connection", "keep-alive")
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 	}
 
 	completionTokens := calculateCompletionTokens(messagesMap)
@@ -260,11 +258,18 @@ func TestChannel(c *gin.Context) {
 		})
 		return
 	}
+	modelTest := ""
 	testRequest := buildTestRequest()
-	modelTest := channel.ModelTest
-	if modelTest == "" {
-		modelTest = "gpt-3.5-turbo"
+	testModel := c.Query("model")
+	if testModel != "" {
+		modelTest = testModel
+	} else {
+		modelTest = channel.ModelTest
+		if modelTest == "" {
+			modelTest = "gpt-3.5-turbo"
+		}
 	}
+
 	tik := time.Now()
 	err, _ = testChannel(channel, *testRequest, modelTest)
 	tok := time.Now()

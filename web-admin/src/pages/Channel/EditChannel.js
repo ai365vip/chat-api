@@ -153,7 +153,7 @@ const EditChannel = (props) => {
             setOriginModelOptions(localModelOptions);
             setFullModels(res.data.data.map((model) => model.id));
             setBasicModels(res.data.data.filter((model) => {
-                return model.id.startsWith('gpt-3') || model.id.startsWith('text-');
+                return model.id.startsWith('gpt-3') || model.id.startsWith('gpt-4') || model.id.startsWith('text-');
             }).map((model) => model.id));
         } catch (error) {
             showError(error.message);
@@ -173,17 +173,9 @@ const EditChannel = (props) => {
     };
 
     useEffect(() => {
-        let localModelOptions = [...originModelOptions];
-        inputs.models.forEach((model) => {
-            if (!localModelOptions.find((option) => option.key === model)) {
-                localModelOptions.push({
-                    label: model,
-                    value: model
-                });
-            }
-        });
-        setModelOptions(localModelOptions);
-    }, [originModelOptions, inputs.models]);
+        setModelOptions(originModelOptions);
+    }, [originModelOptions]);
+    
 
     useEffect(() => {
         fetchModels().then();
@@ -310,21 +302,14 @@ const EditChannel = (props) => {
     };
 
     const addCustomModel = () => {
-        if (customModel.trim() === '') return;
-        if (inputs.models.includes(customModel)) return;
-        let localModels = [...inputs.models];
-        localModels.push(customModel);
-        let localModelOptions = [];
-        localModelOptions.push({
-            key: customModel,
-            text: customModel,
-            value: customModel
-        });
-        setModelOptions(modelOptions => {
-            return [...modelOptions, ...localModelOptions];
-        });
+        if (customModel.trim() === '') return;                // 确保自定义模型非空
+        if (inputs.models.includes(customModel)) return;      // 确保未重复添加
+    
+        // 更新输入模型数组（无需修改选项，除非确实需要显示新模型）
+        handleInputChange('models', [...inputs.models, customModel]);
+        
+        // 清空自定义模型输入（重置自定义模型输入字段）
         setCustomModel('');
-        handleInputChange('models', localModels);
     };
 
     return (

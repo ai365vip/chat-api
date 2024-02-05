@@ -22,6 +22,7 @@ type Log struct {
 	PromptTokens     int    `json:"prompt_tokens" gorm:"default:0"`
 	CompletionTokens int    `json:"completion_tokens" gorm:"default:0"`
 	ChannelId        int    `json:"channel" gorm:"index"`
+	ChannelName      string `json:"channel_name"`
 	TokenId          int    `json:"token_id" gorm:"default:0;index"`
 	UseTime          int    `json:"use_time" gorm:"bigint;default:0"`
 	IsStream         bool   `json:"is_stream" gorm:"default:false"`
@@ -38,6 +39,7 @@ type Logs struct {
 	TokenName        string `json:"token_name" gorm:"index;default:''"`
 	ModelName        string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
 	ChannelId        int    `json:"channel" gorm:"index"`
+	ChannelName      string `json:"channel_name"`
 	TokenId          int    `json:"token_id" gorm:"default:0;index"`
 	CreatedData      string `json:"created_data"`      // 匹配 DATE(datetime(created_at, 'unixepoch')) AS created_data
 	Cishu            int    `json:"cishu"`             // 匹配 COUNT(id) AS cishu
@@ -151,7 +153,7 @@ func RecordLog(userId int, logType int, quota int, multiplier string) {
 
 }
 
-func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int, multiplier string, userQuota int, useTimeSeconds int, isStream bool) {
+func RecordConsumeLog(ctx context.Context, userId int, channelId int, channelName string, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int, multiplier string, userQuota int, useTimeSeconds int, isStream bool) {
 	common.LogInfo(ctx, fmt.Sprintf("record consume log: userId=%d, 用户调用前余额=%d, channelId=%d, promptTokens=%d, completionTokens=%d, modelName=%s, tokenName=%s, quota=%d,multiplier=%s", userId, userQuota, channelId, promptTokens, completionTokens, modelName, tokenName, quota, multiplier))
 	if !common.LogConsumeEnabled {
 		return
@@ -169,6 +171,7 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptToke
 		ModelName:        modelName,
 		Quota:            quota,
 		ChannelId:        channelId,
+		ChannelName:      channelName,
 		TokenId:          tokenId,
 		Multiplier:       multiplier,
 		UserQuota:        userQuota,
