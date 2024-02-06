@@ -34,6 +34,7 @@ const SystemSetting = () => {
         WxPusherNotificationsEnabled: '',
         UserGroup:'',
         VipUserGroup:'',
+        GroupEnable:''
 
     });
     const [originInputs, setOriginInputs] = useState({});
@@ -120,6 +121,7 @@ const SystemSetting = () => {
         await updateOption('WeChatAuthEnabled', inputs.WeChatAuthEnabled);
         await updateOption('RegisterEnabled', inputs.RegisterEnabled);
         await updateOption('TurnstileCheckEnabled', inputs.TurnstileCheckEnabled);
+        await updateOption('GroupEnable', inputs.GroupEnable);
     };
 
     const submitSMTP = async () => {
@@ -334,9 +336,18 @@ const SystemSetting = () => {
                                 <Typography.Text>启用 Turnstile 用户校验</Typography.Text>
                             </div>
                         </div>
-
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <Checkbox
+                                        checked={inputs.GroupEnable === 'true'}
+                                        name='GroupEnable'
+                                        onChange={(e) => handleCheckboxChange('GroupEnable', e.target.checked)}
+                                    />
+                                    <Typography.Text>启用默认分组</Typography.Text>
+                            </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                            
                             <div style={{ flex: 1, marginRight: 5 }}>
+                                
                                 <Typography.Text>新注册用户默认分组 </Typography.Text>
                                 <Select
                                 placeholder={'请选择分组'}

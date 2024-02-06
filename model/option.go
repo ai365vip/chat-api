@@ -90,6 +90,8 @@ func InitOptionMap() {
 	common.OptionMap["ModelRatioEnabled"] = strconv.FormatBool(common.ModelRatioEnabled)
 	common.OptionMap["YzfZfb"] = strconv.FormatBool(common.Zfb)
 	common.OptionMap["YzfWx"] = strconv.FormatBool(common.Wx)
+	common.OptionMap["GroupEnable"] = strconv.FormatBool(common.GroupEnable)
+	common.OptionMap["LogContentEnabled"] = strconv.FormatBool(common.LogContentEnabled)
 	common.OptionMap["DataExportInterval"] = strconv.Itoa(common.DataExportInterval)
 	common.OptionMap["UserGroup"] = common.UserGroup
 	common.OptionMap["VipUserGroup"] = common.VipUserGroup
@@ -189,6 +191,10 @@ func updateOptionMap(key string, value string) (err error) {
 			common.Zfb = boolValue
 		case "YzfWx":
 			common.Wx = boolValue
+		case "GroupEnable":
+			common.GroupEnable = boolValue
+		case "LogContentEnabled":
+			common.LogContentEnabled = boolValue
 		case "DisplayTokenStatEnabled":
 			common.DisplayTokenStatEnabled = boolValue
 		case "DrawingEnabled":

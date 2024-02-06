@@ -52,6 +52,32 @@ function renderUseTime(type) {
 const LogsTable = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalContent, setModalContent] = useState('');
+    const [options, setOptions] = useState({});
+    const [LogContentEnabled, setLogContentEnabled] = useState('');
+
+    const getOptions = async () => {
+      const res = await API.get('/api/option/');
+      const { success, message, data } = res.data;
+      if (success) {
+        let newOptions = {};
+        data.forEach((item) => {
+          newOptions[item.key] = item.value;
+        });
+        setOptions(newOptions); // 设置所有选项的状态
+      } else {
+        showError(message);
+      }
+    };
+    useEffect(() => {
+        getOptions();
+    }, []);
+
+    useEffect(() => {
+        if (options.LogContentEnabled) { 
+           setLogContentEnabled(options.LogContentEnabled);
+        }
+      }, [options]);
+
     const columns = [
         {
             title: '时间',
@@ -209,7 +235,7 @@ const LogsTable = () => {
                 );
             },
         },
-        {
+        ...(LogContentEnabled === 'true' ? [{
             title: '详情',
             dataIndex: 'content',
             render: (text, record, index) => {
@@ -227,7 +253,8 @@ const LogsTable = () => {
                         : <span>{text}</span>
                 );
             },
-        }
+        }] : []),
+              
     ];
 
     const [logs, setLogs] = useState([]);
@@ -383,6 +410,7 @@ const LogsTable = () => {
 
     useEffect(() => {
         refresh().then();
+        getOptions();
     }, [logType]);
 
     const searchLogs = async () => {

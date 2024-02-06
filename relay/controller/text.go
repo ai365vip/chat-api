@@ -270,7 +270,12 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 			}
 			totalTokens := promptTokens + completionTokens
 			multiplier := fmt.Sprintf("%s，分组倍率 %.2f", modelRatioString, groupRatio)
-			logContent := fmt.Sprintf("用户: %s \nAI: %s", usertext, aitext)
+			LogContentEnabled, _ := strconv.ParseBool(common.OptionMap["LogContentEnabled"])
+			logContent := ""
+			if LogContentEnabled {
+				logContent = fmt.Sprintf("用户: %s \nAI: %s", usertext, aitext)
+			}
+
 			if totalTokens == 0 {
 				quota = 0
 				logContent += fmt.Sprintf("（有疑问请联系管理员）")

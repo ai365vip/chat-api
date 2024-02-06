@@ -929,10 +929,13 @@ func TopUp(c *gin.Context) {
 		})
 		return
 	}
-	err = model.VipUserQuota(id)
-	if err != nil {
-		log.Printf("用户分组更新失败: %v", id)
-		return
+	GroupEnable, _ := strconv.ParseBool(common.OptionMap["GroupEnable"])
+	if GroupEnable {
+		err = model.VipUserQuota(id)
+		if err != nil {
+			log.Printf("用户分组更新失败: %v", id)
+			return
+		}
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

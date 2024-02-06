@@ -161,10 +161,13 @@ func EpayNotify(c *gin.Context) {
 				return
 			}
 			log.Printf("易支付回调更新用户成功 %v", topUp)
-			err = model.VipUserQuota(topUp.UserId)
-			if err != nil {
-				log.Printf("用户分组更新失败: %v", topUp)
-				return
+			GroupEnable, _ := strconv.ParseBool(common.OptionMap["GroupEnable"])
+			if GroupEnable {
+				err = model.VipUserQuota(topUp.UserId)
+				if err != nil {
+					log.Printf("用户分组更新失败: %v", topUp)
+					return
+				}
 			}
 
 			err = model.IncreaseRechargeQuota(topUp.UserId, topUp.TopupRatio, int(multipliedQuota))

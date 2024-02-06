@@ -32,6 +32,7 @@ const OperationSetting = () => {
         RetryTimes: 0,
         MiniQuota: 10,
         ProporTions: 10,
+        LogContentEnabled :'',
         historyTimestamp: timestamp2string(now.getTime() / 1000 - 30 * 24 * 3600),
     }); 
     const [originInputs, setOriginInputs] = useState({});
@@ -97,6 +98,7 @@ const OperationSetting = () => {
     const submiScreen = async () => {
         await updateOption('DataExportInterval',  inputs.DataExportInterval);
         await updateOption('LogConsumeEnabled',  inputs.LogConsumeEnabled);
+        await updateOption('LogContentEnabled',  inputs.LogContentEnabled);
     };
 
 
@@ -257,13 +259,28 @@ const OperationSetting = () => {
                                     min={0}
                                 />
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                <Typography.Text style={{ marginTop: '10px' }}>启用额度消费日志记录</Typography.Text>
-                                <Checkbox style={{ marginTop: '10px' }}
-                                    checked={inputs.LogConsumeEnabled === 'true'}
-                                    name='LogConsumeEnabled'
-                                    onChange={(e) => handleCheckboxChange('LogConsumeEnabled', e.target.checked)}
-                                />
+                        <div style={{
+                            display: 'flex', 
+                            alignItems: 'center',
+                            marginBottom: '20px',
+                            gap: '10px' // 控制内部元素的空间
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <Typography.Text style={{ marginTop: '10px' }}>启用额度消费日志记录</Typography.Text>
+                                    <Checkbox style={{ marginTop: '10px' }}
+                                        checked={inputs.LogConsumeEnabled === 'true'}
+                                        name='LogConsumeEnabled'
+                                        onChange={(e) => handleCheckboxChange('LogConsumeEnabled', e.target.checked)}
+                                    />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <Typography.Text style={{ marginTop: '10px' }}>启用日志详情</Typography.Text>
+                                    <Checkbox style={{ marginTop: '10px' }}
+                                        checked={inputs.LogContentEnabled === 'true'}
+                                        name='LogContentEnabled'
+                                        onChange={(e) => handleCheckboxChange('LogContentEnabled', e.target.checked)}
+                                    />
+                            </div>
                         </div>
                         <Button onClick={submiScreen} style={{ marginTop: '10px' }}>保存日志设置</Button>
                     </Form>
