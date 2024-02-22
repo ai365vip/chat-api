@@ -178,7 +178,7 @@ func EpayNotify(c *gin.Context) {
 			notifyEmail(topUp)
 			notifyWxPusher(topUp)
 			model.RecordLog(topUp.UserId, model.LogTypeTopup, int(multipliedQuota), fmt.Sprintf("在线充值成功，充值: %v，支付金额：%.2f", common.LogQuota(int(multipliedQuota)), topUp.Money))
-			model.VipInsert(topUp.UserId, topUp.Amount)
+			model.VipInsert(topUp.UserId, int(multipliedQuota))
 		}
 		_, writeErr := c.Writer.Write([]byte("success")) // 确保发送 success 响应
 		if writeErr != nil {
