@@ -148,11 +148,16 @@ func testChannel(channel *model.Channel, request openai.ChatRequest, gptVersion 
 			req.Header.Set("Authorization", "Bearer "+channel.Key)
 		}
 	}
-	if channel.Type == common.ChannelTypeLobeChat {
-		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-	}
 
 	completionTokens := calculateCompletionTokens(messagesMap)
+
+	// 获取model的自定义头部信息
+	modelHeaders := channel.GetModelHeaders()
+
+	// 遍历modelHeaders，并将这些头部信息添加到请求中
+	for headerKey, headerValue := range modelHeaders {
+		req.Header.Set(headerKey, headerValue)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := util.HTTPClient.Do(req)
 

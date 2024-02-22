@@ -22,6 +22,7 @@ import (
 
 func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode {
 	ctx := c.Request.Context()
+
 	meta := util.GetRelayMeta(c)
 	startTime := time.Now()
 	var textRequest openai.GeneralOpenAIRequest

@@ -43,6 +43,7 @@ const EditChannel = (props) => {
         base_url: '',
         other: '',
         model_mapping: '',
+        headers: '',
         models: [],
         auto_ban: 1,
         model_test: '', 
@@ -126,6 +127,9 @@ const EditChannel = (props) => {
             if (data.model_mapping !== '') {
                 data.model_mapping = JSON.stringify(JSON.parse(data.model_mapping), null, 2);
             }
+            if (data.headers !== '') {
+                data.headers = JSON.stringify(JSON.parse(data.headers), null, 2);
+            }
             setInputs(data);
             if (data.auto_ban === 0) {
                 setAutoBan(false);
@@ -201,6 +205,10 @@ const EditChannel = (props) => {
         }
         
         if (inputs.model_mapping !== '' && !verifyJSON(inputs.model_mapping)) {
+            showInfo('模型映射必须是合法的 JSON 格式！');
+            return;
+        }
+        if (inputs.headers !== '' && !verifyJSON(inputs.headers)) {
             showInfo('模型映射必须是合法的 JSON 格式！');
             return;
         }
@@ -700,6 +708,22 @@ const EditChannel = (props) => {
                             </>
                         )
                     }
+                    <div style={{marginTop: 10}}>
+                        <Typography.Text strong>自定义标头：</Typography.Text>
+                    </div>
+                    <TextArea
+                        placeholder={`例如：\n
+                        {
+                            “Referer”: “https://xxxcom/”
+                        }`}
+                        name='headers'
+                        onChange={value => {
+                            handleInputChange('headers', value)
+                        }}
+                        autosize
+                        value={inputs.headers}
+                        autoComplete='new-password'
+                    />
 
                     {
                         !isEdit && (

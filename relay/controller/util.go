@@ -50,7 +50,7 @@ func GetRequestURL(requestURL string, apiType int, relayMode int, meta *util.Rel
 	case constant.APITypeChatBot:
 		fullRequestURL = meta.BaseURL
 	case constant.APITypeLobeChat:
-		fullRequestURL = fmt.Sprintf("%s/api/openai/chat", meta.BaseURL)
+		fullRequestURL = fmt.Sprintf("%s/api/chat/openai", meta.BaseURL)
 	case constant.APITypeClaude:
 		fullRequestURL = fmt.Sprintf("%s/v1/complete", meta.BaseURL)
 	case constant.APITypeBaidu:
@@ -236,6 +236,7 @@ func GetRequestBody(c *gin.Context, textRequest openai.GeneralOpenAIRequest, isM
 
 func SetupRequestHeaders(c *gin.Context, req *http.Request, apiType int, meta *util.RelayMeta, isStream bool) {
 	apiKey := meta.APIKey
+	headers := meta.Headers
 	switch apiType {
 	case constant.APITypeOpenAI:
 		if meta.ChannelType == common.ChannelTypeAzure {
@@ -274,6 +275,11 @@ func SetupRequestHeaders(c *gin.Context, req *http.Request, apiType int, meta *u
 		req.Header.Set("x-goog-api-key", apiKey)
 	default:
 		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+	// 遍历并添加任何自定义头部
+
+	for headerKey, headerValue := range headers {
+		req.Header.Set(headerKey, headerValue)
 	}
 	if apiType != constant.APITypeGemini {
 		// 设置公共头部...

@@ -28,6 +28,7 @@ type Channel struct {
 	UsedQuota          int64   `json:"used_quota" gorm:"bigint;default:0"`
 	UsedCount          int     `json:"used_count" gorm:"default:0"`
 	ModelMapping       *string `json:"model_mapping" gorm:"type:varchar(1024);default:''"`
+	Headers            *string `json:"headers" gorm:"type:varchar(1024);default:''"`
 	Priority           *int64  `json:"priority" gorm:"bigint;default:0"`
 	AutoBan            *int    `json:"auto_ban" gorm:"default:1"`
 	TestedTime         *int    `json:"tested_time" gorm:"bigint"`
@@ -155,6 +156,19 @@ func (channel *Channel) GetModelMapping() map[string]string {
 		return nil
 	}
 	return modelMapping
+}
+
+func (channel *Channel) GetModelHeaders() map[string]string {
+	if channel.Headers == nil || *channel.Headers == "" || *channel.Headers == "{}" {
+		return nil
+	}
+	headers := make(map[string]string)
+	err := json.Unmarshal([]byte(*channel.Headers), &headers)
+	if err != nil {
+		common.SysError(fmt.Sprintf("failed to unmarshal headers for channel %d, error: %s", channel.Id, err.Error()))
+		return nil
+	}
+	return headers
 }
 
 func (channel *Channel) Insert() error {
