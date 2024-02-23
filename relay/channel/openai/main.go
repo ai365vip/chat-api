@@ -74,7 +74,6 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 				dataChan <- fixedContentMessage              // 发送固定内容
 				needInjectFixedMessageBeforeNextSend = false // 重置标志位
 			}
-
 			if data[:6] != "data: " && data[:6] != "[DONE]" {
 				continue
 			}
@@ -82,7 +81,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 			if data[:6] == "data: " {
 				jsonData := data[6:]
 				if jsonData == "[DONE]" {
-					needInjectFixedMessageBeforeNextSend = true
+					//needInjectFixedMessageBeforeNextSend = true
 					continue
 				}
 
@@ -96,7 +95,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 					}
 					for _, choice := range streamResponse.Choices {
 						responseText += choice.Delta.Content
-
+						if choice.FinishReason != nil && *choice.FinishReason == "stop" {
+							needInjectFixedMessageBeforeNextSend = true
+						}
 					}
 
 				case constant.RelayModeCompletions:
@@ -108,6 +109,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 					}
 					for _, choice := range streamResponse.Choices {
 						responseText += choice.Text
+						if choice.FinishReason == "stop" {
+							needInjectFixedMessageBeforeNextSend = true
+						}
 					}
 				}
 

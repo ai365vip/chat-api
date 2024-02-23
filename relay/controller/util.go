@@ -102,6 +102,7 @@ func GetRequestURL(requestURL string, apiType int, relayMode int, meta *util.Rel
 
 func GetRequestBody(c *gin.Context, textRequest openai.GeneralOpenAIRequest, isModelMapped bool, apiType int, relayMode int) (io.Reader, error) {
 	var requestBody io.Reader
+
 	if isModelMapped {
 		jsonStr, err := json.Marshal(textRequest)
 		if err != nil {
@@ -125,6 +126,10 @@ func GetRequestBody(c *gin.Context, textRequest openai.GeneralOpenAIRequest, isM
 			}
 			requestBody = bytes.NewBuffer(requestBodyBytes)
 		}
+
+		//if textRequest.Tools != nil {
+		//	fixedContent = ""
+		//}
 
 	case constant.APITypeChatBot:
 
