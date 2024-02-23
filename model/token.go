@@ -25,6 +25,7 @@ type Token struct {
 	Group          string `json:"group" gorm:"type:varchar(255);"` // 添加 group 字段
 	BillingEnabled bool   `json:"billing_enabled" gorm:"default:false"`
 	Models         string `json:"models"`
+	FixedContent   string `json:"fixed_content" gorm:"type:varchar(1000);"`
 }
 
 func GetAllUserTokens(userId int, startIdx int, num int) ([]*Token, error) {
@@ -124,7 +125,7 @@ func (token *Token) Insert() error {
 // Update Make sure your token's fields is completed, because this will update non-zero values
 func (token *Token) Update() error {
 	var err error
-	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota", "group", "billing_enabled", "models").Updates(token).Error
+	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota", "group", "billing_enabled", "models", "fixed_content").Updates(token).Error
 	return err
 }
 

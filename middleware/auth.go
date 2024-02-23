@@ -148,6 +148,7 @@ func TokenAuth() func(c *gin.Context) {
 		c.Set("token_id", token.Id)
 		c.Set("token_name", token.Name)
 		c.Set("group", token.Group)
+		c.Set("fixed_content", token.FixedContent)
 		c.Set("model", modelRequest.Model)
 
 		c.Set("token_unlimited_quota", token.UnlimitedQuota)

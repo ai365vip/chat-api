@@ -149,26 +149,27 @@ type GeminiChatPromptFeedback struct {
 	SafetyRatings []GeminiChatSafetyRating `json:"safetyRatings"`
 }
 
-func responseGeminiChat2OpenAI(response *GeminiChatResponse) *openai.TextResponse {
+func responseGeminiChat2OpenAI(response *GeminiChatResponse, fixedContent string) *openai.TextResponse {
 	fullTextResponse := openai.TextResponse{
 		Id:      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
 		Object:  "chat.completion",
 		Created: common.GetTimestamp(),
 		Choices: make([]openai.TextResponseChoice, 0, len(response.Candidates)),
 	}
-	content, _ := json.Marshal("")
 	for i, candidate := range response.Candidates {
+		modifiedText := candidate.Content.Parts[0].Text
+		// 若 fixedContent 不为空，则将其添加到 modifiedText 的尾部
+		if fixedContent != "" && len(candidate.Content.Parts) > 0 {
+			modifiedText += "\n\n" + fixedContent // 在原文本与fixedContent之间加入两个换行符作为分隔
+		}
+		content, _ := json.Marshal(modifiedText)
 		choice := openai.TextResponseChoice{
 			Index: i,
 			Message: openai.Message{
 				Role:    "assistant",
-				Content: content,
+				Content: json.RawMessage(content), // 直接使用序列化后的 modifiedText
 			},
 			FinishReason: constant.StopFinishReason,
-		}
-		content, _ = json.Marshal(candidate.Content.Parts[0].Text)
-		if len(candidate.Content.Parts) > 0 {
-			choice.Message.Content = content
 		}
 		fullTextResponse.Choices = append(fullTextResponse.Choices, choice)
 	}
@@ -186,10 +187,11 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *GeminiChatResponse) *openai
 	return &response
 }
 
-func StreamHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatusCode, string) {
+func StreamHandler(c *gin.Context, resp *http.Response, fixedContent string) (*openai.ErrorWithStatusCode, string) {
 	responseText := ""
 	dataChan := make(chan string)
 	stopChan := make(chan bool)
+	modifiedFixedContent := "\n\n" + fixedContent
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
@@ -243,8 +245,32 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatus
 				return true
 			}
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonResponse)})
+
 			return true
 		case <-stopChan:
+			jsonResponse0 := map[string]interface{}{
+				"id":      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
+				"object":  "chat.completion.chunk",
+				"created": common.GetTimestamp(),
+				"model":   "gemini-pro",
+				"choices": []map[string]interface{}{
+					{
+						"index": 0,
+						"delta": map[string]string{
+							"content": modifiedFixedContent,
+							"role":    "",
+						},
+						"finish_reason": "stop",
+					},
+				},
+			}
+			jsonData, err := json.Marshal(jsonResponse0)
+			if err != nil {
+				// 处理错误，比如打印错误信息并返回
+				fmt.Println("error marshalling response: ", err)
+				return false
+			}
+			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonData)})
 			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 			return false
 		}
@@ -256,7 +282,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatus
 	return nil, responseText
 }
 
-func GeminiHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, *openai.Usage, string) {
+func GeminiHandler(c *gin.Context, resp *http.Response, promptTokens int, model string, fixedContent string) (*openai.ErrorWithStatusCode, *openai.Usage, string) {
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, ""
@@ -281,7 +307,7 @@ func GeminiHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 			StatusCode: resp.StatusCode,
 		}, nil, ""
 	}
-	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse)
+	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse, fixedContent)
 	fullTextResponse.Model = model
 	completionTokens := openai.CountTokenText(geminiResponse.GetResponseText(), model)
 	usage := openai.Usage{

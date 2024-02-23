@@ -291,34 +291,34 @@ func SetupRequestHeaders(c *gin.Context, req *http.Request, apiType int, meta *u
 	}
 }
 
-func DoResponse(c *gin.Context, textRequest *openai.GeneralOpenAIRequest, resp *http.Response, relayMode int, apiType int, isStream bool, promptTokens int) (aitext string, usage *openai.Usage, err *openai.ErrorWithStatusCode) {
+func DoResponse(c *gin.Context, textRequest *openai.GeneralOpenAIRequest, resp *http.Response, relayMode int, apiType int, isStream bool, promptTokens int, fixedContent string) (aitext string, usage *openai.Usage, err *openai.ErrorWithStatusCode) {
 	var responseText string
 	switch apiType {
 	case constant.APITypeOpenAI:
 		if isStream {
 
-			err, responseText = openai.StreamHandler(c, resp, relayMode)
+			err, responseText = openai.StreamHandler(c, resp, relayMode, fixedContent)
 			aitext = responseText
 		} else {
-			err, usage, aitext = openai.Handler(c, resp, promptTokens, textRequest.Model)
+			err, usage, aitext = openai.Handler(c, resp, promptTokens, textRequest.Model, fixedContent)
 
 		}
 	case constant.APITypeChatBot:
 		if isStream {
 
-			err, responseText = chatbot.StreamHandler(c, resp, promptTokens, textRequest.Model)
+			err, responseText = chatbot.StreamHandler(c, resp, promptTokens, textRequest.Model, fixedContent)
 			aitext = responseText
 		} else {
-			err, usage, aitext = chatbot.BotHandler(c, resp, promptTokens, textRequest.Model)
+			err, usage, aitext = chatbot.BotHandler(c, resp, promptTokens, textRequest.Model, fixedContent)
 
 		}
 	case constant.APITypeLobeChat:
 		if isStream {
 
-			err, responseText = lobechat.StreamHandler(c, resp, promptTokens, textRequest.Model)
+			err, responseText = lobechat.StreamHandler(c, resp, promptTokens, textRequest.Model, fixedContent)
 			aitext = responseText
 		} else {
-			err, usage, aitext = lobechat.LobeHandler(c, resp, promptTokens, textRequest.Model)
+			err, usage, aitext = lobechat.LobeHandler(c, resp, promptTokens, textRequest.Model, fixedContent)
 
 		}
 	case constant.APITypeClaude:
@@ -348,10 +348,10 @@ func DoResponse(c *gin.Context, textRequest *openai.GeneralOpenAIRequest, resp *
 		}
 	case constant.APITypeGemini:
 		if isStream {
-			err, responseText = google.StreamHandler(c, resp)
+			err, responseText = google.StreamHandler(c, resp, fixedContent)
 			aitext = responseText
 		} else {
-			err, usage, aitext = google.GeminiHandler(c, resp, promptTokens, textRequest.Model)
+			err, usage, aitext = google.GeminiHandler(c, resp, promptTokens, textRequest.Model, fixedContent)
 		}
 	case constant.APITypeZhipu:
 		if isStream {

@@ -51,9 +51,10 @@ func streamResponseChatbot2OpenAI(ChatbotResponse string, model string) *ChatCom
 	return &response
 }
 
-func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, string) {
+func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model string, fixedContent string) (*openai.ErrorWithStatusCode, string) {
 	responseText := ""
 	scanner := bufio.NewScanner(resp.Body)
+	modifiedFixedContent := "\n\n" + fixedContent
 	var contentBuilder strings.Builder
 	scanner.Split(bufio.ScanRunes) // 使用ScanRunes使得每个字符作为一个单独token处理
 
@@ -111,8 +112,11 @@ func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 				"model":   model,
 				"choices": []map[string]interface{}{
 					{
-						"index":         0,
-						"delta":         "",
+						"index": 0,
+						"delta": map[string]string{
+							"content": modifiedFixedContent,
+							"role":    "",
+						},
 						"finish_reason": "stop",
 					},
 				},
@@ -133,7 +137,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 
 }
 
-func LobeHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*openai.ErrorWithStatusCode, *openai.Usage, string) {
+func LobeHandler(c *gin.Context, resp *http.Response, promptTokens int, model string, fixedContent string) (*openai.ErrorWithStatusCode, *openai.Usage, string) {
 	var textResponse openai.SlimTextResponse
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -168,7 +172,7 @@ func LobeHandler(c *gin.Context, resp *http.Response, promptTokens int, model st
 				"index": 0,
 				"message": map[string]string{
 					"role":    "assistant",
-					"content": string(responseBody),
+					"content": string(responseBody) + "\n\n" + fixedContent,
 				},
 				"finish_reason": "stop",
 			},

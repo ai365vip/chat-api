@@ -44,6 +44,7 @@ const validationSchema = Yup.object().shape({
 const originInputs = {
   is_edit: false,
   name: '',
+  fixed_content:'',
   remain_quota: 1,
   expired_time: -1,
   unlimited_quota: false,
@@ -379,6 +380,27 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
                 </FormControl>
                   )
                 )}
+
+              <FormControl fullWidth error={Boolean(touched.fixed_content && errors.fixed_content)} sx={{ ...theme.typography.otherInput }}>
+                <InputLabel htmlFor="channel-fixed_content-label">自定义后缀</InputLabel>
+                <OutlinedInput
+                  id="channel-name-label"
+                  label="自定义后缀"
+                  type="text"
+                  value={values.fixed_content}
+                  name="fixed_content"
+                  onBlur={handleBlur}
+                  onChange={handleChange}
+                  inputProps={{ autoComplete: 'fixed_content' }}
+                  helperText="使用令牌回复内容增加固定后缀"
+                  aria-describedby="helper-text-channel-fixed_content-label"
+                />
+                {touched.fixed_content && errors.fixed_content && (
+                  <FormHelperText error id="helper-tex-channel-fixed_content-label">
+                    {errors.fixed_content}
+                  </FormHelperText>
+                )}
+              </FormControl>
 
               {tokenId ? null : (
                 <FormControl fullWidth sx={{ ...theme.typography.otherInput }}>

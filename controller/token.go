@@ -137,6 +137,7 @@ func AddToken(c *gin.Context) {
 		Group:          token.Group,
 		BillingEnabled: token.BillingEnabled,
 		Models:         token.Models,
+		FixedContent:   token.FixedContent,
 	}
 	err = cleanToken.Insert()
 	if err != nil {
@@ -227,6 +228,7 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.UnlimitedQuota = token.UnlimitedQuota
 		cleanToken.Group = token.Group
 		cleanToken.Models = token.Models
+		cleanToken.FixedContent = token.FixedContent
 	}
 	err = cleanToken.Update()
 	if err != nil {

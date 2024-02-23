@@ -22,7 +22,7 @@ import (
 
 func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode {
 	ctx := c.Request.Context()
-
+	fixedContent := c.GetString("fixed_content")
 	meta := util.GetRelayMeta(c)
 	startTime := time.Now()
 	var textRequest openai.GeneralOpenAIRequest
@@ -305,7 +305,7 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 			}
 		}()
 	}(ctx)
-	aitext, usage, respErr = DoResponse(c, &textRequest, resp, relayMode, apiType, isStream, promptTokens)
+	aitext, usage, respErr = DoResponse(c, &textRequest, resp, relayMode, apiType, isStream, promptTokens, fixedContent)
 	if respErr != nil {
 		return respErr
 	}

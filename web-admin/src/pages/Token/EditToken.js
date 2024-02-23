@@ -21,12 +21,13 @@ const EditToken = (props) => {
     const [models, setModels] = useState([]);
     const originInputs = {
         name: '',
+        fixed_content:'',
         remain_quota: isEdit ? 0 : 500000,
         expired_time: -1,
         unlimited_quota: false
     };
     const [inputs, setInputs] = useState(originInputs);
-    const {name, remain_quota, expired_time, unlimited_quota} = inputs;
+    const {name, remain_quota, expired_time, unlimited_quota,fixed_content} = inputs;
     // const [visible, setVisible] = useState(false);
     const navigate = useNavigate();
     const handleInputChange = (name, value) => {
@@ -397,6 +398,21 @@ const EditToken = (props) => {
                         )}
                     </div>
                     <Divider/>
+                    <div style={{marginTop: 10}}>
+                        <Typography.Text>自定义内容</Typography.Text>
+                    </div>
+                    <Input
+                        style={{marginTop: 20}}
+                        label='自定义'
+                        name='fixed_content'
+                        placeholder={'请输入自定义后缀'}
+                        onChange={(value) => handleInputChange('fixed_content', value)}
+                        value={fixed_content}
+                        autoComplete='new-password'
+                        required={!isEdit}
+                    />
+                    <Divider/>
+                    
                     {!isEdit && (
                         <>
                          <div style={{marginTop: 20}}>
