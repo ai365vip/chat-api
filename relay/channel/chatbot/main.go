@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"one-api/common"
@@ -132,6 +133,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 			return false
 		}
 	})
+	log.Println(responseText)
 
 	return nil, responseText
 

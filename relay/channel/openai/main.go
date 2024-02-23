@@ -17,7 +17,6 @@ import (
 func GenerateFixedContentMessage(fixedContent string) string {
 	// 在 fixedContent 的开始处添加换行符
 	modifiedFixedContent := "\n\n" + fixedContent
-
 	content := map[string]interface{}{
 		"id":      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
 		"object":  "chat.completion",
@@ -65,30 +64,28 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 	go func() {
 		var needInjectFixedMessageBeforeNextSend = false
 		for scanner.Scan() {
-
 			data := scanner.Text()
 			if len(data) < 6 { // ignore blank line or wrong format
 				continue
 			}
+			// 先根据需要注入固定内容，再处理接下来的数据
+			if needInjectFixedMessageBeforeNextSend && fixedContent != "" {
+				fixedContentMessage := GenerateFixedContentMessage(fixedContent)
+				dataChan <- fixedContentMessage              // 发送固定内容
+				needInjectFixedMessageBeforeNextSend = false // 重置标志位
+			}
+
 			if data[:6] != "data: " && data[:6] != "[DONE]" {
 				continue
 			}
-			// 检查是否需要在下一次发送前注入固定消息
-			if needInjectFixedMessageBeforeNextSend {
-				if fixedContent != "" {
-					fixedContentMessage := GenerateFixedContentMessage(fixedContent)
-					dataChan <- fixedContentMessage              // 先发送固定内容
-					needInjectFixedMessageBeforeNextSend = false // 重置标记
-				}
-
-			}
 
 			if data[:6] == "data: " {
-				if data == "data: [DONE]" {
-					continue // 跳过当前循环迭代，不执行JSON解析
+				jsonData := data[6:]
+				if jsonData == "[DONE]" {
+					needInjectFixedMessageBeforeNextSend = true
+					continue
 				}
 
-				jsonData := data[6:]
 				switch relayMode {
 				case constant.RelayModeChatCompletions:
 					var streamResponse ChatCompletionsStreamResponse
@@ -99,10 +96,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 					}
 					for _, choice := range streamResponse.Choices {
 						responseText += choice.Delta.Content
-						if choice.FinishReason != nil && *choice.FinishReason == "stop" {
-							needInjectFixedMessageBeforeNextSend = true
-						}
+
 					}
+
 				case constant.RelayModeCompletions:
 					var streamResponse CompletionsStreamResponse
 					err := json.Unmarshal([]byte(jsonData), &streamResponse)
@@ -112,17 +108,20 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 					}
 					for _, choice := range streamResponse.Choices {
 						responseText += choice.Text
-						if choice.FinishReason == "stop" {
-							needInjectFixedMessageBeforeNextSend = true
-						}
 					}
 				}
+
 			}
 			if !needInjectFixedMessageBeforeNextSend {
-				dataChan <- data // 如果不需要注入，则正常发送数据
+				dataChan <- data // 正常发送
 			}
-		}
 
+		}
+		// 如果循环结束（比如遇到EOF），也检查是否有最后的固定内容需要注入
+		if needInjectFixedMessageBeforeNextSend && fixedContent != "" {
+			fixedContentMessage := GenerateFixedContentMessage(fixedContent)
+			dataChan <- fixedContentMessage
+		}
 		doneSignal := "data: [DONE]"
 		dataChan <- doneSignal // 发送结束信号
 		stopChan <- true
