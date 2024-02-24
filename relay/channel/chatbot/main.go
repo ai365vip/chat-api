@@ -84,7 +84,6 @@ func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 			}
 
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonResponse)})
-
 			// 提取 content 的值
 			var responseData map[string]interface{}
 			if err := json.Unmarshal(jsonResponse, &responseData); err == nil {

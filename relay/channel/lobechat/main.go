@@ -100,7 +100,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 						}
 					}
 				}
+
 			}
+
 			return true
 
 		case <-stopChan:
@@ -127,6 +129,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 				fmt.Println("error marshalling response: ", err)
 				return false
 			}
+
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonData)})
 			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 			return false

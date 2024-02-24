@@ -28,6 +28,14 @@ function renderType(type) {
   switch (type) {
     case 'IMAGINE':
       return <Tag color="blue" size='large'>绘图</Tag>;
+    case 'ACTION':
+      return <Tag color="purple" size='large'>按钮动作</Tag>;
+    case 'MODAL':
+      return <Tag color="purple" size='large'>局部重绘</Tag>;
+    case 'SHORTEN':
+      return <Tag color="blue" size='large'>prompt分析</Tag>
+    case 'SWAPFACE':
+      return <Tag color="blue" size='large'>换脸</Tag>
     case 'UPSCALE':
       return <Tag color="orange" size='large'>放大</Tag>;
     case 'VARIATION':

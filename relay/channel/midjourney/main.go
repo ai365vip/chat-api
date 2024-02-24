@@ -20,41 +20,45 @@ import (
 )
 
 type Midjourney struct {
-	MjId        string `json:"id"`
-	Action      string `json:"action"`
-	Prompt      string `json:"prompt"`
-	PromptEn    string `json:"promptEn"`
-	Description string `json:"description"`
-	State       string `json:"state"`
-	SubmitTime  int64  `json:"submitTime"`
-	StartTime   int64  `json:"startTime"`
-	FinishTime  int64  `json:"finishTime"`
-	ImageUrl    string `json:"imageUrl"`
-	Status      string `json:"status"`
-	Progress    string `json:"progress"`
-	FailReason  string `json:"failReason"`
+	MjId        string          `json:"id"`
+	Action      string          `json:"action"`
+	Prompt      string          `json:"prompt"`
+	PromptEn    string          `json:"promptEn"`
+	Description string          `json:"description"`
+	State       string          `json:"state"`
+	SubmitTime  int64           `json:"submitTime"`
+	StartTime   int64           `json:"startTime"`
+	FinishTime  int64           `json:"finishTime"`
+	ImageUrl    string          `json:"imageUrl"`
+	Status      string          `json:"status"`
+	Progress    string          `json:"progress"`
+	FailReason  string          `json:"failReason"`
+	Properties  json.RawMessage `json:"properties"`
+	Buttons     json.RawMessage `json:"buttons"`
 }
 
 type MidjourneyStatus struct {
 	Status int `json:"status"`
 }
 type MidjourneyWithoutStatus struct {
-	Id          int    `json:"id"`
-	Code        int    `json:"code"`
-	UserId      int    `json:"user_id" gorm:"index"`
-	Action      string `json:"action"`
-	MjId        string `json:"mj_id" gorm:"index"`
-	Prompt      string `json:"prompt"`
-	PromptEn    string `json:"prompt_en"`
-	Description string `json:"description"`
-	State       string `json:"state"`
-	SubmitTime  int64  `json:"submit_time"`
-	StartTime   int64  `json:"start_time"`
-	FinishTime  int64  `json:"finish_time"`
-	ImageUrl    string `json:"image_url"`
-	Progress    string `json:"progress"`
-	FailReason  string `json:"fail_reason"`
-	ChannelId   int    `json:"channel_id"`
+	Id          int             `json:"id"`
+	Code        int             `json:"code"`
+	UserId      int             `json:"user_id" gorm:"index"`
+	Action      string          `json:"action"`
+	MjId        string          `json:"mj_id" gorm:"index"`
+	Prompt      string          `json:"prompt"`
+	PromptEn    string          `json:"prompt_en"`
+	Description string          `json:"description"`
+	State       string          `json:"state"`
+	SubmitTime  int64           `json:"submit_time"`
+	StartTime   int64           `json:"start_time"`
+	FinishTime  int64           `json:"finish_time"`
+	ImageUrl    string          `json:"image_url"`
+	Progress    string          `json:"progress"`
+	FailReason  string          `json:"fail_reason"`
+	Properties  json.RawMessage `json:"properties"`
+	Buttons     json.RawMessage `json:"buttons"`
+	ChannelId   int             `json:"channel_id"`
 }
 
 func RelayMidjourneyImage(c *gin.Context) {
@@ -125,6 +129,8 @@ func RelayMidjourneyNotify(c *gin.Context) *MidjourneyResponse {
 	midjourneyTask.ImageUrl = midjRequest.ImageUrl
 	midjourneyTask.Status = midjRequest.Status
 	midjourneyTask.FailReason = midjRequest.FailReason
+	midjourneyTask.Buttons = midjRequest.Buttons
+	midjourneyTask.Properties = midjRequest.Properties
 	err = midjourneyTask.Update()
 	if err != nil {
 		return &MidjourneyResponse{
@@ -144,6 +150,8 @@ func getMidjourneyTaskModel(c *gin.Context, originTask *model.Midjourney) (midjo
 	midjourneyTask.SubmitTime = originTask.SubmitTime
 	midjourneyTask.StartTime = originTask.StartTime
 	midjourneyTask.FinishTime = originTask.FinishTime
+	midjourneyTask.Buttons = originTask.Buttons
+	midjourneyTask.Properties = originTask.Properties
 	midjourneyTask.ImageUrl = ""
 	if originTask.ImageUrl != "" {
 		midjourneyTask.ImageUrl = common.ServerAddress + "/mj/image/" + originTask.MjId
@@ -267,6 +275,22 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		midjRequest.Action = "IMAGINE"
 	} else if relayMode == constant.RelayModeMidjourneyDescribe { //按图生文任务，此类任务可重复
 		midjRequest.Action = "DESCRIBE"
+	} else if relayMode == constant.RelayModeMidjourneyShorten { //prompt分析
+		midjRequest.Action = "SHORTEN"
+	} else if relayMode == constant.RelayModeMidjourneyFace { //换脸
+		if midjRequest.TargetBase64 == "" {
+			return &MidjourneyResponse{
+				Code:        4,
+				Description: "targetBase64_is_required",
+			}
+		}
+		if midjRequest.SourceBase64 == "" {
+			return &MidjourneyResponse{
+				Code:        4,
+				Description: "sourceBase64_is_required",
+			}
+		}
+		midjRequest.Action = "SWAPFACE"
 	} else if relayMode == constant.RelayModeMidjourneyBlend { //绘画任务，此类任务可重复
 		midjRequest.Action = "BLEND"
 	} else if midjRequest.TaskId != "" { //放大、变换任务，此类任务，如果重复且已有结果，远端api会直接返回最终结果
@@ -306,6 +330,35 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 			mjId = params.ID
 			midjRequest.Action = params.Action
+		} else if relayMode == constant.RelayModeMidjourneyAction { //ACTION动作
+			if midjRequest.TaskId == "" {
+				return &MidjourneyResponse{
+					Code:        4,
+					Description: "taskId_is_required",
+				}
+			} else if midjRequest.CustomId == "" {
+				return &MidjourneyResponse{
+					Code:        4,
+					Description: "customId_is_required",
+				}
+			}
+			//action = midjRequest.Action
+			mjId = midjRequest.TaskId
+			midjRequest.Action = "ACTION"
+		} else if relayMode == constant.RelayModeMidjourneyModal { //MODAL局部重绘
+			if midjRequest.TaskId == "" {
+				return &MidjourneyResponse{
+					Code:        4,
+					Description: "taskId_is_required",
+				}
+			} else if midjRequest.MaskBase64 == "" {
+				return &MidjourneyResponse{
+					Code:        4,
+					Description: "maskBase64_is_required",
+				}
+			}
+			mjId = midjRequest.TaskId
+			midjRequest.Action = "MODAL"
 		}
 
 		originTask := model.GetByMJId(userId, mjId)
@@ -388,9 +441,6 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	} else {
 		// 读取原始请求体
 		bodyBytes, err := io.ReadAll(c.Request.Body)
-		if err != nil {
-			// handle error
-		}
 
 		// 将原始请求体的内容反序列化为一个 map
 		json.Unmarshal(bodyBytes, &m)
@@ -419,8 +469,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		modelRatio = defaultPrice
 	}
 	groupRatio := common.GetGroupRatio(group)
-	if !ok {
-	}
+
 	ratio := modelRatio * groupRatio
 
 	userQuota, err := model.CacheGetUserQuota(userId)
@@ -540,6 +589,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	// 23-队列已满，请稍后再试 {"code":23,"description":"队列已满，请稍后尝试","result":"14001929738841620","properties":{"discordInstanceId":"1118138338562560102"}}
 	// 24-prompt包含敏感词 {"code":24,"description":"可能包含敏感词","properties":{"promptEn":"nude body","bannedWord":"nude"}}
 	// other: 提交错误，description为错误描述
+
 	midjourneyTask := &model.Midjourney{
 		UserId:      userId,
 		Code:        midjResponse.Code,

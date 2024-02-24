@@ -17,6 +17,10 @@ const (
 	RelayModeMidjourneyDescribe
 	RelayModeMidjourneyBlend
 	RelayModeMidjourneyChange
+	RelayModeMidjourneyAction
+	RelayModeMidjourneyModal
+	RelayModeMidjourneyShorten
+	RelayModeMidjourneyFace
 	RelayModeMidjourneySimpleChange
 	RelayModeMidjourneyNotify
 	RelayModeMidjourneyTaskFetch
@@ -64,6 +68,14 @@ func MidjourneyRelayMode(path string) int {
 		relayMode = RelayModeMidjourneyChange
 	} else if strings.HasPrefix(path, "/mj/submit/simple-change") {
 		relayMode = RelayModeMidjourneyChange
+	} else if strings.HasPrefix(path, "/mj/submit/action") {
+		relayMode = RelayModeMidjourneyAction
+	} else if strings.HasPrefix(path, "/mj/submit/modal") {
+		relayMode = RelayModeMidjourneyModal
+	} else if strings.HasPrefix(path, "/mj/submit/shorten") {
+		relayMode = RelayModeMidjourneyShorten
+	} else if strings.HasPrefix(path, "/mj/insight-face/swap") {
+		relayMode = RelayModeMidjourneyFace
 	} else if strings.HasSuffix(path, "/fetch") {
 		relayMode = RelayModeMidjourneyTaskFetch
 	} else if strings.HasSuffix(path, "/list-by-condition") {

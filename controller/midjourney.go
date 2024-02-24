@@ -90,7 +90,7 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	}
 	responseBody, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
-	log.Printf("responseBody: %s", string(responseBody))
+	//log.Printf("responseBody: %s", string(responseBody))
 	var responseItem midjourney.Midjourney
 	// err = json.NewDecoder(resp.Body).Decode(&responseItem)
 	err = json.Unmarshal(responseBody, &responseItem)
@@ -121,6 +121,7 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 			return
 		}
 	}
+	//log.Println("Properties", string(responseItem.Properties))
 	task.Code = 1
 	task.Progress = responseItem.Progress
 	task.PromptEn = responseItem.PromptEn
@@ -131,6 +132,8 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	task.ImageUrl = responseItem.ImageUrl
 	task.Status = responseItem.Status
 	task.FailReason = responseItem.FailReason
+	task.Buttons = responseItem.Buttons
+	task.Properties = responseItem.Properties
 	if task.Progress != "100%" && responseItem.FailReason != "" {
 		log.Println(task.MjId + " 构建失败，" + task.FailReason)
 		task.Progress = "100%"
@@ -253,6 +256,8 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 			task.ImageUrl = responseItem.ImageUrl
 			task.Status = responseItem.Status
 			task.FailReason = responseItem.FailReason
+			task.Buttons = responseItem.Buttons
+			task.Properties = responseItem.Properties
 			if task.Progress != "100%" && responseItem.FailReason != "" {
 				common.LogInfo(ctx, task.MjId+" 构建失败，"+task.FailReason)
 				task.Progress = "100%"
@@ -319,6 +324,15 @@ func checkMjTaskNeedUpdate(oldTask *model.Midjourney, newTask midjourney.Midjour
 		return true
 	}
 	if oldTask.FinishTime != newTask.FinishTime {
+		return true
+	}
+
+	if len(oldTask.Buttons) != len(newTask.Buttons) {
+		return true
+	}
+
+	// 检查 Properties 是否非空
+	if len(oldTask.Properties) != len(newTask.Properties) {
 		return true
 	}
 	if oldTask.Progress != "100%" && newTask.FailReason != "" {

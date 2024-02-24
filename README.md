@@ -34,6 +34,7 @@
 22. 支持分销查询页[chat-api-key-tool](https://github.com/ai365vip/chat-api-key-tool)（消费、MJ、设置发卡站）
 23. 支持渠道添加自定义请求头
 24. 支持令牌添加自定义后缀内容
+24. 支持midjourney-proxy-plus
 
 ## 部署
 
