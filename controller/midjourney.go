@@ -49,7 +49,7 @@ func UpdateMidjourneyTask() {
 }
 
 func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
-	common.LogInfo(ctx, fmt.Sprintf("未完成的任务信息: %v", task))
+	//common.LogInfo(ctx, fmt.Sprintf("未完成的任务信息: %v", task))
 	midjourneyChannel, err := model.GetChannelById(task.ChannelId, true)
 	if err != nil {
 		common.LogError(ctx, fmt.Sprintf("UpdateMidjourneyTask: %v", err))
@@ -164,7 +164,7 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	if err != nil {
 		log.Printf("UpdateMidjourneyTask error5: %v", err)
 	}
-	log.Printf("UpdateMidjourneyTask success: %v", task)
+	//slog.Printf("UpdateMidjourneyTask success: %v", task)
 	cancel()
 
 }

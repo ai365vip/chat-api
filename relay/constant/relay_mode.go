@@ -67,7 +67,7 @@ func MidjourneyRelayMode(path string) int {
 	} else if strings.HasPrefix(path, "/mj/submit/change") {
 		relayMode = RelayModeMidjourneyChange
 	} else if strings.HasPrefix(path, "/mj/submit/simple-change") {
-		relayMode = RelayModeMidjourneyChange
+		relayMode = RelayModeMidjourneySimpleChange
 	} else if strings.HasPrefix(path, "/mj/submit/action") {
 		relayMode = RelayModeMidjourneyAction
 	} else if strings.HasPrefix(path, "/mj/submit/modal") {

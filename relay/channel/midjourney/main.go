@@ -344,41 +344,26 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 			//action = midjRequest.Action
 			mjId = midjRequest.TaskId
-			midjRequest.Action = "ACTION"
+			params := convertActionParams(midjRequest.CustomId)
+			midjRequest.Action = *params
 		} else if relayMode == constant.RelayModeMidjourneyModal { //MODAL局部重绘
 			if midjRequest.TaskId == "" {
 				return &MidjourneyResponse{
 					Code:        4,
 					Description: "taskId_is_required",
 				}
-			} else if midjRequest.MaskBase64 == "" {
-				return &MidjourneyResponse{
-					Code:        4,
-					Description: "maskBase64_is_required",
-				}
 			}
 			mjId = midjRequest.TaskId
 			midjRequest.Action = "MODAL"
 		}
-
 		originTask := model.GetByMJId(userId, mjId)
+
 		if originTask == nil {
 			return &MidjourneyResponse{
 				Code:        4,
 				Description: "task_no_found",
 			}
-		} else if originTask.Action == "UPSCALE" {
-			//return errorWrapper(errors.New("upscale task can not be change"), "request_params_error", http.StatusBadRequest).
-			return &MidjourneyResponse{
-				Code:        4,
-				Description: "upscale_task_can_not_be_change",
-			}
-		} else if originTask.Status != "SUCCESS" {
-			return &MidjourneyResponse{
-				Code:        4,
-				Description: "task_status_is_not_success",
-			}
-		} else { //原任务的Status=SUCCESS，则可以做放大UPSCALE、变换VARIATION等动作，此时必须使用原来的请求地址才能正确处理
+		} else if originTask.Status == "SUCCESS" && originTask.Action != "ACTION" {
 			channel, err := model.GetChannelById(originTask.ChannelId, false)
 			if err != nil {
 				return &MidjourneyResponse{
@@ -389,6 +374,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			c.Set("base_url", channel.GetBaseURL())
 			c.Set("channel_id", originTask.ChannelId)
 			log.Printf("检测到此操作为放大、变换，获取原channel信息: %s,%s", strconv.Itoa(originTask.ChannelId), channel.GetBaseURL())
+
 		}
 		midjRequest.Prompt = originTask.Prompt
 	}
@@ -479,7 +465,11 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			Description: err.Error(),
 		}
 	}
+
 	quota := int(ratio * common.QuotaPerUnit)
+	if mjAction == "mj_modal" {
+		quota = 0
+	}
 	if consumeQuota && userQuota-quota < 0 {
 		return &MidjourneyResponse{
 			Code:        4,
@@ -529,7 +519,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	defer func(ctx context.Context) {
 
-		if consumeQuota {
+		if consumeQuota && mjAction != "mj_modal" {
 			err := model.PostConsumeTokenQuota(tokenId, userQuota, quota, 0, true)
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
@@ -549,9 +539,6 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		}
 	}(c.Request.Context())
 
-	//if consumeQuota {
-	//
-	//}
 	responseBody, err := io.ReadAll(resp.Body)
 
 	if err != nil {
@@ -640,12 +627,13 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		newBody := strings.Replace(string(responseBody), `"code":21`, `"code":1`, -1)
 		responseBody = []byte(newBody)
 	}
-
-	err = midjourneyTask.Insert()
-	if err != nil {
-		return &MidjourneyResponse{
-			Code:        4,
-			Description: "insert_midjourney_task_failed",
+	if mjAction != "mj_modal" {
+		err = midjourneyTask.Insert()
+		if err != nil {
+			return &MidjourneyResponse{
+				Code:        4,
+				Description: "insert_midjourney_task_failed",
+			}
 		}
 	}
 
@@ -685,8 +673,8 @@ type taskChangeParams struct {
 	Index  int
 }
 
-func convertSimpleChangeParams(content string) *taskChangeParams {
-	split := strings.Split(content, " ")
+func convertSimpleChangeParams(customid string) *taskChangeParams {
+	split := strings.Split(customid, " ")
 	if len(split) != 2 {
 		return nil
 	}
@@ -712,4 +700,36 @@ func convertSimpleChangeParams(content string) *taskChangeParams {
 	}
 	changeParams.Index = index
 	return changeParams
+}
+
+func convertActionParams(content string) *string {
+	// 使用 "::" 分割输入字符串
+	parts := strings.Split(content, "::")
+	// 确保分割后的部分数量正确
+	if len(parts) < 3 {
+		return nil
+	}
+
+	// 检查并匹配操作，根据匹配返回对应的大写字符串
+	action := parts[2]
+	action1 := parts[1]
+	var actionLiteral string // 定义一个变量来存储结果字符串
+	switch action {
+	case "upsample":
+		actionLiteral = "UPSCALE"
+	case "variation":
+		actionLiteral = "VARIATION"
+	case "reroll":
+		actionLiteral = "REROLL"
+	default:
+		switch action1 { // 当action不匹配时，检查action1
+		case "Inpaint":
+			actionLiteral = "INPAINT"
+
+		default:
+			actionLiteral = "ACTION"
+		}
+	}
+
+	return &actionLiteral
 }

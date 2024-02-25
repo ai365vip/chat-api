@@ -11,10 +11,10 @@ export const LOG_TYPE = {
 // 定义渲染类型函数
 export const TYPE = {
   IMAGINE: { value: 'IMAGINE', text: '绘图', color: 'info' }, 
-  ACTION: { value: 'ACTION', text: '绘图', color: 'secondary' }, 
-  MODAL: { value: 'MODAL', text: '绘图', color: 'secondary' }, 
-  SHORTEN: { value: 'SHORTEN', text: '绘图', color: 'info' }, 
-  SWAPFACE: { value: 'SWAPFACE', text: '绘图', color: 'info' }, 
+  ACTION: { value: 'ACTION', text: '按钮变化', color: 'secondary' }, 
+  INPAINT: { value: 'INPAINT', text: '局部重绘', color: 'secondary' }, 
+  SHORTEN: { value: 'SHORTEN', text: 'prompt分析', color: 'info' }, 
+  SWAPFACE: { value: 'SWAPFACE', text: '换脸', color: 'info' }, 
   UPSCALE: { value: 'UPSCALE', text: '放大', color: 'warning' },
   VARIATION: { value: 'VARIATION', text: '变换', color: 'secondary' },
   DESCRIBE: { value: 'DESCRIBE', text: '图生文', color: 'success' }, 

@@ -117,6 +117,10 @@ var ModelPrice = map[string]float64{
 	"mj_blend":      0.1,
 	"mj_describe":   0.05,
 	"mj_upscale":    0.05,
+	"mj_action":     0.1,
+	"mj_inpaint":    0.1,
+	"mj_swapface":   0.1,
+	"mj_shorten":    0.1,
 	"midjourney":    0.1,
 }
 
