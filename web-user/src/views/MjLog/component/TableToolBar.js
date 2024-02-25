@@ -1,14 +1,14 @@
 require('dayjs/locale/zh-cn');
 import PropTypes from 'prop-types';
 import { useTheme } from '@mui/material/styles';
-import { IconKey, IconSitemap } from '@tabler/icons-react';
+import { IconKey } from '@tabler/icons-react';
 import { InputAdornment, OutlinedInput, Stack, FormControl, InputLabel} from '@mui/material';
 import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 // ----------------------------------------------------------------------
 
-export default function TableToolBar({ filterName, handleFilterName, userIsAdmin }) {
+export default function TableToolBar({ filterName, handleFilterName }) {
   const theme = useTheme();
   const grey500 = theme.palette.grey[500];
 
@@ -81,30 +81,9 @@ export default function TableToolBar({ filterName, handleFilterName, userIsAdmin
           </LocalizationProvider>
         </FormControl>
       </Stack>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 3, sm: 2, md: 4 }} padding={'10px'}>
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 3, sm: 2, md: 4 }} padding={'24px'}>
-        {userIsAdmin && (
-          <FormControl>
-            <InputLabel htmlFor="channel-channel-label">渠道ID</InputLabel>
-            <OutlinedInput
-              id="channel_id"
-              name="channel_id"
-              sx={{
-                minWidth: '100%'
-              }}
-              label="渠道ID"
-              value={filterName.channel_id}
-              onChange={handleFilterName}
-              placeholder="渠道ID"
-              startAdornment={
-                <InputAdornment position="start">
-                  <IconSitemap stroke={1.5} size="20px" color={grey500} />
-                </InputAdornment>
-              }
-            />
-          </FormControl>
-        )}
-
+       
       </Stack>
     </>
   );
