@@ -65,6 +65,9 @@ type MidjourneyWithoutStatus struct {
 	Buttons     json.RawMessage `json:"buttons"`
 	ChannelId   int             `json:"channel_id"`
 }
+type Condition struct {
+	IDs []string `json:"ids"`
+}
 
 func RelayMidjourneyImage(c *gin.Context) {
 	taskId := c.Param("id")
@@ -173,6 +176,25 @@ func getMidjourneyTaskModel(c *gin.Context, originTask *model.Midjourney) (midjo
 	return
 }
 
+func (c *Condition) UnmarshalJSON(data []byte) error {
+	var raw map[string][]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	for _, v := range raw["ids"] {
+		var strVal string
+		var numVal int
+		if err := json.Unmarshal(v, &strVal); err == nil {
+			c.IDs = append(c.IDs, strVal)
+		} else if err := json.Unmarshal(v, &numVal); err == nil {
+			c.IDs = append(c.IDs, strconv.Itoa(numVal))
+		} else {
+			return fmt.Errorf("cannot unmarshal ID to string or number")
+		}
+	}
+	return nil
+}
+
 func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 	userId := c.GetInt("id")
 	var err error
@@ -196,9 +218,7 @@ func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 		}
 	case constant.RelayModeMidjourneyTaskFetchByCondition:
-		var condition = struct {
-			IDs []string `json:"ids"`
-		}{}
+		var condition Condition
 		err = c.BindJSON(&condition)
 		if err != nil {
 			return &MidjourneyResponse{
