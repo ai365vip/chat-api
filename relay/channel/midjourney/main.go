@@ -35,6 +35,11 @@ type Midjourney struct {
 	FailReason  string          `json:"failReason"`
 	Properties  json.RawMessage `json:"properties"`
 	Buttons     json.RawMessage `json:"buttons"`
+	ImageSeed   json.RawMessage `json:"image_seed"`
+}
+
+type MidjourneyImageSeed struct {
+	ImageSeed json.RawMessage `json:"image_seed"`
 }
 
 type MidjourneyStatus struct {
@@ -224,6 +229,37 @@ func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	_, err = io.Copy(c.Writer, bytes.NewBuffer(respBody))
 	if err != nil {
+		return &MidjourneyResponse{
+			Code:        4,
+			Description: "copy_response_body_failed",
+		}
+	}
+	return nil
+}
+
+func getMidjourneyImageModel(c *gin.Context, originTask *model.Midjourney) (midjourneyImageSeed MidjourneyImageSeed) {
+
+	midjourneyImageSeed.ImageSeed = originTask.ImageSeed
+	return
+}
+
+func RelayMidjourneyImageSeed(c *gin.Context) *MidjourneyResponse {
+	userId := c.GetInt("id")
+	taskId := c.Param("id")
+	originTask := model.GetByMJId(userId, taskId)
+	if originTask == nil {
+		return &MidjourneyResponse{
+			Code:        4,
+			Description: "task_no_found",
+		}
+	}
+
+	// 直接设置响应的Content-Type
+	c.Writer.Header().Set("Content-Type", "application/json")
+
+	_, err := c.Writer.Write([]byte(originTask.ImageSeed))
+	if err != nil {
+		// 如果在写入过程中出现错误，返回相应的错误信息
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "copy_response_body_failed",

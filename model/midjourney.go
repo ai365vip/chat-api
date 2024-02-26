@@ -23,6 +23,7 @@ type Midjourney struct {
 	FailReason  string          `json:"fail_reason"`
 	Buttons     json.RawMessage `json:"buttons"`
 	Properties  json.RawMessage `json:"properties"`
+	ImageSeed   json.RawMessage `json:"image_seed"`
 	ChannelId   int             `json:"channel_id"`
 }
 

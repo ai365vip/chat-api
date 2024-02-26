@@ -42,6 +42,8 @@ function renderType(type) {
       return <Tag color="purple" size='large'>变换</Tag>;
     case 'DESCRIBE':
       return <Tag color="yellow" size='large'>图生文</Tag>;
+    case 'REROLL':
+      return <Tag color="lime" size='large'>重绘</Tag>
     case 'BLEAND':
       return <Tag color="lime" size='large'>图混合</Tag>;
     default:

@@ -66,6 +66,10 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	requestUrl := fmt.Sprintf("%s/mj/task/%s/fetch", *midjourneyChannel.BaseURL, task.MjId)
 	common.LogInfo(ctx, fmt.Sprintf("requestUrl: %s", requestUrl))
 
+	if err != nil {
+		log.Printf("Get ImageSeed error: %v", err)
+		return
+	}
 	req, err := http.NewRequest("GET", requestUrl, bytes.NewBuffer([]byte("")))
 	if err != nil {
 		common.LogInfo(ctx, fmt.Sprintf("Get Task error: %v", err))
@@ -121,7 +125,8 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 			return
 		}
 	}
-	//log.Println("Properties", string(responseItem.Properties))
+	var isResponseBody []byte // 声明这个变量保存ImageSeed响应体
+
 	task.Code = 1
 	task.Progress = responseItem.Progress
 	task.PromptEn = responseItem.PromptEn
@@ -134,6 +139,33 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	task.FailReason = responseItem.FailReason
 	task.Buttons = responseItem.Buttons
 	task.Properties = responseItem.Properties
+
+	if task.Progress == "100%" {
+		imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, task.MjId)
+		isReq, err := http.NewRequest("GET", imageSeedUrl, nil)
+		if err != nil {
+			log.Printf("Get ImageSeed error: %v", err)
+			return
+		}
+		isReq.Header.Set("Content-Type", "application/json")
+		isReq.Header.Set("mj-api-secret", midjourneyChannel.Key)
+
+		isResp, err := util.HTTPClient.Do(isReq)
+		if err != nil {
+			log.Printf("Get ImageSeed Do req error: %v", err)
+			return
+		}
+		defer isResp.Body.Close()
+
+		isResponseBody, err = io.ReadAll(isResp.Body) // 使用等号，不需要再声明变量
+		if err != nil {
+			log.Printf("Get ImageSeed parse body error: %v", err)
+			return
+		}
+	}
+	if isResponseBody != nil {
+		task.ImageSeed = isResponseBody
+	}
 	if task.Progress != "100%" && responseItem.FailReason != "" {
 		log.Println(task.MjId + " 构建失败，" + task.FailReason)
 		task.Progress = "100%"
@@ -245,6 +277,7 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 			if !checkMjTaskNeedUpdate(task, responseItem) {
 				return false
 			}
+			var isResponseBody []byte // 声明这个变量保存ImageSeed响应体
 
 			task.Code = 1
 			task.Progress = responseItem.Progress
@@ -258,6 +291,33 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 			task.FailReason = responseItem.FailReason
 			task.Buttons = responseItem.Buttons
 			task.Properties = responseItem.Properties
+			task.ImageSeed = isResponseBody
+			if task.Progress == "100%" {
+				// 获取ImageSeed信息
+				imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, responseItem.MjId)
+				isReq, err := http.NewRequest("GET", imageSeedUrl, nil) // 假设是GET请求，请根据实际调整
+				if err != nil {
+					common.LogError(ctx, fmt.Sprintf("Get ImageSeed error: %v", err))
+					continue
+				}
+				isReq.Header.Set("Content-Type", "application/json")
+				isReq.Header.Set("mj-api-secret", midjourneyChannel.Key)
+
+				isResp, err := util.HTTPClient.Do(isReq)
+				if err != nil {
+					common.LogError(ctx, fmt.Sprintf("Get ImageSeed Do req error: %v", err))
+					continue
+				}
+				isResponseBody, err = io.ReadAll(isResp.Body)
+				if err != nil {
+					common.LogError(ctx, fmt.Sprintf("Get ImageSeed parse body error: %v", err))
+					continue
+				}
+				isResp.Body.Close()
+			}
+			if isResponseBody != nil {
+				task.ImageSeed = isResponseBody
+			}
 			if task.Progress != "100%" && responseItem.FailReason != "" {
 				common.LogInfo(ctx, task.MjId+" 构建失败，"+task.FailReason)
 				task.Progress = "100%"

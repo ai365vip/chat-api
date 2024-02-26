@@ -16,6 +16,7 @@ export const TYPE = {
   SHORTEN: { value: 'SHORTEN', text: 'prompt分析', color: 'info' }, 
   SWAPFACE: { value: 'SWAPFACE', text: '换脸', color: 'info' }, 
   UPSCALE: { value: 'UPSCALE', text: '放大', color: 'warning' },
+  REROLL: { value: 'REROLL', text: '重绘', color: 'default' },
   VARIATION: { value: 'VARIATION', text: '变换', color: 'secondary' },
   DESCRIBE: { value: 'DESCRIBE', text: '图生文', color: 'success' }, 
   BLEAND: { value: 'BLEAND', text: '图混合', color: 'default' },

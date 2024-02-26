@@ -24,6 +24,7 @@ const (
 	RelayModeMidjourneySimpleChange
 	RelayModeMidjourneyNotify
 	RelayModeMidjourneyTaskFetch
+	RelayModeMidjourneyImageSeed
 	RelayModeMidjourneyTaskFetchByCondition
 	RelayMidjourneyImage
 )
@@ -78,6 +79,8 @@ func MidjourneyRelayMode(path string) int {
 		relayMode = RelayModeMidjourneyFace
 	} else if strings.HasSuffix(path, "/fetch") {
 		relayMode = RelayModeMidjourneyTaskFetch
+	} else if strings.HasSuffix(path, "/image-seed") {
+		relayMode = RelayModeMidjourneyImageSeed
 	} else if strings.HasSuffix(path, "/list-by-condition") {
 		relayMode = RelayModeMidjourneyTaskFetchByCondition
 	}
