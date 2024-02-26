@@ -28,10 +28,11 @@ const COPY_OPTIONS = [
   {
     key: 'next',
     text: 'ChatGPT Next',
-    url: 'https://chat.oneapi.pro/#/?settings={"key":"sk-{key}","url":"{serverAddress}"}',
+    url: '',
     encode: false
   },
-  { key: 'ama', text: 'AMA 问天', url: 'ama://set-api-key?server={serverAddress}&key=sk-{key}', encode: true },
+  { key: 'next-mj', text: 'ChatGPT-Midjourney', url: '', encode: true },
+  { key: 'ama', text: 'BotGem', url: 'ama://set-api-key?server={serverAddress}&key=sk-{key}', encode: true },
   { key: 'opencat', text: 'OpenCat', url: 'opencat://team/join?domain={serverAddress}&token=sk-{key}', encode: true }
 ];
 
@@ -204,7 +205,7 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
 
     let url = option.url;
 
-    if (!siteInfo?.chat_link && option.key === 'next') {
+    if (!siteInfo?.chat_link && (option.key === 'next' || option.key === 'next-mj')) {
       showSuccess('管理员未设置聊天界面');
       return;
     }
@@ -212,9 +213,10 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
       serverAddress = encodeURIComponent(serverAddress);
     }
 
-    if (option.key === 'next') {
+    if (option.key === 'next' || option.key === 'next-mj') {
       url = siteInfo.chat_link + `/#/?settings={"key":"sk-{key}","url":"{serverAddress}"}`;
-    }
+    } 
+
 
     const key = item.key;
     const text = replacePlaceholders(url, key, serverAddress);
