@@ -169,6 +169,7 @@ func getMidjourneyTaskModel(c *gin.Context, originTask *model.Midjourney) (midjo
 	midjourneyTask.Action = originTask.Action
 	midjourneyTask.Description = originTask.Description
 	midjourneyTask.Prompt = originTask.Prompt
+	midjourneyTask.ImageSeed = originTask.ImageSeed
 	return
 }
 
