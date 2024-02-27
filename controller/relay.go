@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/middleware"
+	"one-api/model"
 	"one-api/relay/channel/midjourney"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
@@ -15,7 +17,74 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func relay(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode {
+	var err *openai.ErrorWithStatusCode
+	switch relayMode {
+	case constant.RelayModeImagesGenerations:
+		err = controller.RelayImageHelper(c, relayMode)
+	case constant.RelayModeAudioSpeech:
+		fallthrough
+	case constant.RelayModeAudioTranslation:
+		fallthrough
+	case constant.RelayModeAudioTranscription:
+		err = controller.RelayAudioHelper(c, relayMode)
+	default:
+		err = controller.RelayTextHelper(c, relayMode)
+	}
+	return err
+}
+
 func Relay(c *gin.Context) {
+	ctx := c.Request.Context()
+	relayMode := constant.Path2RelayMode(c.Request.URL.Path)
+	bizErr := relay(c, relayMode)
+	if bizErr == nil {
+		return
+	}
+	channelId := c.GetInt("channel_id")
+	lastFailedChannelId := channelId
+	channelName := c.GetString("channel_name")
+	group := c.GetString("group")
+	originalModel := c.GetString("original_model")
+	go processChannelRelayError(c, channelId, channelName, bizErr)
+	requestId := c.GetString("X-Chatapi-Request-Id")
+	retryTimes := common.RetryTimes
+	if !shouldRetry(bizErr.StatusCode) {
+		log.Println(ctx, "relay error happen, but status code is %d, won't retry in this case", bizErr.StatusCode)
+		retryTimes = 0
+	}
+	for i := retryTimes; i > 0; i-- {
+		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel)
+		if err != nil {
+			common.Errorf(ctx, "CacheGetRandomSatisfiedChannel failed: %w", err)
+			break
+		}
+		common.Infof(ctx, "using channel #%d to retry (remain times %d)", channel.Id, i)
+		if channel.Id == lastFailedChannelId {
+			continue
+		}
+		middleware.SetupContextForSelectedChannel(c, channel, originalModel)
+		bizErr = relay(c, relayMode)
+		if bizErr == nil {
+			return
+		}
+		channelId := c.GetInt("channel_id")
+		lastFailedChannelId = channelId
+		channelName := c.GetString("channel_name")
+		go processChannelRelayError(c, channelId, channelName, bizErr)
+	}
+	if bizErr != nil {
+		if bizErr.StatusCode == http.StatusTooManyRequests {
+			bizErr.Error.Message = "当前分组上游负载已饱和，请稍后再试"
+		}
+		bizErr.Error.Message = common.MessageWithRequestId(bizErr.Error.Message, requestId)
+		c.JSON(bizErr.StatusCode, gin.H{
+			"error": bizErr.Error,
+		})
+	}
+}
+
+func Relay1(c *gin.Context) {
 	relayMode := constant.Path2RelayMode(c.Request.URL.Path)
 	var err *openai.ErrorWithStatusCode
 	switch relayMode {
@@ -97,6 +166,14 @@ func RelayMidjourney(c *gin.Context) {
 
 	}
 }
+func processChannelRelayError(ctx *gin.Context, channelId int, channelName string, err *openai.ErrorWithStatusCode) {
+	common.Errorf(ctx, "relay error (channel #%d): %s", channelId, err.Message)
+	// https://platform.openai.com/docs/guides/error-codes/api-errors
+	if util.ShouldDisableChannel(&err.Error, err.StatusCode) {
+		disableChannel(channelId, channelName, err.Message)
+	}
+}
+
 func RelayNotImplemented(c *gin.Context) {
 	err := openai.Error{
 		Message: "API not implemented",
@@ -119,4 +196,19 @@ func RelayNotFound(c *gin.Context) {
 	c.JSON(http.StatusNotFound, gin.H{
 		"error": err,
 	})
+}
+func shouldRetry(statusCode int) bool {
+	if statusCode == http.StatusTooManyRequests {
+		return true
+	}
+	if statusCode/100 == 5 {
+		return true
+	}
+	if statusCode == http.StatusBadRequest {
+		return false
+	}
+	if statusCode/100 == 2 {
+		return false
+	}
+	return true
 }

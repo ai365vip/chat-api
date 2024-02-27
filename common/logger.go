@@ -99,3 +99,27 @@ func LogQuota(quota int) string {
 		return fmt.Sprintf("%d 点额度", quota)
 	}
 }
+
+func Info(ctx context.Context, msg string) {
+	logHelper(ctx, loggerINFO, msg)
+}
+
+func Warn(ctx context.Context, msg string) {
+	logHelper(ctx, loggerWarn, msg)
+}
+
+func Error(ctx context.Context, msg string) {
+	logHelper(ctx, loggerError, msg)
+}
+
+func Infof(ctx context.Context, format string, a ...any) {
+	Info(ctx, fmt.Sprintf(format, a...))
+}
+
+func Warnf(ctx context.Context, format string, a ...any) {
+	Warn(ctx, fmt.Sprintf(format, a...))
+}
+
+func Errorf(ctx context.Context, format string, a ...any) {
+	Error(ctx, fmt.Sprintf(format, a...))
+}

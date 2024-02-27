@@ -267,9 +267,7 @@ func CacheGetRandomSatisfiedChannel(group string, model string) (*Channel, error
 				return nil, errors.New("no channels available within rate limits")
 			}
 			currentPriority = nextPriority
-			log.Println("111")
 		} else if originalLength == 0 { // 若此优先级无渠道，直接寻找下一优先级
-			log.Println("222")
 			nextPriority := getNextLowerPriority(allChannels, currentPriority)
 			if nextPriority == -1 {
 				return nil, errors.New("no channels available within rate limits")

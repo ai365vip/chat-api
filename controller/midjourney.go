@@ -140,7 +140,7 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	task.Buttons = responseItem.Buttons
 	task.Properties = responseItem.Properties
 
-	if task.Progress == "100%" {
+	if task.Progress == "100%" && task.Status == "SUCCESS" {
 		imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, task.MjId)
 		isReq, err := http.NewRequest("GET", imageSeedUrl, nil)
 		if err != nil {
@@ -245,7 +245,7 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 			continue
 		}
 		// 设置超时时间
-		timeout := time.Second * 8
+		timeout := time.Second * 5
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		// 使用带有超时的 context 创建新的请求
@@ -292,10 +292,10 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 			task.Buttons = responseItem.Buttons
 			task.Properties = responseItem.Properties
 			task.ImageSeed = isResponseBody
-			if task.Progress == "100%" {
+			if task.Progress == "100%" && task.Status == "SUCCESS" {
 				// 获取ImageSeed信息
 				imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, responseItem.MjId)
-				isReq, err := http.NewRequest("GET", imageSeedUrl, nil) // 假设是GET请求，请根据实际调整
+				isReq, err := http.NewRequest("GET", imageSeedUrl, nil)
 				if err != nil {
 					common.LogError(ctx, fmt.Sprintf("Get ImageSeed error: %v", err))
 					continue

@@ -348,9 +348,14 @@ func getNextPriorityAbilities(group string, model string) ([]Ability, error) {
 
 	// 首先获取当前最高优先级
 	var maxPriority int
-	DB.Table("abilities").Select("MAX(priority) as max_priority").
+	err := DB.Table("abilities").
+		Select("COALESCE(MAX(priority), 0) as max_priority"). // 假定最低优先级为 0
 		Where(groupCol+" = ? AND model = ? AND enabled = "+trueVal, group, model).
-		Pluck("max_priority", &maxPriority)
+		Pluck("max_priority", &maxPriority).Error
+
+	if err != nil {
+		return nil, err
+	}
 
 	// 使用得到的最高优先级来查询次高优先级的渠道列表
 	// 我们从那些其 priority 小于当前最高优先级的记录中选择最大值
@@ -358,7 +363,7 @@ func getNextPriorityAbilities(group string, model string) ([]Ability, error) {
 		Where(groupCol+" = ? AND model = ? AND enabled = "+trueVal+" AND priority < ?", group, model, maxPriority)
 
 	// 根据次高优先级查询能力列表
-	err := DB.Where(groupCol+" = ? AND model = ? AND enabled = "+trueVal+" AND priority = (?)", group, model, nextMaxPrioritySubQuery).
+	err = DB.Where(groupCol+" = ? AND model = ? AND enabled = "+trueVal+" AND priority = (?)", group, model, nextMaxPrioritySubQuery).
 		Order("weight DESC").
 		Find(&abilities).Error
 

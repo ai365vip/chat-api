@@ -34,6 +34,7 @@ type Channel struct {
 	TestedTime         *int    `json:"tested_time" gorm:"bigint"`
 	ModelTest          string  `json:"model_test"`
 	RateLimited        *bool   `json:"rate_limited" gorm:"default:false"`
+	Config             string  `json:"config"`
 }
 
 func GetAllChannels(startIdx int, num int, selectAll bool, idSort bool) ([]*Channel, error) {
@@ -169,6 +170,18 @@ func (channel *Channel) GetModelHeaders() map[string]string {
 		return nil
 	}
 	return headers
+}
+
+func (channel *Channel) LoadConfig() (map[string]string, error) {
+	if channel.Config == "" {
+		return nil, nil
+	}
+	cfg := make(map[string]string)
+	err := json.Unmarshal([]byte(channel.Config), &cfg)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 func (channel *Channel) Insert() error {

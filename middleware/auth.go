@@ -150,6 +150,7 @@ func TokenAuth() func(c *gin.Context) {
 		c.Set("group", token.Group)
 		c.Set("fixed_content", token.FixedContent)
 		c.Set("model", modelRequest.Model)
+		c.Set("original_model", modelRequest.Model)
 
 		c.Set("token_unlimited_quota", token.UnlimitedQuota)
 		if !token.UnlimitedQuota {
