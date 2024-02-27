@@ -160,17 +160,23 @@ func responseGeminiChat2OpenAI(response *ChatResponse, fixedContent string) *ope
 		Choices: make([]openai.TextResponseChoice, 0, len(response.Candidates)),
 	}
 	for i, candidate := range response.Candidates {
-		modifiedText := candidate.Content.Parts[0].Text
-		// 若 fixedContent 不为空，则将其添加到 modifiedText 的尾部
-		if fixedContent != "" && len(candidate.Content.Parts) > 0 {
-			modifiedText += "\n\n" + fixedContent // 在原文本与fixedContent之间加入两个换行符作为分隔
+		if len(candidate.Content.Parts) == 0 { // 添加验证确保Parts不为空
+			continue // 或者进行适当的错误处理
 		}
-		content, _ := json.Marshal(modifiedText)
+		modifiedText := candidate.Content.Parts[0].Text
+		if fixedContent != "" {
+			modifiedText += "\n\n" + fixedContent
+		}
+		content, err := json.Marshal(modifiedText)
+		if err != nil {
+			// 处理错误，例如记录日志
+			continue // 这里简单跳过有问题的项目
+		}
 		choice := openai.TextResponseChoice{
 			Index: i,
 			Message: model.Message{
 				Role:    "assistant",
-				Content: json.RawMessage(content), // 直接使用序列化后的 modifiedText
+				Content: json.RawMessage(content),
 			},
 			FinishReason: constant.StopFinishReason,
 		}
