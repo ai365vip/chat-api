@@ -43,13 +43,21 @@ func Relay(c *gin.Context) {
 		return
 	}
 	channelId := c.GetInt("channel_id")
+
 	lastFailedChannelId := channelId
 	channelName := c.GetString("channel_name")
 	group := c.GetString("group")
 	originalModel := c.GetString("original_model")
 	go processChannelRelayError(c, channelId, channelName, bizErr)
 	requestId := c.GetString("X-Chatapi-Request-Id")
-	retryTimes := common.RetryTimes
+	retryTimes := 0
+	_, ok := c.Get("channelId")
+	if ok {
+		retryTimes = 0
+	} else {
+		retryTimes = common.RetryTimes
+	}
+
 	if !shouldRetry(bizErr.StatusCode) {
 		log.Println(ctx, "relay error happen, but status code is %d, won't retry in this case", bizErr.StatusCode)
 		retryTimes = 0

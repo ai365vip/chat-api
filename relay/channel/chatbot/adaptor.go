@@ -1,18 +1,21 @@
 package chatbot
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/relay/channel"
 	"one-api/relay/channel/ai360"
 	"one-api/relay/channel/moonshot"
+	"one-api/relay/constant"
 	"one-api/relay/model"
+	relaymodel "one-api/relay/model"
 	"one-api/relay/util"
-
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,36 +29,18 @@ func (a *Adaptor) Init(meta *util.RelayMeta) {
 }
 
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
-	if meta.ChannelType == common.ChannelTypeAzure {
-		// https://learn.microsoft.com/en-us/azure/cognitive-services/openai/chatgpt-quickstart?pivots=rest-api&tabs=command-line#rest-api
-		requestURL := strings.Split(meta.RequestURLPath, "?")[0]
-		requestURL = fmt.Sprintf("%s?api-version=%s", requestURL, meta.APIVersion)
-		task := strings.TrimPrefix(requestURL, "/v1/")
-		model_ := meta.ActualModelName
-		model_ = strings.Replace(model_, ".", "", -1)
-		// https://one-api/issues/67
-		model_ = strings.TrimSuffix(model_, "-0301")
-		model_ = strings.TrimSuffix(model_, "-0314")
-		model_ = strings.TrimSuffix(model_, "-0613")
-
-		requestURL = fmt.Sprintf("/openai/deployments/%s/%s", model_, task)
-		return util.GetFullRequestURL(meta.BaseURL, requestURL, meta.ChannelType), nil
-	}
-	return util.GetFullRequestURL(meta.BaseURL, meta.RequestURLPath, meta.ChannelType), nil
+	fullRequestURL := fmt.Sprintf("%s", meta.BaseURL)
+	return fullRequestURL, nil
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *util.RelayMeta) error {
 	channel.SetupCommonRequestHeader(c, req, meta)
-	if meta.ChannelType == common.ChannelTypeAzure {
-		req.Header.Set("api-key", meta.APIKey)
-		return nil
-	} else if meta.APIKey != "" {
+	if meta.APIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+meta.APIKey)
 		return nil
 	}
-	if meta.ChannelType == common.ChannelTypeOpenRouter {
-		req.Header.Set("X-Title", "One API")
-	}
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Proxy-Connection", "keep-alive")
 	return nil
 }
 
@@ -67,6 +52,44 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
+	var modelID struct {
+		ID string `json:"id"`
+	}
+
+	textRequest, err := getAndValidateTextRequest(c, meta.Mode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get and validate text request: %v", err)
+	}
+
+	modelID.ID = textRequest.Model
+
+	var tempRequest struct {
+		Model    interface{} `json:"model"`
+		Messages []Message   `json:"messages"`
+	}
+	tempRequest.Model = modelID
+
+	var messages []Message
+	for _, m := range textRequest.Messages {
+		var msg Message
+		msg.Role = m.Role
+		msg.Content = m.Content
+		msg.Name = m.Name
+		messages = append(messages, msg)
+	}
+
+	tempRequest.Messages = messages
+
+	tempRequest.Messages = messages
+	jsonStr, err := json.MarshalIndent(tempRequest, "", "  ")
+	if err != nil {
+		// 更改为记录错误而不是立即退出，这样做更适合Web服务
+		log.Printf("Failed to marshal textRequest: %v", err)
+		return nil, err // 返回错误，而不是崩溃
+	}
+
+	requestBody = bytes.NewBuffer(jsonStr)
+
 	return channel.DoRequestHelper(a, c, meta, requestBody)
 }
 
@@ -106,4 +129,22 @@ func (a *Adaptor) GetChannelName() string {
 	default:
 		return "openai"
 	}
+}
+func getAndValidateTextRequest(c *gin.Context, relayMode int) (*relaymodel.GeneralOpenAIRequest, error) {
+	textRequest := &relaymodel.GeneralOpenAIRequest{}
+	err := common.UnmarshalBodyReusable(c, textRequest)
+	if err != nil {
+		return nil, err
+	}
+	if relayMode == constant.RelayModeModerations && textRequest.Model == "" {
+		textRequest.Model = "text-moderation-latest"
+	}
+	if relayMode == constant.RelayModeEmbeddings && textRequest.Model == "" {
+		textRequest.Model = c.Param("model")
+	}
+	err = util.ValidateTextRequest(textRequest, relayMode)
+	if err != nil {
+		return nil, err
+	}
+	return textRequest, nil
 }
