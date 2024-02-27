@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/relay/channel"
-	"one-api/relay/channel/ai360"
-	"one-api/relay/channel/moonshot"
 	"one-api/relay/model"
 	"one-api/relay/util"
 
@@ -85,25 +83,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 }
 
 func (a *Adaptor) GetModelList() []string {
-	switch a.ChannelType {
-	case common.ChannelType360:
-		return ai360.ModelList
-	case common.ChannelTypeMoonshot:
-		return moonshot.ModelList
-	default:
-		return ModelList
-	}
+	return nil
 }
 
 func (a *Adaptor) GetChannelName() string {
-	switch a.ChannelType {
-	case common.ChannelTypeAzure:
-		return "azure"
-	case common.ChannelType360:
-		return "360"
-	case common.ChannelTypeMoonshot:
-		return "moonshot"
-	default:
-		return "openai"
-	}
+	return "openai"
 }
