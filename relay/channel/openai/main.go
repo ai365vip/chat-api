@@ -8,42 +8,13 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/relay/constant"
+	"one-api/relay/model"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-// GenerateFixedContentMessage 生成包含固定文本内容的消息
-func GenerateFixedContentMessage(fixedContent string) string {
-	// 在 fixedContent 的开始处添加换行符
-	modifiedFixedContent := "\n\n" + fixedContent
-	content := map[string]interface{}{
-		"id":      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
-		"object":  "chat.completion",
-		"created": common.GetTimestamp(), // 这里可能需要根据实际情况动态生成
-		"choices": []map[string]interface{}{
-			{
-				"index":         0,
-				"finish_reason": "stop",
-				"delta": map[string]string{
-					"content": modifiedFixedContent, // 使用修改后的 fixedContent，其中包括前置换行符
-					"role":    "",
-				},
-			},
-		},
-	}
-
-	// 将 content 转换为 JSON 字符串
-	jsonBytes, err := json.Marshal(content)
-	if err != nil {
-		common.SysError("error marshalling fixed content message: " + err.Error())
-		return ""
-	}
-
-	return "data: " + string(jsonBytes)
-}
-
-func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedContent string) (*ErrorWithStatusCode, string) {
+func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedContent string) (*model.ErrorWithStatusCode, string) {
 	responseText := ""
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -152,9 +123,10 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 	return nil, responseText
 }
 
-func Handler(c *gin.Context, resp *http.Response, promptTokens int, model string, fixedContent string) (*ErrorWithStatusCode, *Usage, string) {
+func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
 	var textResponse SlimTextResponse
 	var responseText string
+	fixedContent := c.GetString("fixed_content")
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, ""
@@ -168,7 +140,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, model string
 		return ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	if textResponse.Error.Type != "" {
-		return &ErrorWithStatusCode{
+		return &model.ErrorWithStatusCode{
 			Error:      textResponse.Error,
 			StatusCode: resp.StatusCode,
 		}, nil, ""
@@ -191,8 +163,8 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, model string
 
 	// Token 的计算使用原始响应文本而不包括 fixedContent
 	if textResponse.Usage.TotalTokens == 0 {
-		completionTokens := CountTokenText(responseText, model) // 假设 CountTokenText 可以正确计算
-		textResponse.Usage = Usage{
+		completionTokens := CountTokenText(responseText, modelName) // 假设 CountTokenText 可以正确计算
+		textResponse.Usage = model.Usage{
 			PromptTokens:     promptTokens,
 			CompletionTokens: completionTokens,
 			TotalTokens:      promptTokens + completionTokens,
@@ -216,4 +188,32 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, model string
 	}
 
 	return nil, &textResponse.Usage, responseText
+}
+func GenerateFixedContentMessage(fixedContent string) string {
+	// 在 fixedContent 的开始处添加换行符
+	modifiedFixedContent := "\n\n" + fixedContent
+	content := map[string]interface{}{
+		"id":      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
+		"object":  "chat.completion",
+		"created": common.GetTimestamp(), // 这里可能需要根据实际情况动态生成
+		"choices": []map[string]interface{}{
+			{
+				"index":         0,
+				"finish_reason": "stop",
+				"delta": map[string]string{
+					"content": modifiedFixedContent, // 使用修改后的 fixedContent，其中包括前置换行符
+					"role":    "",
+				},
+			},
+		},
+	}
+
+	// 将 content 转换为 JSON 字符串
+	jsonBytes, err := json.Marshal(content)
+	if err != nil {
+		common.SysError("error marshalling fixed content message: " + err.Error())
+		return ""
+	}
+
+	return "data: " + string(jsonBytes)
 }

@@ -8,17 +8,18 @@ import (
 	"one-api/middleware"
 	"one-api/model"
 	"one-api/relay/channel/midjourney"
-	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
 	"one-api/relay/controller"
 	"one-api/relay/util"
 	"strconv"
 
+	dbmodel "one-api/relay/model"
+
 	"github.com/gin-gonic/gin"
 )
 
-func relay(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode {
-	var err *openai.ErrorWithStatusCode
+func relay(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCode {
+	var err *dbmodel.ErrorWithStatusCode
 	switch relayMode {
 	case constant.RelayModeImagesGenerations:
 		err = controller.RelayImageHelper(c, relayMode)
@@ -29,7 +30,7 @@ func relay(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode {
 	case constant.RelayModeAudioTranscription:
 		err = controller.RelayAudioHelper(c, relayMode)
 	default:
-		err = controller.RelayTextHelper(c, relayMode)
+		err = controller.RelayTextHelper(c)
 	}
 	return err
 }
@@ -84,51 +85,52 @@ func Relay(c *gin.Context) {
 	}
 }
 
-func Relay1(c *gin.Context) {
-	relayMode := constant.Path2RelayMode(c.Request.URL.Path)
-	var err *openai.ErrorWithStatusCode
-	switch relayMode {
-	case constant.RelayModeImagesGenerations:
-		err = controller.RelayImageHelper(c, relayMode)
-	case constant.RelayModeAudioSpeech:
-		fallthrough
-	case constant.RelayModeAudioTranslation:
-		fallthrough
-	case constant.RelayModeAudioTranscription:
-		err = controller.RelayAudioHelper(c, relayMode)
-	default:
-		err = controller.RelayTextHelper(c, relayMode)
-	}
-	if err != nil {
-		requestId := c.GetString(common.RequestIdKey)
-		retryTimesStr := c.Query("retry")
-		retryTimes, _ := strconv.Atoi(retryTimesStr)
-		if retryTimesStr == "" {
-			retryTimes = common.RetryTimes
+/*
+	func Relay1(c *gin.Context) {
+		relayMode := constant.Path2RelayMode(c.Request.URL.Path)
+		var err *dbmodel.ErrorWithStatusCode
+		switch relayMode {
+		case constant.RelayModeImagesGenerations:
+			err = controller.RelayImageHelper(c, relayMode)
+		case constant.RelayModeAudioSpeech:
+			fallthrough
+		case constant.RelayModeAudioTranslation:
+			fallthrough
+		case constant.RelayModeAudioTranscription:
+			err = controller.RelayAudioHelper(c, relayMode)
+		default:
+			err = controller.RelayTextHelper(c)
 		}
-		if retryTimes > 0 {
-			c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?retry=%d", c.Request.URL.Path, retryTimes-1))
-		} else {
-			if err.StatusCode == http.StatusTooManyRequests {
-				err.Error.Message = "当前分组上游负载已饱和，请稍后再试"
+		if err != nil {
+			requestId := c.GetString(common.RequestIdKey)
+			retryTimesStr := c.Query("retry")
+			retryTimes, _ := strconv.Atoi(retryTimesStr)
+			if retryTimesStr == "" {
+				retryTimes = common.RetryTimes
 			}
-			err.Error.Message = common.MessageWithRequestId(err.Error.Message, requestId)
-			c.JSON(err.StatusCode, gin.H{
-				"error": err.Error,
-			})
-		}
-		channelId := c.GetInt("channel_id")
-		autoBan := c.GetBool("auto_ban")
-		common.LogError(c.Request.Context(), fmt.Sprintf("relay error (channel #%d): %s", channelId, err.Message))
-		// https://platform.openai.com/docs/guides/error-codes/api-errors
-		if util.ShouldDisableChannel(&err.Error, err.StatusCode) && autoBan {
+			if retryTimes > 0 {
+				c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?retry=%d", c.Request.URL.Path, retryTimes-1))
+			} else {
+				if err.StatusCode == http.StatusTooManyRequests {
+					err.Error.Message = "当前分组上游负载已饱和，请稍后再试"
+				}
+				err.Error.Message = common.MessageWithRequestId(err.Error.Message, requestId)
+				c.JSON(err.StatusCode, gin.H{
+					"error": err.Error,
+				})
+			}
 			channelId := c.GetInt("channel_id")
-			channelName := c.GetString("channel_name")
-			disableChannel(channelId, channelName, err.Message)
+			autoBan := c.GetBool("auto_ban")
+			common.LogError(c.Request.Context(), fmt.Sprintf("relay error (channel #%d): %s", channelId, err.Message))
+			// https://platform.openai.com/docs/guides/error-codes/api-errors
+			if util.ShouldDisableChannel(&err.Error, err.StatusCode) && autoBan {
+				channelId := c.GetInt("channel_id")
+				channelName := c.GetString("channel_name")
+				disableChannel(channelId, channelName, err.Message)
+			}
 		}
 	}
-}
-
+*/
 func RelayMidjourney(c *gin.Context) {
 	relayMode := constant.MidjourneyRelayMode(c.Request.URL.Path)
 
@@ -166,7 +168,7 @@ func RelayMidjourney(c *gin.Context) {
 
 	}
 }
-func processChannelRelayError(ctx *gin.Context, channelId int, channelName string, err *openai.ErrorWithStatusCode) {
+func processChannelRelayError(ctx *gin.Context, channelId int, channelName string, err *dbmodel.ErrorWithStatusCode) {
 	common.Errorf(ctx, "relay error (channel #%d): %s", channelId, err.Message)
 	// https://platform.openai.com/docs/guides/error-codes/api-errors
 	if util.ShouldDisableChannel(&err.Error, err.StatusCode) {
@@ -175,7 +177,7 @@ func processChannelRelayError(ctx *gin.Context, channelId int, channelName strin
 }
 
 func RelayNotImplemented(c *gin.Context) {
-	err := openai.Error{
+	err := dbmodel.Error{
 		Message: "API not implemented",
 		Type:    "chat_api_error",
 		Param:   "",
@@ -187,7 +189,7 @@ func RelayNotImplemented(c *gin.Context) {
 }
 
 func RelayNotFound(c *gin.Context) {
-	err := openai.Error{
+	err := dbmodel.Error{
 		Message: fmt.Sprintf("Invalid URL (%s %s)", c.Request.Method, c.Request.URL.Path),
 		Type:    "invalid_request_error",
 		Param:   "",

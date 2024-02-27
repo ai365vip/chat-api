@@ -577,7 +577,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	defer func(ctx context.Context) {
 
 		if consumeQuota && mjAction != "mj_modal" {
-			err := model.PostConsumeTokenQuota(tokenId, userQuota, quota, 0, true)
+			err := model.PostConsumeTokenQuota(tokenId, quota)
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}

@@ -59,6 +59,7 @@ var GitHubOAuthEnabled = false
 var WeChatAuthEnabled = false
 var TurnstileCheckEnabled = false
 var RegisterEnabled = true
+var ApproximateTokenEnabled = false
 
 var EmailDomainRestrictionEnabled = false
 var EmailDomainWhitelist = []string{
@@ -102,6 +103,7 @@ var QuotaForInviter = 0
 var QuotaForInvitee = 0
 var ChannelDisableThreshold = 5.0
 var AutomaticDisableChannelEnabled = false
+var AutomaticEnableChannelEnabled = false
 var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
 
@@ -213,6 +215,7 @@ const (
 	ChannelTypeGemini         = 24
 	ChannelTypeChatBot        = 25
 	ChannelTypeLobeChat       = 26
+	ChannelTypeMoonshot       = 27
 )
 
 var ChannelBaseURLs = []string{
@@ -240,9 +243,10 @@ var ChannelBaseURLs = []string{
 	"https://api.aiproxy.io",            // 21
 	"https://fastgpt.run/api/openapi",   // 22
 	"https://hunyuan.cloud.tencent.com", //23
-	"",                                  //24
-	"",                                  //25
-	"",                                  //26
+	"https://generativelanguage.googleapis.com", //24
+	"", //25
+	"", //26
+	"https://api.moonshot.cn",
 }
 
 const (

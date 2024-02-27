@@ -8,9 +8,14 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"one-api/common"
 	"one-api/model"
-	"one-api/relay/channel/openai"
+	"one-api/relay/constant"
+	"one-api/relay/helper"
+	dbmodel "one-api/relay/model"
+	relaymodel "one-api/relay/model"
 	"one-api/relay/util"
 	"strconv"
 	"sync"
@@ -27,8 +32,8 @@ type BotResponse struct {
 	Usage   BotUsage      `json:"usage"`
 	Model   string        `json:"model"`
 	// added Error field here
-	Error        openai.Error `json:"error"`
-	FinishReason interface{}  `json:"finish_reason,omitempty"`
+	Error        dbmodel.Error `json:"error"`
+	FinishReason interface{}   `json:"finish_reason,omitempty"`
 }
 
 type BotUsage struct {
@@ -49,176 +54,61 @@ func calculateCompletionTokens(messagesMap []map[string]string) int {
 func calculateTotalTokens(promptTokens int, completionTokens int) int {
 	return promptTokens + completionTokens
 }
-func testChannel(channel *model.Channel, request openai.ChatRequest, gptVersion string) (err error, openaiErr *openai.Error) {
-	type RequestType struct {
-		Model     string
-		Messages  []map[string]string
-		MaxTokens int
+func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr *relaymodel.Error) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = &http.Request{
+		Method: "POST",
+		URL:    &url.URL{Path: "/v1/chat/completions"},
+		Body:   nil,
+		Header: make(http.Header),
 	}
-
-	type RequestTypeChatBot struct {
-		Model    json.RawMessage     `json:"model"`
-		Messages []map[string]string `json:"messages"`
+	c.Request.Header.Set("Authorization", "Bearer "+channel.Key)
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Set("channel", channel.Type)
+	c.Set("base_url", channel.GetBaseURL())
+	meta := util.GetRelayMeta(c)
+	apiType := constant.ChannelType2APIType(channel.Type)
+	adaptor := helper.GetAdaptor(apiType)
+	if adaptor == nil {
+		return fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), nil
 	}
-
-	switch channel.Type {
-	case common.ChannelTypePaLM:
-		fallthrough
-	case common.ChannelTypeAnthropic:
-		fallthrough
-	case common.ChannelTypeBaidu:
-		fallthrough
-	case common.ChannelTypeZhipu:
-		fallthrough
-	case common.ChannelTypeAli:
-		fallthrough
-	case common.ChannelType360:
-		fallthrough
-	case common.ChannelTypeGemini:
-		fallthrough
-	case common.ChannelTypeXunfei:
-		return errors.New("该渠道类型当前版本不支持测试，请手动测试"), nil
-	case common.ChannelTypeAzure:
-		request.Model = "gpt-35-turbo"
-		defer func() {
-			if err != nil {
-				err = errors.New("请确保已在 Azure 上创建了 gpt-35-turbo 模型，并且 apiVersion 已正确填写！")
-			}
-		}()
-	default:
-		if gptVersion != "" {
-			request.Model = gptVersion
-		} else {
-			request.Model = "gpt-3.5-turbo"
-		}
-
-	}
-
-	var jsonData []byte
-
-	requestURL := common.ChannelBaseURLs[channel.Type]
-	if channel.Type == common.ChannelTypeAzure {
-		requestURL = fmt.Sprintf("%s/openai/deployments/%s/chat/completions?api-version=2023-03-15-preview", channel.GetBaseURL(), request.Model)
-		jsonData, err = json.Marshal(request)
-	} else if channel.Type == common.ChannelTypeChatBot {
-		requestURL = channel.GetBaseURL()
-		messagesMap := make([]map[string]string, len(request.Messages))
-		for i, msg := range request.Messages {
-			messagesMap[i] = map[string]string{
-				"role":    msg.Role,
-				"content": string(msg.Content),
-			}
-
-		}
-
-		requestChatbot := RequestTypeChatBot{
-			Model:    json.RawMessage(`{"id":"gpt-4"}`),
-			Messages: messagesMap,
-		}
-		jsonData, err = json.Marshal(requestChatbot)
-
-	} else if channel.Type == common.ChannelTypeLobeChat {
-		requestURL = fmt.Sprintf("%s/api/openai/chat", channel.GetBaseURL())
-		jsonData, err = json.Marshal(request)
-
-	} else {
-		if baseURL := channel.GetBaseURL(); len(baseURL) > 0 {
-			requestURL = baseURL
-		}
-
-		requestURL = util.GetFullRequestURL(requestURL, "/v1/chat/completions", channel.Type)
-		jsonData, err = json.Marshal(request)
-	}
-
+	adaptor.Init(meta)
+	request := buildTestRequest(modelTest)
+	request.Model = modelTest
+	meta.OriginModelName, meta.ActualModelName = modelTest, modelTest
+	convertedRequest, err := adaptor.ConvertRequest(c, constant.RelayModeChatCompletions, request)
 	if err != nil {
 		return err, nil
 	}
-	// 打印JSON数据
-	//fmt.Println(bytes.NewBuffer(jsonData))
-
-	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
-	messagesMap := make([]map[string]string, len(request.Messages))
+	jsonData, err := json.Marshal(convertedRequest)
 	if err != nil {
 		return err, nil
 	}
-	if channel.Key != "" {
-		if channel.Type == common.ChannelTypeAzure {
-			req.Header.Set("api-key", channel.Key)
-		} else {
-			req.Header.Set("Authorization", "Bearer "+channel.Key)
-		}
-	}
-
-	completionTokens := calculateCompletionTokens(messagesMap)
-
-	// 获取model的自定义头部信息
-	modelHeaders := channel.GetModelHeaders()
-
-	// 遍历modelHeaders，并将这些头部信息添加到请求中
-	for headerKey, headerValue := range modelHeaders {
-		req.Header.Set(headerKey, headerValue)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := util.HTTPClient.Do(req)
-
+	requestBody := bytes.NewBuffer(jsonData)
+	c.Request.Body = io.NopCloser(requestBody)
+	resp, err := adaptor.DoRequest(c, meta, requestBody)
 	if err != nil {
 		return err, nil
 	}
-
-	var response BotResponse
-
-	if channel.Type == common.ChannelTypeChatBot {
-		if resp.StatusCode == http.StatusOK {
-			responseBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return err, nil
-			}
-			bodyStr := string(responseBody)
-			//fmt.Println(bodyStr)
-
-			promptTokens := calculatePromptTokens(bodyStr) // 根据bodyStr的值计算
-			completionTokens += promptTokens
-			totalTokens := calculateTotalTokens(promptTokens, completionTokens) // 这两个值相加
-
-			response.Usage = BotUsage{
-				PromptTokens:     promptTokens,
-				CompletionTokens: completionTokens,
-				TotalTokens:      totalTokens,
-			}
-		}
-	} else if channel.Type == common.ChannelTypeLobeChat {
-		if resp.StatusCode == http.StatusOK {
-			responseBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return err, nil
-			}
-			bodyStr := string(responseBody)
-			fmt.Println(bodyStr)
-
-			promptTokens := calculatePromptTokens(bodyStr) // 根据bodyStr的值计算
-			completionTokens += promptTokens
-			totalTokens := calculateTotalTokens(promptTokens, completionTokens) // 这两个值相加
-
-			response.Usage = BotUsage{
-				PromptTokens:     promptTokens,
-				CompletionTokens: completionTokens,
-				TotalTokens:      totalTokens,
-			}
-		}
-	} else {
-		err = json.NewDecoder(resp.Body).Decode(&response)
-		if err != nil {
-			return err, nil
-		}
-	}
-	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
-		if response.Usage.CompletionTokens == 0 {
-			return errors.New(fmt.Sprintf("type %s, code %v, message %s", response.Error.Type, response.Error.Code, response.Error.Message)), &response.Error
-		}
+		err := util.RelayErrorHandler(resp)
+		return fmt.Errorf("status code %d: %s", resp.StatusCode, err.Error.Message), &err.Error
 	}
-
+	_, usage, respErr := adaptor.DoResponse(c, resp, meta)
+	if respErr != nil {
+		return fmt.Errorf("%s", respErr.Error.Message), &respErr.Error
+	}
+	if usage == nil {
+		return errors.New("usage is nil"), nil
+	}
+	result := w.Result()
+	// print result.Body
+	respBody, err := io.ReadAll(result.Body)
+	if err != nil {
+		return err, nil
+	}
+	common.SysLog(fmt.Sprintf("testing channel #%d, response: \n%s", channel.Id, string(respBody)))
 	return nil, nil
 }
 
@@ -232,13 +122,14 @@ func randomID() string {
 	return "chatcmpl-" + string(b)
 }
 
-func buildTestRequest() *openai.ChatRequest {
-	testRequest := &openai.ChatRequest{
-		Model:     "", // this will be set later
+func buildTestRequest(modelTest string) *relaymodel.GeneralOpenAIRequest {
+	testRequest := &relaymodel.GeneralOpenAIRequest{
 		MaxTokens: 1,
+		Stream:    false,
+		Model:     modelTest,
 	}
 	content, _ := json.Marshal("hi")
-	testMessage := openai.Message{
+	testMessage := relaymodel.Message{
 		Role:    "user",
 		Content: content,
 	}
@@ -264,7 +155,6 @@ func TestChannel(c *gin.Context) {
 		return
 	}
 	modelTest := ""
-	testRequest := buildTestRequest()
 	testModel := c.Query("model")
 	if testModel != "" {
 		modelTest = testModel
@@ -276,7 +166,7 @@ func TestChannel(c *gin.Context) {
 	}
 
 	tik := time.Now()
-	err, _ = testChannel(channel, *testRequest, modelTest)
+	err, _ = testChannel(channel, modelTest)
 	tok := time.Now()
 	milliseconds := tok.Sub(tik).Milliseconds()
 	go channel.UpdateResponseTime(milliseconds)
@@ -310,7 +200,6 @@ func disableChannel(channelId int, channelName string, reason string) {
 		}
 		notificationEmail = common.RootUserEmail
 	}
-
 	// 更新通道状态
 	model.UpdateChannelStatusById(channelId, common.ChannelStatusAutoDisabled)
 
@@ -357,7 +246,7 @@ func testAllChannels(notify bool) error {
 	if err != nil {
 		return err
 	}
-	testRequest := buildTestRequest()
+
 	var disableThreshold = int64(common.ChannelDisableThreshold * 1000)
 	if disableThreshold == 0 {
 		disableThreshold = 10000000 // a impossible value
@@ -373,7 +262,7 @@ func testAllChannels(notify bool) error {
 			if modelTest == "" {
 				modelTest = "gpt-3.5-turbo"
 			}
-			err, openaiErr := testChannel(channel, *testRequest, modelTest)
+			err, openaiErr := testChannel(channel, modelTest)
 			tok := time.Now()
 			milliseconds := tok.Sub(tik).Milliseconds()
 
@@ -478,7 +367,6 @@ func AutomaticallyTestDisabledChannels(frequency int) {
 }
 
 func testChannelAndHandleResult(channel *model.Channel, testInterval time.Duration, lastTestTime time.Time) {
-	testRequest := buildTestRequest()
 
 	// 检查modelTest字段是否为空，如果为空则设置为默认值"gpt-3.5-turbo"
 	modelTest := channel.ModelTest
@@ -487,7 +375,7 @@ func testChannelAndHandleResult(channel *model.Channel, testInterval time.Durati
 	}
 
 	// 调用testChannel函数使用确定好的模型进行测试
-	err, _ := testChannel(channel, *testRequest, modelTest)
+	err, _ := testChannel(channel, modelTest)
 
 	if err == nil && channel.Status == common.ChannelStatusAutoDisabled {
 		// 测试通过，更新通道状态为启用

@@ -8,7 +8,10 @@ import (
 	"log"
 	"math"
 	"one-api/common"
+	"one-api/common/logger"
+	"one-api/relay/model"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/pkoukk/tiktoken-go"
 )
@@ -18,17 +21,17 @@ var tokenEncoderMap = map[string]*tiktoken.Tiktoken{}
 var defaultTokenEncoder *tiktoken.Tiktoken
 
 func InitTokenEncoders() {
-	common.SysLog("initializing token encoders")
+	logger.SysLog("initializing token encoders")
 	gpt35TokenEncoder, err := tiktoken.EncodingForModel("gpt-3.5-turbo")
 	if err != nil {
-		common.FatalLog(fmt.Sprintf("failed to get gpt-3.5-turbo token encoder: %s", err.Error()))
+		logger.FatalLog(fmt.Sprintf("failed to get gpt-3.5-turbo token encoder: %s", err.Error()))
 	}
 	defaultTokenEncoder = gpt35TokenEncoder
 	gpt4TokenEncoder, err := tiktoken.EncodingForModel("gpt-4")
 	if err != nil {
-		common.FatalLog(fmt.Sprintf("failed to get gpt-4 token encoder: %s", err.Error()))
+		logger.FatalLog(fmt.Sprintf("failed to get gpt-4 token encoder: %s", err.Error()))
 	}
-	for model, _ := range common.ModelRatio {
+	for model := range common.ModelRatio {
 		if strings.HasPrefix(model, "gpt-3.5") {
 			tokenEncoderMap[model] = gpt35TokenEncoder
 		} else if strings.HasPrefix(model, "gpt-4") {
@@ -37,7 +40,7 @@ func InitTokenEncoders() {
 			tokenEncoderMap[model] = nil
 		}
 	}
-	//common.SysLog("token encoders initialized")
+	logger.SysLog("token encoders initialized")
 }
 
 func getTokenEncoder(model string) *tiktoken.Tiktoken {
@@ -48,7 +51,7 @@ func getTokenEncoder(model string) *tiktoken.Tiktoken {
 	if ok {
 		tokenEncoder, err := tiktoken.EncodingForModel(model)
 		if err != nil {
-			common.SysError(fmt.Sprintf("failed to get token encoder for model %s: %s, using encoder for gpt-3.5-turbo", model, err.Error()))
+			logger.SysError(fmt.Sprintf("failed to get token encoder for model %s: %s, using encoder for gpt-3.5-turbo", model, err.Error()))
 			tokenEncoder = defaultTokenEncoder
 		}
 		tokenEncoderMap[model] = tokenEncoder
@@ -58,8 +61,91 @@ func getTokenEncoder(model string) *tiktoken.Tiktoken {
 }
 
 func getTokenNum(tokenEncoder *tiktoken.Tiktoken, text string) int {
+	if common.ApproximateTokenEnabled {
+		return int(float64(len(text)) * 0.38)
+	}
 	return len(tokenEncoder.Encode(text, nil, nil))
 }
+
+func CountAudioToken(text string, model string) int {
+	if strings.HasPrefix(model, "tts") {
+		return utf8.RuneCountInString(text)
+	} else {
+		return CountTokenText(text, model)
+	}
+}
+
+func CountTokenMessages(messages []model.Message, model string) int {
+	//recover when panic
+	tokenEncoder := getTokenEncoder(model)
+	var tokensPerMessage int
+	var tokensPerName int
+	if model == "gpt-3.5-turbo-0301" {
+		tokensPerMessage = 4
+		tokensPerName = -1 // If there's a name, the role is omitted
+	} else {
+		tokensPerMessage = 3
+		tokensPerName = 1
+	}
+	tokenNum := 0
+	for _, message := range messages {
+		tokenNum += tokensPerMessage
+		tokenNum += getTokenNum(tokenEncoder, message.Role)
+		var arrayContent []MediaMessage
+		if err := json.Unmarshal(message.Content, &arrayContent); err != nil {
+
+			var stringContent string
+			if err := json.Unmarshal(message.Content, &stringContent); err != nil {
+				return 0
+			} else {
+				tokenNum += getTokenNum(tokenEncoder, stringContent)
+				if message.Name != nil {
+					tokenNum += tokensPerName
+					tokenNum += getTokenNum(tokenEncoder, *message.Name)
+				}
+			}
+		} else {
+			for _, m := range arrayContent {
+				if m.Type == "image_url" {
+					var imageTokenNum int
+					if str, ok := m.ImageUrl.(string); ok {
+						imageTokenNum, err = getImageToken(&MessageImageUrl{Url: str, Detail: "auto"})
+					} else {
+						imageUrlMap := m.ImageUrl.(map[string]interface{})
+						detail, ok := imageUrlMap["detail"]
+						if ok {
+							imageUrlMap["detail"] = detail.(string)
+						} else {
+							imageUrlMap["detail"] = "auto"
+						}
+						imageUrl := MessageImageUrl{
+							Url:    imageUrlMap["url"].(string),
+							Detail: imageUrlMap["detail"].(string),
+						}
+						imageTokenNum, err = getImageToken(&imageUrl)
+					}
+					if err != nil {
+						return 0
+					}
+
+					tokenNum += imageTokenNum
+					//log.Printf("image token num: %d", imageTokenNum)
+				} else {
+					tokenNum += getTokenNum(tokenEncoder, m.Text)
+				}
+			}
+		}
+	}
+	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>
+	return tokenNum
+}
+
+const (
+	lowDetailCost         = 85
+	highDetailCostPerTile = 170
+	additionalCost        = 85
+)
+
 func getImageToken(imageUrl *MessageImageUrl) (int, error) {
 	if imageUrl.Detail == "low" {
 		return 85, nil
@@ -113,7 +199,7 @@ func getImageToken(imageUrl *MessageImageUrl) (int, error) {
 	//log.Printf("tiles: %d", tiles)
 	return tiles*170 + 85, nil
 }
-func CountTokenMessages(messages []Message, model string) int {
+func countImageTokens(messages []Message, model string) int {
 	//recover when panic
 	tokenEncoder := getTokenEncoder(model)
 	// Reference:
@@ -182,12 +268,6 @@ func CountTokenMessages(messages []Message, model string) int {
 	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>
 	return tokenNum
 }
-
-const (
-	lowDetailCost         = 85
-	highDetailCostPerTile = 170
-	additionalCost        = 85
-)
 
 func CountTokenInput(input any, model string) int {
 	switch v := input.(type) {

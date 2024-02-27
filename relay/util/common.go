@@ -6,15 +6,14 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
-	"one-api/relay/channel/openai"
+	relaymodel "one-api/relay/model"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 )
 
-func ShouldDisableChannel(err *openai.Error, statusCode int) bool {
+func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
 	if !common.AutomaticDisableChannelEnabled {
 		return false
 	}
@@ -34,12 +33,34 @@ func ShouldDisableChannel(err *openai.Error, statusCode int) bool {
 	return false
 }
 
+func ShouldEnableChannel(err error, openAIErr *relaymodel.Error) bool {
+	if !common.AutomaticEnableChannelEnabled {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+	if openAIErr != nil {
+		return false
+	}
+	return true
+}
+
+func GetAPIVersion(c *gin.Context) string {
+	query := c.Request.URL.Query()
+	apiVersion := query.Get("api-version")
+	if apiVersion == "" {
+		apiVersion = c.GetString("api_version")
+	}
+	return apiVersion
+}
+
 type GeneralErrorResponse struct {
-	Error    openai.Error `json:"error"`
-	Message  string       `json:"message"`
-	Msg      string       `json:"msg"`
-	Err      string       `json:"err"`
-	ErrorMsg string       `json:"error_msg"`
+	Error    relaymodel.Error `json:"error"`
+	Message  string           `json:"message"`
+	Msg      string           `json:"msg"`
+	Err      string           `json:"err"`
+	ErrorMsg string           `json:"error_msg"`
 	Header   struct {
 		Message string `json:"message"`
 	} `json:"header"`
@@ -75,10 +96,10 @@ func (e GeneralErrorResponse) ToMessage() string {
 	return ""
 }
 
-func RelayErrorHandler(resp *http.Response) (ErrorWithStatusCode *openai.ErrorWithStatusCode) {
-	ErrorWithStatusCode = &openai.ErrorWithStatusCode{
+func RelayErrorHandler(resp *http.Response) (ErrorWithStatusCode *relaymodel.ErrorWithStatusCode) {
+	ErrorWithStatusCode = &relaymodel.ErrorWithStatusCode{
 		StatusCode: resp.StatusCode,
-		Error: openai.Error{
+		Error: relaymodel.Error{
 			Message: "",
 			Type:    "upstream_error",
 			Code:    "bad_response_status_code",
@@ -124,27 +145,11 @@ func GetFullRequestURL(baseURL string, requestURL string, channelType int) strin
 	return fullRequestURL
 }
 
-func GetAPIVersion(c *gin.Context) string {
-	query := c.Request.URL.Query()
-	apiVersion := query.Get("api-version")
-	if apiVersion == "" {
-		apiVersion = c.GetString("api_version")
-	}
-	return apiVersion
-}
-func CountAudioToken(text string, model string) int {
-	if strings.HasPrefix(model, "tts") {
-		return utf8.RuneCountInString(text)
-	} else {
-		return openai.CountTokenText(text, model)
-	}
-}
-
 func GetAzureAPIVersion(c *gin.Context) string {
 	query := c.Request.URL.Query()
 	apiVersion := query.Get("api-version")
 	if apiVersion == "" {
-		apiVersion = c.GetString("api_version")
+		apiVersion = c.GetString(common.ConfigKeyAPIVersion)
 	}
 	return apiVersion
 }

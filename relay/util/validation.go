@@ -3,11 +3,11 @@ package util
 import (
 	"errors"
 	"math"
-	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
+	"one-api/relay/model"
 )
 
-func ValidateTextRequest(textRequest *openai.GeneralOpenAIRequest, relayMode int) error {
+func ValidateTextRequest(textRequest *model.GeneralOpenAIRequest, relayMode int) error {
 	if textRequest.MaxTokens < 0 || textRequest.MaxTokens > math.MaxInt32/2 {
 		return errors.New("max_tokens is invalid")
 	}

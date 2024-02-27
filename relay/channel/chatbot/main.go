@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/relay/channel/openai"
+	dbdodel "one-api/relay/model"
 	"strings"
 	"time"
 
@@ -51,9 +52,10 @@ func streamResponseChatbot2OpenAI(ChatbotResponse string, model string) *ChatCom
 	return &response
 }
 
-func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model string, fixedContent string) (*openai.ErrorWithStatusCode, string) {
+func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*dbdodel.ErrorWithStatusCode, string) {
 	responseText := ""
 	scanner := bufio.NewScanner(resp.Body)
+	fixedContent := c.GetString("fixed_content")
 	modifiedFixedContent := "\n\n" + fixedContent
 	var contentBuilder strings.Builder
 	scanner.Split(bufio.ScanRunes) // 使用ScanRunes使得每个字符作为一个单独token处理
@@ -135,8 +137,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 
 }
 
-func BotHandler(c *gin.Context, resp *http.Response, promptTokens int, model string, fixedContent string) (*openai.ErrorWithStatusCode, *openai.Usage, string) {
+func BotHandler(c *gin.Context, resp *http.Response, promptTokens int, model string) (*dbdodel.ErrorWithStatusCode, *dbdodel.Usage, string) {
 	var textResponse openai.SlimTextResponse
+	fixedContent := c.GetString("fixed_content")
 	responseBody, err := io.ReadAll(resp.Body)
 
 	if err != nil {
@@ -148,13 +151,13 @@ func BotHandler(c *gin.Context, resp *http.Response, promptTokens int, model str
 	}
 
 	if textResponse.Error.Type != "" {
-		return &openai.ErrorWithStatusCode{
+		return &dbdodel.ErrorWithStatusCode{
 			Error:      textResponse.Error,
 			StatusCode: resp.StatusCode,
 		}, nil, ""
 	}
 	// Reset response body
-	usage := &openai.Usage{
+	usage := &dbdodel.Usage{
 		PromptTokens:     promptTokens,
 		CompletionTokens: calculatePromptTokens(string(responseBody)),
 		TotalTokens:      promptTokens + calculatePromptTokens(string(responseBody)),
@@ -213,7 +216,7 @@ func BotHandler(c *gin.Context, resp *http.Response, promptTokens int, model str
 	if textResponse.Usage.TotalTokens == 0 {
 		completionTokens := openai.CountTokenText(string(responseBody), model)
 
-		textResponse.Usage = openai.Usage{
+		textResponse.Usage = dbdodel.Usage{
 			PromptTokens:     promptTokens,
 			CompletionTokens: completionTokens,
 			TotalTokens:      promptTokens + completionTokens,

@@ -1,4 +1,4 @@
-package google
+package gemini
 
 import (
 	"bufio"
@@ -7,9 +7,12 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
+	"one-api/common/helper"
 	"one-api/common/image"
+	"one-api/common/logger"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
+	"one-api/relay/model"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -18,14 +21,14 @@ import (
 // https://ai.google.dev/docs/gemini_api_overview?hl=zh-cn
 
 const (
-	GeminiVisionMaxImageNum = 16
+	VisionMaxImageNum = 16
 )
 
 // Setting safety to the lowest possible values since Gemini is already powerless enough
-func ConvertGeminiRequest(textRequest openai.GeneralOpenAIRequest) *GeminiChatRequest {
-	geminiRequest := GeminiChatRequest{
-		Contents: make([]GeminiChatContent, 0, len(textRequest.Messages)),
-		SafetySettings: []GeminiChatSafetySettings{
+func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
+	geminiRequest := ChatRequest{
+		Contents: make([]ChatContent, 0, len(textRequest.Messages)),
+		SafetySettings: []ChatSafetySettings{
 			{
 				Category:  "HARM_CATEGORY_HARASSMENT",
 				Threshold: common.GeminiSafetySetting,
@@ -43,14 +46,14 @@ func ConvertGeminiRequest(textRequest openai.GeneralOpenAIRequest) *GeminiChatRe
 				Threshold: common.GeminiSafetySetting,
 			},
 		},
-		GenerationConfig: GeminiChatGenerationConfig{
+		GenerationConfig: ChatGenerationConfig{
 			Temperature:     textRequest.Temperature,
 			TopP:            textRequest.TopP,
 			MaxOutputTokens: textRequest.MaxTokens,
 		},
 	}
 	if textRequest.Functions != nil {
-		geminiRequest.Tools = []GeminiChatTools{
+		geminiRequest.Tools = []ChatTools{
 			{
 				FunctionDeclarations: textRequest.Functions,
 			},
@@ -58,30 +61,30 @@ func ConvertGeminiRequest(textRequest openai.GeneralOpenAIRequest) *GeminiChatRe
 	}
 	shouldAddDummyModelMessage := false
 	for _, message := range textRequest.Messages {
-		content := GeminiChatContent{
+		content := ChatContent{
 			Role: message.Role,
-			Parts: []GeminiPart{
+			Parts: []Part{
 				{
 					Text: message.StringContent(),
 				},
 			},
 		}
 		openaiContent := message.ParseContent()
-		var parts []GeminiPart
+		var parts []Part
 		imageNum := 0
 		for _, part := range openaiContent {
-			if part.Type == openai.ContentTypeText {
-				parts = append(parts, GeminiPart{
+			if part.Type == model.ContentTypeText {
+				parts = append(parts, Part{
 					Text: part.Text,
 				})
-			} else if part.Type == openai.ContentTypeImageURL {
+			} else if part.Type == model.ContentTypeImageURL {
 				imageNum += 1
-				if imageNum > GeminiVisionMaxImageNum {
+				if imageNum > VisionMaxImageNum {
 					continue
 				}
 				mimeType, data, _ := image.GetImageFromUrl(part.ImageUrl.(openai.MessageImageUrl).Url)
-				parts = append(parts, GeminiPart{
-					InlineData: &GeminiInlineData{
+				parts = append(parts, Part{
+					InlineData: &InlineData{
 						MimeType: mimeType,
 						Data:     data,
 					},
@@ -103,9 +106,9 @@ func ConvertGeminiRequest(textRequest openai.GeneralOpenAIRequest) *GeminiChatRe
 
 		// If a system message is the last message, we need to add a dummy model message to make gemini happy
 		if shouldAddDummyModelMessage {
-			geminiRequest.Contents = append(geminiRequest.Contents, GeminiChatContent{
+			geminiRequest.Contents = append(geminiRequest.Contents, ChatContent{
 				Role: "model",
-				Parts: []GeminiPart{
+				Parts: []Part{
 					{
 						Text: "Okay",
 					},
@@ -118,12 +121,12 @@ func ConvertGeminiRequest(textRequest openai.GeneralOpenAIRequest) *GeminiChatRe
 	return &geminiRequest
 }
 
-type GeminiChatResponse struct {
-	Candidates     []GeminiChatCandidate    `json:"candidates"`
-	PromptFeedback GeminiChatPromptFeedback `json:"promptFeedback"`
+type ChatResponse struct {
+	Candidates     []ChatCandidate    `json:"candidates"`
+	PromptFeedback ChatPromptFeedback `json:"promptFeedback"`
 }
 
-func (g *GeminiChatResponse) GetResponseText() string {
+func (g *ChatResponse) GetResponseText() string {
 	if g == nil {
 		return ""
 	}
@@ -133,23 +136,23 @@ func (g *GeminiChatResponse) GetResponseText() string {
 	return ""
 }
 
-type GeminiChatCandidate struct {
-	Content       GeminiChatContent        `json:"content"`
-	FinishReason  string                   `json:"finishReason"`
-	Index         int64                    `json:"index"`
-	SafetyRatings []GeminiChatSafetyRating `json:"safetyRatings"`
+type ChatCandidate struct {
+	Content       ChatContent        `json:"content"`
+	FinishReason  string             `json:"finishReason"`
+	Index         int64              `json:"index"`
+	SafetyRatings []ChatSafetyRating `json:"safetyRatings"`
 }
 
-type GeminiChatSafetyRating struct {
+type ChatSafetyRating struct {
 	Category    string `json:"category"`
 	Probability string `json:"probability"`
 }
 
-type GeminiChatPromptFeedback struct {
-	SafetyRatings []GeminiChatSafetyRating `json:"safetyRatings"`
+type ChatPromptFeedback struct {
+	SafetyRatings []ChatSafetyRating `json:"safetyRatings"`
 }
 
-func responseGeminiChat2OpenAI(response *GeminiChatResponse, fixedContent string) *openai.TextResponse {
+func responseGeminiChat2OpenAI(response *ChatResponse, fixedContent string) *openai.TextResponse {
 	fullTextResponse := openai.TextResponse{
 		Id:      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
 		Object:  "chat.completion",
@@ -165,7 +168,7 @@ func responseGeminiChat2OpenAI(response *GeminiChatResponse, fixedContent string
 		content, _ := json.Marshal(modifiedText)
 		choice := openai.TextResponseChoice{
 			Index: i,
-			Message: openai.Message{
+			Message: model.Message{
 				Role:    "assistant",
 				Content: json.RawMessage(content), // 直接使用序列化后的 modifiedText
 			},
@@ -176,7 +179,7 @@ func responseGeminiChat2OpenAI(response *GeminiChatResponse, fixedContent string
 	return &fullTextResponse
 }
 
-func streamResponseGeminiChat2OpenAI(geminiResponse *GeminiChatResponse) *openai.ChatCompletionsStreamResponse {
+func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatCompletionsStreamResponse {
 	var choice openai.ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = geminiResponse.GetResponseText()
 	choice.FinishReason = &constant.StopFinishReason
@@ -187,11 +190,10 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *GeminiChatResponse) *openai
 	return &response
 }
 
-func StreamHandler(c *gin.Context, resp *http.Response, fixedContent string) (*openai.ErrorWithStatusCode, string) {
+func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, string) {
 	responseText := ""
 	dataChan := make(chan string)
 	stopChan := make(chan bool)
-	modifiedFixedContent := "\n\n" + fixedContent
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
@@ -233,44 +235,20 @@ func StreamHandler(c *gin.Context, resp *http.Response, fixedContent string) (*o
 			var choice openai.ChatCompletionsStreamResponseChoice
 			choice.Delta.Content = dummy.Content
 			response := openai.ChatCompletionsStreamResponse{
-				Id:      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
+				Id:      fmt.Sprintf("chatcmpl-%s", helper.GetUUID()),
 				Object:  "chat.completion.chunk",
-				Created: common.GetTimestamp(),
+				Created: helper.GetTimestamp(),
 				Model:   "gemini-pro",
 				Choices: []openai.ChatCompletionsStreamResponseChoice{choice},
 			}
 			jsonResponse, err := json.Marshal(response)
 			if err != nil {
-				common.SysError("error marshalling stream response: " + err.Error())
+				logger.SysError("error marshalling stream response: " + err.Error())
 				return true
 			}
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonResponse)})
-
 			return true
 		case <-stopChan:
-			jsonResponse0 := map[string]interface{}{
-				"id":      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
-				"object":  "chat.completion.chunk",
-				"created": common.GetTimestamp(),
-				"model":   "gemini-pro",
-				"choices": []map[string]interface{}{
-					{
-						"index": 0,
-						"delta": map[string]string{
-							"content": modifiedFixedContent,
-							"role":    "",
-						},
-						"finish_reason": "stop",
-					},
-				},
-			}
-			jsonData, err := json.Marshal(jsonResponse0)
-			if err != nil {
-				// 处理错误，比如打印错误信息并返回
-				fmt.Println("error marshalling response: ", err)
-				return false
-			}
-			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonData)})
 			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 			return false
 		}
@@ -282,35 +260,38 @@ func StreamHandler(c *gin.Context, resp *http.Response, fixedContent string) (*o
 	return nil, responseText
 }
 
-func GeminiHandler(c *gin.Context, resp *http.Response, promptTokens int, model string, fixedContent string) (*openai.ErrorWithStatusCode, *openai.Usage, string) {
+func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
 	responseBody, err := io.ReadAll(resp.Body)
+	fixedContent := c.GetString("fixed_content")
+	responseText := ""
 	if err != nil {
-		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, ""
+		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, responseText
 	}
 	err = resp.Body.Close()
 	if err != nil {
-		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, responseText
 	}
-	var geminiResponse GeminiChatResponse
+	var geminiResponse ChatResponse
 	err = json.Unmarshal(responseBody, &geminiResponse)
 	if err != nil {
-		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil, ""
+		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil, responseText
 	}
 	if len(geminiResponse.Candidates) == 0 {
-		return &openai.ErrorWithStatusCode{
-			Error: openai.Error{
+		return &model.ErrorWithStatusCode{
+			Error: model.Error{
 				Message: "No candidates returned",
 				Type:    "server_error",
 				Param:   "",
 				Code:    500,
 			},
 			StatusCode: resp.StatusCode,
-		}, nil, ""
+		}, nil, responseText
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse, fixedContent)
-	fullTextResponse.Model = model
-	completionTokens := openai.CountTokenText(geminiResponse.GetResponseText(), model)
-	usage := openai.Usage{
+	fullTextResponse.Model = modelName
+	completionTokens := openai.CountTokenText(geminiResponse.GetResponseText(), modelName)
+	responseText = geminiResponse.GetResponseText()
+	usage := model.Usage{
 		PromptTokens:     promptTokens,
 		CompletionTokens: completionTokens,
 		TotalTokens:      promptTokens + completionTokens,
@@ -318,10 +299,10 @@ func GeminiHandler(c *gin.Context, resp *http.Response, promptTokens int, model 
 	fullTextResponse.Usage = usage
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
-		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil, ""
+		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil, responseText
 	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = c.Writer.Write(jsonResponse)
-	return nil, &usage, geminiResponse.GetResponseText()
+	return nil, &usage, responseText
 }

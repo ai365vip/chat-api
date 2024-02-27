@@ -12,6 +12,7 @@ import (
 	"one-api/common"
 	"one-api/model"
 	"one-api/relay/channel/openai"
+	dbmodel "one-api/relay/model"
 	"one-api/relay/util"
 	"strconv"
 	"strings"
@@ -30,7 +31,7 @@ func isWithinRange(element string, value int) bool {
 	return value >= min && value <= max
 }
 
-func RelayImageHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode {
+func RelayImageHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCode {
 	imageModel := "dall-e-2"
 	imageSize := "1024x1024"
 
@@ -227,7 +228,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 		if resp.StatusCode != http.StatusOK {
 			return
 		}
-		err := model.PostConsumeTokenQuota(tokenId, userQuota, quota, 0, true)
+		err := model.PostConsumeTokenQuota(tokenId, quota)
 		if err != nil {
 			common.SysError("error consuming token remain quota: " + err.Error())
 		}

@@ -13,6 +13,7 @@ import (
 	"one-api/model"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
+	dbmodel "one-api/relay/model"
 	"one-api/relay/util"
 	"strconv"
 	"strings"
@@ -30,7 +31,7 @@ var availableVoices = []string{
 	"shimmer",
 }
 
-func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode {
+func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCode {
 
 	tokenId := c.GetInt("token_id")
 	channelType := c.GetInt("channel")
@@ -124,7 +125,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 		preConsumedQuota = 0
 	}
 	if preConsumedQuota > 0 {
-		userQuota, err = model.PreConsumeTokenQuota(tokenId, preConsumedQuota)
+		err = model.PreConsumeTokenQuota(tokenId, preConsumedQuota)
 		if err != nil {
 			return openai.ErrorWrapper(err, "pre_consume_token_quota_failed", http.StatusForbidden)
 		}
@@ -200,10 +201,10 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 			quota := 0
 			var promptTokens = 0
 			if strings.HasPrefix(audioRequest.Model, "tts-1") {
-				quota = util.CountAudioToken(audioRequest.Input, audioRequest.Model)
+				quota = openai.CountAudioToken(audioRequest.Input, audioRequest.Model)
 				promptTokens = quota
 			} else {
-				quota = util.CountAudioToken(audioResponse.Text, audioRequest.Model)
+				quota = openai.CountAudioToken(audioResponse.Text, audioRequest.Model)
 				promptTokens = quota
 			}
 			modelRatioString := ""
@@ -241,8 +242,8 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 			if ratio != 0 && quota <= 0 {
 				quota = 1
 			}
-			quotaDelta := quota - preConsumedQuota
-			err = model.PostConsumeTokenQuota(tokenId, userQuota, quotaDelta, preConsumedQuota, true)
+
+			err = model.PostConsumeTokenQuota(tokenId, quota)
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}

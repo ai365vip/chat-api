@@ -6,7 +6,7 @@ import (
 
 const (
 	APITypeOpenAI = iota
-	APITypeClaude
+	APITypeAnthropic
 	APITypePaLM
 	APITypeBaidu
 	APITypeZhipu
@@ -17,13 +17,15 @@ const (
 	APITypeGemini
 	APITypeChatBot
 	APITypeLobeChat
+
+	APITypeDummy // this one is only for count, do not add any channel after this
 )
 
 func ChannelType2APIType(channelType int) int {
 	apiType := APITypeOpenAI
 	switch channelType {
 	case common.ChannelTypeAnthropic:
-		apiType = APITypeClaude
+		apiType = APITypeAnthropic
 	case common.ChannelTypeBaidu:
 		apiType = APITypeBaidu
 	case common.ChannelTypePaLM:

@@ -8,8 +8,10 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
+	"one-api/common/logger"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
+	"one-api/relay/model"
 	"one-api/relay/util"
 	"strings"
 	"sync"
@@ -20,49 +22,49 @@ import (
 
 // https://cloud.baidu.com/doc/WENXINWORKSHOP/s/flfmc9do2
 
-type BaiduTokenResponse struct {
+type TokenResponse struct {
 	ExpiresIn   int    `json:"expires_in"`
 	AccessToken string `json:"access_token"`
 }
 
-type BaiduMessage struct {
+type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-type BaiduChatRequest struct {
-	Messages []BaiduMessage `json:"messages"`
-	Stream   bool           `json:"stream"`
-	UserId   string         `json:"user_id,omitempty"`
+type ChatRequest struct {
+	Messages []Message `json:"messages"`
+	Stream   bool      `json:"stream"`
+	UserId   string    `json:"user_id,omitempty"`
 }
 
-type BaiduError struct {
+type Error struct {
 	ErrorCode int    `json:"error_code"`
 	ErrorMsg  string `json:"error_msg"`
 }
 
 var baiduTokenStore sync.Map
 
-func ConvertRequest(request openai.GeneralOpenAIRequest) *BaiduChatRequest {
-	messages := make([]BaiduMessage, 0, len(request.Messages))
+func ConvertRequest(request model.GeneralOpenAIRequest) *ChatRequest {
+	messages := make([]Message, 0, len(request.Messages))
 	for _, message := range request.Messages {
 		if message.Role == "system" {
-			messages = append(messages, BaiduMessage{
+			messages = append(messages, Message{
 				Role:    "user",
 				Content: message.StringContent(),
 			})
-			messages = append(messages, BaiduMessage{
+			messages = append(messages, Message{
 				Role:    "assistant",
 				Content: "Okay",
 			})
 		} else {
-			messages = append(messages, BaiduMessage{
+			messages = append(messages, Message{
 				Role:    message.Role,
 				Content: message.StringContent(),
 			})
 		}
 	}
-	return &BaiduChatRequest{
+	return &ChatRequest{
 		Messages: messages,
 		Stream:   request.Stream,
 	}
@@ -72,7 +74,7 @@ func responseBaidu2OpenAI(response *ChatResponse) *openai.TextResponse {
 	content, _ := json.Marshal(response.Result)
 	choice := openai.TextResponseChoice{
 		Index: 0,
-		Message: openai.Message{
+		Message: model.Message{
 			Role:    "assistant",
 			Content: content,
 		},
@@ -104,7 +106,7 @@ func streamResponseBaidu2OpenAI(baiduResponse *ChatStreamResponse) *openai.ChatC
 	return &response
 }
 
-func ConvertEmbeddingRequest(request openai.GeneralOpenAIRequest) *EmbeddingRequest {
+func ConvertEmbeddingRequest(request model.GeneralOpenAIRequest) *EmbeddingRequest {
 	return &EmbeddingRequest{
 		Input: request.ParseInput(),
 	}
@@ -127,8 +129,8 @@ func embeddingResponseBaidu2OpenAI(response *EmbeddingResponse) *openai.Embeddin
 	return &openAIEmbeddingResponse
 }
 
-func StreamHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatusCode, *openai.Usage) {
-	var usage openai.Usage
+func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage) {
+	var usage model.Usage
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
@@ -162,7 +164,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatus
 			var baiduResponse ChatStreamResponse
 			err := json.Unmarshal([]byte(data), &baiduResponse)
 			if err != nil {
-				common.SysError("error unmarshalling stream response: " + err.Error())
+				logger.SysError("error unmarshalling stream response: " + err.Error())
 				return true
 			}
 			if baiduResponse.Usage.TotalTokens != 0 {
@@ -173,7 +175,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatus
 			response := streamResponseBaidu2OpenAI(&baiduResponse)
 			jsonResponse, err := json.Marshal(response)
 			if err != nil {
-				common.SysError("error marshalling stream response: " + err.Error())
+				logger.SysError("error marshalling stream response: " + err.Error())
 				return true
 			}
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonResponse)})
@@ -190,7 +192,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatus
 	return nil, &usage
 }
 
-func Handler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatusCode, *openai.Usage) {
+func Handler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage) {
 	var baiduResponse ChatResponse
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -205,8 +207,8 @@ func Handler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatusCode, 
 		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
 	if baiduResponse.ErrorMsg != "" {
-		return &openai.ErrorWithStatusCode{
-			Error: openai.Error{
+		return &model.ErrorWithStatusCode{
+			Error: model.Error{
 				Message: baiduResponse.ErrorMsg,
 				Type:    "baidu_error",
 				Param:   "",
@@ -227,7 +229,7 @@ func Handler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatusCode, 
 	return nil, &fullTextResponse.Usage
 }
 
-func EmbeddingHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithStatusCode, *openai.Usage) {
+func EmbeddingHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage) {
 	var baiduResponse EmbeddingResponse
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -242,8 +244,8 @@ func EmbeddingHandler(c *gin.Context, resp *http.Response) (*openai.ErrorWithSta
 		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
 	if baiduResponse.ErrorMsg != "" {
-		return &openai.ErrorWithStatusCode{
-			Error: openai.Error{
+		return &model.ErrorWithStatusCode{
+			Error: model.Error{
 				Message: baiduResponse.ErrorMsg,
 				Type:    "baidu_error",
 				Param:   "",
