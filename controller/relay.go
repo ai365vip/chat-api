@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"one-api/common"
@@ -58,8 +60,8 @@ func Relay(c *gin.Context) {
 		retryTimes = common.RetryTimes
 	}
 
-	if !shouldRetry(bizErr.StatusCode) {
-		log.Println(ctx, "relay error happen, but status code is %d, won't retry in this case", bizErr.StatusCode)
+	if !shouldRetry(c, bizErr.StatusCode) {
+		common.Errorf(ctx, "relay error happen, status code is %d, won't retry in this case", bizErr.StatusCode)
 		retryTimes = 0
 	}
 	for i := retryTimes; i > 0; i-- {
@@ -73,6 +75,9 @@ func Relay(c *gin.Context) {
 			continue
 		}
 		middleware.SetupContextForSelectedChannel(c, channel, originalModel)
+		requestBody, err := common.GetRequestBody(c)
+
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 		bizErr = relay(c, relayMode)
 		if bizErr == nil {
 			return
@@ -207,7 +212,13 @@ func RelayNotFound(c *gin.Context) {
 		"error": err,
 	})
 }
-func shouldRetry(statusCode int) bool {
+func shouldRetry(c *gin.Context, statusCode int) bool {
+
+	if _, ok := c.Get("specific_channel_id"); ok {
+
+		return false
+
+	}
 	if statusCode == http.StatusTooManyRequests {
 		return true
 	}
