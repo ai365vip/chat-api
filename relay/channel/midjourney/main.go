@@ -704,7 +704,6 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	}
 
 	if midjResponse.Code == 22 { //22-排队中，说明任务已存在
-		//修改返回值
 		newBody := strings.Replace(string(responseBody), `"code":22`, `"code":1`, -1)
 		responseBody = []byte(newBody)
 	}
