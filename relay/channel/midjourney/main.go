@@ -528,6 +528,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		quota = 0
 	}
 	if consumeQuota && userQuota-quota < 0 {
+		consumeQuota = false
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "quota_not_enough",
@@ -536,6 +537,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	req, err := http.NewRequest(c.Request.Method, fullRequestURL, requestBody)
 	if err != nil {
+		consumeQuota = false
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "create_request_failed",
@@ -552,6 +554,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	resp, err := util.HTTPClient.Do(req)
 	if err != nil {
+		consumeQuota = false
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "do_request_failed",
@@ -560,6 +563,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	err = req.Body.Close()
 	if err != nil {
+		consumeQuota = false
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "close_request_body_failed",
@@ -567,6 +571,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	}
 	err = c.Request.Body.Close()
 	if err != nil {
+		consumeQuota = false
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "close_request_body_failed",
@@ -599,6 +604,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	responseBody, err := io.ReadAll(resp.Body)
 
 	if err != nil {
+		consumeQuota = false
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "read_response_body_failed",
@@ -614,12 +620,14 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	err = json.Unmarshal(responseBody, &midjResponse)
 	if resp.StatusCode != 200 {
+		consumeQuota = false
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "fail_to_fetch_midjourney status_code: " + strconv.Itoa(resp.StatusCode),
 		}
 	}
 	if err != nil {
+		consumeQuota = false
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "unmarshal_response_body_failed",
@@ -687,6 +695,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	if mjAction != "mj_modal" {
 		err = midjourneyTask.Insert()
 		if err != nil {
+			consumeQuota = false
 			return &MidjourneyResponse{
 				Code:        4,
 				Description: "insert_midjourney_task_failed",
@@ -709,6 +718,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
+		consumeQuota = false
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "copy_response_body_failed",
@@ -716,6 +726,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	}
 	err = resp.Body.Close()
 	if err != nil {
+		consumeQuota = false
 		return &MidjourneyResponse{
 			Code:        4,
 			Description: "close_response_body_failed",
