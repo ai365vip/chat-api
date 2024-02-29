@@ -1,4 +1,5 @@
-import { Typography, Stack, OutlinedInput, InputAdornment, Button, InputLabel, FormControl,Modal,Box,useMediaQuery   } from '@mui/material';
+import { Typography, Stack, OutlinedInput, InputAdornment, Button, InputLabel,
+   FormControl,Modal,Box,useMediaQuery ,Select ,MenuItem } from '@mui/material';
 import { IconWallet } from '@tabler/icons-react';
 import { useTheme } from '@mui/material/styles';
 import SubCard from 'ui-component/cards/SubCard';
@@ -24,7 +25,8 @@ const TopupCard = () => {
   const isMobile = useMediaQuery('(max-width:600px)');
   const [topUpDays, setTopUpDays] = useState(''); // 默认充值天数
   const [paymentMultiplier, setPaymentMultiplier] = useState({}); 
-
+  const [topupAmountEnabled, setTopupAmountEnabled] = useState('');
+  const [topupAmount, setTopupAmount] = useState({}); 
 
   const topUp = async () => {
     if (redemptionCode === '') {
@@ -82,6 +84,7 @@ const TopupCard = () => {
       data.forEach((item) => {
         newOptions[item.key] = item.value;
       });
+      
       setOptions(newOptions); // 设置所有选项的状态
     } else {
       showError(message);
@@ -102,6 +105,13 @@ const TopupCard = () => {
     }
     if (options.YzfZfb) { 
       setZfb(options.YzfZfb);
+    }
+    if (options.TopupAmountEnabled) { 
+      setTopupAmountEnabled(options.TopupAmountEnabled);
+    }
+    if (options.TopupAmount) {
+      const parsedAmount = JSON.parse(options.TopupAmount);
+      setTopupAmount(parsedAmount);
     }
     if (options.TopupRatio) {
       const parsedRatio = JSON.parse(options.TopupRatio);
@@ -222,6 +232,94 @@ const TopupCard = () => {
     } 
   };
 
+  const renderTopUpAmountInput = () => {
+    // 定义输入组件
+    const amountInputComponent = topupAmountEnabled === "true" ? (
+      <Select
+        labelId="top-up-amount-select-label"
+        id="top-up-amount-select"
+        value={topUpCount}
+        label="充值金额"
+        onChange={(e) => {
+          setTopUpCount(e.target.value);
+          getAmount(e.target.value);
+        }}
+        fullWidth
+      >
+        {Object.entries(topupAmount).map(([key, value]) => {
+          // 转换折扣值为百分比形式，然后转为整数
+          const discountRate = Math.round(value * 100);
+          let discountText = `${discountRate}%折`; // 默认显示为百分比折扣
+          
+          if (discountRate === 100) {
+            // 如果折扣率为100%，则表示无折扣
+            discountText = '无折扣';
+          } else if (discountRate > 0) {
+            // 如果折扣率为其他值，显示为X折
+            discountText = `${discountRate / 10}折`;
+          }
+          
+          return (
+            <MenuItem key={key} value={key}>{key} - {discountText}</MenuItem>
+          );
+        })}
+
+      </Select>
+    ) : (
+      <OutlinedInput
+        id="amount"
+        label="充值金额"
+        type="text"
+        value={topUpCount}
+        onChange={(e) => {
+          const newValue = e.target.value;
+          if (/^\d*$/.test(newValue)) {
+            setTopUpCount(newValue);
+            getAmount(newValue);
+          }
+        }}
+        startAdornment={<InputAdornment position="start">$</InputAdornment>}
+        fullWidth
+      />
+    );
+  
+    // 定义支付按钮
+    const paymentButtons = (
+      <>
+        {zfb === 'true' && (
+          <Button variant="contained" onClick={() => preTopUp('zfb')} sx={{ ml: 1 }}>
+            支付宝
+          </Button>
+        )}
+        {wx === 'true' && (
+          <Button variant="contained" onClick={() => preTopUp('wx')} sx={{ ml: 1 }}>
+            微信
+          </Button>
+        )}
+      </>
+    );
+  
+    // 根据当前设备调整布局
+    return (
+      <FormControl fullWidth variant="outlined" sx={{ mt: 2, mb: 1 }}>
+        <InputLabel htmlFor="amount">充值金额</InputLabel>
+        <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center' }}>
+          <Box sx={{ flexGrow: 1 }}>
+            {amountInputComponent}
+          </Box>
+          {!isMobile && paymentButtons}
+        </Box>
+        {isMobile && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            {paymentButtons}
+          </Box>
+        )}
+      </FormControl>
+    );
+  };
+  
+
+
   // 在组件的顶部添加style定义（如果您有单独的样式文件，请将它们放在那里）
   const optionButtonStyle = {
     my: 1, // margin top & bottom
@@ -282,28 +380,39 @@ const TopupCard = () => {
         }}
       >
         <SubCard sx={{ marginTop: '40px' }}>
-        <FormControl fullWidth variant="outlined">
-          <InputLabel htmlFor="key">兑换码</InputLabel>
-          <OutlinedInput
-            id="key"
-            label="兑换码"
-            type="text"
-            value={redemptionCode}
-            onChange={(e) => {
-              setRedemptionCode(e.target.value);
+        <FormControl fullWidth variant="outlined" sx={{ mt: 2, mb: 1 }}>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              flexDirection: isMobile ? 'column' : 'row', 
+              alignItems: 'center',
+              gap: isMobile ? 2 : 1, // 在移动设备上增加垂直间距，在桌面上增加水平间距
             }}
-            name="key"
-            placeholder="请输入兑换码"
-            endAdornment={
-              <InputAdornment position="end">
-                <Button variant="contained" onClick={topUp} disabled={isSubmitting}>
-                  {isSubmitting ? '兑换中...' : '兑换'}
-                </Button>
-              </InputAdornment>
-            }
-            aria-describedby="helper-text-channel-quota-label"
-          />
+          >
+            <OutlinedInput
+              id="key"
+              label="兑换码"
+              type="text"
+              value={redemptionCode}
+              onChange={(e) => {
+                setRedemptionCode(e.target.value);
+              }}
+              name="key"
+              placeholder="请输入兑换码"
+              aria-describedby="helper-text-channel-quota-label"
+              sx={{ flex: 1, width: 'auto' }} // 确保输入框在行中占据可用空间
+            />
+            <Button 
+              variant="contained" 
+              onClick={topUp} 
+              disabled={isSubmitting}
+
+            >
+              {isSubmitting ? '兑换中...' : '兑换'}
+            </Button>
+          </Box>
         </FormControl>
+
 
         {topUpLink && (
           <Stack justifyContent="center" alignItems={'center'} spacing={3} paddingTop={'20px'}>
@@ -318,66 +427,8 @@ const TopupCard = () => {
         </SubCard>
        
         <SubCard sx={{ marginTop: '40px' }}>
-          <Typography variant="h3" color={theme.palette.grey[700]} sx={{ marginBottom: '20px' }}>
-            在线充值
-          </Typography>
-
-          <FormControl fullWidth variant="outlined" sx={{ mt: 2, mb: 1 }}>
-            <InputLabel htmlFor="amount">充值金额</InputLabel>
-            <OutlinedInput
-              id="amount"
-              label="充值金额"
-              type="text"
-              value={topUpCount} 
-              onChange={(e) => {
-                const newValue = e.target.value;
-                if (/^\d*$/.test(newValue)) {
-                  setTopUpCount(newValue);
-                  getAmount(newValue); 
-                }
-              }}
-              startAdornment={<InputAdornment position="start">$</InputAdornment>}
-              // 根据isMobile状态，决定endAdornment的内容
-              endAdornment={!isMobile ? (
-                  <InputAdornment position="end">
-                    {zfb === 'true' && (
-                      <Button variant="contained" onClick={() => preTopUp('zfb')} sx={{ mr: 1 }}>
-                        支付宝
-                      </Button>
-                    )}
-                    {wx === 'true' && (
-                      <Button variant="contained" onClick={() => preTopUp('wx')}>
-                        微信
-                      </Button>
-                    )}
-                  </InputAdornment>
-                ) : null}
-            />
-          </FormControl>
-          
-          {isMobile && (
-            <Stack direction="row" spacing={1} sx={{ mt: 1, justifyContent: 'center' }}> 
-              {zfb === 'true' && (
-                <Button
-                  variant="contained"
-                  onClick={() => preTopUp('zfb')}
-                  sx={{ minWidth: 'auto', width: 'auto', flexGrow: 0, paddingX: 2 }}
-                >
-                  支付宝
-                </Button>
-              )}
-              {wx === 'true' && (
-                <Button
-                  variant="contained"
-                  onClick={() => preTopUp('wx')}
-                  sx={{ minWidth: 'auto', width: 'auto', flexGrow: 0, paddingX: 2 }}
-                >
-                  微信
-                </Button>
-              )}
-            </Stack>
-            )
-          }
+        {renderTopUpAmountInput()} {/* 正确的函数调用方式 */}
+         
         </SubCard>
           <Modal open={open} onClose={() => setOpen(false)}>
             {renderModalContent()}

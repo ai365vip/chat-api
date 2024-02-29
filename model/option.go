@@ -38,6 +38,8 @@ func InitOptionMap() {
 	common.OptionMap["DisplayInCurrencyEnabled"] = strconv.FormatBool(common.DisplayInCurrencyEnabled)
 	common.OptionMap["DisplayTokenStatEnabled"] = strconv.FormatBool(common.DisplayTokenStatEnabled)
 	common.OptionMap["DrawingEnabled"] = strconv.FormatBool(common.DrawingEnabled)
+	common.OptionMap["TopupRatioEnabled"] = strconv.FormatBool(common.TopupRatioEnabled)
+	common.OptionMap["TopupAmountEnabled"] = strconv.FormatBool(common.TopupAmountEnabled)
 	common.OptionMap["DataExportEnabled"] = strconv.FormatBool(common.DataExportEnabled)
 	common.OptionMap["ChannelDisableThreshold"] = strconv.FormatFloat(common.ChannelDisableThreshold, 'f', -1, 64)
 	common.OptionMap["EmailDomainRestrictionEnabled"] = strconv.FormatBool(common.EmailDomainRestrictionEnabled)
@@ -61,6 +63,7 @@ func InitOptionMap() {
 	common.OptionMap["Price"] = strconv.FormatFloat(common.Price, 'f', -1, 64)
 	common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
 	common.OptionMap["TopupRatio"] = common.TopupRatioJSONString()
+	common.OptionMap["TopupAmount"] = common.TopupAmountJSONString()
 	common.OptionMap["GitHubClientId"] = ""
 	common.OptionMap["GitHubClientSecret"] = ""
 	common.OptionMap["WeChatServerAddress"] = ""
@@ -201,6 +204,10 @@ func updateOptionMap(key string, value string) (err error) {
 			common.DrawingEnabled = boolValue
 		case "DataExportEnabled":
 			common.DataExportEnabled = boolValue
+		case "TopupRatioEnabled":
+			common.TopupRatioEnabled = boolValue
+		case "TopupAmountEnabled":
+			common.TopupAmountEnabled = boolValue
 		}
 	}
 	switch key {
@@ -233,6 +240,8 @@ func updateOptionMap(key string, value string) (err error) {
 		err = common.UpdateTopupGroupRatioByJSONString(value)
 	case "TopupRatio":
 		err = common.UpdateTopupRatioByJSONString(value)
+	case "TopupAmount":
+		err = common.UpdateAmountRatioByJSONString(value)
 	case "GitHubClientId":
 		common.GitHubClientId = value
 	case "GitHubClientSecret":

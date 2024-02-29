@@ -19,12 +19,14 @@ type EpayRequest struct {
 	PaymentMethod string `json:"payment_method"`
 	TopUpCode     string `json:"top_up_code"`
 	TopupRatio    string `json:"topup_ratio"`
+	TopupAmount   string `json:"topup_amount"`
 }
 
 type AmountRequest struct {
-	Amount     int    `json:"amount"`
-	TopUpCode  string `json:"top_up_code"`
-	TopupRatio string `json:"topup_ratio"`
+	Amount      int    `json:"amount"`
+	TopUpCode   string `json:"top_up_code"`
+	TopupRatio  string `json:"topup_ratio"`
+	TopupAmount string `json:"topup_amount"`
 }
 
 func GetEpayClient() *epay.Client {
@@ -41,17 +43,18 @@ func GetEpayClient() *epay.Client {
 	return withUrl
 }
 
-func GetAmount(count float64, topupratio float64, user model.User) float64 {
+func GetAmount(count float64, topupratio float64, topupamount float64, user model.User) float64 {
 	topupGroupRatio := common.GetTopupGroupRatio(user.Group)
 	if topupGroupRatio == 0 {
 		topupGroupRatio = 1
 	}
-	amount := count * topupratio * topupGroupRatio
+	amount := count * topupratio * topupGroupRatio * topupamount
 	return amount
 }
 
 func RequestEpay(c *gin.Context) {
 	var req EpayRequest
+	TopupAmountEnabled, _ := strconv.ParseBool(common.OptionMap["TopupAmountEnabled"])
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		c.JSON(200, gin.H{"message": err.Error(), "data": 10})
@@ -62,9 +65,13 @@ func RequestEpay(c *gin.Context) {
 		return
 	}
 	topupratio := common.GetTopupRatio(req.TopupRatio)
+	topupamount := 1.0
+	if TopupAmountEnabled {
+		topupamount = common.GetTopupAmount(strconv.Itoa(req.Amount))
+	}
 	id := c.GetInt("id")
 	user, _ := model.GetUserById(id, false)
-	amount := GetAmount(float64(req.Amount), topupratio, *user)
+	amount := GetAmount(float64(req.Amount), topupratio, topupamount, *user)
 
 	var payType epay.PurchaseType
 	if req.PaymentMethod == "zfb" {
@@ -259,7 +266,7 @@ func notifyWxPusherForFail() {
 
 func RequestAmount(c *gin.Context) {
 	var req AmountRequest
-
+	TopupAmountEnabled, _ := strconv.ParseBool(common.OptionMap["TopupAmountEnabled"])
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		c.JSON(200, gin.H{"message": "error", "data": "参数错误"})
@@ -270,8 +277,13 @@ func RequestAmount(c *gin.Context) {
 		return
 	}
 	topupratio := common.GetTopupRatio(req.TopupRatio)
+	topupamount := 1.0
+	if TopupAmountEnabled {
+		topupamount = common.GetTopupAmount(strconv.Itoa(req.Amount))
+	}
+
 	id := c.GetInt("id")
 	user, _ := model.GetUserById(id, false)
-	payMoney := GetAmount(float64(req.Amount), topupratio, *user)
+	payMoney := GetAmount(float64(req.Amount), topupratio, topupamount, *user)
 	c.JSON(200, gin.H{"message": "success", "data": strconv.FormatFloat(payMoney, 'f', 2, 64)})
 }

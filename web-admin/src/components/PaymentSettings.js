@@ -2,6 +2,12 @@ import React, {useEffect, useState} from 'react';
 
 import {API, removeTrailingSlash, showError, verifyJSON} from '../helpers';
 import { Button,Form,  Typography, Divider, Toast, Spin, Layout,TextArea,Input,Checkbox } from '@douyinfe/semi-ui';
+
+const MODEL_MAPPING_EXAMPLE = {
+    "1": 1,
+    "30": 0.9,
+    "100": 0.8,
+};
 const PaymentSetting = () => {
 
     let [inputs, setInputs] = useState({
@@ -11,7 +17,10 @@ const PaymentSetting = () => {
         RedempTionCount: 30,
         TopUpLink:'',
         TopupGroupRatio: '',
+        TopupRatioEnabled: '',
+        TopupAmountEnabled: '',
         TopupRatio: '',
+        TopupAmount: '',
         PayAddress: '',
         YzfZfb: '',
         YzfWx: '',
@@ -87,7 +96,7 @@ const PaymentSetting = () => {
     };
 
     const submitGroupRatio = async () => {
-
+        await updateOption('TopupAmountEnabled', inputs.TopupAmountEnabled);
         if (originInputs['TopupGroupRatio'] !== inputs.TopupGroupRatio) {
             if (!verifyJSON(inputs.TopupGroupRatio)) {
                 showError('充值分组倍率不是合法的 JSON 字符串');
@@ -101,6 +110,13 @@ const PaymentSetting = () => {
                 return;
             }
             await updateOption('TopupRatio', inputs.TopupRatio);
+        }
+        if (originInputs['TopupAmount'] !== inputs.TopupAmount) {
+            if (!verifyJSON(inputs.TopupAmount)) {
+                showError('充值倍率不是合法的 JSON 字符串');
+                return;
+            }
+            await updateOption('TopupAmount', inputs.TopupAmount);
         }
     };
 
@@ -183,13 +199,21 @@ const PaymentSetting = () => {
                     </Form>
                     <Divider style={{ marginTop: '20px', marginBottom: '10px'  }}/>
                     <Form >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <Typography.Text>充值数量折扣</Typography.Text>
+                                <Checkbox
+                                    checked={inputs.TopupAmountEnabled === 'true'}
+                                    name='TopupAmountEnabled'
+                                    onChange={(e) => handleCheckboxChange('TopupAmountEnabled', e.target.checked)}
+                                />
+                            </div>
                     <div style={{ width: '60%',display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                         <div style={{  width: '40%', marginRight: '5%' }}>
                             <div style={{ marginTop: '10px' }}>
-                                <Typography.Text strong>充值天数倍率（-1为无期限）</Typography.Text>
+                                <Typography.Text strong>充值天数汇率（-1为无期限）</Typography.Text>
                             </div>
                             <TextArea
-                                placeholder='充值天数倍率'
+                                placeholder='充值天数汇率'
                                 value={inputs.TopupRatio}
                                 onChange={(value) => handleInputChange('TopupRatio', value)}
                                 autosize={{ minRows: 6 }}
@@ -205,6 +229,18 @@ const PaymentSetting = () => {
                                 placeholder='充值分组倍率'
                                 value={inputs.TopupGroupRatio}
                                 onChange={(value) => handleInputChange('TopupGroupRatio', value)}
+                                autosize={{ minRows: 6 }}
+                                style={{ maxHeight: '200px', overflowY: 'auto' }} 
+                                />
+                        </div>
+                        <div style={{  width: '40%', marginRight: '5%' }}>
+                            <div style={{ marginTop: '10px' }}>
+                                <Typography.Text strong>充值数量折扣</Typography.Text>
+                            </div>
+                            <TextArea
+                                placeholder={`${JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2)}`}
+                                value={inputs.TopupAmount}
+                                onChange={(value) => handleInputChange('TopupAmount', value)}
                                 autosize={{ minRows: 6 }}
                                 style={{ maxHeight: '200px', overflowY: 'auto' }} 
                                 />
