@@ -17,7 +17,7 @@ const (
 	APITypeGemini
 	APITypeChatBot
 	APITypeLobeChat
-
+	APITypeZhipu_v4
 	APITypeDummy // this one is only for count, do not add any channel after this
 )
 
@@ -32,6 +32,8 @@ func ChannelType2APIType(channelType int) int {
 		apiType = APITypePaLM
 	case common.ChannelTypeZhipu:
 		apiType = APITypeZhipu
+	case common.ChannelTypeZhipu_v4:
+		apiType = APITypeZhipu_v4
 	case common.ChannelTypeAli:
 		apiType = APITypeAli
 	case common.ChannelTypeXunfei:

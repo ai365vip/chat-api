@@ -15,32 +15,32 @@ import (
 // 1 === ￥0.014 / 1k tokens
 var ModelRatio = map[string]float64{
 	"gpt-4-gizmo-*":             15,
-	"gpt-4-all":                 15,
 	"gpt-4":                     15,
 	"gpt-4-0314":                15,
 	"gpt-4-0613":                15,
 	"gpt-4-32k":                 30,
 	"gpt-4-32k-0314":            30,
 	"gpt-4-32k-0613":            30,
-	"gpt-4-1106-preview":        5, // $0.01 / 1K tokens
-	"gpt-4-0125-preview":        5, // $0.01 / 1K tokens
-	"gpt-4-turbo-preview":       5,
-	"gpt-4-vision":              5,
+	"gpt-4-1106-preview":        5,    // $0.01 / 1K tokens
+	"gpt-4-0125-preview":        5,    // $0.01 / 1K tokens
+	"gpt-4-turbo-preview":       5,    // $0.01 / 1K tokens
 	"gpt-4-vision-preview":      5,    // $0.01 / 1K tokens
 	"gpt-4-1106-vision-preview": 5,    // $0.01 / 1K tokens
 	"gpt-3.5-turbo":             0.75, // $0.0015 / 1K tokens
+	"gpt-3.5-turbo-0301":        0.75,
 	"gpt-3.5-turbo-0613":        0.75,
-	"gpt-3.5-turbo-0125":        0.25,
 	"gpt-3.5-turbo-16k":         1.5, // $0.003 / 1K tokens
 	"gpt-3.5-turbo-16k-0613":    1.5,
 	"gpt-3.5-turbo-instruct":    0.75, // $0.0015 / 1K tokens
 	"gpt-3.5-turbo-1106":        0.5,  // $0.001 / 1K tokens
-	"babbage-002":               0.2,  // $0.0004 / 1K tokens
-	"davinci-002":               1,    // $0.002 / 1K tokens
+	"gpt-3.5-turbo-0125":        0.25,
+	"babbage-002":               0.2, // $0.0004 / 1K tokens
+	"davinci-002":               1,   // $0.002 / 1K tokens
 	"text-ada-001":              0.2,
 	"text-babbage-001":          0.25,
 	"text-curie-001":            1,
 	"text-davinci-002":          10,
+	"text-davinci-003":          10,
 	"text-davinci-edit-001":     10,
 	"code-davinci-edit-001":     10,
 	"whisper-1":                 15,  // $0.006 / minute -> $0.006 / 150 words -> $0.006 / 200 tokens -> $0.03 / 1k tokens
@@ -51,11 +51,10 @@ var ModelRatio = map[string]float64{
 	"davinci":                   10,
 	"curie":                     10,
 	"babbage":                   10,
-	"ada":                       0.25,
-	"ada v2":                    0.25,
-	"text-embedding-ada-002":    0.05,
+	"ada":                       10,
 	"text-embedding-3-small":    0.01,
-	"text-embedding-3-large":    0.06,
+	"text-embedding-3-large":    0.065,
+	"text-embedding-ada-002":    0.05,
 	"text-search-ada-doc-001":   10,
 	"text-moderation-stable":    0.1,
 	"text-moderation-latest":    0.1,
@@ -74,6 +73,9 @@ var ModelRatio = map[string]float64{
 	"chatglm_pro":               0.7143, // ￥0.01 / 1k tokens
 	"chatglm_std":               0.3572, // ￥0.005 / 1k tokens
 	"chatglm_lite":              0.1429, // ￥0.002 / 1k tokens
+	"glm-4":                     7.143,  // ￥0.1 / 1k tokens
+	"glm-4v":                    7.143,  // ￥0.1 / 1k tokens
+	"glm-3-turbo":               0.3572,
 	"qwen-turbo":                0.8572, // ￥0.012 / 1k tokens
 	"qwen-plus":                 10,     // ￥0.14 / 1k tokens
 	"text-embedding-v1":         0.05,   // ￥0.0007 / 1k tokens

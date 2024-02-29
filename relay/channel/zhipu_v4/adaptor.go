@@ -1,11 +1,10 @@
-package lobechat
+package zhipu_v4
 
 import (
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"one-api/common"
 	"one-api/relay/channel"
 	"one-api/relay/model"
 	"one-api/relay/util"
@@ -14,31 +13,19 @@ import (
 )
 
 type Adaptor struct {
-	ChannelType int
 }
 
 func (a *Adaptor) Init(meta *util.RelayMeta) {
-	a.ChannelType = meta.ChannelType
+
 }
 
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
-
-	fullRequestURL := fmt.Sprintf("%s/api/chat/openai", meta.BaseURL)
-	return fullRequestURL, nil
+	return fmt.Sprintf("%s/api/paas/v4/chat/completions", meta.BaseURL), nil
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *util.RelayMeta) error {
 	channel.SetupCommonRequestHeader(c, req, meta)
-	if meta.ChannelType == common.ChannelTypeAzure {
-		req.Header.Set("api-key", meta.APIKey)
-		return nil
-	} else if meta.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+meta.APIKey)
-		return nil
-	}
-	if meta.ChannelType == common.ChannelTypeOpenRouter {
-		req.Header.Set("X-Title", "One API")
-	}
+	req.Header.Set("Authorization", meta.APIKey)
 	return nil
 }
 
@@ -46,7 +33,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	return request, nil
+	return requestOpenAI2Zhipu(*request), nil
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
@@ -56,21 +43,17 @@ func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (aitext string, usage *model.Usage, err *model.ErrorWithStatusCode) {
 	aitext = ""
 	if meta.IsStream {
-		var responseText string
-
-		err, responseText = StreamHandler(c, resp, meta.Mode, meta.FixedContent)
-		aitext = responseText
-		usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+		err, usage, aitext = zhipuStreamHandler(c, resp)
 	} else {
-		err, usage, aitext = LobeHandler(c, resp, meta.PromptTokens, meta.ActualModelName)
+		err, usage, aitext = zhipuHandler(c, resp)
 	}
 	return
 }
 
 func (a *Adaptor) GetModelList() []string {
-	return nil
+	return ModelList
 }
 
 func (a *Adaptor) GetChannelName() string {
-	return "openai"
+	return "zhipu"
 }

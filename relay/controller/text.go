@@ -115,7 +115,8 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		}
 		requestBody = bytes.NewBuffer(jsonData)
 	}
-
+	// do response
+	startTime := time.Now()
 	// do request
 	resp, err := adaptor.DoRequest(c, meta, requestBody)
 	if err != nil {
@@ -127,9 +128,6 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
 		return util.RelayErrorHandler(resp)
 	}
-
-	// do response
-	startTime := time.Now()
 
 	// 执行 DoResponse 方法
 	aitext, usage, respErr := adaptor.DoResponse(c, resp, meta)

@@ -11,6 +11,7 @@ type GeneralOpenAIRequest struct {
 	Stream           bool            `json:"stream,omitempty"`
 	MaxTokens        int             `json:"max_tokens,omitempty"`
 	Temperature      float64         `json:"temperature,omitempty"`
+	Stop             any             `json:"stop,omitempty"`
 	TopP             float64         `json:"top_p,omitempty"`
 	N                int             `json:"n,omitempty"`
 	Input            any             `json:"input,omitempty"`
@@ -24,6 +25,8 @@ type GeneralOpenAIRequest struct {
 	Tools            any             `json:"tools,omitempty"`
 	ToolChoice       any             `json:"tool_choice,omitempty"`
 	User             string          `json:"user,omitempty"`
+	LogProbs         bool            `json:"logprobs,omitempty"`
+	TopLogProbs      int             `json:"top_logprobs,omitempty"`
 }
 
 func (r GeneralOpenAIRequest) ParseInput() []string {

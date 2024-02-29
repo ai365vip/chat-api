@@ -411,24 +411,26 @@ const Detail = (props) => {
             const quotaValue = parseFloat(getQuotaWithUnit(item.quota));
             // 假设 item.count 表示次数
             const countValue = item.count;
-            switch (item.type) {
-                case 1: // 充值
-                    typeUsage.recharge.quota += quotaValue;
-                    typeUsage.recharge.count += countValue;
-                    break;
-                case 2: // 消费
-                    typeUsage.consumption.quota += quotaValue;
-                    typeUsage.consumption.count += countValue;
-                    break;
-                case 3: // 管理
-                    typeUsage.admin.quota += quotaValue;
-                    typeUsage.admin.count += countValue;
-                    break;
-                case 4: // 系统
-                    typeUsage.system.quota += quotaValue;
-                    typeUsage.system.count += countValue;
-                    break;
-                // ... 其他case
+            if (quotaValue > 0) { // 只处理 quota 大于 0 的情况
+                switch (item.type) {
+                    case 1: // 充值
+                        typeUsage.recharge.quota += quotaValue;
+                        typeUsage.recharge.count += countValue;
+                        break;
+                    case 2: // 消费
+                        typeUsage.consumption.quota += quotaValue;
+                        typeUsage.consumption.count += countValue;
+                        break;
+                    case 3: // 管理
+                        typeUsage.admin.quota += quotaValue;
+                        typeUsage.admin.count += countValue;
+                        break;
+                    case 4: // 系统
+                        typeUsage.system.quota += quotaValue;
+                        typeUsage.system.count += countValue;
+                        break;
+                    // ... 其他case
+                }
             }
         }
     

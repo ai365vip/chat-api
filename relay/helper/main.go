@@ -14,6 +14,7 @@ import (
 	"one-api/relay/channel/tencent"
 	"one-api/relay/channel/xunfei"
 	"one-api/relay/channel/zhipu"
+	"one-api/relay/channel/zhipu_v4"
 	"one-api/relay/constant"
 )
 
@@ -39,10 +40,13 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &xunfei.Adaptor{}
 	case constant.APITypeZhipu:
 		return &zhipu.Adaptor{}
+	case constant.APITypeZhipu_v4:
+		return &zhipu_v4.Adaptor{}
 	case constant.APITypeChatBot:
 		return &chatbot.Adaptor{}
 	case constant.APITypeLobeChat:
 		return &lobechat.Adaptor{}
+
 	}
 	return nil
 }

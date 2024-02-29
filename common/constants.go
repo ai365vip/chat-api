@@ -218,6 +218,7 @@ const (
 	ChannelTypeChatBot        = 25
 	ChannelTypeLobeChat       = 26
 	ChannelTypeMoonshot       = 27
+	ChannelTypeZhipu_v4       = 28
 )
 
 var ChannelBaseURLs = []string{
@@ -246,9 +247,10 @@ var ChannelBaseURLs = []string{
 	"https://fastgpt.run/api/openapi",   // 22
 	"https://hunyuan.cloud.tencent.com", //23
 	"https://generativelanguage.googleapis.com", //24
-	"", //25
-	"", //26
-	"https://api.moonshot.cn",
+	"",                         //25
+	"",                         //26
+	"https://api.moonshot.cn",  //27
+	"https://open.bigmodel.cn", //28
 }
 
 const (

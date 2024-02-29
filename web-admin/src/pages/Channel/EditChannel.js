@@ -102,6 +102,12 @@ const EditChannel = (props) => {
                 case 24:
                     localModels = ['gemini-pro'];
                     break;
+                case 2:
+                    localModels = ['midjourney'];
+                    break;
+                case 28:
+                    localModels = ['glm-4', 'glm-4v', 'glm-3-turbo'];
+                    break;
             }
             setInputs((inputs) => ({...inputs, models: localModels}));
         }
