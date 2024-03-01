@@ -215,7 +215,10 @@ func zhipuStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithSt
 			} else {
 				response = streamResponseZhipu2OpenAI(&streamResponse)
 			}
-
+			// 遍历每个选择（Choice），然后累加 Content 字段至 aitext
+			for _, choice := range response.Choices {
+				aitext += choice.Delta.Content
+			}
 			jsonResponse, err := json.Marshal(response)
 			if err != nil {
 				common.SysError("error marshalling stream response: " + err.Error())
