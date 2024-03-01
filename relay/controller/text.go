@@ -32,7 +32,12 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		logger.Errorf(ctx, "getAndValidateTextRequest failed: %s", err.Error())
 		return openai.ErrorWrapper(err, "invalid_text_request", http.StatusBadRequest)
 	}
+
 	meta.IsStream = textRequest.Stream
+	if meta.ChannelType == common.ChannelTypeAzure {
+		APIVersion := util.GetAPIVersion(c)
+		meta.APIVersion = APIVersion
+	}
 
 	// map model name
 	var isModelMapped bool
