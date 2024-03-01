@@ -11,7 +11,7 @@ export const CHANNEL_OPTIONS = [
     {key: 17, text: '阿里通义千问', value: 17, color: 'orange', label: '阿里通义千问'},
     {key: 18, text: '讯飞星火认知', value: 18, color: 'blue', label: '讯飞星火认知'},
     {key: 16, text: '智谱 ChatGLM', value: 16, color: 'violet', label: '智谱 ChatGLM'},
-    {key: 28, text: '智谱 GLM-4V', value: 28, color: 'violet', label: '智谱 GLM-4V'},
+    {key: 28, text: '智谱 GLM-V4', value: 28, color: 'violet', label: '智谱 GLM-V4'},
     {key: 27, text: 'Moonshot', value: 27, color: 'green', label: 'Moonshot'},
     {key: 19, text: '360 智脑', value: 19, color: 'blue', label: '360 智脑'},
     {key: 23, text: '腾讯混元', value: 23, color: 'teal', label: '腾讯混元'},
