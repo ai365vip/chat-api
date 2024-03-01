@@ -2,6 +2,7 @@ package openai
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"one-api/common"
 	"one-api/relay/constant"
 	"one-api/relay/model"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -145,25 +147,17 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 			StatusCode: resp.StatusCode,
 		}, nil, ""
 	}
-	for _, choice := range textResponse.Choices {
-		responseText = choice.Message.StringContent()
-	}
-	// 在响应文本中插入固定内容，并构建包含 fixedContent 的 responseText
-	if fixedContent != "" {
-		for i, choice := range textResponse.Choices {
-			modifiedContent := choice.Message.StringContent() + "\n\n" + fixedContent
-			// 使用json.Marshal确保字符串被正确编码为JSON
-			encodedContent, err := json.Marshal(modifiedContent)
-			if err != nil {
-				return ErrorWrapper(err, "encode_modified_content_failed", http.StatusInternalServerError), nil, ""
-			}
-			textResponse.Choices[i].Message.Content = json.RawMessage(encodedContent)
+	if strings.HasPrefix(modelName, "gpt") {
+		for _, choice := range textResponse.Choices {
+			responseText = choice.Message.StringContent()
 		}
-	}
 
-	// Token 的计算使用原始响应文本而不包括 fixedContent
+	}
 	if textResponse.Usage.TotalTokens == 0 {
-		completionTokens := CountTokenText(responseText, modelName) // 假设 CountTokenText 可以正确计算
+		completionTokens := 0
+		for _, choice := range textResponse.Choices {
+			completionTokens += CountTokenText(choice.Message.StringContent(), modelName)
+		}
 		textResponse.Usage = model.Usage{
 			PromptTokens:     promptTokens,
 			CompletionTokens: completionTokens,
@@ -171,20 +165,51 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 		}
 	}
 
-	// 将更新后的响应发送给客户端
-	modifiedResponseBody, err := json.Marshal(textResponse)
-	if err != nil {
-		return ErrorWrapper(err, "remarshal_response_body_failed", http.StatusInternalServerError), nil, ""
-	}
+	// 在响应文本中插入固定内容，并构建包含 fixedContent 的 responseText
+	if fixedContent != "" && strings.HasPrefix(modelName, "gpt") {
+		for i, choice := range textResponse.Choices {
+			modifiedContent := choice.Message.StringContent() + "\n\n" + fixedContent
 
-	c.Writer.WriteHeader(resp.StatusCode)
+			// 使用json.Marshal确保字符串被正确编码为JSON
+			encodedContent, err := json.Marshal(modifiedContent)
+			if err != nil {
+				return ErrorWrapper(err, "encode_modified_content_failed", http.StatusInternalServerError), nil, ""
+			}
+			textResponse.Choices[i].Message.Content = json.RawMessage(encodedContent)
+		}
+		// 将更新后的响应发送给客户端
 
-	for k, v := range resp.Header {
-		c.Writer.Header().Set(k, v[0])
-	}
-	_, err = c.Writer.Write(modifiedResponseBody)
-	if err != nil {
-		return ErrorWrapper(err, "write_modified_response_body_failed", http.StatusInternalServerError), nil, ""
+		modifiedResponseBody, err := json.Marshal(textResponse)
+		// 更新 Content-Length
+		resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedResponseBody)))
+		// 重设 resp.Body
+		resp.Body = io.NopCloser(bytes.NewBuffer(modifiedResponseBody))
+		if err != nil {
+			return ErrorWrapper(err, "remarshal_response_body_failed", http.StatusInternalServerError), nil, ""
+		}
+		for k, v := range resp.Header {
+			c.Writer.Header().Set(k, v[0])
+		}
+		c.Writer.WriteHeader(resp.StatusCode)
+		_, err = io.Copy(c.Writer, resp.Body)
+		if err != nil {
+			return ErrorWrapper(err, "write_modified_response_body_failed", http.StatusInternalServerError), nil, ""
+		}
+
+	} else {
+		resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
+		for k, v := range resp.Header {
+			c.Writer.Header().Set(k, v[0])
+		}
+		c.Writer.WriteHeader(resp.StatusCode)
+		_, err = io.Copy(c.Writer, resp.Body)
+		if err != nil {
+			return ErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil, ""
+		}
+		err = resp.Body.Close()
+		if err != nil {
+			return ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
+		}
 	}
 
 	return nil, &textResponse.Usage, responseText

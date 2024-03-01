@@ -122,6 +122,7 @@ func getAndValidateTextRequest(c *gin.Context, relayMode int) (*model.GeneralOpe
 	}
 	if relayMode == constant.RelayModeEmbeddings && textRequest.Model == "" {
 		textRequest.Model = c.Param("model")
+		textRequest.Stream = false
 	}
 	err = util.ValidateTextRequest(textRequest, relayMode)
 	if err != nil {
