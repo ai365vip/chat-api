@@ -22,3 +22,6 @@ func init() {
 		Timeout: 5 * time.Second,
 	}
 }
+func GetHttpClient() *http.Client {
+	return HTTPClient
+}

@@ -25,6 +25,69 @@ import (
 var zhipuTokens sync.Map
 var expSeconds int64 = 24 * 3600
 
+func requestOpenAI2Zhipu(request model.GeneralOpenAIRequest) *model.GeneralOpenAIRequest {
+	messages := make([]model.Message, 0, len(request.Messages))
+	for _, message := range request.Messages {
+		messages = append(messages, model.Message{
+			Role:       message.Role,
+			Content:    message.Content,
+			ToolCalls:  message.ToolCalls,
+			ToolCallId: message.ToolCallId,
+		})
+	}
+
+	str, ok := request.Stop.(string)
+	var Stop []string
+	if ok {
+		Stop = []string{str}
+	} else {
+		Stop, _ = request.Stop.([]string)
+	}
+	topP := request.TopP
+	if topP == 1 {
+		topP = 0.99
+	} else if topP == 0 {
+		topP = 0.01
+	}
+	return &model.GeneralOpenAIRequest{
+		Model:       request.Model,
+		Stream:      request.Stream,
+		Messages:    messages,
+		Temperature: request.Temperature,
+		TopP:        topP,
+		MaxTokens:   request.MaxTokens,
+		Stop:        Stop,
+		Tools:       request.Tools,
+		ToolChoice:  request.ToolChoice,
+	}
+}
+
+//	func responseZhipu2OpenAI(response *dto.OpenAITextResponse) *dto.OpenAITextResponse {
+//		fullTextResponse := dto.OpenAITextResponse{
+//			Id:      response.Id,
+//			Object:  "chat.completion",
+//			Created: common.GetTimestamp(),
+//			Choices: make([]dto.OpenAITextResponseChoice, 0, len(response.TextResponseChoices)),
+//			Usage:   response.Usage,
+//		}
+//		for i, choice := range response.TextResponseChoices {
+//			content, _ := json.Marshal(strings.Trim(choice.Content, "\""))
+//			openaiChoice := dto.OpenAITextResponseChoice{
+//				Index: i,
+//				Message: dto.Message{
+//					Role:    choice.Role,
+//					Content: content,
+//				},
+//				FinishReason: "",
+//			}
+//			if i == len(response.TextResponseChoices)-1 {
+//				openaiChoice.FinishReason = "stop"
+//			}
+//			fullTextResponse.Choices = append(fullTextResponse.Choices, openaiChoice)
+//		}
+//		return &fullTextResponse
+//	}
+
 func getZhipuToken(apikey string) string {
 	data, ok := zhipuTokens.Load(apikey)
 	if ok {
@@ -71,64 +134,6 @@ func getZhipuToken(apikey string) string {
 
 	return tokenString
 }
-
-func requestOpenAI2Zhipu(request model.GeneralOpenAIRequest) *model.GeneralOpenAIRequest {
-	messages := make([]model.Message, 0, len(request.Messages))
-	for _, message := range request.Messages {
-		messages = append(messages, model.Message{
-			Role:       message.Role,
-			Content:    message.Content,
-			ToolCalls:  message.ToolCalls,
-			ToolCallId: message.ToolCallId,
-		})
-	}
-
-	str, ok := request.Stop.(string)
-	var Stop []string
-	if ok {
-		Stop = []string{str}
-	} else {
-		Stop, _ = request.Stop.([]string)
-	}
-
-	return &model.GeneralOpenAIRequest{
-		Model:       request.Model,
-		Stream:      request.Stream,
-		Messages:    messages,
-		Temperature: request.Temperature,
-		TopP:        request.TopP,
-		MaxTokens:   request.MaxTokens,
-		Stop:        Stop,
-		Tools:       request.Tools,
-		ToolChoice:  request.ToolChoice,
-	}
-}
-
-//func responseZhipu2OpenAI(response *dto.OpenAITextResponse) *dto.OpenAITextResponse {
-//	fullTextResponse := dto.OpenAITextResponse{
-//		Id:      response.Id,
-//		Object:  "chat.completion",
-//		Created: common.GetTimestamp(),
-//		Choices: make([]dto.OpenAITextResponseChoice, 0, len(response.TextResponseChoices)),
-//		Usage:   response.Usage,
-//	}
-//	for i, choice := range response.TextResponseChoices {
-//		content, _ := json.Marshal(strings.Trim(choice.Content, "\""))
-//		openaiChoice := dto.OpenAITextResponseChoice{
-//			Index: i,
-//			Message: dto.Message{
-//				Role:    choice.Role,
-//				Content: content,
-//			},
-//			FinishReason: "",
-//		}
-//		if i == len(response.TextResponseChoices)-1 {
-//			openaiChoice.FinishReason = "stop"
-//		}
-//		fullTextResponse.Choices = append(fullTextResponse.Choices, openaiChoice)
-//	}
-//	return &fullTextResponse
-//}
 
 func streamResponseZhipu2OpenAI(zhipuResponse *ZhipuV4StreamResponse) *ChatCompletionsStreamResponse {
 	var choice ChatCompletionsStreamResponseChoice
@@ -177,27 +182,32 @@ func zhipuStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithSt
 			if len(data) < 6 { // ignore blank line or wrong format
 				continue
 			}
-			if data[:6] != "data: " && data[:6] != "[DONE]" {
+			if data[:6] != "data: " {
 				continue
 			}
-			dataChan <- data
+			dataChan <- data[6:] // Send without "data: " prefix
 		}
-		stopChan <- true
+		close(dataChan) // Ensure to close the channel after the loop
 	}()
 	common.SetEventStreamHeaders(c)
 	c.Stream(func(w io.Writer) bool {
 		select {
-		case data := <-dataChan:
-			if strings.HasPrefix(data, "data: [DONE]") {
-				data = data[:12]
+		case data, ok := <-dataChan:
+			if !ok {
+				return false // Stop streaming if channel is closed
 			}
-			// some implementations may add \r at the end of data
+
+			// 一些实现可能在数据末尾添加了 \r，需要去除
 			data = strings.TrimSuffix(data, "\r")
+			if data == "[DONE]" {
+				return false // Handle the special "[DONE]" message
+			}
 
 			var streamResponse ZhipuV4StreamResponse
 			err := json.Unmarshal([]byte(data), &streamResponse)
 			if err != nil {
 				common.SysError("error unmarshalling stream response: " + err.Error())
+				return false // Consider stopping the stream on JSON error
 			}
 			var response *ChatCompletionsStreamResponse
 			if strings.Contains(data, "prompt_tokens") {
@@ -205,19 +215,15 @@ func zhipuStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithSt
 			} else {
 				response = streamResponseZhipu2OpenAI(&streamResponse)
 			}
-			// 遍历每个选择（Choice），然后累加 Content 字段至 aitext
-			for _, choice := range response.Choices {
-				aitext += choice.Delta.Content
-			}
+
 			jsonResponse, err := json.Marshal(response)
 			if err != nil {
 				common.SysError("error marshalling stream response: " + err.Error())
-				return true
+				return false
 			}
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonResponse)})
 			return true
 		case <-stopChan:
-
 			return false
 		}
 	})

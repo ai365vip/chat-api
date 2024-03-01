@@ -25,7 +25,8 @@ func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *util.RelayMeta) error {
 	channel.SetupCommonRequestHeader(c, req, meta)
-	req.Header.Set("Authorization", meta.APIKey)
+	token := getZhipuToken(meta.APIKey)
+	req.Header.Set("Authorization", token)
 	return nil
 }
 

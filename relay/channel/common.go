@@ -39,7 +39,7 @@ func DoRequestHelper(a Adaptor, c *gin.Context, meta *util.RelayMeta, requestBod
 }
 
 func DoRequest(c *gin.Context, req *http.Request) (*http.Response, error) {
-	resp, err := util.HTTPClient.Do(req)
+	resp, err := util.GetHttpClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
