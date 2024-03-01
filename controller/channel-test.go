@@ -67,8 +67,14 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Set("channel", channel.Type)
 	c.Set("base_url", channel.GetBaseURL())
+
 	meta := util.GetRelayMeta(c)
+
 	apiType := constant.ChannelType2APIType(channel.Type)
+	if meta.ChannelType == common.ChannelTypeAzure {
+
+		meta.APIVersion = channel.Other
+	}
 	adaptor := helper.GetAdaptor(apiType)
 	if adaptor == nil {
 		return fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), nil
@@ -102,13 +108,13 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	if usage == nil {
 		return errors.New("usage is nil"), nil
 	}
-	result := w.Result()
+	//result := w.Result()
 	// print result.Body
-	respBody, err := io.ReadAll(result.Body)
-	if err != nil {
-		return err, nil
-	}
-	common.SysLog(fmt.Sprintf("testing channel #%d, response: \n%s", channel.Id, string(respBody)))
+	//respBody, err := io.ReadAll(result.Body)
+	//if err != nil {
+	//	return err, nil
+	//}
+	//common.SysLog(fmt.Sprintf("testing channel #%d, response: \n%s", channel.Id, string(respBody)))
 	return nil, nil
 }
 
