@@ -8,6 +8,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func configureMidjourneyRoutes(group *gin.RouterGroup) {
+	group.GET("/image/:id", midjourney.RelayMidjourneyImage)
+	group.Use(middleware.TokenAuth(), middleware.Distribute())
+	{
+		group.POST("/submit/imagine", controller.RelayMidjourney)
+		group.POST("/submit/change", controller.RelayMidjourney)
+		group.POST("/submit/simple-change", controller.RelayMidjourney)
+		group.POST("/submit/describe", controller.RelayMidjourney)
+		group.POST("/submit/blend", controller.RelayMidjourney)
+		group.POST("/submit/action", controller.RelayMidjourney)
+		group.POST("/submit/modal", controller.RelayMidjourney)
+		group.POST("/submit/shorten", controller.RelayMidjourney)
+		group.POST("/insight-face/swap", controller.RelayMidjourney)
+		group.POST("/notify", controller.RelayMidjourney)
+		group.GET("/task/:id/fetch", controller.RelayMidjourney)
+		group.GET("/task/:id/image-seed", controller.RelayMidjourney)
+		group.POST("/task/list-by-condition", controller.RelayMidjourney)
+	}
+}
+
 func SetRelayRouter(router *gin.Engine) {
 	router.Use(middleware.CORS())
 	// https://platform.openai.com/docs/api-reference/introduction
@@ -70,23 +90,15 @@ func SetRelayRouter(router *gin.Engine) {
 		relayV1Router.GET("/threads/:id/runs/:runsId/steps/:stepId", controller.RelayNotImplemented)
 		relayV1Router.GET("/threads/:id/runs/:runsId/steps", controller.RelayNotImplemented)
 	}
+	relayMjTurboRouter := router.Group("/mj-turbo/mj")
+	configureMidjourneyRoutes(relayMjTurboRouter)
+
+	relayMjFastRouter := router.Group("/mj-fast/mj")
+	configureMidjourneyRoutes(relayMjFastRouter)
+
+	relayMjRelaxtRouter := router.Group("/mj-relax/mj")
+	configureMidjourneyRoutes(relayMjRelaxtRouter)
+
 	relayMjRouter := router.Group("/mj")
-	relayMjRouter.GET("/image/:id", midjourney.RelayMidjourneyImage)
-	relayMjRouter.Use(middleware.TokenAuth(), middleware.Distribute())
-	{
-		relayMjRouter.POST("/submit/imagine", controller.RelayMidjourney)
-		relayMjRouter.POST("/submit/change", controller.RelayMidjourney)
-		relayMjRouter.POST("/submit/simple-change", controller.RelayMidjourney)
-		relayMjRouter.POST("/submit/describe", controller.RelayMidjourney)
-		relayMjRouter.POST("/submit/blend", controller.RelayMidjourney)
-		relayMjRouter.POST("/submit/action", controller.RelayMidjourney)
-		relayMjRouter.POST("/submit/modal", controller.RelayMidjourney)
-		relayMjRouter.POST("/submit/shorten", controller.RelayMidjourney)
-		relayMjRouter.POST("/insight-face/swap", controller.RelayMidjourney)
-		relayMjRouter.POST("/notify", controller.RelayMidjourney)
-		relayMjRouter.GET("/task/:id/fetch", controller.RelayMidjourney)
-		relayMjRouter.GET("/task/:id/image-seed", controller.RelayMidjourney)
-		relayMjRouter.POST("/task/list-by-condition", controller.RelayMidjourney)
-	}
-	//relayMjRouter.Use()
+	configureMidjourneyRoutes(relayMjRouter)
 }

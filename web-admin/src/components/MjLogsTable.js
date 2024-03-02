@@ -84,6 +84,20 @@ function renderStatus(type) {
   }
 }
 
+function renderMode(type) {
+  // Ensure all cases are string literals by adding quotes.
+  switch (type) {
+    case 'turbo':
+      return <Tag color="blue" size='large'>Turbo</Tag>;
+    case 'relax':
+      return <Tag color="orange" size='large'>Relax</Tag>;
+    case 'fast':
+      return <Tag color="green" size='large'>Fast</Tag>;
+    default:
+      return <Tag color="black" size='large'>未知</Tag>;
+  }
+}
+
 const renderTimestamp = (timestampInSeconds) => {
   const date = new Date(timestampInSeconds * 1000); // 从秒转换为毫秒
 
@@ -161,6 +175,18 @@ const LogsTable = () => {
                 <div>
                  {renderCode(text)}
                </div>
+              );
+          },
+        },
+        {
+          title: '模式',
+          dataIndex: 'mode',
+          className: isAdmin() ? 'tableShow' : 'tableHiddle',
+          render: (text, record, index) => {
+              return (
+                <div>
+                  {renderMode(text)}
+                </div>
               );
           },
         },

@@ -171,7 +171,7 @@ export function inviteQuota(quota, digits = 2) {
   quotaPerUnit = parseFloat(quotaPerUnit);
   displayInCurrency = displayInCurrency === 'true';
   if (displayInCurrency) {
-      return '￥' + (quota / quotaPerUnit).toFixed(digits);
+      return '$' + (quota / quotaPerUnit).toFixed(digits);
   }
   return renderNumber(quota);
 }

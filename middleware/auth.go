@@ -101,7 +101,12 @@ func getModelForPath(path string) string {
 		"/v1/audio/translations":   "whisper-1",
 	}
 
-	if strings.HasPrefix(path, "/mj") {
+	if strings.HasPrefix(path, "/mj-turbo/mj") {
+		return "midjourney-turbo"
+	} else if strings.HasPrefix(path, "/mj-relax/mj") {
+		return "midjourney-relax"
+		// 然后判断通用及默认情况
+	} else if strings.HasPrefix(path, "/mj") || strings.HasPrefix(path, "/mj-fast/mj") {
 		return "midjourney"
 	}
 

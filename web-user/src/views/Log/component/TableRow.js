@@ -31,6 +31,7 @@ function stringToColor(str) {
   return colors[i];
 }
 
+
 function renderType(type) {
   switch (type) {
       case 1:
@@ -45,6 +46,8 @@ function renderType(type) {
           return <Tag color='black' shape='circle'  size='large'> 未知 </Tag>;
   }
 }
+
+
   
 function renderUseTime(type) {
   const time = parseInt(type);

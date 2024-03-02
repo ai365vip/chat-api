@@ -67,12 +67,11 @@ type Segment struct {
 }
 
 type TextToSpeechRequest struct {
-	Model          string  `json:"model" binding:"required"`
-	Input          string  `json:"input" binding:"required"`
-	Voice          string  `json:"voice" binding:"required"`
-	Speed          float64 `json:"speed"`
-	ResponseFormat string  `json:"response_format"`
+	Model string `json:"model" binding:"required"`
+	Input string `json:"input" binding:"required"`
+	Voice string `json:"voice" binding:"required"`
 }
+
 type Message struct {
 	Role    string          `json:"role"`
 	Content json.RawMessage `json:"content"`

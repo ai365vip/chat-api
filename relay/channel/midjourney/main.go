@@ -302,7 +302,7 @@ const (
 )
 
 func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
-	imageModel := "midjourney"
+	imageModel := c.GetString("model")
 
 	tokenId := c.GetInt("token_id")
 	channelType := c.GetInt("channel")
@@ -329,6 +329,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 				Description: "prompt_is_required",
 			}
 		}
+
 		midjRequest.Action = "IMAGINE"
 	} else if relayMode == constant.RelayModeMidjourneyDescribe { //按图生文任务，此类任务可重复
 		midjRequest.Action = "DESCRIBE"
@@ -458,6 +459,16 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	baseURL := common.ChannelBaseURLs[channelType]
 	requestURL := c.Request.URL.String()
 
+	prefixes := []string{"/mj-relax", "/mj-turbo", "/mj-fast"}
+
+	// 遍历前缀，尝试从requestURL中移除
+	for _, prefix := range prefixes {
+		// 如果当前前缀匹配，则移除并停止循环
+		if strings.HasPrefix(requestURL, prefix) {
+			requestURL = strings.TrimPrefix(requestURL, prefix)
+			break // 假定只有一个前缀会匹配，找到后即停止
+		}
+	}
 	if c.GetString("base_url") != "" {
 		baseURL = c.GetString("base_url")
 	}
@@ -502,8 +513,20 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		// 重置原始请求体以供后续处理
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	}
-	modelRatio, ok := common.GetModelRatio2("mj_" + strings.ToLower(midjRequest.Action))
-	mjAction := "mj_" + strings.ToLower(midjRequest.Action)
+	var modelRatio float64
+	var mjAction string
+
+	if imageModel == "midjourney-turbo" {
+		mjAction = "mj_turbo_" + strings.ToLower(midjRequest.Action)
+		midjRequest.Mode = "turbo"
+	} else if imageModel == "midjourney-relax" {
+		mjAction = "mj_relax_" + strings.ToLower(midjRequest.Action)
+		midjRequest.Mode = "relax"
+	} else {
+		mjAction = "mj_" + strings.ToLower(midjRequest.Action)
+		midjRequest.Mode = "fast"
+	}
+
 	// 如果没有配置价格，则使用默认价格
 	defaultPrice, ok := common.ModelPrice[mjAction]
 	if !ok {
@@ -522,9 +545,13 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			Description: err.Error(),
 		}
 	}
-
+	excludedActions := map[string]bool{
+		"mj_modal":       true,
+		"mj_turbo_modal": true,
+		"mj_relax_modal": true,
+	}
 	quota := int(ratio * common.QuotaPerUnit)
-	if mjAction == "mj_modal" {
+	if excludedActions[mjAction] {
 		quota = 0
 	}
 	if consumeQuota && userQuota-quota < 0 {
@@ -581,7 +608,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	defer func(ctx context.Context) {
 
-		if consumeQuota && mjAction != "mj_modal" {
+		if consumeQuota && !excludedActions[mjAction] {
 			err := model.PostConsumeTokenQuota(tokenId, quota)
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
@@ -651,6 +678,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		PromptEn:    "",
 		Description: midjResponse.Description,
 		State:       "",
+		Mode:        midjRequest.Mode,
 		SubmitTime:  time.Now().UnixNano() / int64(time.Millisecond),
 		StartTime:   0,
 		FinishTime:  0,
@@ -692,7 +720,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		newBody := strings.Replace(string(responseBody), `"code":21`, `"code":1`, -1)
 		responseBody = []byte(newBody)
 	}
-	if mjAction != "mj_modal" {
+	if !excludedActions[mjAction] {
 		err = midjourneyTask.Insert()
 		if err != nil {
 			consumeQuota = false

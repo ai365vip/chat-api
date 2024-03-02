@@ -57,25 +57,25 @@ func Path2RelayMode(path string) int {
 
 func MidjourneyRelayMode(path string) int {
 	relayMode := RelayModeUnknown
-	if strings.HasPrefix(path, "/mj/submit/imagine") {
+	if strings.Contains(path, "/mj/submit/imagine") {
 		relayMode = RelayModeMidjourneyImagine
-	} else if strings.HasPrefix(path, "/mj/submit/blend") {
+	} else if strings.Contains(path, "/mj/submit/blend") {
 		relayMode = RelayModeMidjourneyBlend
-	} else if strings.HasPrefix(path, "/mj/submit/describe") {
+	} else if strings.Contains(path, "/mj/submit/describe") {
 		relayMode = RelayModeMidjourneyDescribe
-	} else if strings.HasPrefix(path, "/mj/notify") {
+	} else if strings.Contains(path, "/mj/notify") {
 		relayMode = RelayModeMidjourneyNotify
-	} else if strings.HasPrefix(path, "/mj/submit/change") {
+	} else if strings.Contains(path, "/mj/submit/change") {
 		relayMode = RelayModeMidjourneyChange
-	} else if strings.HasPrefix(path, "/mj/submit/simple-change") {
+	} else if strings.Contains(path, "/mj/submit/simple-change") {
 		relayMode = RelayModeMidjourneySimpleChange
-	} else if strings.HasPrefix(path, "/mj/submit/action") {
+	} else if strings.Contains(path, "/mj/submit/action") {
 		relayMode = RelayModeMidjourneyAction
-	} else if strings.HasPrefix(path, "/mj/submit/modal") {
+	} else if strings.Contains(path, "/mj/submit/modal") {
 		relayMode = RelayModeMidjourneyModal
-	} else if strings.HasPrefix(path, "/mj/submit/shorten") {
+	} else if strings.Contains(path, "/mj/submit/shorten") {
 		relayMode = RelayModeMidjourneyShorten
-	} else if strings.HasPrefix(path, "/mj/insight-face/swap") {
+	} else if strings.Contains(path, "/mj/insight-face/swap") {
 		relayMode = RelayModeMidjourneyFace
 	} else if strings.HasSuffix(path, "/fetch") {
 		relayMode = RelayModeMidjourneyTaskFetch

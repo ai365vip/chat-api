@@ -1,52 +1,84 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { TableRow, TableCell,Button,Tooltip,Modal} from '@mui/material';
-import Label from 'ui-component/Label';
-import { TYPE, CODE, STATUS } from '../type/LogType';
 import { useState } from 'react';
 
+import {Tag} from '@douyinfe/semi-ui';
 
-function renderType(typeKey) {
-  const typeObj = TYPE[typeKey];
-  return typeObj ? (
-    <Label variant="filled" color={typeObj.color}>
-      {typeObj.text}
-    </Label>
-  ) : (
-    <Label variant="filled" color="error">
-      未知
-    </Label>
-  );
+function renderType(type) {
+  switch (type) {
+    case 'IMAGINE':
+      return <Tag color="blue" size='large'>绘图</Tag>;
+    case 'ACTION':
+      return <Tag color="purple" size='large'>按钮变化</Tag>;
+    case 'INPAINT':
+      return <Tag color="purple" size='large'>局部重绘</Tag>;
+    case 'SHORTEN':
+      return <Tag color="blue" size='large'>prompt分析</Tag>
+    case 'SWAPFACE':
+      return <Tag color="blue" size='large'>换脸</Tag>
+    case 'UPSCALE':
+      return <Tag color="orange" size='large'>放大</Tag>;
+    case 'VARIATION':
+      return <Tag color="purple" size='large'>变换</Tag>;
+    case 'DESCRIBE':
+      return <Tag color="yellow" size='large'>图生文</Tag>;
+    case 'REROLL':
+      return <Tag color="lime" size='large'>重绘</Tag>
+    case 'BLEAND':
+      return <Tag color="lime" size='large'>图混合</Tag>;
+    default:
+      return <Tag color="black" size='large'>未知</Tag>;
+  }
 }
 
-function renderCode(codeKey) {
-  // 确保 codeKey 被视为数字类型
-  const codeKeyNum = Number(codeKey);
-  const codeObj = CODE[codeKeyNum];
-  return codeObj ? (
-    <Label variant="filled" color={codeObj.color}>
-      {codeObj.text}
-    </Label>
-  ) : (
-    <Label variant="filled" color="error">
-      未知代码
-    </Label>
-  );
+
+function renderCode(code) {
+  switch (code) {
+    case 1:
+      return <Tag color="green" size='large'>已提交</Tag>;
+    case 21:
+      return <Tag color="lime" size='large'>排队中</Tag>;
+    case 22:
+      return <Tag color="orange" size='large'>重复提交</Tag>;
+    default:
+      return <Tag color="black" size='large'>未知</Tag>;
+  }
+}
+function renderMode(type) {
+  // Ensure all cases are string literals by adding quotes.
+  switch (type) {
+    case 'turbo':
+      return <Tag color="blue" size='large'>Turbo</Tag>;
+    case 'relax':
+      return <Tag color="orange" size='large'>Relax</Tag>;
+    case 'fast':
+      return <Tag color="green" size='large'>Fast</Tag>;
+    default:
+      return <Tag color="black" size='large'>未知</Tag>;
+  }
 }
 
-function renderStatus(statusKey) {
-  // 使用大写的字符串键来匹配 status 对象
-  const statusObj = STATUS[statusKey.toUpperCase()];
-  return statusObj ? (
-    <Label variant="filled" color={statusObj.color}>
-      {statusObj.text}
-    </Label>
-  ) : (
-    <Label variant="filled" color="error">
-      未知状态
-    </Label>
-  );
+function renderStatus(type) {
+  // Ensure all cases are string literals by adding quotes.
+  switch (type) {
+    case 'SUCCESS':
+      return <Tag color="green" size='large'>成功</Tag>;
+    case 'NOT_START':
+      return <Tag color="grey" size='large'>未启动</Tag>;
+    case 'SUBMITTED':
+      return <Tag color="yellow" size='large'>队列中</Tag>;
+    case 'IN_PROGRESS':
+      return <Tag color="blue" size='large'>执行中</Tag>;
+    case 'FAILURE':
+      return <Tag color="red" size='large'>失败</Tag>;
+    default:
+      return <Tag color="black" size='large'>未知</Tag>;
+  }
 }
+
+
+
 
 function renderTimestamp(timestampInSeconds) {
   const date = new Date(timestampInSeconds);
@@ -61,7 +93,7 @@ function renderTimestamp(timestampInSeconds) {
 }
 
 
-export default function LogTableRow({ item, userIsAdmin }) {
+export default function LogTableRow({ item }) {
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const handleImagePreview = (imageUrl) => {
@@ -78,15 +110,10 @@ export default function LogTableRow({ item, userIsAdmin }) {
       <TableCell>
         {renderTimestamp(item.submit_time)}
       </TableCell>
-  
-      {userIsAdmin && (
-        <TableCell>
-          {item.channel_id}
-        </TableCell>
-      )}
       <TableCell>{renderType(item.action)}</TableCell>
       <TableCell>{item.mj_id}</TableCell>
       <TableCell>{renderCode(item.code)}</TableCell>
+      <TableCell>{renderMode(item.mode)}</TableCell>
       <TableCell>{renderStatus(item.status)}</TableCell>
       <TableCell>{item.progress}</TableCell>
   
@@ -140,6 +167,5 @@ export default function LogTableRow({ item, userIsAdmin }) {
 
 LogTableRow.propTypes = {
   item: PropTypes.object.isRequired,
-  userIsAdmin: PropTypes.bool
 };
 

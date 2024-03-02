@@ -14,6 +14,7 @@ type Midjourney struct {
 	PromptEn    string          `json:"prompt_en"`
 	Description string          `json:"description"`
 	State       string          `json:"state"`
+	Mode        string          `json:"mode"`
 	SubmitTime  int64           `json:"submit_time"`
 	StartTime   int64           `json:"start_time"`
 	FinishTime  int64           `json:"finish_time"`

@@ -37,3 +37,9 @@ export const STATUS = {
   FAILURE: { value: 'FAILURE', text: '失败', color: 'error' }, 
 };
 
+export const MODE = {
+  turbo: { value: 'turbo', text: 'Turbo', color: 'secondary' },
+  relax: { value: 'relax', text: 'Relax', color: 'warning' },
+  fast: { value: 'fast', text: 'Fast', color: 'info' }, 
+};
+

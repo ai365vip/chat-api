@@ -8,6 +8,7 @@ type MidjourneyRequest struct {
 	Action       string          `json:"action"`
 	Index        int             `json:"index"`
 	State        string          `json:"state"`
+	Mode         string          `json:"mode"`
 	TaskId       string          `json:"taskId"`
 	Base64Array  []string        `json:"base64Array"`
 	Content      string          `json:"content"`
