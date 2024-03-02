@@ -361,7 +361,7 @@ const InviteCard = () => {
               value= {transferAmount}
               onChange={handleTransferAmountChange}
               InputProps={{
-                startAdornment: <InputAdornment position="start">￥</InputAdornment>,
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
             />
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between' }}>
