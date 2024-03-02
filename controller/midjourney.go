@@ -19,6 +19,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type ImageSeedResponse struct {
+	Code        int    `json:"code"`
+	Description string `json:"description"`
+	Result      string `json:"result"`
+}
+
 func UpdateMidjourneyTask() {
 	ctx := context.TODO()
 	defer func() {
@@ -125,7 +131,6 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 			return
 		}
 	}
-	var isResponseBody []byte // 声明这个变量保存ImageSeed响应体
 
 	task.Code = 1
 	task.Progress = responseItem.Progress
@@ -140,11 +145,13 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	task.Buttons = responseItem.Buttons
 	task.Properties = responseItem.Properties
 
+	// 确定任务进度是100%并且状态为SUCCESS
 	if task.Progress == "100%" && task.Status == "SUCCESS" {
 		imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, task.MjId)
 		isReq, err := http.NewRequest("GET", imageSeedUrl, nil)
 		if err != nil {
 			log.Printf("Get ImageSeed error: %v", err)
+			task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
 			return
 		}
 		isReq.Header.Set("Content-Type", "application/json")
@@ -153,19 +160,30 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 		isResp, err := util.HTTPClient.Do(isReq)
 		if err != nil {
 			log.Printf("Get ImageSeed Do req error: %v", err)
+			task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
 			return
 		}
 		defer isResp.Body.Close()
 
-		isResponseBody, err = io.ReadAll(isResp.Body) // 使用等号，不需要再声明变量
+		// 读取响应体
+		isResponseBody, err := io.ReadAll(isResp.Body)
 		if err != nil {
-			log.Printf("Get ImageSeed parse body error: %v", err)
+			log.Printf("Read ImageSeed response body error: %v", err)
+			task.ImageSeed = json.RawMessage("{}") // 发生错误时设置为空
 			return
 		}
+
+		// 尝试解析响应体到ImageSeedResponse结构
+		var resp ImageSeedResponse
+		if json.Unmarshal(isResponseBody, &resp) == nil {
+			// 解析成功，使用原始的响应体作为ImageSeed的值
+			task.ImageSeed = isResponseBody
+		} else {
+			// 解析失败，设置空的ImageSeed
+			task.ImageSeed = json.RawMessage("{}")
+		}
 	}
-	if isResponseBody != nil {
-		task.ImageSeed = isResponseBody
-	}
+
 	if task.Progress != "100%" && responseItem.FailReason != "" {
 		log.Println(task.MjId + " 构建失败，" + task.FailReason)
 		task.Progress = "100%"
@@ -298,32 +316,42 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 			task.Buttons = responseItem.Buttons
 			task.Properties = responseItem.Properties
 			task.ImageSeed = isResponseBody
+			// 确定任务进度是100%并且状态为SUCCESS
 			if task.Progress == "100%" && task.Status == "SUCCESS" {
-				// 获取ImageSeed信息
-				imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, responseItem.MjId)
+				imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, task.MjId)
 				isReq, err := http.NewRequest("GET", imageSeedUrl, nil)
 				if err != nil {
-					common.LogError(ctx, fmt.Sprintf("Get ImageSeed error: %v", err))
-					continue
+					log.Printf("Get ImageSeed error: %v", err)
+					task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
 				}
 				isReq.Header.Set("Content-Type", "application/json")
 				isReq.Header.Set("mj-api-secret", midjourneyChannel.Key)
 
 				isResp, err := util.HTTPClient.Do(isReq)
 				if err != nil {
-					common.LogError(ctx, fmt.Sprintf("Get ImageSeed Do req error: %v", err))
-					continue
+					log.Printf("Get ImageSeed Do req error: %v", err)
+					task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
 				}
-				isResponseBody, err = io.ReadAll(isResp.Body)
+				defer isResp.Body.Close()
+
+				// 读取响应体
+				isResponseBody, err := io.ReadAll(isResp.Body)
 				if err != nil {
-					common.LogError(ctx, fmt.Sprintf("Get ImageSeed parse body error: %v", err))
-					continue
+					log.Printf("Read ImageSeed response body error: %v", err)
+					task.ImageSeed = json.RawMessage("{}") // 发生错误时设置为空
 				}
-				isResp.Body.Close()
+
+				// 尝试解析响应体到ImageSeedResponse结构
+				var resp ImageSeedResponse
+				if json.Unmarshal(isResponseBody, &resp) == nil {
+					// 解析成功，使用原始的响应体作为ImageSeed的值
+					task.ImageSeed = isResponseBody
+				} else {
+					// 解析失败，设置空的ImageSeed
+					task.ImageSeed = json.RawMessage("{}")
+				}
 			}
-			if isResponseBody != nil {
-				task.ImageSeed = isResponseBody
-			}
+
 			if task.Progress != "100%" && responseItem.FailReason != "" {
 				common.LogInfo(ctx, task.MjId+" 构建失败，"+task.FailReason)
 				task.Progress = "100%"

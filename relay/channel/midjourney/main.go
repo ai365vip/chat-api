@@ -221,8 +221,10 @@ func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 				Description: "task_no_found",
 			}
 		}
+
 		midjourneyTask := getMidjourneyTaskModel(c, originTask)
 		respBody, err = json.Marshal(midjourneyTask)
+
 		if err != nil {
 			return &MidjourneyResponse{
 				Code:        4,
