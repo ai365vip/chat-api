@@ -164,7 +164,6 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 			return
 		}
 		defer isResp.Body.Close()
-
 		// 读取响应体
 		isResponseBody, err := io.ReadAll(isResp.Body)
 		if err != nil {
