@@ -345,6 +345,7 @@ export default function Profile() {
       <EmailModal
         open={openEmail}
         turnstileToken={turnstileToken}
+        turnstileEnabled={turnstileEnabled}
         handleClose={() => {
           setOpenEmail(false);
         }}

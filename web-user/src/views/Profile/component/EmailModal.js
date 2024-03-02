@@ -26,12 +26,14 @@ const validationSchema = Yup.object().shape({
   email_verification_code: Yup.string().required('验证码不能为空')
 });
 
-const EmailModal = ({ open, handleClose, turnstileToken }) => {
+const EmailModal = ({ open, handleClose, turnstileToken, turnstileEnabled}) => {
   const theme = useTheme();
   const [countdown, setCountdown] = useState(30);
   const [disableButton, setDisableButton] = useState(false);
   const { sendVerificationCode } = useRegister();
   const [loading, setLoading] = useState(false);
+
+
 
   const submit = async (values, { setErrors, setStatus, setSubmitting }) => {
     setLoading(true);
@@ -62,6 +64,7 @@ const EmailModal = ({ open, handleClose, turnstileToken }) => {
     }
     return () => clearInterval(countdownInterval); // Clean up on unmount
   }, [disableButton, countdown]);
+  
 
   const handleSendCode = async (email) => {
     setDisableButton(true);
@@ -69,7 +72,7 @@ const EmailModal = ({ open, handleClose, turnstileToken }) => {
       showError('请输入邮箱');
       return;
     }
-    if (turnstileToken === '') {
+    if (turnstileEnabled && turnstileToken === '') {
       showError('请稍后几秒重试，Turnstile 正在检查用户环境！');
       return;
     }
