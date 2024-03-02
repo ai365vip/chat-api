@@ -5,27 +5,28 @@ import (
 )
 
 type Midjourney struct {
-	Id          int             `json:"id"`
-	Code        int             `json:"code"`
-	UserId      int             `json:"user_id" gorm:"index"`
-	Action      string          `json:"action"`
-	MjId        string          `json:"mj_id" gorm:"index"`
-	Prompt      string          `json:"prompt"`
-	PromptEn    string          `json:"prompt_en"`
-	Description string          `json:"description"`
-	State       string          `json:"state"`
-	Mode        string          `json:"mode"`
-	SubmitTime  int64           `json:"submit_time"`
-	StartTime   int64           `json:"start_time"`
-	FinishTime  int64           `json:"finish_time"`
-	ImageUrl    string          `json:"image_url"`
-	Status      string          `json:"status"`
-	Progress    string          `json:"progress"`
-	FailReason  string          `json:"fail_reason"`
-	Buttons     json.RawMessage `json:"buttons"`
-	Properties  json.RawMessage `json:"properties"`
-	ImageSeed   json.RawMessage `json:"image_seed"`
-	ChannelId   int             `json:"channel_id"`
+	Id                int             `json:"id"`
+	Code              int             `json:"code"`
+	UserId            int             `json:"user_id" gorm:"index"`
+	Action            string          `json:"action"`
+	MjId              string          `json:"mj_id" gorm:"index"`
+	Prompt            string          `json:"prompt"`
+	PromptEn          string          `json:"prompt_en"`
+	Description       string          `json:"description"`
+	State             string          `json:"state"`
+	Mode              string          `json:"mode"`
+	SubmitTime        int64           `json:"submit_time"`
+	StartTime         int64           `json:"start_time"`
+	FinishTime        int64           `json:"finish_time"`
+	ImageUrl          string          `json:"image_url"`
+	Status            string          `json:"status"`
+	Progress          string          `json:"progress"`
+	FailReason        string          `json:"fail_reason"`
+	Buttons           json.RawMessage `json:"buttons"`
+	Properties        json.RawMessage `json:"properties"`
+	ImageSeed         json.RawMessage `json:"image_seed"`
+	ChannelId         int             `json:"channel_id"`
+	IsImageURLEnabled *int            `json:"is_image_url_enabled"`
 }
 
 // TaskQueryParams 用于包含所有搜索条件的结构体，可以根据需求添加更多字段

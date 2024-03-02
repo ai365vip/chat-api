@@ -26,9 +26,10 @@ func Distribute() func(c *gin.Context) {
 			tokenGroup = userGroup
 			c.Set("group", tokenGroup)
 		}
-		Model, ok := c.Get("model")
+		Model, _ := c.Get("model")
 
 		channelId, ok := c.Get("channelId")
+
 		if ok {
 			id, err := strconv.Atoi(channelId.(string))
 			if err != nil {

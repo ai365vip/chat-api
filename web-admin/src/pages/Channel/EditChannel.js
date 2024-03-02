@@ -46,6 +46,7 @@ const EditChannel = (props) => {
         headers: '',
         models: [],
         auto_ban: 1,
+        is_image_url_enabled: 0,
         model_test: '', 
         tested_time:'',
         priority:'',
@@ -68,6 +69,7 @@ const EditChannel = (props) => {
     const [priority, setPriority] = useState(0);
     const [weight, setWeight] = useState(0);
     const [rateLimited, setRateLimited] = useState(false);
+    const [isimageurenabled, setIsImageURLEnabled] = useState(false);
 
     const handleInputChange = (name, value) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
@@ -141,6 +143,11 @@ const EditChannel = (props) => {
                 setAutoBan(false);
             } else {
                 setAutoBan(true);
+            }
+            if (data.is_image_url_enabled === 0) {
+                setIsImageURLEnabled(false);
+            } else {
+                setIsImageURLEnabled(true);
             }
             setRestartDelay(data.tested_time || 0);
             setPriority(data.priority || 0);
@@ -225,6 +232,7 @@ const EditChannel = (props) => {
         localInputs.priority = priority;
         localInputs.weight = weight;
         localInputs.rate_limited = rateLimited;
+        localInputs.is_image_url_enabled = isimageurenabled ? 1 : 0;
         
         if (localInputs.base_url && localInputs.base_url.endsWith('/')) {
             localInputs.base_url = localInputs.base_url.slice(0, localInputs.base_url.length - 1);
@@ -260,7 +268,7 @@ const EditChannel = (props) => {
                 tested_time: parseInt(restartDelay, 10) || 0,
                 priority: parseInt(priority, 10) || 0, 
                 weight: parseInt(weight, 10) || 0, 
-                rate_limited: rateLimited
+                rate_limited: rateLimited,
             };
             });
     
@@ -612,6 +620,20 @@ const EditChannel = (props) => {
                             <Typography.Text strong>启用频率限制（开启后渠道每分钟限制三次）</Typography.Text>
                         </Space>
                     </div>
+                    {
+                        inputs.type === 2 && (
+                            <div style={{marginTop: 10, display: 'flex'}}>
+                                <Space>
+                                    <Checkbox
+                                        checked={isimageurenabled}
+                                        onChange={() => setIsImageURLEnabled(!isimageurenabled)}
+                                    />
+                                    <Typography.Text strong>启用MJ图片原始地址</Typography.Text>
+                                </Space>
+                            </div>
+                        )
+                    }
+
                     <div style={{marginTop: 20, display: 'flex', alignItems: 'center'}}>
                         <div style={{flex: 1}}>
                                 <Typography.Text>优先级：</Typography.Text>

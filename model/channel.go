@@ -34,6 +34,7 @@ type Channel struct {
 	TestedTime         *int    `json:"tested_time" gorm:"bigint"`
 	ModelTest          string  `json:"model_test"`
 	RateLimited        *bool   `json:"rate_limited" gorm:"default:false"`
+	IsImageURLEnabled  *int    `json:"is_image_url_enabled" gorm:"default:0"`
 	Config             string  `json:"config"`
 }
 
@@ -77,6 +78,19 @@ func GetChannelById(id int, selectAll bool) (*Channel, error) {
 	}
 
 	return &channel, err
+}
+
+func GetChannelByIdIsImageURLEnabled(id int) (*int, error) {
+	var channel Channel
+	db := DB.Session(&gorm.Session{NewDB: true})
+
+	// 只选择 is_image_url_enabled 字段进行查询
+	err := db.Select("is_image_url_enabled").First(&channel, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return channel.IsImageURLEnabled, nil
 }
 
 func GetRandomChannel() (*Channel, error) {

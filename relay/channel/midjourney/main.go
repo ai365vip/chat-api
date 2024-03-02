@@ -163,12 +163,22 @@ func getMidjourneyTaskModel(c *gin.Context, originTask *model.Midjourney) (midjo
 	midjourneyTask.Buttons = originTask.Buttons
 	midjourneyTask.Properties = originTask.Properties
 	midjourneyTask.ImageUrl = ""
-	if originTask.ImageUrl != "" {
-		midjourneyTask.ImageUrl = common.ServerAddress + "/mj/image/" + originTask.MjId
-		if originTask.Status != "SUCCESS" {
-			midjourneyTask.ImageUrl += "?rand=" + strconv.FormatInt(time.Now().UnixNano(), 10)
+
+	// 如果图片地址功能被明确开启 (即 isImageURLEnabled == 1)
+	if originTask.IsImageURLEnabled != nil && *originTask.IsImageURLEnabled == 1 {
+		// 直接使用originTask的ImageUrl
+		midjourneyTask.ImageUrl = originTask.ImageUrl
+	} else {
+		// 否则，使用之前的逻辑来设置ImageUrl
+		midjourneyTask.ImageUrl = ""
+		if originTask.ImageUrl != "" {
+			midjourneyTask.ImageUrl = common.ServerAddress + "/mj/image/" + originTask.MjId
+			if originTask.Status != "SUCCESS" {
+				midjourneyTask.ImageUrl += "?rand=" + strconv.FormatInt(time.Now().UnixNano(), 10)
+			}
 		}
 	}
+
 	midjourneyTask.Status = originTask.Status
 	midjourneyTask.FailReason = originTask.FailReason
 	midjourneyTask.Action = originTask.Action
@@ -670,25 +680,26 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	// 23-队列已满，请稍后再试 {"code":23,"description":"队列已满，请稍后尝试","result":"14001929738841620","properties":{"discordInstanceId":"1118138338562560102"}}
 	// 24-prompt包含敏感词 {"code":24,"description":"可能包含敏感词","properties":{"promptEn":"nude body","bannedWord":"nude"}}
 	// other: 提交错误，description为错误描述
-
+	ChannelIsImageURLEnabled, _ := model.GetChannelByIdIsImageURLEnabled(c.GetInt("channel_id"))
 	midjourneyTask := &model.Midjourney{
-		UserId:      userId,
-		Code:        midjResponse.Code,
-		Action:      midjRequest.Action,
-		MjId:        midjResponse.Result,
-		Prompt:      midjRequest.Prompt,
-		PromptEn:    "",
-		Description: midjResponse.Description,
-		State:       "",
-		Mode:        midjRequest.Mode,
-		SubmitTime:  time.Now().UnixNano() / int64(time.Millisecond),
-		StartTime:   0,
-		FinishTime:  0,
-		ImageUrl:    "",
-		Status:      "",
-		Progress:    "0%",
-		FailReason:  "",
-		ChannelId:   c.GetInt("channel_id"),
+		UserId:            userId,
+		Code:              midjResponse.Code,
+		Action:            midjRequest.Action,
+		MjId:              midjResponse.Result,
+		Prompt:            midjRequest.Prompt,
+		PromptEn:          "",
+		Description:       midjResponse.Description,
+		State:             "",
+		Mode:              midjRequest.Mode,
+		SubmitTime:        time.Now().UnixNano() / int64(time.Millisecond),
+		StartTime:         0,
+		FinishTime:        0,
+		ImageUrl:          "",
+		Status:            "",
+		Progress:          "0%",
+		FailReason:        "",
+		ChannelId:         c.GetInt("channel_id"),
+		IsImageURLEnabled: ChannelIsImageURLEnabled,
 	}
 
 	if midjResponse.Code != 1 && midjResponse.Code != 21 && midjResponse.Code != 22 {
