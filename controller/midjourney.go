@@ -174,8 +174,14 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 		if err != nil {
 			log.Println("error update user quota cache: " + err.Error())
 		} else {
-			Mode := responseItem.Mode
-			modelRatio, _ := common.GetModelRatio2("mj_" + Mode + "_" + strings.ToLower(responseItem.Action))
+			Mode, _ := model.GetByOnlyMJIdMode(task.MjId)
+			if Mode == "fast" {
+				Mode = ""
+			} else {
+				Mode = Mode + "_"
+			}
+
+			modelRatio, _ := common.GetModelRatio2("mj_" + Mode + strings.ToLower(responseItem.Action))
 
 			groupRatio := common.GetGroupRatio(group)
 			ratio := modelRatio * groupRatio
@@ -185,7 +191,7 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 				if err != nil {
 					log.Println("fail to increase user quota")
 				}
-				logContent := fmt.Sprintf("%s 2构图失败，补偿 %s", task.MjId, common.LogQuota(quota))
+				logContent := fmt.Sprintf("%s 构图失败，补偿 %s", task.MjId, common.LogQuota(quota))
 
 				model.RecordLog(task.UserId, 4, 0, logContent)
 			}
@@ -326,9 +332,14 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 				if err != nil {
 					common.LogError(ctx, "error update user quota cache: "+err.Error())
 				} else {
-					Mode := responseItem.Mode
-					modelRatio, _ := common.GetModelRatio2("mj_" + Mode + "_" + strings.ToLower(responseItem.Action))
+					Mode, _ := model.GetByOnlyMJIdMode(task.MjId)
+					if Mode == "fast" {
+						Mode = ""
+					} else {
+						Mode = Mode + "_"
+					}
 
+					modelRatio, _ := common.GetModelRatio2("mj_" + Mode + strings.ToLower(responseItem.Action))
 					groupRatio := common.GetGroupRatio(group)
 					ratio := modelRatio * groupRatio
 					quota := int(ratio * common.QuotaPerUnit)
@@ -337,7 +348,7 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 						if err != nil {
 							log.Println("fail to increase user quota")
 						}
-						logContent := fmt.Sprintf("%s 1构图失败，补偿 %s", task.MjId, common.LogQuota(quota))
+						logContent := fmt.Sprintf("%s 构图失败，补偿 %s", task.MjId, common.LogQuota(quota))
 
 						model.RecordLog(task.UserId, 4, 0, logContent)
 					}

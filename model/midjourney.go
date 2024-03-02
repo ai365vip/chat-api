@@ -115,6 +115,15 @@ func GetByOnlyMJId(mjId string) *Midjourney {
 	return mj
 }
 
+func GetByOnlyMJIdMode(mjId string) (string, error) {
+	var mode string
+	err := DB.Model(&Midjourney{}).Where("mj_id = ?", mjId).Select("mode").First(&mode).Error
+	if err != nil {
+		return "", err // 如果出错，则返回空字符串和错误信息
+	}
+	return mode, nil // 如果找到匹配的记录，则返回Mode字段的值和nil表示没有错误
+}
+
 func GetByMJId(userId int, mjId string) *Midjourney {
 	var mj *Midjourney
 	var err error
