@@ -21,6 +21,7 @@ func configureMidjourneyRoutes(group *gin.RouterGroup) {
 		group.POST("/submit/modal", controller.RelayMidjourney)
 		group.POST("/submit/shorten", controller.RelayMidjourney)
 		group.POST("/insight-face/swap", controller.RelayMidjourney)
+		group.POST("/submit/upload-discord-images", controller.RelayMidjourney)
 		group.POST("/notify", controller.RelayMidjourney)
 		group.GET("/task/:id/fetch", controller.RelayMidjourney)
 		group.GET("/task/:id/image-seed", controller.RelayMidjourney)

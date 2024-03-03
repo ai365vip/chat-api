@@ -228,7 +228,7 @@ func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 		if err != nil {
 			return &MidjourneyResponse{
 				Code:        4,
-				Description: "unmarshal_response_body_failed",
+				Description: "unmarshal_response_fetch_body_failed",
 			}
 		}
 	case constant.RelayModeMidjourneyTaskFetchByCondition:
@@ -255,7 +255,7 @@ func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 		if err != nil {
 			return &MidjourneyResponse{
 				Code:        4,
-				Description: "unmarshal_response_body_failed",
+				Description: "unmarshal_response_fetchBy_body_failed",
 			}
 		}
 	}
@@ -349,6 +349,14 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		midjRequest.Action = "DESCRIBE"
 	} else if relayMode == constant.RelayModeMidjourneyShorten { //prompt分析
 		midjRequest.Action = "SHORTEN"
+	} else if relayMode == constant.RelayModeMidjourneyUploads {
+		if midjRequest.Base64Array == nil {
+			return &MidjourneyResponse{
+				Code:        4,
+				Description: "Base64Array_is_required",
+			}
+		}
+		midjRequest.Action = "UPLOADS"
 	} else if relayMode == constant.RelayModeMidjourneyFace { //换脸
 		if midjRequest.TargetBase64 == "" {
 			return &MidjourneyResponse{
@@ -507,25 +515,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		}
 		requestBody = bytes.NewBuffer(jsonStr)
 	} else {
-		// 读取原始请求体
-		bodyBytes, err := io.ReadAll(c.Request.Body)
-
-		// 将原始请求体的内容反序列化为一个 map
-		json.Unmarshal(bodyBytes, &m)
-
-		updatedBodyBytes, err := json.Marshal(m)
-		if err != nil {
-			return &MidjourneyResponse{
-				Code:        4,
-				Description: "marshal_text_request_failed",
-			}
-		}
-
-		// 创建一个新的请求体
-		requestBody = bytes.NewBuffer(updatedBodyBytes)
-
-		// 重置原始请求体以供后续处理
-		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		requestBody = c.Request.Body
 	}
 	var modelRatio float64
 	var mjAction string
@@ -619,6 +609,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		}
 	}
 	var midjResponse MidjourneyResponse
+	var mjuploadsResponse MidjourneyUploadsResponse
 
 	defer func(ctx context.Context) {
 
@@ -659,7 +650,6 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		}
 	}
 
-	err = json.Unmarshal(responseBody, &midjResponse)
 	if resp.StatusCode != 200 {
 		consumeQuota = false
 		return &MidjourneyResponse{
@@ -667,11 +657,17 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			Description: "fail_to_fetch_midjourney status_code: " + strconv.Itoa(resp.StatusCode),
 		}
 	}
+
+	err = json.Unmarshal(responseBody, &midjResponse)
 	if err != nil {
-		consumeQuota = false
-		return &MidjourneyResponse{
-			Code:        4,
-			Description: "unmarshal_response_body_failed",
+		// 如果解码失败，尝试将响应体反序列化为MidjourneyUploadsResponse
+		err = json.Unmarshal(responseBody, &mjuploadsResponse)
+		if err != nil {
+			consumeQuota = false
+			return &MidjourneyResponse{
+				Code:        4,
+				Description: "unmarshal_response_body_failed",
+			}
 		}
 	}
 
@@ -709,7 +705,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		midjourneyTask.FailReason = midjResponse.Description
 		consumeQuota = false
 	}
-	if midjResponse.Result == "" {
+	if midjResponse.Result == "" || midjRequest.Action == "UPLOADS" {
 		//没有返回id
 		midjourneyTask.Progress = "100%"
 	}

@@ -123,6 +123,7 @@ var ModelPrice = map[string]float64{
 	"mj_inpaint":         0.1,
 	"mj_swapface":        0.1,
 	"mj_shorten":         0.1,
+	"mj_uploads":         0.05,
 	"mj_turbo_imagine":   0.1,
 	"mj_turbo_variation": 0.1,
 	"mj_turbo_reroll":    0.1,
@@ -133,6 +134,7 @@ var ModelPrice = map[string]float64{
 	"mj_turbo_inpaint":   0.1,
 	"mj_turbo_swapface":  0.1,
 	"mj_turbo_shorten":   0.1,
+	"mj_turbo_uploads":   0.05,
 	"mj_relax_imagine":   0.1,
 	"mj_relax_variation": 0.1,
 	"mj_relax_reroll":    0.1,
@@ -143,6 +145,7 @@ var ModelPrice = map[string]float64{
 	"mj_relax_inpaint":   0.1,
 	"mj_relax_swapface":  0.1,
 	"mj_relax_shorten":   0.1,
+	"mj_relax_uploads":   0.05,
 	"midjourney":         0.1,
 }
 

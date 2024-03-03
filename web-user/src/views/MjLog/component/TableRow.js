@@ -27,6 +27,8 @@ function renderType(type) {
       return <Tag color="lime" size='large'>重绘</Tag>
     case 'BLEAND':
       return <Tag color="lime" size='large'>图混合</Tag>;
+    case 'UPLOADS':
+      return <Tag color="blue" size='large'>上传文件</Tag>
     default:
       return <Tag color="black" size='large'>未知</Tag>;
   }
