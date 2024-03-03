@@ -98,8 +98,12 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 		log.Printf("UpdateMidjourneyTask error: %v", err)
 		return
 	}
+	defer resp.Body.Close()
 	responseBody, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		return
+	}
 	//log.Printf("responseBody: %s", string(responseBody))
 	var responseItem midjourney.Midjourney
 	// err = json.NewDecoder(resp.Body).Decode(&responseItem)
@@ -270,30 +274,34 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 		// 设置超时时间
 		timeout := time.Second * 5
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel()
+		defer cancel() // 确保结束时取消上下文
+
 		// 使用带有超时的 context 创建新的请求
 		req = req.WithContext(ctx)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("mj-api-secret", midjourneyChannel.Key)
+
+		// 发送请求并获取响应
 		resp, err := util.HTTPClient.Do(req)
 		if err != nil {
 			common.LogError(ctx, fmt.Sprintf("Get Task Do req error: %v", err))
 			return false
 		}
+		defer resp.Body.Close() // 使用 defer 来确保响应体会被关闭
+
 		responseBody, err := io.ReadAll(resp.Body)
+
 		if err != nil {
 			common.LogError(ctx, fmt.Sprintf("Get Task parse body error: %v", err))
 			return false
 		}
+		//log.Printf("responseBody: %s", string(responseBody))
 		var responseItems []midjourney.Midjourney
 		err = json.Unmarshal(responseBody, &responseItems)
 		if err != nil {
 			common.LogError(ctx, fmt.Sprintf("Get Task parse body error2: %v", err))
 			return false
 		}
-		resp.Body.Close()
-		req.Body.Close()
-		cancel()
 
 		for _, responseItem := range responseItems {
 			task := taskM[responseItem.MjId]
