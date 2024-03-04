@@ -246,15 +246,21 @@ const InviteCard = () => {
           <Button variant='contained' onClick={handleOpenTransfer} size='small' sx={{marginLeft: 2}}>
             划转
           </Button>
-          <Button variant='contained' onClick={handleOpenWithdrawal} size='small' sx={{marginLeft: 2}}>
-            提现
-          </Button>
+          {options.ProporTions !== "0" && (
+            <>
+              <Button variant='contained' onClick={handleOpenWithdrawal} size='small' sx={{marginLeft: 2}}>
+                提现
+              </Button>
+            </>
+          )}
         </Stack>
-        <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'5px'}>
-          <Button variant="contained" onClick={goWithdrawal}>
-            提现记录
-          </Button>
-        </Stack>
+        {options.ProporTions !== "0" && (
+          <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'5px'}>
+            <Button variant="contained" onClick={goWithdrawal}>
+              提现记录
+            </Button>
+          </Stack>
+        )}
 
           {/* 模态对话框：提现 */}
           <Modal
