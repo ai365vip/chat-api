@@ -39,6 +39,24 @@ type Midjourney struct {
 	ImageSeed   json.RawMessage `json:"image_seed"`
 }
 
+type TaskMidjourney struct {
+	MjId        string          `json:"id"`
+	Action      string          `json:"action"`
+	Prompt      string          `json:"prompt"`
+	PromptEn    string          `json:"promptEn"`
+	Description string          `json:"description"`
+	State       string          `json:"state"`
+	SubmitTime  int64           `json:"submitTime"`
+	StartTime   int64           `json:"startTime"`
+	FinishTime  int64           `json:"finishTime"`
+	ImageUrl    string          `json:"imageUrl"`
+	Status      string          `json:"status"`
+	Progress    string          `json:"progress"`
+	FailReason  string          `json:"failReason"`
+	Properties  json.RawMessage `json:"properties"`
+	Buttons     json.RawMessage `json:"buttons"`
+}
+
 type MidjourneyImageSeed struct {
 	ImageSeed json.RawMessage `json:"image_seed"`
 }
@@ -152,7 +170,7 @@ func RelayMidjourneyNotify(c *gin.Context) *MidjourneyResponse {
 	return nil
 }
 
-func getMidjourneyTaskModel(c *gin.Context, originTask *model.Midjourney) (midjourneyTask Midjourney) {
+func getMidjourneyTaskModel(c *gin.Context, originTask *model.Midjourney) (midjourneyTask TaskMidjourney) {
 	midjourneyTask.MjId = originTask.MjId
 	midjourneyTask.Progress = originTask.Progress
 	midjourneyTask.PromptEn = originTask.PromptEn
@@ -184,7 +202,6 @@ func getMidjourneyTaskModel(c *gin.Context, originTask *model.Midjourney) (midjo
 	midjourneyTask.Action = originTask.Action
 	midjourneyTask.Description = originTask.Description
 	midjourneyTask.Prompt = originTask.Prompt
-	midjourneyTask.ImageSeed = originTask.ImageSeed
 	return
 }
 
@@ -240,7 +257,7 @@ func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 				Description: "do_request_failed",
 			}
 		}
-		var tasks []Midjourney
+		var tasks []TaskMidjourney
 		if len(condition.IDs) != 0 {
 			originTasks := model.GetByMJIds(userId, condition.IDs)
 			for _, originTask := range originTasks {
@@ -249,7 +266,7 @@ func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 		}
 		if tasks == nil {
-			tasks = make([]Midjourney, 0)
+			tasks = make([]TaskMidjourney, 0)
 		}
 		respBody, err = json.Marshal(tasks)
 		if err != nil {
