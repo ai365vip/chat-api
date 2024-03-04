@@ -94,12 +94,13 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	//req.Header.Set("Authorization", "Bearer midjourney-proxy")
 	req.Header.Set("mj-api-secret", midjourneyChannel.Key)
 	resp, err := util.HTTPClient.Do(req)
+
 	if err != nil {
 		log.Printf("UpdateMidjourneyTask error: %v", err)
 		return
 	}
+	defer resp.Body.Close()
 	responseBody, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
 	//log.Printf("responseBody: %s", string(responseBody))
 	var responseItem midjourney.Midjourney
 	// err = json.NewDecoder(resp.Body).Decode(&responseItem)
@@ -268,32 +269,38 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 			continue
 		}
 		// 设置超时时间
-		timeout := time.Second * 5
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		timeout := 5 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
-		// 使用带有超时的 context 创建新的请求
+
+		req, err = http.NewRequest("GET", "http://example.com", nil) // 使用实际的方法和URL
+		if err != nil {
+			common.LogError(ctx, fmt.Sprintf("Create request error: %v", err))
+			return false
+		}
+
 		req = req.WithContext(ctx)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("mj-api-secret", midjourneyChannel.Key)
+
 		resp, err := util.HTTPClient.Do(req)
 		if err != nil {
-			common.LogError(ctx, fmt.Sprintf("Get Task Do req error: %v", err))
+			common.LogError(ctx, fmt.Sprintf("Do request error: %v", err))
 			return false
 		}
+		defer resp.Body.Close() // 使用defer确保响应体关闭
+
 		responseBody, err := io.ReadAll(resp.Body)
 		if err != nil {
-			common.LogError(ctx, fmt.Sprintf("Get Task parse body error: %v", err))
+			common.LogError(ctx, fmt.Sprintf("Read response body error: %v", err))
 			return false
 		}
+
 		var responseItems []midjourney.Midjourney
-		err = json.Unmarshal(responseBody, &responseItems)
-		if err != nil {
-			common.LogError(ctx, fmt.Sprintf("Get Task parse body error2: %v", err))
+		if err := json.Unmarshal(responseBody, &responseItems); err != nil {
+			common.LogError(ctx, fmt.Sprintf("Parse response body error: %v", err))
 			return false
 		}
-		resp.Body.Close()
-		req.Body.Close()
-		cancel()
 
 		for _, responseItem := range responseItems {
 			task := taskM[responseItem.MjId]
