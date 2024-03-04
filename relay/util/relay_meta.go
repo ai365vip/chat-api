@@ -18,6 +18,7 @@ type RelayMeta struct {
 	UserId          int
 	Group           string
 	ModelMapping    map[string]string
+	Headers         map[string]string
 	BaseURL         string
 	APIVersion      string
 	APIKey          string
@@ -42,6 +43,7 @@ func GetRelayMeta(c *gin.Context) *RelayMeta {
 		UserId:         c.GetInt("id"),
 		Group:          c.GetString("group"),
 		ModelMapping:   c.GetStringMapString("model_mapping"),
+		Headers:        c.GetStringMapString("headers"),
 		BaseURL:        c.GetString("base_url"),
 		APIVersion:     c.GetString(common.ConfigKeyAPIVersion),
 		APIKey:         strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
