@@ -65,6 +65,12 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	}
 	c.Request.Header.Set("Authorization", "Bearer "+channel.Key)
 	c.Request.Header.Set("Content-Type", "application/json")
+	modelHeaders := channel.GetModelHeaders()
+
+	// 遍历modelHeaders，并将这些头部信息添加到请求中
+	for headerKey, headerValue := range modelHeaders {
+		c.Request.Header.Set(headerKey, headerValue)
+	}
 	c.Set("channel", channel.Type)
 	c.Set("base_url", channel.GetBaseURL())
 
