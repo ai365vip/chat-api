@@ -156,34 +156,37 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 		if err != nil {
 			log.Printf("Get ImageSeed error: %v", err)
 			task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
-			return
-		}
-		isReq.Header.Set("Content-Type", "application/json")
-		isReq.Header.Set("mj-api-secret", midjourneyChannel.Key)
+		} else { // 只有没有错误时，才设置Header和进行请求
+			isReq.Header.Set("Content-Type", "application/json")
+			isReq.Header.Set("mj-api-secret", midjourneyChannel.Key)
 
-		isResp, err := util.HTTPClient.Do(isReq)
-		if err != nil {
-			log.Printf("Get ImageSeed Do req error: %v", err)
-			task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
-			return
-		}
-		defer isResp.Body.Close()
-		// 读取响应体
-		isResponseBody, err := io.ReadAll(isResp.Body)
-		if err != nil {
-			log.Printf("Read ImageSeed response body error: %v", err)
-			task.ImageSeed = json.RawMessage("{}") // 发生错误时设置为空
-			return
-		}
+			client := &http.Client{
+				Timeout: 5 * time.Second,
+			}
+			isResp, err := client.Do(isReq)
+			if err != nil {
+				log.Printf("Get ImageSeed Do req error: %v", err)
+				task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
+			} else {
+				defer isResp.Body.Close()
 
-		// 尝试解析响应体到ImageSeedResponse结构
-		var resp ImageSeedResponse
-		if json.Unmarshal(isResponseBody, &resp) == nil {
-			// 解析成功，使用原始的响应体作为ImageSeed的值
-			task.ImageSeed = isResponseBody
-		} else {
-			// 解析失败，设置空的ImageSeed
-			task.ImageSeed = json.RawMessage("{}")
+				// 读取响应体
+				isResponseBody, err := io.ReadAll(isResp.Body)
+				if err != nil {
+					log.Printf("Read ImageSeed response body error: %v", err)
+					task.ImageSeed = json.RawMessage("{}") // 发生错误时设置为空
+				} else {
+					// 尝试解析响应体到ImageSeedResponse结构
+					var resp ImageSeedResponse
+					if json.Unmarshal(isResponseBody, &resp) == nil {
+						// 解析成功，使用原始的响应体作为ImageSeed的值
+						task.ImageSeed = isResponseBody
+					} else {
+						// 解析失败，设置空的ImageSeed
+						task.ImageSeed = json.RawMessage("{}")
+					}
+				}
+			}
 		}
 	}
 
@@ -330,32 +333,37 @@ func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) boo
 				if err != nil {
 					log.Printf("Get ImageSeed error: %v", err)
 					task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
-				}
-				isReq.Header.Set("Content-Type", "application/json")
-				isReq.Header.Set("mj-api-secret", midjourneyChannel.Key)
+				} else { // 只有没有错误时，才设置Header和进行请求
+					isReq.Header.Set("Content-Type", "application/json")
+					isReq.Header.Set("mj-api-secret", midjourneyChannel.Key)
 
-				isResp, err := util.HTTPClient.Do(isReq)
-				if err != nil {
-					log.Printf("Get ImageSeed Do req error: %v", err)
-					task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
-				}
-				defer isResp.Body.Close()
+					client := &http.Client{
+						Timeout: 5 * time.Second,
+					}
+					isResp, err := client.Do(isReq)
+					if err != nil {
+						log.Printf("Get ImageSeed Do req error: %v", err)
+						task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
+					} else {
+						defer isResp.Body.Close()
 
-				// 读取响应体
-				isResponseBody, err := io.ReadAll(isResp.Body)
-				if err != nil {
-					log.Printf("Read ImageSeed response body error: %v", err)
-					task.ImageSeed = json.RawMessage("{}") // 发生错误时设置为空
-				}
-
-				// 尝试解析响应体到ImageSeedResponse结构
-				var resp ImageSeedResponse
-				if json.Unmarshal(isResponseBody, &resp) == nil {
-					// 解析成功，使用原始的响应体作为ImageSeed的值
-					task.ImageSeed = isResponseBody
-				} else {
-					// 解析失败，设置空的ImageSeed
-					task.ImageSeed = json.RawMessage("{}")
+						// 读取响应体
+						isResponseBody, err := io.ReadAll(isResp.Body)
+						if err != nil {
+							log.Printf("Read ImageSeed response body error: %v", err)
+							task.ImageSeed = json.RawMessage("{}") // 发生错误时设置为空
+						} else {
+							// 尝试解析响应体到ImageSeedResponse结构
+							var resp ImageSeedResponse
+							if json.Unmarshal(isResponseBody, &resp) == nil {
+								// 解析成功，使用原始的响应体作为ImageSeed的值
+								task.ImageSeed = isResponseBody
+							} else {
+								// 解析失败，设置空的ImageSeed
+								task.ImageSeed = json.RawMessage("{}")
+							}
+						}
+					}
 				}
 			}
 

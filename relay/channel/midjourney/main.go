@@ -125,7 +125,6 @@ func RelayMidjourneyImage(c *gin.Context) {
 	if err != nil {
 		log.Println("Failed to stream image:", err)
 	}
-	return
 }
 
 func RelayMidjourneyNotify(c *gin.Context) *MidjourneyResponse {
@@ -287,12 +286,6 @@ func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 		}
 	}
 	return nil
-}
-
-func getMidjourneyImageModel(c *gin.Context, originTask *model.Midjourney) (midjourneyImageSeed MidjourneyImageSeed) {
-
-	midjourneyImageSeed.ImageSeed = originTask.ImageSeed
-	return
 }
 
 func RelayMidjourneyImageSeed(c *gin.Context) *MidjourneyResponse {
