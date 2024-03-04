@@ -296,7 +296,7 @@ func HandleTaskCompletion(ctx context.Context, task *model.Midjourney) {
 	if task.Progress == "100%" && task.Status == "SUCCESS" {
 		// 处理成功完成的任务，例如获取ImageSeed
 		fetchImageSeed(task)
-	} else if task.Progress == "100%" && task.Status != "SUCCESS" {
+	} else if task.FailReason != "" {
 		// 处理失败的任务，例如更新用户配额等
 		compensateForTaskFailure(ctx, task)
 	}
@@ -315,7 +315,7 @@ func fetchImageSeed(task *model.Midjourney) {
 	imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, task.MjId)
 	req, err := http.NewRequest("GET", imageSeedUrl, nil)
 	if err != nil {
-		log.Printf("构建获取ImageSeed请求失败: %v", err)
+		log.Printf("获取ImageSeed请求失败: %v", err)
 		return
 	}
 
@@ -346,6 +346,17 @@ func fetchImageSeed(task *model.Midjourney) {
 
 // compensateForTaskFailure 处理任务失败的补偿逻辑。
 func compensateForTaskFailure(ctx context.Context, task *model.Midjourney) {
+
+	if task.Progress != "100%" {
+		common.LogInfo(ctx, task.MjId+" 构建失败，"+task.FailReason)
+		task.Progress = "100%"
+		if err := task.Update(); err != nil {
+			log.Printf("更新任务失败: %v", err)
+		}
+	} else {
+		common.LogInfo(ctx, task.MjId+" 返回失败，"+task.FailReason)
+	}
+
 	err := model.CacheUpdateUserQuota(task.UserId)
 	if err != nil {
 		common.LogError(ctx, "error update user quota cache: "+err.Error())
