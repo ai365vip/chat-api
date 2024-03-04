@@ -14,6 +14,7 @@ import (
 	"one-api/relay/util"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -46,56 +47,58 @@ func UpdateMidjourneyTask() {
 		batchUpdateSuccess := UpdateMidjourneyTaskAll(ctx, tasks)
 		if !batchUpdateSuccess {
 			common.LogInfo(ctx, "批量更新失败，使用单个任务更新")
-			// 使用备用的单个任务更新
-			for _, task := range tasks {
-				UpdateMidjourneyTaskOne(ctx, task)
-			}
+			ConcurrentUpdateMidjourneyTasks(ctx, tasks)
 		}
 	}
 }
 
+func ConcurrentUpdateMidjourneyTasks(ctx context.Context, tasks []*model.Midjourney) {
+	var wg sync.WaitGroup
+
+	// 为每个任务启动一个goroutine
+	for _, task := range tasks {
+		wg.Add(1) // 增加等待组的计数
+		go func(task *model.Midjourney) {
+			defer wg.Done() // 函数返回时减少等待组的计数
+
+			// 将当前任务上下文传给 UpdateMidjourneyTaskOne
+			UpdateMidjourneyTaskOne(ctx, task)
+		}(task)
+	}
+
+	wg.Wait() // 等待所有goroutine完成
+}
+
 func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
-	//common.LogInfo(ctx, fmt.Sprintf("未完成的任务信息: %v", task))
+	localCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	midjourneyChannel, err := model.GetChannelById(task.ChannelId, true)
 	if err != nil {
-		common.LogError(ctx, fmt.Sprintf("UpdateMidjourneyTask: %v", err))
-		task.FailReason = fmt.Sprintf("获取渠道信息失败，请联系管理员，渠道ID：%d", task.ChannelId)
+		common.LogError(localCtx, fmt.Sprintf("获取渠道信息失败，请联系管理员，渠道ID：%d, 错误：%v", task.ChannelId, err))
+		task.FailReason = "获取渠道信息失败，请联系管理员"
 		task.Status = "FAILURE"
 		task.Progress = "100%"
-		err := task.Update()
-		if err != nil {
-			common.LogInfo(ctx, fmt.Sprintf("UpdateMidjourneyTask error: %v", err))
-
+		if err := task.Update(); err != nil {
+			common.LogError(localCtx, fmt.Sprintf("更新任务状态失败：%v", err))
 		}
 		return
 	}
+
 	requestUrl := fmt.Sprintf("%s/mj/task/%s/fetch", *midjourneyChannel.BaseURL, task.MjId)
-	common.LogInfo(ctx, fmt.Sprintf("requestUrl: %s", requestUrl))
-
+	req, err := http.NewRequest("GET", requestUrl, nil)
 	if err != nil {
-		log.Printf("Get ImageSeed error: %v", err)
+		common.LogError(localCtx, fmt.Sprintf("创建请求失败：%v", err))
 		return
 	}
-	req, err := http.NewRequest("GET", requestUrl, bytes.NewBuffer([]byte("")))
-	if err != nil {
-		common.LogInfo(ctx, fmt.Sprintf("Get Task error: %v", err))
-		return
-	}
-
-	// 设置超时时间
-	timeout := time.Second * 5
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	// 使用带有超时的 context 创建新的请求
-	req = req.WithContext(ctx)
+	req = req.WithContext(localCtx) // 正确设置请求的上下文为localCtx
 
 	req.Header.Set("Content-Type", "application/json")
-	//req.Header.Set("Authorization", "Bearer midjourney-proxy")
 	req.Header.Set("mj-api-secret", midjourneyChannel.Key)
+
 	resp, err := util.HTTPClient.Do(req)
 	if err != nil {
-		log.Printf("UpdateMidjourneyTask error: %v", err)
+		common.LogError(localCtx, fmt.Sprintf("执行请求失败：%v", err))
 		return
 	}
 	defer resp.Body.Close()
@@ -148,311 +151,259 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	task.FailReason = responseItem.FailReason
 	task.Buttons = responseItem.Buttons
 	task.Properties = responseItem.Properties
-
-	// 确定任务进度是100%并且状态为SUCCESS
-	if task.Progress == "100%" && task.Status == "SUCCESS" {
-		imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, task.MjId)
-		isReq, err := http.NewRequest("GET", imageSeedUrl, nil)
-		if err != nil {
-			log.Printf("Get ImageSeed error: %v", err)
-			task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
-		} else { // 只有没有错误时，才设置Header和进行请求
-			isReq.Header.Set("Content-Type", "application/json")
-			isReq.Header.Set("mj-api-secret", midjourneyChannel.Key)
-
-			client := &http.Client{
-				Timeout: 5 * time.Second,
-			}
-			isResp, err := client.Do(isReq)
-			if err != nil {
-				log.Printf("Get ImageSeed Do req error: %v", err)
-				task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
-			} else {
-				defer isResp.Body.Close()
-
-				// 读取响应体
-				isResponseBody, err := io.ReadAll(isResp.Body)
-				if err != nil {
-					log.Printf("Read ImageSeed response body error: %v", err)
-					task.ImageSeed = json.RawMessage("{}") // 发生错误时设置为空
-				} else {
-					// 尝试解析响应体到ImageSeedResponse结构
-					var resp ImageSeedResponse
-					if json.Unmarshal(isResponseBody, &resp) == nil {
-						// 解析成功，使用原始的响应体作为ImageSeed的值
-						task.ImageSeed = isResponseBody
-					} else {
-						// 解析失败，设置空的ImageSeed
-						task.ImageSeed = json.RawMessage("{}")
-					}
-				}
-			}
-		}
+	if err := task.Update(); err != nil {
+		log.Printf("更新任务失败: %v", err)
 	}
-
-	if task.Progress != "100%" && responseItem.FailReason != "" {
-		log.Println(task.MjId + " 构建失败，" + task.FailReason)
-		task.Progress = "100%"
-		err = model.CacheUpdateUserQuota(task.UserId)
-		group, _ := model.GetUserGroup(task.UserId)
-		if err != nil {
-			log.Println("error update user quota cache: " + err.Error())
-		} else {
-			Mode, _ := model.GetByOnlyMJIdMode(task.MjId)
-			if Mode == "fast" {
-				Mode = ""
-			} else {
-				Mode = Mode + "_"
-			}
-
-			modelRatio, _ := common.GetModelRatio2("mj_" + Mode + strings.ToLower(responseItem.Action))
-
-			groupRatio := common.GetGroupRatio(group)
-			ratio := modelRatio * groupRatio
-			quota := int(ratio * common.QuotaPerUnit)
-			if quota != 0 {
-				err := model.IncreaseUserQuota(task.UserId, quota)
-				if err != nil {
-					log.Println("fail to increase user quota")
-				}
-				logContent := fmt.Sprintf("%s 构图失败，补偿 %s", task.MjId, common.LogQuota(quota))
-
-				model.RecordLog(task.UserId, 4, 0, logContent)
-			}
-		}
-	}
-
-	err = task.Update()
-	if err != nil {
-		log.Printf("UpdateMidjourneyTask error5: %v", err)
-	}
-	//slog.Printf("UpdateMidjourneyTask success: %v", task)
-	cancel()
+	HandleTaskCompletion(ctx, task)
 
 }
 
 func UpdateMidjourneyTaskAll(ctx context.Context, tasks []*model.Midjourney) bool {
-
 	taskChannelM := make(map[int][]string)
 	taskM := make(map[string]*model.Midjourney)
 	for _, task := range tasks {
 		if task.MjId == "" {
+			log.Println("Task MJ ID is empty")
 			return false
 		}
 		taskM[task.MjId] = task
 		taskChannelM[task.ChannelId] = append(taskChannelM[task.ChannelId], task.MjId)
 	}
 	if len(taskChannelM) == 0 {
+		log.Println("No tasks to update")
 		return false
 	}
 
+	var wg sync.WaitGroup
+	errors := make(chan error, len(taskChannelM)) // 收集错误信息
+
 	for channelId, taskIds := range taskChannelM {
-		common.LogInfo(ctx, fmt.Sprintf("渠道 #%d 未完成的任务有: %d", channelId, len(taskIds)))
-		if len(taskIds) == 0 {
-			continue
-		}
-		midjourneyChannel, err := model.CacheGetChannel(channelId)
-		if err != nil {
-			common.LogError(ctx, fmt.Sprintf("CacheGetChannel: %v", err))
-			err := model.MjBulkUpdate(taskIds, map[string]any{
-				"fail_reason": fmt.Sprintf("获取渠道信息失败，请联系管理员，渠道ID：%d", channelId),
-				"status":      "FAILURE",
-				"progress":    "100%",
-			})
-			if err != nil {
-				common.LogInfo(ctx, fmt.Sprintf("UpdateMidjourneyTask error: %v", err))
+		wg.Add(1)
+		go func(channelId int, taskIds []string) {
+			defer wg.Done()
+			if err := updateTasksForChannel(ctx, channelId, taskIds, taskM); err != nil {
+				errors <- err
 			}
-			continue
-		}
-		requestUrl := fmt.Sprintf("%s/mj/task/list-by-condition", *midjourneyChannel.BaseURL)
+		}(channelId, taskIds)
+	}
 
-		body, _ := json.Marshal(map[string]any{
-			"ids": taskIds,
-		})
-		req, err := http.NewRequest("POST", requestUrl, bytes.NewBuffer(body))
+	wg.Wait()
+	close(errors)
+
+	// 检查是否有错误发生
+	for err := range errors {
 		if err != nil {
-			common.LogError(ctx, fmt.Sprintf("Get Task error: %v", err))
-			continue
-		}
-		// 设置超时时间
-		timeout := time.Second * 5
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel() // 确保结束时取消上下文
-
-		// 使用带有超时的 context 创建新的请求
-		req = req.WithContext(ctx)
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("mj-api-secret", midjourneyChannel.Key)
-
-		// 发送请求并获取响应
-		resp, err := util.HTTPClient.Do(req)
-		if err != nil {
-			common.LogError(ctx, fmt.Sprintf("Get Task Do req error: %v", err))
+			log.Printf("Error updating tasks: %v", err)
 			return false
-		}
-		defer resp.Body.Close() // 使用 defer 来确保响应体会被关闭
-
-		responseBody, err := io.ReadAll(resp.Body)
-
-		if err != nil {
-			common.LogError(ctx, fmt.Sprintf("Get Task parse body error: %v", err))
-			return false
-		}
-		//log.Printf("responseBody: %s", string(responseBody))
-		var responseItems []midjourney.Midjourney
-		err = json.Unmarshal(responseBody, &responseItems)
-		if err != nil {
-			common.LogError(ctx, fmt.Sprintf("Get Task parse body error2: %v", err))
-			return false
-		}
-
-		for _, responseItem := range responseItems {
-			task := taskM[responseItem.MjId]
-			if !checkMjTaskNeedUpdate(task, responseItem) {
-				return false
-			}
-			var isResponseBody []byte // 声明这个变量保存ImageSeed响应体
-
-			task.Code = 1
-			task.Progress = responseItem.Progress
-			task.PromptEn = responseItem.PromptEn
-			task.State = responseItem.State
-			task.SubmitTime = responseItem.SubmitTime
-			task.StartTime = responseItem.StartTime
-			task.FinishTime = responseItem.FinishTime
-			task.ImageUrl = responseItem.ImageUrl
-			task.Status = responseItem.Status
-			task.FailReason = responseItem.FailReason
-			task.Buttons = responseItem.Buttons
-			task.Properties = responseItem.Properties
-			task.ImageSeed = isResponseBody
-			// 确定任务进度是100%并且状态为SUCCESS
-			if task.Progress == "100%" && task.Status == "SUCCESS" {
-				imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, task.MjId)
-				isReq, err := http.NewRequest("GET", imageSeedUrl, nil)
-				if err != nil {
-					log.Printf("Get ImageSeed error: %v", err)
-					task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
-				} else { // 只有没有错误时，才设置Header和进行请求
-					isReq.Header.Set("Content-Type", "application/json")
-					isReq.Header.Set("mj-api-secret", midjourneyChannel.Key)
-
-					client := &http.Client{
-						Timeout: 5 * time.Second,
-					}
-					isResp, err := client.Do(isReq)
-					if err != nil {
-						log.Printf("Get ImageSeed Do req error: %v", err)
-						task.ImageSeed = json.RawMessage("{}") // 设置空的ImageSeed
-					} else {
-						defer isResp.Body.Close()
-
-						// 读取响应体
-						isResponseBody, err := io.ReadAll(isResp.Body)
-						if err != nil {
-							log.Printf("Read ImageSeed response body error: %v", err)
-							task.ImageSeed = json.RawMessage("{}") // 发生错误时设置为空
-						} else {
-							// 尝试解析响应体到ImageSeedResponse结构
-							var resp ImageSeedResponse
-							if json.Unmarshal(isResponseBody, &resp) == nil {
-								// 解析成功，使用原始的响应体作为ImageSeed的值
-								task.ImageSeed = isResponseBody
-							} else {
-								// 解析失败，设置空的ImageSeed
-								task.ImageSeed = json.RawMessage("{}")
-							}
-						}
-					}
-				}
-			}
-
-			if task.Progress != "100%" && responseItem.FailReason != "" {
-				common.LogInfo(ctx, task.MjId+" 构建失败，"+task.FailReason)
-				task.Progress = "100%"
-				err = model.CacheUpdateUserQuota(task.UserId)
-				group, _ := model.GetUserGroup(task.UserId)
-				if err != nil {
-					common.LogError(ctx, "error update user quota cache: "+err.Error())
-				} else {
-					Mode, _ := model.GetByOnlyMJIdMode(task.MjId)
-					if Mode == "fast" {
-						Mode = ""
-					} else {
-						Mode = Mode + "_"
-					}
-
-					modelRatio, _ := common.GetModelRatio2("mj_" + Mode + strings.ToLower(responseItem.Action))
-					groupRatio := common.GetGroupRatio(group)
-					ratio := modelRatio * groupRatio
-					quota := int(ratio * common.QuotaPerUnit)
-					if quota != 0 {
-						err := model.IncreaseUserQuota(task.UserId, quota)
-						if err != nil {
-							log.Println("fail to increase user quota")
-						}
-						logContent := fmt.Sprintf("%s 构图失败，补偿 %s", task.MjId, common.LogQuota(quota))
-
-						model.RecordLog(task.UserId, 4, 0, logContent)
-					}
-				}
-			}
-			err = task.Update()
-			if err != nil {
-				common.LogError(ctx, "UpdateMidjourneyTask task error: "+err.Error())
-			}
 		}
 	}
+
 	return true
 }
 
+func updateTasksForChannel(ctx context.Context, channelId int, taskIds []string, taskMap map[string]*model.Midjourney) error {
+	common.LogInfo(ctx, fmt.Sprintf("渠道 #%d 未完成的任务有: %d", channelId, len(taskIds)))
+	if len(taskIds) == 0 {
+		return nil
+	}
+	midjourneyChannel, err := model.CacheGetChannel(channelId)
+	if err != nil {
+		common.LogError(ctx, fmt.Sprintf("CacheGetChannel: %v", err))
+		err := model.MjBulkUpdate(taskIds, map[string]any{
+			"fail_reason": fmt.Sprintf("获取渠道信息失败，请联系管理员，渠道ID：%d", channelId),
+			"status":      "FAILURE",
+			"progress":    "100%",
+		})
+		if err != nil {
+			common.LogInfo(ctx, fmt.Sprintf("UpdateMidjourneyTask error: %v", err))
+		}
+		return nil
+	}
+	requestUrl := fmt.Sprintf("%s/mj/task/list-by-condition", *midjourneyChannel.BaseURL)
+
+	body, _ := json.Marshal(map[string]any{
+		"ids": taskIds,
+	})
+	req, err := http.NewRequest("POST", requestUrl, bytes.NewBuffer(body))
+	if err != nil {
+		common.LogError(ctx, fmt.Sprintf("Get Task error: %v", err))
+		return nil
+	}
+	// 设置超时时间
+	timeout := time.Second * 5
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel() // 确保结束时取消上下文
+
+	// 使用带有超时的 context 创建新的请求
+	req = req.WithContext(ctx)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("mj-api-secret", midjourneyChannel.Key)
+
+	// 发送请求并获取响应
+	resp, err := util.HTTPClient.Do(req)
+	if err != nil {
+		common.LogError(ctx, fmt.Sprintf("Get Task Do req error: %v", err))
+		return nil
+	}
+	defer resp.Body.Close() // 使用 defer 来确保响应体会被关闭
+
+	responseBody, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		common.LogError(ctx, fmt.Sprintf("Get Task parse body error: %v", err))
+		return nil
+	}
+	//log.Printf("responseBody: %s", string(responseBody))
+	var responseItems []midjourney.Midjourney
+	err = json.Unmarshal(responseBody, &responseItems)
+	if err != nil {
+		common.LogError(ctx, fmt.Sprintf("Get Task parse body error2: %v", err))
+		return nil
+	}
+
+	for _, responseItem := range responseItems {
+		task := taskMap[responseItem.MjId]
+		if !checkMjTaskNeedUpdate(task, responseItem) {
+			return nil
+		}
+		var isResponseBody []byte // 声明这个变量保存ImageSeed响应体
+
+		task.Code = 1
+		task.Progress = responseItem.Progress
+		task.PromptEn = responseItem.PromptEn
+		task.State = responseItem.State
+		task.SubmitTime = responseItem.SubmitTime
+		task.StartTime = responseItem.StartTime
+		task.FinishTime = responseItem.FinishTime
+		task.ImageUrl = responseItem.ImageUrl
+		task.Status = responseItem.Status
+		task.FailReason = responseItem.FailReason
+		task.Buttons = responseItem.Buttons
+		task.Properties = responseItem.Properties
+		task.ImageSeed = isResponseBody
+		if err := task.Update(); err != nil {
+			log.Printf("更新任务失败: %v", err)
+		}
+		// 确定任务进度是100%并且状态为SUCCESS
+		HandleTaskCompletion(ctx, task)
+	}
+	return nil
+}
+
+// HandleTaskCompletion 用于处理任务完成后的逻辑。
+func HandleTaskCompletion(ctx context.Context, task *model.Midjourney) {
+	// 检查任务是否成功完成
+	if task.Progress == "100%" && task.Status == "SUCCESS" {
+		// 处理成功完成的任务，例如获取ImageSeed
+		fetchImageSeed(task)
+	} else if task.Progress == "100%" && task.Status != "SUCCESS" {
+		// 处理失败的任务，例如更新用户配额等
+		compensateForTaskFailure(ctx, task)
+	}
+
+}
+
+// fetchImageSeed 获取任务的ImageSeed信息。
+func fetchImageSeed(task *model.Midjourney) {
+	midjourneyChannel, err := model.CacheGetChannel(task.ChannelId)
+	if err != nil {
+		log.Printf("获取渠道信息失败: %v", err)
+		return
+	}
+
+	// 构造获取ImageSeed的URL
+	imageSeedUrl := fmt.Sprintf("%s/mj/task/%s/image-seed", *midjourneyChannel.BaseURL, task.MjId)
+	req, err := http.NewRequest("GET", imageSeedUrl, nil)
+	if err != nil {
+		log.Printf("构建获取ImageSeed请求失败: %v", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("mj-api-secret", midjourneyChannel.Key)
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("获取ImageSeed请求失败: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	isResponseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("读取ImageSeed响应体失败: %v", err)
+		return
+	}
+
+	// 直接更新task对象
+	task.ImageSeed = json.RawMessage(isResponseBody)
+	// 注意：这里应该调用保存更新到数据库的逻辑
+	if err := task.Update(); err != nil {
+		log.Printf("更新任务失败: %v", err)
+	}
+}
+
+// compensateForTaskFailure 处理任务失败的补偿逻辑。
+func compensateForTaskFailure(ctx context.Context, task *model.Midjourney) {
+	err := model.CacheUpdateUserQuota(task.UserId)
+	if err != nil {
+		common.LogError(ctx, "error update user quota cache: "+err.Error())
+	} else {
+		Mode, _ := model.GetByOnlyMJIdMode(task.MjId)
+		if Mode == "fast" {
+			Mode = ""
+		} else {
+			Mode = Mode + "_"
+		}
+
+		group, _ := model.GetUserGroup(task.UserId)
+		modelRatio, _ := common.GetModelRatio2("mj_" + Mode + strings.ToLower(task.Action))
+		groupRatio := common.GetGroupRatio(group)
+		ratio := modelRatio * groupRatio
+		quota := int(ratio * common.QuotaPerUnit)
+		if quota != 0 {
+			err := model.IncreaseUserQuota(task.UserId, quota)
+			if err != nil {
+				log.Println("fail to increase user quota")
+			}
+			logContent := fmt.Sprintf("%s 构图失败，补偿 %s", task.MjId, common.LogQuota(quota))
+
+			model.RecordLog(task.UserId, 4, 0, logContent)
+		}
+	}
+}
 func checkMjTaskNeedUpdate(oldTask *model.Midjourney, newTask midjourney.Midjourney) bool {
-	if oldTask.Code != 1 {
-		return true
-	}
-	if oldTask.Progress != newTask.Progress {
-		return true
-	}
-	if oldTask.PromptEn != newTask.PromptEn {
-		return true
-	}
-	if oldTask.State != newTask.State {
-		return true
-	}
-	if oldTask.SubmitTime != newTask.SubmitTime {
-		return true
-	}
-	if oldTask.StartTime != newTask.StartTime {
-		return true
-	}
-	if oldTask.FinishTime != newTask.FinishTime {
-		return true
-	}
-	if oldTask.ImageUrl != newTask.ImageUrl {
-		return true
-	}
-	if oldTask.Status != newTask.Status {
-		return true
-	}
-	if oldTask.FailReason != newTask.FailReason {
-		return true
-	}
-	if oldTask.FinishTime != newTask.FinishTime {
+	// 检查任务基本信息是否发生变化
+	if oldTask.Progress != newTask.Progress || oldTask.Status != newTask.Status {
 		return true
 	}
 
-	if len(oldTask.Buttons) != len(newTask.Buttons) {
+	// 如果任务失败，检查失败原因是否更新
+	if oldTask.Status == "FAILURE" && oldTask.FailReason != newTask.FailReason {
 		return true
 	}
 
-	// 检查 Properties 是否非空
-	if len(oldTask.Properties) != len(newTask.Properties) {
-		return true
-	}
-	if oldTask.Progress != "100%" && newTask.FailReason != "" {
+	// 检查时间戳是否发生变化，这假定Midjourney结构体包含能反映这些的字段
+	if oldTask.SubmitTime != newTask.SubmitTime ||
+		oldTask.StartTime != newTask.StartTime ||
+		oldTask.FinishTime != newTask.FinishTime {
 		return true
 	}
 
+	// 检查其他可能影响任务显示或状态的变化
+	if oldTask.PromptEn != newTask.PromptEn ||
+		oldTask.ImageUrl != newTask.ImageUrl ||
+		oldTask.State != newTask.State {
+		return true
+	}
+
+	// 如果任务完成并且成功，但ImageSeed未设置，也需要更新
+	if oldTask.Status == "SUCCESS" && oldTask.Progress == "100%" && len(oldTask.ImageSeed) == 0 {
+		return true
+	}
+
+	// 如果到这里都没有返回true，那么就意味着无需更新
 	return false
 }
 

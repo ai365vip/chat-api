@@ -91,7 +91,11 @@ type Condition struct {
 
 func RelayMidjourneyImage(c *gin.Context) {
 	taskId := c.Param("id")
-	midjourneyTask := model.GetByOnlyMJId(taskId)
+	midjourneyTask, err := model.GetByOnlyMJId(taskId)
+	if err != nil {
+		log.Printf("获取任务失败: %v", err)
+		return
+	}
 	if midjourneyTask == nil {
 		c.JSON(400, gin.H{
 			"error": "midjourney_task_not_found",
@@ -138,7 +142,8 @@ func RelayMidjourneyNotify(c *gin.Context) *MidjourneyResponse {
 			Result:      "",
 		}
 	}
-	midjourneyTask := model.GetByOnlyMJId(midjRequest.MjId)
+
+	midjourneyTask, _ := model.GetByOnlyMJId(midjRequest.MjId)
 	if midjourneyTask == nil {
 		return &MidjourneyResponse{
 			Code:        4,
