@@ -105,14 +105,15 @@ func GetAllUnFinishTasks() []*Midjourney {
 	return tasks
 }
 
-func GetByOnlyMJId(mjId string) *Midjourney {
+func GetByOnlyMJId(mjId string) (*Midjourney, error) {
 	var mj *Midjourney
-	var err error
-	err = DB.Where("mj_id = ?", mjId).First(&mj).Error
+	err := DB.Where("mj_id = ?", mjId).First(&mj).Error
 	if err != nil {
-		return nil
+		// 如果你想在这里处理特定的错误，比如记录未找到的情况
+		// 可以使用 errors.Is(err, gorm.ErrRecordNotFound) 来判断
+		return nil, err
 	}
-	return mj
+	return mj, nil
 }
 
 func GetByOnlyMJIdMode(mjId string) (string, error) {
