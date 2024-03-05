@@ -99,33 +99,7 @@ func Distribute() func(c *gin.Context) {
 				return
 			}
 		}
-		c.Set("channel", channel.Type)
-		c.Set("channel_id", channel.Id)
-		c.Set("channel_name", channel.Name)
-		c.Set("headers", channel.GetModelHeaders())
-		ban := true
-		// parse *int to bool
-		if channel.AutoBan != nil && *channel.AutoBan == 0 {
-			ban = false
-		}
-		c.Set("auto_ban", ban)
-		c.Set("model_mapping", channel.GetModelMapping())
-		c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", channel.Key))
-		c.Set("base_url", channel.GetBaseURL())
-		switch channel.Type {
-		case common.ChannelTypeAzure:
-			c.Set("api_version", channel.Other)
-		case common.ChannelTypeStability:
-			c.Set("api_version", channel.Other)
-		case common.ChannelTypeXunfei:
-			c.Set("api_version", channel.Other)
-		case common.ChannelTypeAIProxyLibrary:
-			c.Set("library_id", channel.Other)
-		case common.ChannelTypeGemini:
-			c.Set("api_version", channel.Other)
-		case common.ChannelTypeAli:
-			c.Set("plugin", channel.Other)
-		}
+		SetupContextForSelectedChannel(c, channel, Model.(string))
 		c.Next()
 	}
 }
@@ -134,6 +108,12 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("channel_id", channel.Id)
 	c.Set("channel_name", channel.Name)
 	c.Set("headers", channel.GetModelHeaders())
+	ban := true
+	// parse *int to bool
+	if channel.AutoBan != nil && *channel.AutoBan == 0 {
+		ban = false
+	}
+	c.Set("auto_ban", ban)
 	c.Set("model_mapping", channel.GetModelMapping())
 	c.Set("original_model", modelName) // for retry
 	c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", channel.Key))

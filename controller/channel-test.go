@@ -73,13 +73,7 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	}
 	c.Set("channel", channel.Type)
 	c.Set("base_url", channel.GetBaseURL())
-	// 获取model的自定义头部信息
-	modelHeaders := channel.GetModelHeaders()
 
-	// 遍历modelHeaders，并将这些头部信息添加到请求中
-	for headerKey, headerValue := range modelHeaders {
-		c.Request.Header.Set(headerKey, headerValue)
-	}
 	meta := util.GetRelayMeta(c)
 
 	apiType := constant.ChannelType2APIType(channel.Type)

@@ -8,9 +8,13 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"one-api/common"
 	"one-api/relay/model"
+	"one-api/relay/util"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -102,107 +106,211 @@ func parseContentToStabilityRequest(content string) StabilityAIRequest {
 	return request
 }
 
-func StreamStabilityHandler(c *gin.Context, resp *http.Response) *model.ErrorWithStatusCode {
+func downloadImage(imageURL string) (string, error) {
+	resp, err := http.Get(imageURL)
+	if err != nil {
+		return "", fmt.Errorf("error downloading image: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("server returned non-200 status: %d %s", resp.StatusCode, resp.Status)
+	}
+
+	tmpFile, err := os.CreateTemp("", "downloaded-image-*.png")
+	if err != nil {
+		return "", fmt.Errorf("error creating temp file: %w", err)
+	}
+	defer tmpFile.Close()
+
+	_, err = io.Copy(tmpFile, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error saving image to temp file: %w", err)
+	}
+
+	return tmpFile.Name(), nil
+}
+
+func prepareMultipartFormData(content string) (*bytes.Buffer, string) {
+	var requestBody bytes.Buffer
+	multipartWriter := multipart.NewWriter(&requestBody)
+
+	// 使用正则匹配命令行参数
+	paramsRegex := regexp.MustCompile(`--(\w+):?\s*([^\s]+)`)
+	params := paramsRegex.FindAllStringSubmatch(content, -1)
+
+	// 用于存储参数
+	textPrompt := paramsRegex.ReplaceAllString(content, "") // 去除已识别的参数
+	var weight string                                       // 特别存储weight值
+
+	for _, param := range params {
+		key := param[1]
+		value := strings.TrimSpace(param[2])
+
+		if key == "url" {
+			imagePath, err := downloadImage(value)
+			if err != nil {
+				log.Printf("Failed to download image: %v", err)
+				return nil, ""
+			}
+
+			file, err := os.Open(imagePath)
+			if err != nil {
+				log.Printf("Failed to open downloaded image: %v", err)
+				return nil, ""
+			}
+			defer file.Close()
+
+			part, err := multipartWriter.CreateFormFile("init_image", filepath.Base(imagePath))
+			if err != nil {
+				log.Printf("Failed to create form file for image: %v", err)
+				return nil, ""
+			}
+			if _, err = io.Copy(part, file); err != nil {
+				log.Printf("Failed to copy image data: %v", err)
+				return nil, ""
+			}
+		} else if key == "weight" {
+			weight = value // 直接使用参数中的weight值
+		} else {
+			// 直接将其他参数添加到表单数据中
+			if err := multipartWriter.WriteField(key, value); err != nil {
+				log.Printf("Failed to write field %s: %v", key, err)
+				return nil, ""
+			}
+		}
+	}
+
+	// 从content中移除所有已识别的参数，剩下的部分视为textPrompt
+	textPrompt = paramsRegex.ReplaceAllString(content, "")
+	textPrompt = strings.TrimSpace(textPrompt) // 清理前后的空格
+
+	if textPrompt == "" {
+		log.Printf("text_prompt is empty after parsing content.")
+		return nil, ""
+	}
+
+	// 添加textPrompt到表单中
+	if err := multipartWriter.WriteField("text_prompts[0][text]", textPrompt); err != nil {
+		log.Printf("Failed to write text prompt: %v", err)
+		return nil, ""
+	}
+	if weight != "" { // 如果weight有值，也添加到表单中
+		if err := multipartWriter.WriteField("text_prompts[0][weight]", weight); err != nil {
+			log.Printf("Failed to write weight for text prompt: %v", err)
+			return nil, ""
+		}
+	}
+
+	if err := multipartWriter.Close(); err != nil {
+		log.Printf("Failed to close multipart writer: %v", err)
+		return nil, ""
+	}
+
+	return &requestBody, multipartWriter.FormDataContentType()
+}
+
+func StreamStabilityHandler(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (*model.ErrorWithStatusCode, string) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response body"})
-		return nil
+		return nil, ""
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		c.Data(resp.StatusCode, "application/json", body)
-		return nil
+		return nil, ""
 	}
 
 	var stabilityResponse StabilityResponse
 	if err := json.Unmarshal(body, &stabilityResponse); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse success response"})
-		return nil
+		return nil, ""
 	}
+
+	var urls []string // 初始化urls变量
+
 	for index, artifact := range stabilityResponse.Artifacts {
 		if artifact.FinishReason == "SUCCESS" {
 			contentWithPrefix := "data:image/png;base64," + artifact.Base64
-			urls, err := uploadToSmMs(contentWithPrefix)
+			uploadedUrls, err := uploadToSmMs(meta, contentWithPrefix) // 假设这个函数现在接收meta参数
 			if err != nil {
-				// 处理错误，例如打印日志、设置错误消息等
 				log.Printf("上传失败: %v", err)
+				continue
 			}
 
-			var firstURL string
-			if len(urls) > 0 {
-				firstURL = urls[0]
-			} else {
-				// 没有URL返回，可能需要处理这种情况
-				log.Println("没有返回URL")
-			}
+			if len(uploadedUrls) > 0 {
+				urls = append(urls, uploadedUrls...) // 将成功上传的URL添加到urls列表中
 
-			choice := map[string]interface{}{
-				"index": index,
-				"delta": map[string]string{
-					"role":    "assistant",
-					"content": firstURL + "\r\n", // 使用第一个URL
-				},
-				"finish_reason": "",
-			}
+				firstURL := uploadedUrls[0] // 使用第一个URL
+				choice := map[string]interface{}{
+					"index": index,
+					"delta": map[string]string{
+						"role":    "assistant",
+						"content": fmt.Sprintf("![image](%s)\r\n", firstURL),
+					},
+					"finish_reason": "",
+				}
 
-			usage := model.Usage{
-				PromptTokens:     100,
-				CompletionTokens: 100,
-				TotalTokens:      100,
-			}
+				usage := model.Usage{
+					PromptTokens:     100,
+					CompletionTokens: 100,
+					TotalTokens:      100,
+				}
 
-			jsonResponse := map[string]interface{}{
-				"id":      randomID(),
-				"object":  "chat.completion.chunk",
-				"created": int(time.Now().Unix()),
-				"model":   "stable-diffusion",
-				"choices": []map[string]interface{}{choice},
-				"usage":   usage, // Include usage information in the response
-			}
+				jsonResponse := map[string]interface{}{
+					"id":      randomID(),
+					"object":  "chat.completion.chunk",
+					"created": int(time.Now().Unix()),
+					"model":   "stable-diffusion",
+					"choices": []map[string]interface{}{choice},
+					"usage":   usage,
+				}
 
-			jsonData, err := json.Marshal(jsonResponse)
-			if err != nil {
-				fmt.Println("error marshalling response: ", err)
-				continue // or return an error; depends on your error handling policy
-			}
+				jsonData, err := json.Marshal(jsonResponse)
+				if err != nil {
+					fmt.Println("error marshalling response: ", err)
+					continue
+				}
 
-			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonData)})
+				c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonData)})
+			}
 		}
 	}
 
 	// After all artifacts are processed, indicate completion.
 	c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
-	return nil
+	return nil, strconv.Itoa(len(urls)) // 返回nil错误和成功上传的URL数量
 }
 
-func StabilityHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage) {
+func StabilityHandler(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (*model.ErrorWithStatusCode, *model.Usage, string) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		// 如果读取响应体失败，直接返回错误信息
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response body"})
-		return nil, nil
+		return nil, nil, ""
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		// 如果状态码表明有错误，直接返回原始错误响应
 		c.Data(resp.StatusCode, "application/json", body)
-		return nil, nil
+		return nil, nil, ""
 	}
 
 	var stabilityResponse StabilityResponse
 	if err := json.Unmarshal(body, &stabilityResponse); err != nil {
 		// 如果成功响应不能被解析，返回解析错误
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse success response"})
-		return nil, nil
+		return nil, nil, ""
 	}
 
 	var urls []string
 	for _, artifact := range stabilityResponse.Artifacts {
 		if artifact.FinishReason == "SUCCESS" {
 			// 上传到sm.ms并获取URL
-			url, err := uploadToSmMs("data:image/png;base64," + artifact.Base64)
+			url, err := uploadToSmMs(meta, "data:image/png;base64,"+artifact.Base64)
 			if err != nil {
 				// 处理上传失败的情况，这里简单地打印错误信息并继续处理其他图像
 				fmt.Println("Failed to upload image:", err)
@@ -243,7 +351,8 @@ func StabilityHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStat
 		// 如果没有成功上传图像，直接返回通用错误信息
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Processing failed"})
 	}
-	return nil, usage
+
+	return nil, usage, strconv.Itoa(len(urls))
 }
 
 // randomID 生成一个随机ID，这里只是示例，您可能需要一个更复杂的生成逻辑
@@ -252,7 +361,7 @@ func randomID() string {
 }
 
 // uploadToSmMs 上传图像到指定URL并返回图像URLs
-func uploadToSmMs(base64Data string) ([]string, error) {
+func uploadToSmMs(meta *util.RelayMeta, base64Data string) ([]string, error) {
 	// 构造请求体
 	reqBody := UploadRequest{
 		Base64Array: []string{base64Data},
@@ -262,13 +371,19 @@ func uploadToSmMs(base64Data string) ([]string, error) {
 		return nil, fmt.Errorf("failed to marshal request body: %v", err)
 	}
 
-	// 创建请求
-	req, err := http.NewRequest("POST", "http://142.171.123.86:8089/mj/submit/upload-discord-images", bytes.NewBuffer(reqBodyBytes))
+	MjUrl := common.ServerAddress
+	reqUrl := fmt.Sprintf("%s/mj/submit/upload-discord-images", MjUrl)
+	req, err := http.NewRequest("POST", reqUrl, bytes.NewBuffer(reqBodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
+
+	headers := meta.Headers
+	for headerKey, headerValue := range headers {
+		req.Header.Set(headerKey, headerValue)
+		req.Header.Set("mj-api-secret", headerValue)
+	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("mj-api-secret", "MkH3bs7ASlskdf2347IOSDH2w389DASH")
 
 	// 发送请求
 	client := &http.Client{}
