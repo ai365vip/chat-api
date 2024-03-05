@@ -395,7 +395,7 @@ func checkMjTaskNeedUpdate(oldTask *model.Midjourney, newTask midjourney.Midjour
 		return true
 	}
 
-	// 检查时间戳是否发生变化，这假定Midjourney结构体包含能反映这些的字段
+	// 检查时间戳是否发生变化，
 	if oldTask.SubmitTime != newTask.SubmitTime ||
 		oldTask.StartTime != newTask.StartTime ||
 		oldTask.FinishTime != newTask.FinishTime {

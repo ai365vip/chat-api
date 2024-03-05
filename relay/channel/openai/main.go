@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/relay/constant"
@@ -35,41 +36,36 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 	stopChan := make(chan bool)
 
 	go func() {
-		var needInjectFixedMessageBeforeNextSend = false
+		var stopMessage string
+		var needInjectFixedContent = false // 标志是否需要注入固定内容
+
 		for scanner.Scan() {
 			data := scanner.Text()
-			if len(data) < 6 { // ignore blank line or wrong format
-				continue
-			}
-			// 先根据需要注入固定内容，再处理接下来的数据
-			if needInjectFixedMessageBeforeNextSend && fixedContent != "" {
-				fixedContentMessage := GenerateFixedContentMessage(fixedContent)
-				dataChan <- fixedContentMessage              // 发送固定内容
-				needInjectFixedMessageBeforeNextSend = false // 重置标志位
-			}
-			if data[:6] != "data: " && data[:6] != "[DONE]" {
+
+			if len(data) < 6 { // 忽略空白行或格式不正确的行
 				continue
 			}
 
-			if data[:6] == "data: " {
+			// 检查是否为结束标记
+			if data == "data: [DONE]" {
+				break // 如果是结束标记，则跳出循环
+			}
+
+			// 在暂存stop消息前进行relayMode的逻辑处理
+			if strings.HasPrefix(data, "data: ") {
 				jsonData := data[6:]
-				if jsonData == "[DONE]" {
-					//needInjectFixedMessageBeforeNextSend = true
-					continue
-				}
 
 				switch relayMode {
 				case constant.RelayModeChatCompletions:
 					var streamResponse ChatCompletionsStreamResponse
 					err := json.Unmarshal([]byte(jsonData), &streamResponse)
 					if err != nil {
-						common.SysError("error unmarshalling stream response: " + err.Error())
-						continue // just ignore the error
+						log.Println("解析失败:", err)
+						continue
 					}
 					for _, choice := range streamResponse.Choices {
-						responseText += choice.Delta.Content
 						if choice.FinishReason != nil && *choice.FinishReason == "stop" {
-							needInjectFixedMessageBeforeNextSend = true
+							needInjectFixedContent = true // 需要注入fixedContent
 						}
 					}
 
@@ -77,30 +73,40 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 					var streamResponse CompletionsStreamResponse
 					err := json.Unmarshal([]byte(jsonData), &streamResponse)
 					if err != nil {
-						common.SysError("error unmarshalling stream response: " + err.Error())
+						log.Println("解析失败:", err)
 						continue
 					}
 					for _, choice := range streamResponse.Choices {
-						responseText += choice.Text
 						if choice.FinishReason == "stop" {
-							needInjectFixedMessageBeforeNextSend = true
+							needInjectFixedContent = true // 需要注入fixedContent
 						}
 					}
 				}
 
-			}
-			if !needInjectFixedMessageBeforeNextSend {
-				dataChan <- data // 正常发送
+				if needInjectFixedContent {
+					stopMessage = data // 暂存当前停止消息
+					continue           // 继续下一个循环迭代
+				}
 			}
 
+			// 如果没有标记需要注入固定内容，那么直接发送
+			if !needInjectFixedContent && dataChan != nil {
+				dataChan <- data
+			}
 		}
-		// 如果循环结束（比如遇到EOF），也检查是否有最后的固定内容需要注入
-		if needInjectFixedMessageBeforeNextSend && fixedContent != "" {
-			fixedContentMessage := GenerateFixedContentMessage(fixedContent)
-			dataChan <- fixedContentMessage
+
+		if needInjectFixedContent && stopMessage != "" {
+			if fixedContent != "" {
+				// 发送固定内容
+				fixedContentMessage := GenerateFixedContentMessage(fixedContent)
+				dataChan <- fixedContentMessage
+			}
+			// 发送暂存的停止消息
+			dataChan <- stopMessage
 		}
-		doneSignal := "data: [DONE]"
-		dataChan <- doneSignal // 发送结束信号
+
+		// 最后发送结束信号
+		dataChan <- "data: [DONE]"
 		stopChan <- true
 	}()
 	common.SetEventStreamHeaders(c)
