@@ -115,6 +115,8 @@ func Distribute() func(c *gin.Context) {
 		switch channel.Type {
 		case common.ChannelTypeAzure:
 			c.Set("api_version", channel.Other)
+		case common.ChannelTypeStability:
+			c.Set("api_version", channel.Other)
 		case common.ChannelTypeXunfei:
 			c.Set("api_version", channel.Other)
 		case common.ChannelTypeAIProxyLibrary:
@@ -131,6 +133,7 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("channel", channel.Type)
 	c.Set("channel_id", channel.Id)
 	c.Set("channel_name", channel.Name)
+	c.Set("headers", channel.GetModelHeaders())
 	c.Set("model_mapping", channel.GetModelMapping())
 	c.Set("original_model", modelName) // for retry
 	c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", channel.Key))
@@ -138,6 +141,8 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	// this is for backward compatibility
 	switch channel.Type {
 	case common.ChannelTypeAzure:
+		c.Set(common.ConfigKeyAPIVersion, channel.Other)
+	case common.ChannelTypeStability:
 		c.Set(common.ConfigKeyAPIVersion, channel.Other)
 	case common.ChannelTypeXunfei:
 		c.Set(common.ConfigKeyAPIVersion, channel.Other)

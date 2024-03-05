@@ -219,6 +219,7 @@ const (
 	ChannelTypeLobeChat       = 26
 	ChannelTypeMoonshot       = 27
 	ChannelTypeZhipu_v4       = 28
+	ChannelTypeStability      = 29
 )
 
 var ChannelBaseURLs = []string{
@@ -251,6 +252,7 @@ var ChannelBaseURLs = []string{
 	"",                         //26
 	"https://api.moonshot.cn",  //27
 	"https://open.bigmodel.cn", //28
+	"https://api.stability.ai", //29
 }
 
 const (

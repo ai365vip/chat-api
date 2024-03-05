@@ -13,6 +13,10 @@ import (
 func SetupCommonRequestHeader(c *gin.Context, req *http.Request, meta *util.RelayMeta) {
 	req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
 	req.Header.Set("Accept", c.Request.Header.Get("Accept"))
+	headers := meta.Headers
+	for headerKey, headerValue := range headers {
+		req.Header.Set(headerKey, headerValue)
+	}
 	if meta.IsStream && c.Request.Header.Get("Accept") == "" {
 		req.Header.Set("Accept", "text/event-stream")
 	}
@@ -23,6 +27,7 @@ func DoRequestHelper(a Adaptor, c *gin.Context, meta *util.RelayMeta, requestBod
 	if err != nil {
 		return nil, fmt.Errorf("get request url failed: %w", err)
 	}
+
 	req, err := http.NewRequest(c.Request.Method, fullRequestURL, requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("new request failed: %w", err)

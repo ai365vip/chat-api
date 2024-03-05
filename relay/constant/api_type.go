@@ -19,6 +19,7 @@ const (
 	APITypeLobeChat
 	APITypeZhipu_v4
 	APITypeDummy // this one is only for count, do not add any channel after this
+	APITypeStability
 )
 
 func ChannelType2APIType(channelType int) int {
@@ -48,6 +49,8 @@ func ChannelType2APIType(channelType int) int {
 		apiType = APITypeChatBot
 	case common.ChannelTypeLobeChat:
 		apiType = APITypeLobeChat
+	case common.ChannelTypeStability:
+		apiType = APITypeStability
 	}
 	return apiType
 }
