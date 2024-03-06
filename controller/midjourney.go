@@ -326,10 +326,6 @@ func fetchImageSeed(task *model.Midjourney) {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("获取ImageSeed请求失败: %v", err)
-		task.Progress = "100%"
-		if err := task.Update(); err != nil {
-			log.Printf("更新任务失败: %v", err)
-		}
 		return
 	}
 	defer resp.Body.Close()
