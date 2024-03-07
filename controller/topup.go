@@ -168,14 +168,6 @@ func EpayNotify(c *gin.Context) {
 				return
 			}
 			log.Printf("易支付回调更新用户成功 %v", topUp)
-			GroupEnable, _ := strconv.ParseBool(common.OptionMap["GroupEnable"])
-			if GroupEnable {
-				err = model.VipUserQuota(topUp.UserId)
-				if err != nil {
-					log.Printf("用户分组更新失败: %v", topUp)
-					return
-				}
-			}
 
 			err = model.IncreaseRechargeQuota(topUp.UserId, topUp.TopupRatio, int(multipliedQuota))
 			if err != nil {
@@ -186,6 +178,14 @@ func EpayNotify(c *gin.Context) {
 			notifyWxPusher(topUp)
 			model.RecordLog(topUp.UserId, model.LogTypeTopup, int(multipliedQuota), fmt.Sprintf("在线充值成功，充值: %v，支付金额：%.2f", common.LogQuota(int(multipliedQuota)), topUp.Money))
 			model.VipInsert(topUp.UserId, int(multipliedQuota))
+			GroupEnable, _ := strconv.ParseBool(common.OptionMap["GroupEnable"])
+			if GroupEnable {
+				err = model.VipUserQuota(topUp.UserId)
+				if err != nil {
+					log.Printf("用户分组更新失败: %v", topUp)
+					return
+				}
+			}
 		}
 		_, writeErr := c.Writer.Write([]byte("success")) // 确保发送 success 响应
 		if writeErr != nil {
