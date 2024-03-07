@@ -582,7 +582,7 @@ const SystemSetting = () => {
                                 />
                             </div> 
                         </div>
-                        <Button onClick={submitGitHubOAuth} style={{ marginTop: '3px' }}>保存 SMTP 设置</Button>
+                        <Button onClick={submitGitHubOAuth} style={{ marginTop: '3px' }}>保存 GitHub 设置</Button>
 
                     <Divider style={{ marginTop: '20px' , marginBottom: '10px' }}/>
                         <Typography.Title style={{ marginBottom: '10px'}} heading={5}>配置 WeChat Server</Typography.Title>

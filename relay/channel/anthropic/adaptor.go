@@ -21,7 +21,7 @@ func (a *Adaptor) Init(meta *util.RelayMeta) {
 }
 
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
-	return fmt.Sprintf("%s/v1/complete", meta.BaseURL), nil
+	return fmt.Sprintf("%s/v1/messages", meta.BaseURL), nil
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *util.RelayMeta) error {
