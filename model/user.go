@@ -522,9 +522,14 @@ func IncreaseUserQuota(id int, quota int) (err error) {
 }
 
 func VipUserQuota(id int) (err error) {
-	VipUserGroup, _ := common.OptionMap["VipUserGroup"]
-	err = DB.Model(&User{}).Where("id = ?", id).Update("group", VipUserGroup).Error
-	return err
+	VipUserGroup := common.OptionMap["VipUserGroup"]
+	Group, _ := GetUserGroup(id)
+	UserGroup := common.OptionMap["UserGroup"]
+	if UserGroup == Group {
+		err = DB.Model(&User{}).Where("id = ?", id).Update("group", VipUserGroup).Error
+		return err
+	}
+	return nil
 }
 
 func increaseUserQuota(id int, quota int) (err error) {
