@@ -124,7 +124,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	responseId := fmt.Sprintf("chatcmpl-%s", helper.GetUUID())
 	createdTime := helper.GetTimestamp()
 	scanner := bufio.NewScanner(resp.Body)
-
+	responseText := ""
 	dataChan := make(chan string)
 	stopChan := make(chan bool)
 
@@ -203,7 +203,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 				Content:    []ResContent{{Text: text}},
 				StopReason: stopReason, // 使用从message_stop事件获取的停止原因
 			}
-
+			responseText += claudeResponse.Content[0].Text
 			response := streamResponseClaude2OpenAI(&claudeResponse)
 			response.Id = responseId
 			response.Created = createdTime
@@ -243,22 +243,23 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	if err != nil {
 		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), ""
 	}
-	return nil, ""
+	return nil, responseText
 }
 
-func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage) {
+func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
 	responseBody, err := io.ReadAll(resp.Body)
+	aitext := ""
 	if err != nil {
-		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	err = resp.Body.Close()
 	if err != nil {
-		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	var claudeResponse Response
 	err = json.Unmarshal(responseBody, &claudeResponse)
 	if err != nil {
-		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	if claudeResponse.Error.Type != "" {
 		return &model.ErrorWithStatusCode{
@@ -269,11 +270,12 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 				Code:    claudeResponse.Error.Type,
 			},
 			StatusCode: resp.StatusCode,
-		}, nil
+		}, nil, ""
 	}
 	fullTextResponse := responseClaude2OpenAI(&claudeResponse)
 	fullTextResponse.Model = modelName
 	completionTokens := openai.CountTokenText(claudeResponse.Content[0].Text, modelName)
+	aitext = claudeResponse.Content[0].Text
 	usage := model.Usage{
 		PromptTokens:     promptTokens,
 		CompletionTokens: completionTokens,
@@ -282,12 +284,12 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	fullTextResponse.Usage = usage
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
-		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = c.Writer.Write(jsonResponse)
-	return nil, &usage
+	return nil, &usage, aitext
 }
 
 func convertRole(role string) string {
