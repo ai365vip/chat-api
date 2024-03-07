@@ -25,7 +25,7 @@ function renderType(type) {
       return <Tag color="yellow" size='large'>图生文</Tag>;
     case 'REROLL':
       return <Tag color="lime" size='large'>重绘</Tag>
-    case 'BLEAND':
+    case 'BLEND':
       return <Tag color="lime" size='large'>图混合</Tag>;
     case 'UPLOADS':
       return <Tag color="blue" size='large'>上传文件</Tag>
