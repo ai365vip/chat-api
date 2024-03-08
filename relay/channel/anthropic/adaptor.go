@@ -95,8 +95,6 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 			})
 		}
 	}
-
-	// 构造新请求体，复制原始请求的大部分属性，更新Model和Messages
 	newRequest := *request
 	newRequest.Model = "claude-3-opus-20240229"
 	newRequest.Messages = []model.Message{}
