@@ -262,7 +262,6 @@ func updateTasksForChannel(ctx context.Context, channelId int, taskIds []string,
 		if !checkMjTaskNeedUpdate(task, responseItem) {
 			return nil
 		}
-		var isResponseBody []byte // 声明这个变量保存ImageSeed响应体
 
 		task.Code = 1
 		task.Progress = responseItem.Progress
@@ -276,7 +275,6 @@ func updateTasksForChannel(ctx context.Context, channelId int, taskIds []string,
 		task.FailReason = responseItem.FailReason
 		task.Buttons = responseItem.Buttons
 		task.Properties = responseItem.Properties
-		task.ImageSeed = isResponseBody
 		if err := task.Update(); err != nil {
 			log.Printf("更新任务失败: %v", err)
 		}
@@ -290,10 +288,10 @@ func updateTasksForChannel(ctx context.Context, channelId int, taskIds []string,
 func HandleTaskCompletion(ctx context.Context, task *model.Midjourney) {
 	// 检查任务是否成功完成
 	if task.Progress == "100%" && task.Status == "SUCCESS" {
-		// 处理成功完成的任务，例如获取ImageSeed
+		// 处理成功完成的任务，获取ImageSeed
 		fetchImageSeed(task)
 	} else if task.FailReason != "" {
-		// 处理失败的任务，例如更新用户配额等
+		// 处理失败的任务，更新用户配额
 		compensateForTaskFailure(ctx, task)
 	}
 

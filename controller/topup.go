@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"one-api/common"
 	"one-api/model"
@@ -286,4 +287,89 @@ func RequestAmount(c *gin.Context) {
 	user, _ := model.GetUserById(id, false)
 	payMoney := GetAmount(float64(req.Amount), topupratio, topupamount, *user)
 	c.JSON(200, gin.H{"message": "success", "data": strconv.FormatFloat(payMoney, 'f', 2, 64)})
+}
+
+func GetAllTopUps(c *gin.Context) {
+	p, _ := strconv.Atoi(c.Query("p"))
+	if p < 0 {
+		p = 0
+	}
+
+	// 解析其他查询参数
+	topups := model.TopUpQueryParams{
+		UserId:     c.Query("user_id"),
+		TradeNo:    c.Query("trade_no"),
+		CreateTime: c.Query("create_time"),
+		Status:     c.Query("status"),
+	}
+
+	logs := model.GetAllTopUps(p*common.ItemsPerPage, common.ItemsPerPage, topups)
+	if logs == nil {
+		logs = make([]*model.TopUp, 0)
+	}
+	c.JSON(200, gin.H{
+		"success": true,
+		"message": "",
+		"data":    logs,
+	})
+}
+
+func SearchTopUps(c *gin.Context) {
+	keyword := c.Query("keyword")
+	topups, err := model.SearchTopUps(keyword)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    topups,
+	})
+	return
+}
+
+func GetTopUp(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	topups, err := model.GetTopUpByUserId(id)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    topups,
+	})
+	return
+}
+
+func DeleteTopUp(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	err := model.DeleteTopUpnById(id)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+	return
 }

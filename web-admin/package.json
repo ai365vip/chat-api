@@ -1,6 +1,6 @@
 {
   "name": "react-template",
-  "homepage": "http://127.0.0.1:3000/admin",
+  "proxy": "http://localhost:3000",
   "version": "0.1.0",
   "private": true,
   "dependencies": {

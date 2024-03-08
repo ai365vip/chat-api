@@ -18,7 +18,7 @@ import Channel from './pages/Channel';
 import Token from './pages/Token';
 import EditChannel from './pages/Channel/EditChannel';
 import Redemption from './pages/Redemption';
-import TopUp from './pages/TopUp';
+import TopUps from './pages/TopUps';
 import Log from './pages/Log';
 import LogAll from './pages/LogAll';
 import Withdrawal from './pages/WithdrawalTable';
@@ -208,11 +208,11 @@ function App() {
                     }
                 />
                 <Route
-                    path='/admin/topup'
+                    path='/admin/topups'
                     element={
                         <PrivateRoute>
                             <Suspense fallback={<Loading></Loading>}>
-                                <TopUp />
+                                <TopUps />
                             </Suspense>
                         </PrivateRoute>
                     }

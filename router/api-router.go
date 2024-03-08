@@ -116,6 +116,15 @@ func SetApiRouter(router *gin.Engine) {
 			redemptionRoute.PUT("/", controller.UpdateRedemption)
 			redemptionRoute.DELETE("/:id", controller.DeleteRedemption)
 		}
+		topupsRoute := apiRouter.Group("/topups")
+		topupsRoute.Use(middleware.AdminAuth())
+		{
+			topupsRoute.GET("/", controller.GetAllTopUps)
+			topupsRoute.GET("/search", controller.SearchTopUps)
+			topupsRoute.GET("/:id", controller.GetTopUp)
+			topupsRoute.DELETE("/:id", controller.DeleteTopUp)
+		}
+
 		logRoute := apiRouter.Group("/log")
 		logRoute.GET("/", middleware.AdminAuth(), controller.GetAllLogs)
 		logRoute.DELETE("/", middleware.AdminAuth(), controller.DeleteHistoryLogs)
