@@ -54,8 +54,8 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 	urlRegex := regexp.MustCompile(`https?:\/\/[^\s]+`)
 
 	var newMessages []NewMessage // 将用于新请求的消息列表
-
 	for _, msg := range request.Messages {
+
 		if msg.Role == "user" {
 			contentString := string(msg.Content) // 将原始消息转换为字符串
 
@@ -92,6 +92,16 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 			newMessages = append(newMessages, NewMessage{
 				Role:    "user",
 				Content: newContent,
+			})
+		} else if msg.Role == "assistant" {
+			// 将json.RawMessage（实质上是[]byte）转换成string
+			contentString := string(msg.Content)
+			newMessages = append(newMessages, NewMessage{
+				Role: "assistant",
+				Content: []NewMessageType{{
+					Type: "text",
+					Text: contentString, // 现在是正确的string类型
+				}},
 			})
 		}
 	}
