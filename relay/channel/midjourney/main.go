@@ -296,7 +296,7 @@ func RelayMidjourneyTask(c *gin.Context, relayMode int) *MidjourneyResponse {
 func RelayMidjourneyImageSeed(c *gin.Context) *MidjourneyResponse {
 	userId := c.GetInt("id")
 	taskId := c.Param("id")
-	originTask := model.GetByMJId(userId, taskId)
+	originTask := model.GetImageSeed(userId, taskId)
 	if originTask == nil {
 		return &MidjourneyResponse{
 			Code:        4,

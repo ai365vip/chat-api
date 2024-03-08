@@ -332,10 +332,9 @@ func fetchImageSeed(task *model.Midjourney) {
 		return
 	}
 
-	// 直接更新task对象
 	task.ImageSeed = json.RawMessage(isResponseBody)
 	// 注意：这里应该调用保存更新到数据库的逻辑
-	if err := task.Update(); err != nil {
+	if err := task.InsertImageSeed(); err != nil {
 		log.Printf("更新任务失败: %v", err)
 	}
 }

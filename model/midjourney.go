@@ -29,6 +29,13 @@ type Midjourney struct {
 	IsImageURLEnabled *int            `json:"is_image_url_enabled"`
 }
 
+type MjImageSeed struct {
+	Id        int             `json:"id"`
+	UserId    int             `json:"user_id" gorm:"index"`
+	MjId      string          `json:"mj_id" gorm:"index"`
+	ImageSeed json.RawMessage `json:"image_seed"`
+}
+
 // TaskQueryParams 用于包含所有搜索条件的结构体，可以根据需求添加更多字段
 type TaskQueryParams struct {
 	ChannelID      string
@@ -170,9 +177,33 @@ func (midjourney *Midjourney) Update() error {
 	err = DB.Save(midjourney).Error
 	return err
 }
-
 func MjBulkUpdate(taskIDs []string, params map[string]any) error {
 	return DB.Model(&Midjourney{}).
 		Where("mj_id in (?)", taskIDs).
 		Updates(params).Error
+}
+func (mj *Midjourney) InsertImageSeed() error {
+	mjImageSeed := MjImageSeed{
+		MjId:      mj.MjId,
+		UserId:    mj.UserId,
+		ImageSeed: mj.ImageSeed,
+	}
+
+	// 使用GORM插入到数据库
+	err := DB.Create(&mjImageSeed).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetImageSeed(userId int, mjId string) *MjImageSeed {
+	var mj *MjImageSeed
+	var err error
+	err = DB.Where("user_id = ? and mj_id = ?", userId, mjId).First(&mj).Error
+	if err != nil {
+		return nil
+	}
+	return mj
 }
