@@ -44,11 +44,7 @@ func UpdateMidjourneyTask() {
 		}
 		common.LogInfo(ctx, fmt.Sprintf("检测到未完成的任务数有: %v", len(tasks)))
 		// 尝试批量更新, 如果成功则跳过单个任务更新
-		batchUpdateSuccess := UpdateMidjourneyTaskAll(ctx, tasks)
-		if !batchUpdateSuccess {
-			common.LogInfo(ctx, "批量更新失败，使用单个任务更新")
-			ConcurrentUpdateMidjourneyTasks(ctx, tasks)
-		}
+		ConcurrentUpdateMidjourneyTasks(ctx, tasks)
 	}
 }
 

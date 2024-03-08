@@ -64,3 +64,27 @@ type ErrorWithStatusCode struct {
 	Error
 	StatusCode int `json:"status_code"`
 }
+type ImageUrlData struct {
+	Data      string `json:"data"`
+	MediaType string `json:"media_type"`
+}
+type NewMessageType struct {
+	Type   string  `json:"type"`
+	Text   string  `json:"text,omitempty"`
+	Source *Source `json:"source,omitempty"`
+}
+type Source struct {
+	Type      string `json:"type"`
+	MediaType string `json:"media_type"`
+	Data      string `json:"data"`
+}
+type NewMessage struct {
+	Role    string           `json:"role"`
+	Content []NewMessageType `json:"content"`
+}
+type NewRequest struct {
+	Model     string       `json:"model"`
+	MaxTokens int          `json:"max_tokens"`
+	Stream    bool         `json:"stream"`
+	Messages  []NewMessage `json:"messages"`
+}

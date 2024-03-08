@@ -131,6 +131,20 @@ func (m Message) ParseContent() []MediaMessage {
 						},
 					})
 				}
+			case ContentTypeImage:
+				if sourceMap, ok := contentMap["source"].(map[string]interface{}); ok {
+					data, dataOk := sourceMap["data"].(string)
+					mediaType, mediaTypeOk := sourceMap["media_type"].(string)
+					if dataOk && mediaTypeOk {
+						contentList = append(contentList, MediaMessage{
+							Type: ContentTypeImage,
+							ImageUrl: MessageImageUrl{
+								Url:    data,
+								Detail: mediaType,
+							},
+						})
+					}
+				}
 			}
 		}
 		return contentList

@@ -1,6 +1,7 @@
 package anthropic
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,8 @@ import (
 	"one-api/relay/channel/openai"
 	"one-api/relay/model"
 	"one-api/relay/util"
+	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,7 +42,77 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	return ConvertRequest(*request), nil
+
+	// 获取model参数确认是否为指定的处理类型
+	modelValue, exists := c.Get("model")
+	Model, ok := modelValue.(string)
+	if !exists || !ok || Model != "claude-3-opus" {
+		return ConvertRequest(*request), nil
+	}
+
+	// 正则表达式用于识别URL
+	urlRegex := regexp.MustCompile(`https?:\/\/[^\s]+`)
+
+	var newMessages []NewMessage // 将用于新请求的消息列表
+
+	for _, msg := range request.Messages {
+		if msg.Role == "user" {
+			contentString := string(msg.Content) // 将原始消息转换为字符串
+
+			// 使用正则找出所有URL
+			urls := urlRegex.FindAllString(contentString, -1)
+
+			// 构建新消息类型
+			newContent := []NewMessageType{}
+
+			for _, url := range urls {
+				// 对于每个URL，添加一个image类型的消息
+				newContent = append(newContent, NewMessageType{
+					Type: "image",
+					Source: &Source{
+						Type:      "base64", // 注意这里使用base64可能不正确，除非您确实将URL转换成了base64编码的图像数据
+						MediaType: "image/jpg",
+						Data:      url, // 这里应该是图像数据，如果您保持Data为URL，那么Type应该反映这个事实
+					},
+				})
+			}
+
+			// 移除文本中的所有URL
+			remainingText := urlRegex.ReplaceAllString(contentString, "")
+
+			// 如果存在非URL文本，将其作为一个独立的text类型消息添加
+			if strings.TrimSpace(remainingText) != "" {
+				newContent = append(newContent, NewMessageType{
+					Type: "text",
+					Text: remainingText,
+				})
+			}
+
+			// 将完整的新内容添加到新消息列表
+			newMessages = append(newMessages, NewMessage{
+				Role:    "user",
+				Content: newContent,
+			})
+		}
+	}
+
+	// 构造新请求体，复制原始请求的大部分属性，更新Model和Messages
+	newRequest := *request
+	newRequest.Model = "claude-3-opus-20240229"
+	newRequest.Messages = []model.Message{}
+
+	// 转换新Messages格式为原始格式
+	for _, newMsg := range newMessages {
+		msgBytes, err := json.Marshal(newMsg.Content)
+		if err != nil {
+			return nil, err // 错误处理
+		}
+		newRequest.Messages = append(newRequest.Messages, model.Message{
+			Role:    newMsg.Role,
+			Content: json.RawMessage(msgBytes),
+		})
+	}
+	return ConvertRequest(newRequest), nil
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {

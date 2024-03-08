@@ -8,8 +8,10 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+
 	"one-api/common/helper"
 	"one-api/common/image"
+
 	"one-api/common/logger"
 	"one-api/relay/channel/openai"
 	"one-api/relay/model"
@@ -43,7 +45,6 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 	if claudeRequest.MaxTokens == 0 {
 		claudeRequest.MaxTokens = 4096
 	}
-
 	for _, message := range textRequest.Messages {
 		if message.Role == "system" {
 			claudeRequest.System = string(message.Content)
@@ -53,19 +54,21 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 			Role:    convertRole(message.Role),
 			Content: []MessageContent{},
 		}
-
 		openaiContent := message.ParseContent()
 		for _, part := range openaiContent {
-			if part.Type == "text" {
+			switch part.Type {
+			case "text":
 				content.Content = append(content.Content, MessageContent{
 					Type: "text",
 					Text: part.Text,
 				})
-				continue
-			}
-
-			if part.Type == "image_url" {
-				mimeType, data, err := image.GetImageFromUrl(part.ImageUrl.(string))
+			case "image":
+				imageInfo, ok := part.ImageUrl.(model.MessageImageUrl)
+				if !ok {
+					log.Println("ImageUrl 类型断言失败")
+					return nil
+				}
+				mimeType, data, err := image.GetImageClaudeUrl(imageInfo.Url)
 				if err != nil {
 					log.Println("图片URL无效或处理错误", err)
 					return nil
