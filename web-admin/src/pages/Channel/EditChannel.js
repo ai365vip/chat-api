@@ -110,6 +110,9 @@ const EditChannel = (props) => {
                 case 28:
                     localModels = ['glm-4', 'glm-4v', 'glm-3-turbo'];
                     break;
+                case 29:
+                    localModels = ['stable-diffusion'];
+                    break;
             }
             setInputs((inputs) => ({...inputs, models: localModels}));
         }
@@ -468,6 +471,24 @@ const EditChannel = (props) => {
                                 <Input
                                     name='other'
                                     placeholder={'请输入星火大模型版本，注意是接口地址中的版本号，例如：v2.1'}
+                                    onChange={value => {
+                                        handleInputChange('other', value)
+                                    }}
+                                    value={inputs.other}
+                                    autoComplete='new-password'
+                                />
+                            </>
+                        )
+                    }
+                    {
+                        inputs.type === 29 && (
+                            <>
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>模型版本：</Typography.Text>
+                                </div>
+                                <Input
+                                    name='other'
+                                    placeholder={'请输入engine_id 例如（stable-diffusion-v1-6）'}
                                     onChange={value => {
                                         handleInputChange('other', value)
                                     }}

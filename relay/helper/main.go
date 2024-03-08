@@ -11,6 +11,7 @@ import (
 	"one-api/relay/channel/lobechat"
 	"one-api/relay/channel/openai"
 	"one-api/relay/channel/palm"
+	"one-api/relay/channel/stability"
 	"one-api/relay/channel/tencent"
 	"one-api/relay/channel/xunfei"
 	"one-api/relay/channel/zhipu"
@@ -46,6 +47,8 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &chatbot.Adaptor{}
 	case constant.APITypeLobeChat:
 		return &lobechat.Adaptor{}
+	case constant.APITypeStability:
+		return &stability.Adaptor{}
 
 	}
 	return nil

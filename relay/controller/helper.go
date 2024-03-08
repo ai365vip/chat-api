@@ -196,6 +196,17 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 		// we cannot just return, because we may have to return the pre-consumed quota
 		quota = 0
 	}
+	if meta.ChannelType == common.ChannelTypeStability {
+
+		aitextInt, err := strconv.ParseInt(aitext, 16, 64)
+		if err != nil {
+			// 处理转换错误
+			fmt.Println("转换错误:", err)
+		} else {
+			quota = quota * int(aitextInt)
+		}
+
+	}
 	quotaDelta := quota - preConsumedQuota
 	multiplier := fmt.Sprintf("%s，分组倍率 %.2f", modelRatioString, groupRatio)
 	LogContentEnabled, _ := strconv.ParseBool(common.OptionMap["LogContentEnabled"])

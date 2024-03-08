@@ -122,6 +122,8 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	switch channel.Type {
 	case common.ChannelTypeAzure:
 		c.Set(common.ConfigKeyAPIVersion, channel.Other)
+	case common.ChannelTypeStability:
+		c.Set(common.ConfigKeyAPIVersion, channel.Other)
 	case common.ChannelTypeXunfei:
 		c.Set(common.ConfigKeyAPIVersion, channel.Other)
 	case common.ChannelTypeGemini:
