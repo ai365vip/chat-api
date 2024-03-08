@@ -80,6 +80,9 @@ func ValidateUserToken(key string, model string) (token *Token, err error) {
 		}
 		if token.Models != "" {
 			models := strings.Split(token.Models, ",")
+			if strings.HasPrefix(model, "gpt-4-gizmo") {
+				model = "gpt-4-gizmo-*"
+			}
 			modelFound := false
 			for _, m := range models {
 				if m == model {
@@ -87,7 +90,7 @@ func ValidateUserToken(key string, model string) (token *Token, err error) {
 					break
 				}
 			}
-			if !modelFound {
+			if !modelFound && model != "" {
 				return nil, errors.New("该令牌不支持指定的模型")
 			}
 		}
