@@ -103,7 +103,7 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 		log.Printf("Error reading response body: %v", err)
 		return
 	}
-	log.Printf("fetchResponseBody: %s", string(responseBody))
+	//log.Printf("fetchResponseBody: %s", string(responseBody))
 	var responseItem midjourney.Midjourney
 	// err = json.NewDecoder(resp.Body).Decode(&responseItem)
 	err = json.Unmarshal(responseBody, &responseItem)
@@ -249,7 +249,7 @@ func updateTasksForChannel(ctx context.Context, channelId int, taskIds []string,
 		common.LogError(ctx, fmt.Sprintf("Get Task parse body error: %v", err))
 		return nil
 	}
-	log.Printf("listResponseBody: %s", string(responseBody))
+	//log.Printf("listResponseBody: %s", string(responseBody))
 	var responseItems []midjourney.Midjourney
 	err = json.Unmarshal(responseBody, &responseItems)
 	if err != nil {
