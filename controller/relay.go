@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/middleware"
@@ -159,7 +158,6 @@ func RelayMidjourney(c *gin.Context) {
 		err = midjourney.RelayMidjourneySubmit(c, relayMode)
 	}
 	//err = relayMidjourneySubmit(c, relayMode)
-	log.Println(err)
 	if err != nil {
 		retryTimesStr := c.Query("retry")
 		retryTimes, _ := strconv.Atoi(retryTimesStr)
@@ -177,7 +175,7 @@ func RelayMidjourney(c *gin.Context) {
 			})
 		}
 		channelId := c.GetInt("channel_id")
-		common.SysError(fmt.Sprintf("relay error (channel #%d): %s", channelId, err.Result))
+		common.SysError(fmt.Sprintf("relay error (channel #%d): %+v", channelId, err))
 
 	}
 }
