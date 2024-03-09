@@ -1,7 +1,7 @@
 # Chat API
 
 > [!NOTE]
-> 本项目为开源项目，在[One API](https://one-ap)与[New API](https://github.com/Calcium-Ion/new-api)的基础上进行二次开发，感谢原作者的无私奉献。
+> 本项目为开源项目，在[One API](https://github.com/songquanpeng/one-api)与[New API](https://github.com/Calcium-Ion/new-api)的基础上进行二次开发，感谢原作者的无私奉献。
 > 使用者必须在遵循 OpenAI 的[使用条款](https://openai.com/policies/terms-of-use)以及**法律法规**的情况下使用，不得用于非法用途。
 
 > [!WARNING]
@@ -36,6 +36,7 @@
 24. 支持令牌添加自定义后缀内容
 25. 支持midjourney-proxy-plus(支持/mj-turbo/mj、/mj-relax/mj，对应模型midjourney-turbo、midjourney-relax) 
 26. 支持设置充值数量对应折扣
+27. stability-sd文生图
 
 ## 部署
 
