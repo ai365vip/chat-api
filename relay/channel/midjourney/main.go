@@ -458,7 +458,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 				Code:        4,
 				Description: "task_no_found",
 			}
-		} else if originTask.Status == "SUCCESS" && originTask.Action != "ACTION" {
+		} else if originTask.Status == "SUCCESS" {
 			channel, err := model.GetChannelById(originTask.ChannelId, false)
 			if err != nil {
 				return &MidjourneyResponse{
