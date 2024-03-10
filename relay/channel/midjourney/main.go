@@ -407,7 +407,6 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 					Description: "index_can_only_be_1_2_3_4",
 				}
 			}
-			//action = midjRequest.Action
 			mjId = midjRequest.TaskId
 		} else if relayMode == constant.RelayModeMidjourneySimpleChange {
 			if midjRequest.Content == "" {
