@@ -217,8 +217,15 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 }
 
 func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStatistics []*LogStatistic, err error) {
-	groupSelect := getTimestampGroupsSelect("created_at", "day", "date")
+	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
 
+	if common.UsingPostgreSQL {
+		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD') as day"
+	}
+
+	if common.UsingSQLite {
+		groupSelect = "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch')) as day"
+	}
 	err = DB.Raw(`
 		SELECT `+groupSelect+`,
 		model_name, count(1) as request_count,
@@ -229,42 +236,15 @@ func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStat
 		WHERE type=2
 		AND user_id= ?
 		AND created_at BETWEEN ? AND ?
-		GROUP BY date, model_name
-		ORDER BY date, model_name
+		GROUP BY day, model_name
+		ORDER BY day, model_name
 	`, user_id, startTimestamp, endTimestamp).Scan(&LogStatistics).Error
 
-	return
+	//fmt.Println(user_id, startTimestamp, endTimestamp)
+
+	return LogStatistics, err
 }
 
-func getTimestampGroupsSelect(fieldName, groupType, alias string) string {
-	dateFormat := getDateFormat(groupType)
-	var groupSelect string
-
-	if common.UsingPostgreSQL {
-		groupSelect = fmt.Sprintf(`TO_CHAR(date_trunc('%s', to_timestamp(%s)), '%s') as %s`, groupType, fieldName, dateFormat, alias)
-	} else if common.UsingSQLite {
-		groupSelect = fmt.Sprintf(`strftime('%s', datetime(%s, 'unixepoch')) as %s`, dateFormat, fieldName, alias)
-	} else {
-		groupSelect = fmt.Sprintf(`DATE_FORMAT(FROM_UNIXTIME(%s), '%s') as %s`, fieldName, dateFormat, alias)
-	}
-
-	return groupSelect
-}
-func getDateFormat(groupType string) string {
-	var dateFormat string
-	if groupType == "day" {
-		dateFormat = "%Y-%m-%d"
-		if common.UsingPostgreSQL {
-			dateFormat = "YYYY-MM-DD"
-		}
-	} else {
-		dateFormat = "%Y-%m"
-		if common.UsingPostgreSQL {
-			dateFormat = "YYYY-MM"
-		}
-	}
-	return dateFormat
-}
 func GetProLogs(db *gorm.DB, logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (logs []*Logs, total int64, err error) {
 	// 确定当前使用的数据库方言
 	dialect := db.Dialector.Name()
