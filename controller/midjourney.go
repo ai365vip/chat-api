@@ -35,7 +35,7 @@ func UpdateMidjourneyTask() {
 	}()
 
 	for {
-		time.Sleep(time.Duration(5) * time.Second)
+		time.Sleep(time.Duration(15) * time.Second)
 
 		tasks := model.GetAllUnFinishTasks()
 
@@ -44,7 +44,11 @@ func UpdateMidjourneyTask() {
 		}
 		common.LogInfo(ctx, fmt.Sprintf("检测到未完成的任务数有: %v", len(tasks)))
 		// 尝试批量更新, 如果成功则跳过单个任务更新
-		ConcurrentUpdateMidjourneyTasks(ctx, tasks)
+		success := UpdateMidjourneyTaskAll(ctx, tasks)
+		if !success {
+			// 批量更新失败,再并发更新单个任务
+			ConcurrentUpdateMidjourneyTasks(ctx, tasks)
+		}
 	}
 }
 
