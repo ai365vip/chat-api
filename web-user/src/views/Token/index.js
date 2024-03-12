@@ -257,7 +257,7 @@ export default function Token() {
   return (
     <>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
-        <Typography variant="h4">Token</Typography>
+        <Typography variant="h4">令牌</Typography>
 
         <Button
           variant="contained"
@@ -267,7 +267,7 @@ export default function Token() {
           }}
           startIcon={<IconPlus />}
         >
-          新建Token
+          新建令牌
         </Button>
       </Stack>
       <Stack mb={5}>
