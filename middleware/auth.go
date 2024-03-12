@@ -135,6 +135,12 @@ func TokenAuth() func(c *gin.Context) {
 				return
 			}
 		}
+		if strings.HasSuffix(c.Request.URL.Path, "embeddings") {
+			if modelRequest.Model == "" {
+				modelRequest.Model = c.Param("model")
+			}
+		}
+
 		token, err := model.ValidateUserToken(key, modelRequest.Model)
 		if err != nil {
 			abortWithMessage(c, http.StatusUnauthorized, err.Error())

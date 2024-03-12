@@ -27,7 +27,7 @@ func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
 		err.Code == "invalid_api_key" ||
 		err.Code == "account_deactivated" ||
 		err.Code == "billing_not_active" ||
-		(err.Type == "requests" && strings.Contains(err.Message, "You have exceeded your rate limit.")) {
+		err.Type == "invalid_request_error" {
 		return true
 	}
 	return false
