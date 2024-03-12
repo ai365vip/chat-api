@@ -773,40 +773,6 @@ const EditChannel = (props) => {
                         value={inputs.headers}
                         autoComplete='new-password'
                     />
-
-                    {
-                        !isEdit && (
-                            <div style={{marginTop: 10, display: 'flex'}}>
-                                <Space>
-                                    <Checkbox
-                                        checked={batchProxy}
-                                        onChange={() => setBatchProxy(!batchProxy)}
-                                    />
-                                    <Typography.Text strong>启用批量代理创建</Typography.Text>
-                                </Space>
-                            </div>
-                        )
-                    }
-                    {
-                        !isEdit && batchProxy && ( // 添加 !isEdit 条件
-                            <div>
-                                <div style={{marginTop: 10}}>
-                                    <Typography.Text strong>批量代理：</Typography.Text>
-                                </div>
-                                <TextArea
-                                    label='批量代理'
-                                    name='batch_proxy'
-                                    placeholder={'请输入批量代理，使用name,url格式，一行一个'}
-                                    onChange={value => {
-                                        setProxyInputs(value)
-                                    }}
-                                    value={proxyInputs}
-                                    style={{minHeight: 150, fontFamily: 'JetBrains Mono, Consolas'}}
-                                    autoComplete='new-password'
-                                />
-                            </div>
-                        )
-                    }
                     {
                         inputs.type === 22 && (
                             <>
