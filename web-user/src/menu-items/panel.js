@@ -8,11 +8,13 @@ import {
   IconKey,
   IconGardenCart,
   IconUser,
-  IconUserScan
+  IconUserScan,
+  IconInfoCircle,
+  IconBrandGoogleAnalytics
 } from '@tabler/icons-react';
 
 // constant
-const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan };
+const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan,IconInfoCircle,IconBrandGoogleAnalytics };
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
 
@@ -42,12 +44,12 @@ const panel = {
       title: '日志',
       type: 'item',
       url: '/log',
-      icon: icons.IconArticle,
+      icon: icons.IconBrandGoogleAnalytics,
       breadcrumbs: false
     },
     //{
     //  id: 'mjlog',
-    //  title: 'MJ绘画',
+    //  title: 'MJ绘画',s
     //  type: 'item',
     //  url: '/mjlog',
     //  icon: icons.IconArticle,
@@ -61,15 +63,23 @@ const panel = {
       icon: icons.IconGardenCart,
       breadcrumbs: false
     },
-   //{
-   //  id: 'profile',
-   //  title: '个人设置',
-   //  type: 'item',
-   //  url: '/profile',
-   //  icon: icons.IconUserScan,
-   //  breadcrumbs: false,
-   //  isAdmin: true
-   //}
+    {
+      id: 'about',
+      title: '教程',
+      type: 'item',
+      url: '/about',
+      icon: icons.IconInfoCircle,
+      breadcrumbs: false
+    },
+    //{
+    //  id: 'profile',
+    //  title: '个人设置',
+    //  type: 'item',
+    //  url: '/profile',
+    //  icon: icons.IconUserScan,
+    //  breadcrumbs: false,
+    //  isAdmin: true
+    //}
   ]
 };
 

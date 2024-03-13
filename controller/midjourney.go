@@ -91,7 +91,7 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 		common.LogError(localCtx, fmt.Sprintf("创建请求失败：%v", err))
 		return
 	}
-	req = req.WithContext(localCtx) // 正确设置请求的上下文为localCtx
+	req = req.WithContext(localCtx)
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("mj-api-secret", midjourneyChannel.Key)

@@ -196,8 +196,6 @@ func zhipuStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithSt
 			if !ok {
 				return false // Stop streaming if channel is closed
 			}
-
-			// 一些实现可能在数据末尾添加了 \r，需要去除
 			data = strings.TrimSuffix(data, "\r")
 			if data == "[DONE]" {
 				return false // Handle the special "[DONE]" message

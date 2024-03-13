@@ -24,7 +24,7 @@ import User1 from 'assets/images/users/user-round.svg';
 import useLogin from 'hooks/useLogin';
 
 // assets
-import { IconLogout, IconSettings, IconUserScan,IconInfoCircle  } from '@tabler/icons-react';
+import { IconLogout, IconSettings, IconUserScan,IconHome  } from '@tabler/icons-react';
 
 // ==============================|| PROFILE MENU ||============================== //
 
@@ -152,11 +152,11 @@ const ProfileSection = () => {
                       </ListItemIcon>
                       <ListItemText primary={<Typography variant="body2">设置</Typography>} />
                     </ListItemButton>
-                    <ListItemButton sx={{ borderRadius: `${customization.borderRadius}px` }} onClick={() => navigate('/about')}>
+                    <ListItemButton sx={{ borderRadius: `${customization.borderRadius}px` }} onClick={() => navigate('/home')}>
                       <ListItemIcon>
-                        <IconInfoCircle stroke={1.5} size="1.3rem" />
+                        <IconHome stroke={1.5} size="1.3rem" />
                       </ListItemIcon>
-                      <ListItemText primary={<Typography variant="body2">教程</Typography>} />
+                      <ListItemText primary={<Typography variant="body2">首页</Typography>} />
                     </ListItemButton>
 
                     <ListItemButton sx={{ borderRadius: `${customization.borderRadius}px` }} onClick={handleLogout}>
