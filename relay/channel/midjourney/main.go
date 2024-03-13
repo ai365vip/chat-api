@@ -745,7 +745,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		newBody := strings.Replace(string(responseBody), `"code":21`, `"code":1`, -1)
 		responseBody = []byte(newBody)
 	}
-	if excludedActions[mjAction] {
+	if excludedActions[mjAction] && midjResponse.Code == 1 {
 		midjourneyTask.Status = "SUCCESS"
 		midjourneyTask.Progress = "100%"
 	}
