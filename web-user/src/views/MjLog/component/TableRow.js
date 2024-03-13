@@ -13,6 +13,8 @@ function renderType(type) {
       return <Tag color="purple" size='large'>按钮变化</Tag>;
     case 'INPAINT':
       return <Tag color="purple" size='large'>局部重绘</Tag>;
+    case 'MODAL':
+      return <Tag color="purple" size='large'>窗口确认</Tag>;
     case 'SHORTEN':
       return <Tag color="blue" size='large'>prompt分析</Tag>
     case 'SWAPFACE':

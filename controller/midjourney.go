@@ -35,7 +35,7 @@ func UpdateMidjourneyTask() {
 	}()
 
 	for {
-		time.Sleep(time.Duration(15) * time.Second)
+		time.Sleep(time.Duration(10) * time.Second)
 
 		tasks := model.GetAllUnFinishTasks()
 
@@ -55,7 +55,7 @@ func UpdateMidjourneyTask() {
 func ConcurrentUpdateMidjourneyTasks(ctx context.Context, tasks []*model.Midjourney) {
 	var wg sync.WaitGroup
 
-	// 为每个任务启动一个goroutine
+	// 为每个任务启动一个goroutines
 	for _, task := range tasks {
 		wg.Add(1) // 增加等待组的计数
 		go func(task *model.Midjourney) {
@@ -230,7 +230,7 @@ func updateTasksForChannel(ctx context.Context, channelId int, taskIds []string,
 		return nil
 	}
 	// 设置超时时间
-	timeout := time.Second * 5
+	timeout := time.Second * 8
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel() // 确保结束时取消上下文
 

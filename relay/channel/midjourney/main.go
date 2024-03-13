@@ -745,14 +745,15 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		newBody := strings.Replace(string(responseBody), `"code":21`, `"code":1`, -1)
 		responseBody = []byte(newBody)
 	}
-	if !excludedActions[mjAction] {
-		err = midjourneyTask.Insert()
-		if err != nil {
-			consumeQuota = false
-			return &MidjourneyResponse{
-				Code:        4,
-				Description: "insert_midjourney_task_failed",
-			}
+	if excludedActions[mjAction] {
+		midjourneyTask.Progress = "100%"
+	}
+	err = midjourneyTask.Insert()
+	if err != nil {
+		consumeQuota = false
+		return &MidjourneyResponse{
+			Code:        4,
+			Description: "insert_midjourney_task_failed",
 		}
 	}
 
