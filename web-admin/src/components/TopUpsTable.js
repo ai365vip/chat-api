@@ -125,11 +125,12 @@ const TopUpsTable = () => {
           dataIndex: 'money',
           className: isAdmin() ? 'tableShow' : 'tableHiddle',
           render: (text, record, index) => {
-              return (
-                <div>
-                {text}
-              </div>
-              );
+            const formattedText = Number(text).toFixed(2);
+            return (
+              <div>
+              {formattedText}
+            </div>
+            );
           },
         },
         {
