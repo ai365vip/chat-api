@@ -576,9 +576,9 @@ const SystemSetting = () => {
                                 </div>
                                 <Input
                                 placeholder='敏感信息不会发送到前端显示'
-                                value={inputs.password}
-                                name='password'
-                                onChange={(value) => handleInputChange('password', value)}
+                                value={inputs.GitHubClientSecret}
+                                name='GitHubClientSecret'
+                                onChange={(value) => handleInputChange('GitHubClientSecret', value)}
                                 />
                             </div> 
                         </div>
