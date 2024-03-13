@@ -62,7 +62,6 @@ const LoginForm = ({ ...others }) => {
               setTurnstileSiteKey(status.turnstile_site_key);
           }
       }
-      console.log(turnstileEnabled,turnstileToken);
   }, []);
 
   let tripartiteLogin = false;
