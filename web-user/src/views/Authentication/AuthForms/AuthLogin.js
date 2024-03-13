@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import React, {useState, useEffect} from 'react';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link,useSearchParams } from 'react-router-dom';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
@@ -36,7 +36,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Github from 'assets/images/icons/github.svg';
 import Wechat from 'assets/images/icons/wechat.svg';
 import { onGitHubOAuthClicked } from 'utils/common';
-
+import Turnstile from "react-turnstile";
 // ============================|| FIREBASE - LOGIN ||============================ //
 
 const LoginForm = ({ ...others }) => {
@@ -46,7 +46,24 @@ const LoginForm = ({ ...others }) => {
   const matchDownSM = useMediaQuery(theme.breakpoints.down('md'));
   const customization = useSelector((state) => state.customization);
   const siteInfo = useSelector((state) => state.siteInfo);
+  const [searchParams] = useSearchParams();
+  const [turnstileEnabled, setTurnstileEnabled] = useState(false);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const status = useSelector((state) => state.siteInfo);
   // const [checked, setChecked] = useState(true);
+  useEffect(() => {
+      if (searchParams.get('expired')) {
+          showError('未登录或登录已过期，请重新登录！');
+      }
+      if (status) {
+          if (status.turnstile_check) {
+              setTurnstileEnabled(true);
+              setTurnstileSiteKey(status.turnstile_site_key);
+          }
+      }
+      console.log(turnstileEnabled,turnstileToken);
+  }, []);
 
   let tripartiteLogin = false;
   if (siteInfo.github_oauth || siteInfo.wechat_login) {
@@ -69,6 +86,7 @@ const LoginForm = ({ ...others }) => {
   const handleMouseDownPassword = (event) => {
     event.preventDefault();
   };
+  
 
   return (
     <>
@@ -165,7 +183,7 @@ const LoginForm = ({ ...others }) => {
           password: Yup.string().max(255).required('Password is required')
         })}
         onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
-          const { success, message } = await login(values.username, values.password);
+          const { success, message } = await login(values.username, values.password,turnstileEnabled,turnstileToken);
           if (success) {
             setStatus({ success: true });
           } else {
@@ -258,6 +276,18 @@ const LoginForm = ({ ...others }) => {
                 </Button>
               </AnimateButton>
             </Box>
+            {turnstileEnabled ? (
+                <div style={{display: 'flex', justifyContent: 'center', marginTop: 20}}>
+                    <Turnstile
+                        sitekey={turnstileSiteKey}
+                        onVerify={(token) => {
+                            setTurnstileToken(token);
+                        }}
+                    />
+                </div>
+            ) : (
+                <></>
+            )}
           </form>
         )}
       </Formik>
