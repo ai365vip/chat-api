@@ -746,6 +746,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		responseBody = []byte(newBody)
 	}
 	if excludedActions[mjAction] {
+		midjourneyTask.Status = "SUCCESS"
 		midjourneyTask.Progress = "100%"
 	}
 	err = midjourneyTask.Insert()
