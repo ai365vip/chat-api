@@ -36,7 +36,6 @@ type Midjourney struct {
 	FailReason  string          `json:"failReason"`
 	Properties  json.RawMessage `json:"properties"`
 	Buttons     json.RawMessage `json:"buttons"`
-	ImageSeed   json.RawMessage `json:"image_seed"`
 }
 
 type TaskMidjourney struct {
@@ -161,8 +160,6 @@ func RelayMidjourneyNotify(c *gin.Context) *MidjourneyResponse {
 	midjourneyTask.ImageUrl = midjRequest.ImageUrl
 	midjourneyTask.Status = midjRequest.Status
 	midjourneyTask.FailReason = midjRequest.FailReason
-	midjourneyTask.Buttons = midjRequest.Buttons
-	midjourneyTask.Properties = midjRequest.Properties
 	err = midjourneyTask.Update()
 	if err != nil {
 		return &MidjourneyResponse{
@@ -570,7 +567,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 	}
 	quota := int(ratio * common.QuotaPerUnit)
 	if excludedActions[mjAction] {
-		quota = 0
+		consumeQuota = false
 	}
 	if consumeQuota && userQuota-quota < 0 {
 		consumeQuota = false
@@ -742,8 +739,10 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 		}
 		//修改返回值
-		newBody := strings.Replace(string(responseBody), `"code":21`, `"code":1`, -1)
-		responseBody = []byte(newBody)
+		if !excludedActions[mjAction] {
+			newBody := strings.Replace(string(responseBody), `"code":21`, `"code":1`, -1)
+			responseBody = []byte(newBody)
+		}
 	}
 	if excludedActions[mjAction] && midjResponse.Code == 1 {
 		midjourneyTask.Status = "SUCCESS"

@@ -264,7 +264,7 @@ func updateTasksForChannel(ctx context.Context, channelId int, taskIds []string,
 	for _, responseItem := range responseItems {
 		task := taskMap[responseItem.MjId]
 		if !checkMjTaskNeedUpdate(task, responseItem) {
-			return nil
+			continue
 		}
 
 		task.Code = 1
@@ -382,6 +382,9 @@ func compensateForTaskFailure(ctx context.Context, task *model.Midjourney) {
 	}
 }
 func checkMjTaskNeedUpdate(oldTask *model.Midjourney, newTask midjourney.Midjourney) bool {
+	if oldTask.Code != 1 {
+		return true
+	}
 	// 检查任务基本信息是否发生变化
 	if oldTask.Progress != newTask.Progress || oldTask.Status != newTask.Status {
 		return true
