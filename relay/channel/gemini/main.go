@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/common/helper"
@@ -82,7 +83,12 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 				if imageNum > VisionMaxImageNum {
 					continue
 				}
-				mimeType, data, _ := image.GetImageFromUrl(part.ImageUrl.(openai.MessageImageUrl).Url)
+				imageInfo, ok := part.ImageUrl.(model.MessageImageUrl)
+				if !ok {
+					log.Println("ImageUrl 类型断言失败")
+					return nil
+				}
+				mimeType, data, _ := image.GetImageFromUrl(imageInfo.Url)
 				parts = append(parts, Part{
 					InlineData: &InlineData{
 						MimeType: mimeType,

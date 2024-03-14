@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 	"one-api/common/helper"
-	channelhelper "one-api/relay/channel"
+	"one-api/relay/channel"
 	"one-api/relay/channel/openai"
 	"one-api/relay/model"
 	"one-api/relay/util"
@@ -31,7 +31,7 @@ func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *util.RelayMeta) error {
-	channelhelper.SetupCommonRequestHeader(c, req, meta)
+	channel.SetupCommonRequestHeader(c, req, meta)
 	req.Header.Set("x-goog-api-key", meta.APIKey)
 	return nil
 }
@@ -44,7 +44,8 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
-	return channelhelper.DoRequestHelper(a, c, meta, requestBody)
+	return channel.DoRequestHelper(a, c, meta, requestBody)
+
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (aitext string, usage *model.Usage, err *model.ErrorWithStatusCode) {
