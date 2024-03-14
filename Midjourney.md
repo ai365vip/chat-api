@@ -1,254 +1,74 @@
 # Midjourney Proxy API文档
 
-
 **简介**:Midjourney Proxy API文档
 
+## 模型价格设置（在设置-运营设置-按次价格，启用按次）
 
-**HOST**:https://api.nekoedu.com  
+### 模型列表
 
+### midjourney-proxy支持
 
-**Version**:v2.3.5
+- mj_imagine (绘图)
+- mj_variation (变换)
+- mj_reroll (重绘)
+- mj_blend (混合)
+- mj_upscale (放大)
+- mj_describe (图生文)
 
+### midjourney-proxy-plus支持
 
-[TOC]
+- mj_shorten (提示词缩短)
+- mj_inpaint (局部重绘)
+- mj_customzoom  (自定义变焦)
+- mj_action  (按钮变化)
+- mj_swapface (换脸)
+- mj_uploads (图像上传)
 
-
-
-
-
-
-# 任务提交
-
-
-## 绘图变化
-
-
-**接口地址**:`/mj/submit/change`
-
-
-**请求方式**:`POST`
-
-
-**请求数据类型**:`application/json`
-
-
-**响应数据类型**:`*/*`
-
-
-**接口描述**:
-
-
-**请求示例**:
-
-
-```javascript
+```json
 {
-  "action": "UPSCALE",
-  "index": 1,
-  "notifyHook": "",
-  "state": "",
-  "taskId": "1320098173412546"
+  "mj_blend": 0.1,
+  "mj_describe": 0.1,
+  "mj_imagine": 0.1,
+  "mj_reroll": 0.1,
+  "mj_upscale": 0.1,
+  "mj_variation": 0.1,
+  "mj_action": 0.1,
+  "mj_inpaint": 0.1,
+  "mj_customzoom":0.1,
+  "mj_swapface": 0.1,
+  "mj_shorten": 0.1,
+  "mj_uploads": 0.001,
+  "mj_relax_imagine": 0.1,
+  "mj_relax_variation": 0.1,
+  "mj_relax_reroll": 0.1,
+  "mj_relax_blend": 0.1,
+  "mj_relax_describe": 0.1,
+  "mj_relax_upscale": 0.05,
+  "mj_relax_action": 0.1,
+  "mj_relax_inpaint": 0.1,
+  "mj_relax_customzoom":0.1,
+  "mj_relax_swapface": 0.1,
+  "mj_relax_shorten": 0.1,
+  "mj_relax_uploads": 0.001
 }
 ```
 
+## 渠道设置
 
-**请求参数**:
+### 对接 midjourney-proxy（url/mj 正常请求fast模式）
 
+1.
 
-| 参数名称 | 参数说明 | 请求类型    | 是否必须 | 数据类型 | schema |
-| -------- | -------- | ----- | -------- | -------- | ------ |
-|changeDTO|changeDTO|body|true|变化任务提交参数|变化任务提交参数|
-|&emsp;&emsp;action|UPSCALE(放大); VARIATION(变换); REROLL(重新生成),可用值:UPSCALE,VARIATION,REROLL||true|string||
-|&emsp;&emsp;index|序号(1~4), action为UPSCALE,VARIATION时必传||false|integer(int32)||
-|&emsp;&emsp;notifyHook|回调地址, 为空时使用全局notifyHook||false|string||
-|&emsp;&emsp;state|自定义参数||false|string||
-|&emsp;&emsp;taskId|任务ID||true|string||
+部署Midjourney-Proxy，并配置好midjourney账号等（强烈建议设置密钥），[项目地址](https://github.com/novicezk/midjourney-proxy)
 
+2. 在渠道管理中添加渠道，渠道类型选择**Midjourney Proxy**，
+   ，模型选择**midjourney**
+3. 地址填写midjourney-proxy部署的地址，例如：http://localhost:8080
+4. 密钥填写midjourney-proxy的密钥，如果没有设置密钥就为空
 
-**响应状态**:
+### 对接慢速（url/mj-relax/mj relax模式）
 
+1. 在渠道管理中添加渠道，渠道类型选择**Midjourney Proxy**，模型自定义添加**midjourney-relax**，
+2. 地址填写上游midjourney-proxyi的地址，例如：http://localhost:8081
+3. 密钥填写midjourney-proxy的密钥，如果没有设置密钥就为空
 
-| 状态码 | 说明 | schema |
-| -------- | -------- | ----- | 
-|200|OK|提交结果|
-|201|Created||
-|401|Unauthorized||
-|403|Forbidden||
-|404|Not Found||
-
-
-**响应参数**:
-
-
-| 参数名称 | 参数说明 | 类型 | schema |
-| -------- | -------- | ----- |----- | 
-|code|状态码: 1(提交成功), 21(已存在), 22(排队中), other(错误)|integer(int32)|integer(int32)|
-|description|描述|string||
-|properties|扩展字段|object||
-|result|任务ID|string||
-
-
-**响应示例**:
-```javascript
-{
-	"code": 1,
-	"description": "提交成功",
-	"properties": {},
-	"result": 1320098173412546
-}
-```
-
-## 提交Imagine任务
-
-
-**接口地址**:`/mj/submit/imagine`
-
-
-**请求方式**:`POST`
-
-
-**请求数据类型**:`application/json`
-
-
-**响应数据类型**:`*/*`
-
-
-**接口描述**:
-
-
-**请求示例**:
-
-
-```javascript
-{
-  "base64": "",
-  "notifyHook": "",
-  "prompt": "Cat",
-  "state": ""
-}
-```
-
-
-**请求参数**:
-
-
-| 参数名称 | 参数说明 | 请求类型    | 是否必须 | 数据类型 | schema |
-| -------- | -------- | ----- | -------- | -------- | ------ |
-|imagineDTO|imagineDTO|body|true|Imagine提交参数|Imagine提交参数|
-|&emsp;&emsp;base64|垫图base64||false|string||
-|&emsp;&emsp;notifyHook|回调地址, 为空时使用全局notifyHook||false|string||
-|&emsp;&emsp;prompt|提示词||true|string||
-|&emsp;&emsp;state|自定义参数||false|string||
-
-
-**响应状态**:
-
-
-| 状态码 | 说明 | schema |
-| -------- | -------- | ----- | 
-|200|OK|提交结果|
-|201|Created||
-|401|Unauthorized||
-|403|Forbidden||
-|404|Not Found||
-
-
-**响应参数**:
-
-
-| 参数名称 | 参数说明 | 类型 | schema |
-| -------- | -------- | ----- |----- | 
-|code|状态码: 1(提交成功), 21(已存在), 22(排队中), other(错误)|integer(int32)|integer(int32)|
-|description|描述|string||
-|properties|扩展字段|object||
-|result|任务ID|string||
-
-
-**响应示例**:
-```javascript
-{
-	"code": 1,
-	"description": "提交成功",
-	"properties": {},
-	"result": 1320098173412546
-}
-```
-
-
-# 任务查询
-
-## 指定ID获取任务
-
-
-**接口地址**:`/mj/task/{id}/fetch`
-
-
-**请求方式**:`GET`
-
-
-**请求数据类型**:`application/x-www-form-urlencoded`
-
-
-**响应数据类型**:`*/*`
-
-
-**接口描述**:
-
-
-**请求参数**:
-
-
-| 参数名称 | 参数说明 | 请求类型    | 是否必须 | 数据类型 | schema |
-| -------- | -------- | ----- | -------- | -------- | ------ |
-|id|任务ID|path|false|string||
-
-
-**响应状态**:
-
-
-| 状态码 | 说明 | schema |
-| -------- | -------- | ----- | 
-|200|OK|任务|
-|401|Unauthorized||
-|403|Forbidden||
-|404|Not Found||
-
-
-**响应参数**:
-
-
-| 参数名称 | 参数说明 | 类型 | schema |
-| -------- | -------- | ----- |----- | 
-|action|可用值:IMAGINE,UPSCALE,VARIATION,REROLL,DESCRIBE,BLEND|string||
-|description|任务描述|string||
-|failReason|失败原因|string||
-|finishTime|结束时间|integer(int64)|integer(int64)|
-|id|任务ID|string||
-|imageUrl|图片url|string||
-|progress|任务进度|string||
-|prompt|提示词|string||
-|promptEn|提示词-英文|string||
-|startTime|开始执行时间|integer(int64)|integer(int64)|
-|state|自定义参数|string||
-|status|任务状态,可用值:NOT_START,SUBMITTED,IN_PROGRESS,FAILURE,SUCCESS|string||
-|submitTime|提交时间|integer(int64)|integer(int64)|
-
-
-**响应示例**:
-```javascript
-{
-	"action": "",
-	"description": "",
-	"failReason": "",
-	"finishTime": 0,
-	"id": "",
-	"imageUrl": "",
-	"progress": "",
-	"prompt": "",
-	"promptEn": "",
-	"startTime": 0,
-	"state": "",
-	"status": "",
-	"submitTime": 0
-}
-```
