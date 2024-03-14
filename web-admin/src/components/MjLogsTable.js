@@ -43,7 +43,7 @@ function renderType(type) {
     case 'UPSCALE':
       return <Tag color="orange" size='large'>放大</Tag>;
     case 'VARIATION':
-      return <Tag color="purple" size='large'>变换</Tag>;s
+      return <Tag color="purple" size='large'>变换</Tag>;
     case 'DESCRIBE':
       return <Tag color="yellow" size='large'>图生文</Tag>;
     case 'REROLL':
