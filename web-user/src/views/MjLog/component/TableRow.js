@@ -13,8 +13,10 @@ function renderType(type) {
       return <Tag color="purple" size='large'>按钮变化</Tag>;
     case 'INPAINT':
       return <Tag color="purple" size='large'>局部重绘</Tag>;
+    case 'CUSTOMZOOM':
+      return <Tag color="purple" size='large'>自定义变焦</Tag>;
     case 'MODAL':
-      return <Tag color="purple" size='large'>窗口确认</Tag>;
+      return <Tag color="light-blue" size='large'>窗口确认</Tag>;
     case 'SHORTEN':
       return <Tag color="blue" size='large'>prompt分析</Tag>
     case 'SWAPFACE':
@@ -28,7 +30,7 @@ function renderType(type) {
     case 'REROLL':
       return <Tag color="lime" size='large'>重绘</Tag>
     case 'BLEND':
-      return <Tag color="lime" size='large'>图混合</Tag>;
+      return <Tag color="cyan" size='large'>图混合</Tag>;
     case 'UPLOADS':
       return <Tag color="blue" size='large'>上传文件</Tag>
     default:
@@ -42,9 +44,9 @@ function renderCode(code) {
     case 1:
       return <Tag color="green" size='large'>已提交</Tag>;
     case 21:
-      return <Tag color="lime" size='large'>排队中</Tag>;
+      return <Tag color="lime" size='large'>等待中</Tag>;
     case 22:
-      return <Tag color="orange" size='large'>重复提交</Tag>;
+      return <Tag color="orange" size='large'>排队中</Tag>;
     default:
       return <Tag color="black" size='large'>未知</Tag>;
   }

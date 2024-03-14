@@ -565,6 +565,14 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		"mj_turbo_modal": true,
 		"mj_relax_modal": true,
 	}
+	modalActions := map[string]bool{
+		"mj_inpaint":          true,
+		"mj_turbo_inpaint":    true,
+		"mj_relax_inpaint":    true,
+		"mj_customzoom":       true,
+		"mj_turbo_customzoom": true,
+		"mj_relax_customzoom": true,
+	}
 	quota := int(ratio * common.QuotaPerUnit)
 	if excludedActions[mjAction] {
 		consumeQuota = false
@@ -739,7 +747,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			}
 		}
 		//修改返回值
-		if !excludedActions[mjAction] {
+		if !modalActions[mjAction] {
 			newBody := strings.Replace(string(responseBody), `"code":21`, `"code":1`, -1)
 			responseBody = []byte(newBody)
 		}
@@ -846,7 +854,8 @@ func convertActionParams(content string) *string {
 		switch action1 { // 当action不匹配时，检查action1
 		case "Inpaint":
 			actionLiteral = "INPAINT"
-
+		case "CustomZoom":
+			actionLiteral = "CUSTOMZOOM"
 		default:
 			actionLiteral = "ACTION"
 		}

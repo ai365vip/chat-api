@@ -26,8 +26,7 @@ func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
 	if err.Type == "insufficient_quota" ||
 		err.Code == "invalid_api_key" ||
 		err.Code == "account_deactivated" ||
-		err.Code == "billing_not_active" ||
-		err.Type == "invalid_request_error" {
+		err.Code == "billing_not_active" {
 		return true
 	}
 	return false
