@@ -90,7 +90,7 @@ const EditChannel = (props) => {
                     localModels = ['qwen-turbo', 'qwen-plus', 'text-embedding-v1'];
                     break;
                 case 16:
-                    localModels = ['chatglm_pro', 'chatglm_std', 'chatglm_lite'];
+                    localModels = ['chatglm_pro', 'chatglm_std', 'chatglm_lite','glm-4', 'glm-4v', 'glm-3-turbo',];
                     break;
                 case 18:
                     localModels = ['SparkDesk'];
