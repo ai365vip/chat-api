@@ -111,3 +111,9 @@ func (topup *TopUp) Delete() error {
 	err = DB.Delete(topup).Error
 	return err
 }
+
+func DeleteTopUpsWithStatusPending() (err error) {
+
+	err = DB.Where("status = ?", "pending").Delete(&TopUp{}).Error
+	return err
+}

@@ -13,7 +13,8 @@ import {
     Popover,
     Modal,
     ImagePreview,
-    Typography
+    Typography,
+    Popconfirm
 } from '@douyinfe/semi-ui';
 import {ITEMS_PER_PAGE} from '../constants';
 import {renderNumber, renderQuota, stringToColor} from '../helpers/render';
@@ -244,7 +245,31 @@ const TopUpsTable = () => {
         }
         setLoading(false);
     };
-
+    const deleteTopUps = async () => {
+      setLoading(true); // 开始加载
+  
+      const url = '/api/topups/delete';
+  
+      try {
+          const res = await API.delete(url); // 发送删除请求
+          const { success, message } = res.data;
+  
+          if (success) {
+              // 删除成功
+              showSuccess(message);
+          } else {
+              // 删除失败，显示错误消息
+              showError(message);
+          }
+      } catch (error) {
+          // 处理请求错误
+          console.error("Delete operation failed:", error);
+          showError("Failed to delete top-ups");
+      }
+      refresh();
+      setLoading(false); // 结束加载
+  };
+  
     const pageData = logs.slice((activePage - 1) * ITEMS_PER_PAGE, activePage * ITEMS_PER_PAGE);
 
     const handlePageChange = page => {
@@ -343,8 +368,17 @@ const TopUpsTable = () => {
                                          onChange={value => handleInputChange(value, 'create_time')}/>
 
                         <Form.Section>
-                            <Button label='查询' type="primary" htmlType="submit" className="btn-margin-right"
+                            <Button label='查询' type="primary" style={{marginRight: 8}} htmlType="submit" className="btn-margin-right"
                                     onClick={refresh}>查询</Button>
+
+                        <Popconfirm
+                            title="确定是否要删除未支付订单？"
+                            content="此修改将不可逆"
+                            okType={'danger'}
+                            onConfirm={deleteTopUps}
+                        >
+                            <Button theme='light' type='danger' style={{marginRight: 8}}>清除未支付</Button>
+                        </Popconfirm>
                         </Form.Section>
                     </>
                 </Form>

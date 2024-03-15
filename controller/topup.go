@@ -358,18 +358,19 @@ func GetTopUp(c *gin.Context) {
 }
 
 func DeleteTopUp(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	err := model.DeleteTopUpnById(id)
+
+	err := model.DeleteTopUpsWithStatusPending()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
+		// 如果有错误，返回错误消息
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Failed to delete top-ups",
 		})
 		return
 	}
+	// 如果成功，返回成功消息
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "",
+		"message": "Top-ups deleted successfully",
 	})
-	return
 }

@@ -122,7 +122,7 @@ func SetApiRouter(router *gin.Engine) {
 			topupsRoute.GET("/", controller.GetAllTopUps)
 			topupsRoute.GET("/search", controller.SearchTopUps)
 			topupsRoute.GET("/:id", controller.GetTopUp)
-			topupsRoute.DELETE("/:id", controller.DeleteTopUp)
+			topupsRoute.DELETE("/delete", controller.DeleteTopUp)
 		}
 
 		logRoute := apiRouter.Group("/log")
