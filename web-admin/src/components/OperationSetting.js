@@ -127,6 +127,7 @@ const OperationSetting = () => {
         await updateOption('QuotaForNewUser', inputs.QuotaForNewUser);
         await updateOption('PreConsumedQuota', inputs.PreConsumedQuota);
         await updateOption('QuotaForInvitee', inputs.QuotaForInvitee);
+        await updateOption('QuotaForInviter', inputs.QuotaForInviter);
         await updateOption('MiniQuota', inputs.MiniQuota);
         await updateOption('ProporTions', inputs.ProporTions);
     };
