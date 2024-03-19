@@ -1,4 +1,4 @@
-package zhipu_v4
+package ollama
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"one-api/relay/channel"
+	"one-api/relay/constant"
 	"one-api/relay/model"
 	"one-api/relay/util"
 
@@ -20,13 +21,14 @@ func (a *Adaptor) Init(meta *util.RelayMeta) {
 }
 
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
-	return fmt.Sprintf("%s/api/paas/v4/chat/completions", meta.BaseURL), nil
+	// https://github.com/ollama/ollama/blob/main/docs/api.md
+	fullRequestURL := fmt.Sprintf("%s/api/chat", meta.BaseURL)
+	return fullRequestURL, nil
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *util.RelayMeta) error {
 	channel.SetupCommonRequestHeader(c, req, meta)
-	token := getZhipuToken(meta.APIKey)
-	req.Header.Set("Authorization", token)
+	req.Header.Set("Authorization", "Bearer "+meta.APIKey)
 	return nil
 }
 
@@ -34,7 +36,12 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	return requestOpenAI2Zhipu(*request), nil
+	switch relayMode {
+	case constant.RelayModeEmbeddings:
+		return nil, errors.New("not supported")
+	default:
+		return ConvertRequest(*request), nil
+	}
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
@@ -42,11 +49,10 @@ func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (aitext string, usage *model.Usage, err *model.ErrorWithStatusCode) {
-	aitext = ""
 	if meta.IsStream {
-		err, usage, aitext = zhipuStreamHandler(c, resp)
+		err, usage = StreamHandler(c, resp)
 	} else {
-		err, usage, aitext = zhipuHandler(c, resp)
+		err, usage = Handler(c, resp)
 	}
 	return
 }
@@ -56,5 +62,5 @@ func (a *Adaptor) GetModelList() []string {
 }
 
 func (a *Adaptor) GetChannelName() string {
-	return "zhipu"
+	return "ollama"
 }

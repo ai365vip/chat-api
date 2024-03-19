@@ -78,7 +78,7 @@ const EditChannel = (props) => {
             // eslint-disable-next-line default-case
             switch (value) {
                 case 14:
-                    localModels = ['claude-instant-1', 'claude-2','claude-2.0', 'claude-2.1', 'claude-3-opus-20240229', 'claude-3-opus','claude-3-sonnet-20240229'];
+                    localModels = ['claude-instant-1.2', 'claude-2.0', 'claude-2.1', 'claude-3-haiku-20240307','claude-3-opus-20240229', 'claude-3-opus','claude-3-sonnet-20240229'];
                     break;
                 case 11:
                     localModels = ['PaLM-2'];
@@ -102,16 +102,31 @@ const EditChannel = (props) => {
                     localModels = ['hunyuan'];
                     break;
                 case 24:
-                    localModels = ['gemini-pro'];
+                    localModels = ['gemini-pro','gemini-pro-vision'];
                     break;
                 case 2:
                     localModels = ['midjourney'];
                     break;
-                case 28:
-                    localModels = ['glm-4', 'glm-4v', 'glm-3-turbo'];
-                    break;
                 case 29:
                     localModels = ['stable-diffusion'];
+                    break;
+                case 30:
+                    localModels = ['gemma-7b-it','llama2-7b-2048','llama2-70b-4096','mixtral-8x7b-32768'];
+                    break;
+                case 31:
+                    localModels = ['Baichuan2-Turbo','Baichuan2-Turbo-192k'];
+                    break;
+                case 32:
+                    localModels = ['abab5.5s-chat','abab5.5-chat','abab6-chat'];
+                    break;
+                case 33:
+                    localModels = ['open-mistral-7b','open-mixtral-8x7b','mistral-small-latest','mistral-medium-latest','mistral-large-latest'];
+                    break;
+                case 34:
+                    localModels = ['qwen:0.5b-chat'];
+                    break;
+                case 35:
+                    localModels = ['yi-34b-chat-0205','yi-34b-chat-200k','yi-vl-plus'];
                     break;
             }
             setInputs((inputs) => ({...inputs, models: localModels}));

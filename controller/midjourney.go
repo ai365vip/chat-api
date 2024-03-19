@@ -74,6 +74,7 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 	defer cancel()
 
 	midjourneyChannel, err := model.GetChannelById(task.ChannelId, true)
+
 	if err != nil {
 		common.LogError(localCtx, fmt.Sprintf("获取渠道信息失败，请联系管理员，渠道ID：%d, 错误：%v", task.ChannelId, err))
 		task.FailReason = "获取渠道信息失败，请联系管理员"

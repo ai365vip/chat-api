@@ -220,6 +220,12 @@ const (
 	ChannelTypeMoonshot       = 27
 	ChannelTypeZhipu_v4       = 28
 	ChannelTypeStability      = 29
+	ChannelTypeGroq           = 30
+	ChannelTypeBaichuan       = 31
+	ChannelTypeMinimax        = 32
+	ChannelTypeMistral        = 33
+	ChannelTypeOllama         = 34
+	ChannelTypeLingYiWanWu    = 35
 )
 
 var ChannelBaseURLs = []string{
@@ -248,11 +254,17 @@ var ChannelBaseURLs = []string{
 	"https://fastgpt.run/api/openapi",   // 22
 	"https://hunyuan.cloud.tencent.com", //23
 	"https://generativelanguage.googleapis.com", //24
-	"",                         //25
-	"",                         //26
-	"https://api.moonshot.cn",  //27
-	"https://open.bigmodel.cn", //28
-	"https://api.stability.ai", //29
+	"",                            //25
+	"",                            //26
+	"https://api.moonshot.cn",     //27
+	"https://open.bigmodel.cn",    //28
+	"https://api.stability.ai",    //29
+	"https://api.groq.com/openai", // 30
+	"https://api.baichuan-ai.com", // 31
+	"https://api.minimax.chat",    // 32
+	"https://api.mistral.ai",      // 33
+	"http://localhost:11434",      // 34
+	"https://api.lingyiwanwu.com", // 35
 }
 
 const (

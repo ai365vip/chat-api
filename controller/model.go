@@ -2,11 +2,10 @@ package controller
 
 import (
 	"fmt"
-	"one-api/relay/channel/ai360"
-	"one-api/relay/channel/moonshot"
+	"one-api/common"
+	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
 	"one-api/relay/helper"
-
 	relaymodel "one-api/relay/model"
 
 	"github.com/gin-gonic/gin"
@@ -80,27 +79,22 @@ func init() {
 			}
 		}
 	}
-	for _, modelName := range ai360.ModelList {
-		openAIModels = append(openAIModels, OpenAIModels{
-			Id:         modelName,
-			Object:     "model",
-			Created:    1626777600,
-			OwnedBy:    "360",
-			Permission: permission,
-			Root:       modelName,
-			Parent:     nil,
-		})
-	}
-	for _, modelName := range moonshot.ModelList {
-		openAIModels = append(openAIModels, OpenAIModels{
-			Id:         modelName,
-			Object:     "model",
-			Created:    1626777600,
-			OwnedBy:    "moonshot",
-			Permission: permission,
-			Root:       modelName,
-			Parent:     nil,
-		})
+	for _, channelType := range openai.CompatibleChannels {
+		if channelType == common.ChannelTypeAzure {
+			continue
+		}
+		channelName, channelModelList := openai.GetCompatibleChannelMeta(channelType)
+		for _, modelName := range channelModelList {
+			openAIModels = append(openAIModels, OpenAIModels{
+				Id:         modelName,
+				Object:     "model",
+				Created:    1626777600,
+				OwnedBy:    channelName,
+				Permission: permission,
+				Root:       modelName,
+				Parent:     nil,
+			})
+		}
 	}
 	openAIModelsMap = make(map[string]OpenAIModels)
 	for _, model := range openAIModels {

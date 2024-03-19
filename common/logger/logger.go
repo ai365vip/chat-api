@@ -3,16 +3,19 @@ package logger
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log"
+	"one-api/common"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 const (
+	loggerDEBUG = "DEBUG"
 	loggerINFO  = "INFO"
 	loggerWarn  = "WARN"
 	loggerError = "ERR"
@@ -49,12 +52,19 @@ func SysLog(s string) {
 	t := time.Now()
 	_, _ = fmt.Fprintf(gin.DefaultWriter, "[SYS] %v | %s \n", t.Format("2006/01/02 - 15:04:05"), s)
 }
+func Debug(ctx context.Context, msg string) {
+	if common.DebugEnabled {
+		logHelper(ctx, loggerDEBUG, msg)
+	}
+}
 
 func SysError(s string) {
 	t := time.Now()
 	_, _ = fmt.Fprintf(gin.DefaultErrorWriter, "[SYS] %v | %s \n", t.Format("2006/01/02 - 15:04:05"), s)
 }
-
+func Debugf(ctx context.Context, format string, a ...any) {
+	Debug(ctx, fmt.Sprintf(format, a...))
+}
 func Info(ctx context.Context, msg string) {
 	logHelper(ctx, loggerINFO, msg)
 }
