@@ -9,6 +9,7 @@ import (
 	"one-api/relay/channel/chatbot"
 	"one-api/relay/channel/gemini"
 	"one-api/relay/channel/lobechat"
+	"one-api/relay/channel/ollama"
 	"one-api/relay/channel/openai"
 	"one-api/relay/channel/palm"
 	"one-api/relay/channel/stability"
@@ -46,7 +47,8 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &lobechat.Adaptor{}
 	case constant.APITypeStability:
 		return &stability.Adaptor{}
-
+	case constant.APITypeOllama:
+		return &ollama.Adaptor{}
 	}
 	return nil
 }

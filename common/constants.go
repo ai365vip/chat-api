@@ -218,7 +218,6 @@ const (
 	ChannelTypeChatBot        = 25
 	ChannelTypeLobeChat       = 26
 	ChannelTypeMoonshot       = 27
-	ChannelTypeZhipu_v4       = 28
 	ChannelTypeStability      = 29
 	ChannelTypeGroq           = 30
 	ChannelTypeBaichuan       = 31
@@ -257,7 +256,6 @@ var ChannelBaseURLs = []string{
 	"",                            //25
 	"",                            //26
 	"https://api.moonshot.cn",     //27
-	"https://open.bigmodel.cn",    //28
 	"https://api.stability.ai",    //29
 	"https://api.groq.com/openai", // 30
 	"https://api.baichuan-ai.com", // 31
