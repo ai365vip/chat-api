@@ -17,7 +17,6 @@ const (
 	APITypeGemini
 	APITypeChatBot
 	APITypeLobeChat
-	APITypeZhipu_v4
 	APITypeDummy // this one is only for count, do not add any channel after this
 	APITypeStability
 	APITypeOllama

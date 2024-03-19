@@ -107,25 +107,25 @@ const EditChannel = (props) => {
                 case 2:
                     localModels = ['midjourney'];
                     break;
-                case 29:
+                case 28:
                     localModels = ['stable-diffusion'];
                     break;
-                case 30:
+                case 29:
                     localModels = ['gemma-7b-it','llama2-7b-2048','llama2-70b-4096','mixtral-8x7b-32768'];
                     break;
-                case 31:
+                case 30:
                     localModels = ['Baichuan2-Turbo','Baichuan2-Turbo-192k'];
                     break;
-                case 32:
+                case 31:
                     localModels = ['abab5.5s-chat','abab5.5-chat','abab6-chat'];
                     break;
-                case 33:
+                case 32:
                     localModels = ['open-mistral-7b','open-mixtral-8x7b','mistral-small-latest','mistral-medium-latest','mistral-large-latest'];
                     break;
-                case 34:
+                case 33:
                     localModels = ['qwen:0.5b-chat'];
                     break;
-                case 35:
+                case 34:
                     localModels = ['yi-34b-chat-0205','yi-34b-chat-200k','yi-vl-plus'];
                     break;
             }
@@ -496,7 +496,7 @@ const EditChannel = (props) => {
                         )
                     }
                     {
-                        inputs.type === 29 && (
+                        inputs.type === 28 && (
                             <>
                                 <div style={{marginTop: 10}}>
                                     <Typography.Text strong>模型版本：</Typography.Text>

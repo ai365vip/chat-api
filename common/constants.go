@@ -218,13 +218,13 @@ const (
 	ChannelTypeChatBot        = 25
 	ChannelTypeLobeChat       = 26
 	ChannelTypeMoonshot       = 27
-	ChannelTypeStability      = 29
-	ChannelTypeGroq           = 30
-	ChannelTypeBaichuan       = 31
-	ChannelTypeMinimax        = 32
-	ChannelTypeMistral        = 33
-	ChannelTypeOllama         = 34
-	ChannelTypeLingYiWanWu    = 35
+	ChannelTypeStability      = 28
+	ChannelTypeGroq           = 29
+	ChannelTypeBaichuan       = 30
+	ChannelTypeMinimax        = 31
+	ChannelTypeMistral        = 32
+	ChannelTypeOllama         = 33
+	ChannelTypeLingYiWanWu    = 34
 )
 
 var ChannelBaseURLs = []string{
@@ -256,13 +256,13 @@ var ChannelBaseURLs = []string{
 	"",                            //25
 	"",                            //26
 	"https://api.moonshot.cn",     //27
-	"https://api.stability.ai",    //29
-	"https://api.groq.com/openai", // 30
-	"https://api.baichuan-ai.com", // 31
-	"https://api.minimax.chat",    // 32
-	"https://api.mistral.ai",      // 33
-	"http://localhost:11434",      // 34
-	"https://api.lingyiwanwu.com", // 35
+	"https://api.stability.ai",    //28
+	"https://api.groq.com/openai", // 29
+	"https://api.baichuan-ai.com", // 30
+	"https://api.minimax.chat",    // 31
+	"https://api.mistral.ai",      // 32
+	"http://localhost:11434",      // 33
+	"https://api.lingyiwanwu.com", // 34
 }
 
 const (
