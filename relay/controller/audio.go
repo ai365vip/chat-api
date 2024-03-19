@@ -108,7 +108,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	}
 
-	userQuota, err := model.CacheGetUserQuota(userId)
+	userQuota, err := model.CacheGetUserQuota(c, userId)
 	if err != nil {
 		return openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
 	}
@@ -247,7 +247,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}
-			err = model.CacheUpdateUserQuota(userId)
+			err = model.CacheUpdateUserQuota(c, userId)
 			if err != nil {
 				common.SysError("error update user quota cache: " + err.Error())
 			}

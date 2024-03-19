@@ -484,7 +484,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 
 	ratio := modelRatio * groupRatio
 
-	userQuota, err := model.CacheGetUserQuota(userId)
+	userQuota, err := model.CacheGetUserQuota(c, userId)
 	if err != nil {
 		return &MidjourneyResponse{
 			Code:        4,
@@ -568,7 +568,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}
-			err = model.CacheUpdateUserQuota(userId)
+			err = model.CacheUpdateUserQuota(c, userId)
 			if err != nil {
 				common.SysError("error update user quota cache: " + err.Error())
 			}

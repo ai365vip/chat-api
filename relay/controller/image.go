@@ -148,7 +148,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 	modelRatio := common.GetModelRatio(imageRequest.Model)
 	groupRatio := common.GetGroupRatio(group)
 	ratio := modelRatio * groupRatio
-	userQuota, err := model.CacheGetUserQuota(userId)
+	userQuota, err := model.CacheGetUserQuota(c, userId)
 
 	modelRatioString := ""
 	quota := 0
@@ -232,7 +232,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 		if err != nil {
 			common.SysError("error consuming token remain quota: " + err.Error())
 		}
-		err = model.CacheUpdateUserQuota(userId)
+		err = model.CacheUpdateUserQuota(c, userId)
 		if err != nil {
 			common.SysError("error update user quota cache: " + err.Error())
 		}

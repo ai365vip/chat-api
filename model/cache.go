@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -69,31 +70,43 @@ func CacheGetUserGroup(id int) (group string, err error) {
 	return group, err
 }
 
-func CacheGetUserQuota(id int) (quota int, err error) {
+func fetchAndUpdateUserQuota(ctx context.Context, id int) (quota int, err error) {
+	quota, err = GetUserQuota(id)
+	if err != nil {
+		return 0, err
+	}
+	err = common.RedisSet(fmt.Sprintf("user_quota:%d", id), fmt.Sprintf("%d", quota), time.Duration(UserId2QuotaCacheSeconds)*time.Second)
+	if err != nil {
+		common.SysError("Redis set user quota error: " + err.Error())
+		common.Error(ctx, "Redis set user quota error: "+err.Error())
+	}
+	return
+}
+
+func CacheGetUserQuota(ctx context.Context, id int) (quota int, err error) {
 	if !common.RedisEnabled {
 		return GetUserQuota(id)
 	}
 	quotaString, err := common.RedisGet(fmt.Sprintf("user_quota:%d", id))
 	if err != nil {
-		quota, err = GetUserQuota(id)
-		if err != nil {
-			return 0, err
-		}
-		err = common.RedisSet(fmt.Sprintf("user_quota:%d", id), fmt.Sprintf("%d", quota), time.Duration(UserId2QuotaCacheSeconds)*time.Second)
-		if err != nil {
-			common.SysError("Redis set user quota error: " + err.Error())
-		}
-		return quota, err
+		return fetchAndUpdateUserQuota(ctx, id)
 	}
 	quota, err = strconv.Atoi(quotaString)
-	return quota, err
+	if err != nil {
+		return 0, nil
+	}
+	if quota <= common.PreConsumedQuota { // when user's quota is less than pre-consumed quota, we need to fetch from db
+		common.Infof(ctx, "user %d's cached quota is too low: %d, refreshing from db", quota, id)
+		return fetchAndUpdateUserQuota(ctx, id)
+	}
+	return quota, nil
 }
 
-func CacheUpdateUserQuota(id int) error {
+func CacheUpdateUserQuota(ctx context.Context, id int) error {
 	if !common.RedisEnabled {
 		return nil
 	}
-	quota, err := CacheGetUserQuota(id)
+	quota, err := CacheGetUserQuota(ctx, id)
 	if err != nil {
 		return err
 	}

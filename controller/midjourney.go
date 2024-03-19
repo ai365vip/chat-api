@@ -355,7 +355,7 @@ func compensateForTaskFailure(ctx context.Context, task *model.Midjourney) {
 		common.LogInfo(ctx, task.MjId+" 返回失败，"+task.FailReason)
 	}
 
-	err := model.CacheUpdateUserQuota(task.UserId)
+	err := model.CacheUpdateUserQuota(ctx, task.UserId)
 	if err != nil {
 		common.LogError(ctx, "error update user quota cache: "+err.Error())
 	} else {
