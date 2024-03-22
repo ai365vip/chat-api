@@ -34,10 +34,6 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	}
 
 	meta.IsStream = textRequest.Stream
-	if meta.ChannelType == common.ChannelTypeAzure {
-		APIVersion := util.GetAPIVersion(c)
-		meta.APIVersion = APIVersion
-	}
 
 	// map model name
 	var isModelMapped bool
