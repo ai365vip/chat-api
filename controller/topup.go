@@ -85,7 +85,7 @@ func RequestEpay(c *gin.Context) {
 
 	returnUrl, _ := url.Parse(common.ServerAddress + "/log")
 	notifyUrl, _ := url.Parse(common.ServerAddress + "/api/user/epay/notify")
-	tradeNo := strconv.FormatInt(time.Now().Unix(), 10)
+	tradeNo := fmt.Sprintf("%s%d", common.GetRandomString(6), time.Now().Unix())
 	payMoney := amount
 	client := GetEpayClient()
 	if client == nil {
