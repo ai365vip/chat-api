@@ -101,6 +101,7 @@ func RequestEpay(c *gin.Context) {
 		NotifyUrl:      notifyUrl,
 		ReturnUrl:      returnUrl,
 	})
+
 	if err != nil {
 		c.JSON(200, gin.H{"message": "error", "data": "拉起支付失败"})
 		return

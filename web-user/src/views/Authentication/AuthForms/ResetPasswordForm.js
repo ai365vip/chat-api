@@ -6,7 +6,7 @@ import { Button, Stack, Typography, Alert } from '@mui/material';
 
 // assets
 import { showError, showInfo } from 'utils/common';
-
+import { API } from 'utils/api';
 // ===========================|| FIREBASE - REGISTER ||=========================== //
 
 const ResetPasswordForm = () => {
