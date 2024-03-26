@@ -36,10 +36,6 @@ func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 		task := strings.TrimPrefix(requestURL, "/v1/")
 		model_ := meta.ActualModelName
 		model_ = strings.Replace(model_, ".", "", -1)
-		// https://one-api/issues/67
-		model_ = strings.TrimSuffix(model_, "-0301")
-		model_ = strings.TrimSuffix(model_, "-0314")
-		model_ = strings.TrimSuffix(model_, "-0613")
 
 		requestURL = fmt.Sprintf("/openai/deployments/%s/%s", model_, task)
 		return util.GetFullRequestURL(meta.BaseURL, requestURL, meta.ChannelType), nil
