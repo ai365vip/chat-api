@@ -69,7 +69,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 
 func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
 	Model, _ := c.Get("model")
-	if Model == "glm-4v" {
+	if Model == "glm-v4" {
 		// 序列化原始请求体
 		var buf bytes.Buffer
 		_, err := buf.ReadFrom(c.Request.Body)
