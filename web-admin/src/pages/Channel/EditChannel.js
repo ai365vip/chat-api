@@ -102,7 +102,7 @@ const EditChannel = (props) => {
                     localModels = ['hunyuan'];
                     break;
                 case 24:
-                    localModels = ['gemini-pro','gemini-pro-vision'];
+                    localModels = ['gemini-pro','gemini-pro-vision','gemini-1.5-pro'];
                     break;
                 case 2:
                     localModels = ['midjourney'];
