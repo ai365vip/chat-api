@@ -139,23 +139,24 @@ func UpdateMidjourneyTaskOne(ctx context.Context, task *model.Midjourney) {
 			return
 		}
 	}
-
-	task.Code = 1
-	task.Progress = responseItem.Progress
-	task.PromptEn = responseItem.PromptEn
-	task.State = responseItem.State
-	task.SubmitTime = responseItem.SubmitTime
-	task.StartTime = responseItem.StartTime
-	task.FinishTime = responseItem.FinishTime
-	task.ImageUrl = responseItem.ImageUrl
-	task.Status = responseItem.Status
-	task.FailReason = responseItem.FailReason
-	task.Buttons = responseItem.Buttons
-	task.Properties = responseItem.Properties
-	if err := task.Update(); err != nil {
-		log.Printf("更新任务失败: %v", err)
+	if responseItem.Action != "MODAL" {
+		task.Code = 1
+		task.Progress = responseItem.Progress
+		task.PromptEn = responseItem.PromptEn
+		task.State = responseItem.State
+		task.SubmitTime = responseItem.SubmitTime
+		task.StartTime = responseItem.StartTime
+		task.FinishTime = responseItem.FinishTime
+		task.ImageUrl = responseItem.ImageUrl
+		task.Status = responseItem.Status
+		task.FailReason = responseItem.FailReason
+		task.Buttons = responseItem.Buttons
+		task.Properties = responseItem.Properties
+		if err := task.Update(); err != nil {
+			log.Printf("更新任务失败: %v", err)
+		}
+		HandleTaskCompletion(ctx, task)
 	}
-	HandleTaskCompletion(ctx, task)
 
 }
 
@@ -267,24 +268,25 @@ func updateTasksForChannel(ctx context.Context, channelId int, taskIds []string,
 		if !checkMjTaskNeedUpdate(task, responseItem) {
 			continue
 		}
-
-		task.Code = 1
-		task.Progress = responseItem.Progress
-		task.PromptEn = responseItem.PromptEn
-		task.State = responseItem.State
-		task.SubmitTime = responseItem.SubmitTime
-		task.StartTime = responseItem.StartTime
-		task.FinishTime = responseItem.FinishTime
-		task.ImageUrl = responseItem.ImageUrl
-		task.Status = responseItem.Status
-		task.FailReason = responseItem.FailReason
-		task.Buttons = responseItem.Buttons
-		task.Properties = responseItem.Properties
-		if err := task.Update(); err != nil {
-			log.Printf("更新任务失败: %v", err)
+		if responseItem.Action != "MODAL" {
+			task.Code = 1
+			task.Progress = responseItem.Progress
+			task.PromptEn = responseItem.PromptEn
+			task.State = responseItem.State
+			task.SubmitTime = responseItem.SubmitTime
+			task.StartTime = responseItem.StartTime
+			task.FinishTime = responseItem.FinishTime
+			task.ImageUrl = responseItem.ImageUrl
+			task.Status = responseItem.Status
+			task.FailReason = responseItem.FailReason
+			task.Buttons = responseItem.Buttons
+			task.Properties = responseItem.Properties
+			if err := task.Update(); err != nil {
+				log.Printf("更新任务失败: %v", err)
+			}
+			// 确定任务进度是100%并且状态为SUCCESS
+			HandleTaskCompletion(ctx, task)
 		}
-		// 确定任务进度是100%并且状态为SUCCESS
-		HandleTaskCompletion(ctx, task)
 	}
 	return nil
 }
