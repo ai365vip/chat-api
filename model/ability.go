@@ -226,8 +226,8 @@ func updateRateLimitStatus(channelId int, model string) {
 	channelRateLimitStatus.Store(key, rl)
 }
 
-func GetRandomSatisfiedChannel(group string, model string) (*Channel, error) {
-	abilities, err := getAbilitiesByPriority(group, model)
+func GetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool) (*Channel, error) {
+	abilities, err := getAbilitiesByPriority(group, model, ignoreFirstPriority)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +313,7 @@ func GetRandomSatisfiedChannel(group string, model string) (*Channel, error) {
 	return nil, errors.New("no channels available within rate limits")
 }
 
-func getAbilitiesByPriority(group string, model string) ([]Ability, error) {
+func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool) ([]Ability, error) {
 	var abilities []Ability
 	groupCol := "`group`"
 	trueVal := "1"
@@ -323,8 +323,13 @@ func getAbilitiesByPriority(group string, model string) ([]Ability, error) {
 	}
 
 	var err error = nil
-	maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model)
-	channelQuery := DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal+" and priority = (?)", group, model, maxPrioritySubQuery)
+	var channelQuery *gorm.DB
+	if ignoreFirstPriority {
+		channelQuery = DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model)
+	} else {
+		maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model)
+		channelQuery = DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal+" and priority = (?)", group, model, maxPrioritySubQuery)
+	}
 	if common.UsingSQLite || common.UsingPostgreSQL {
 		err = channelQuery.Order("weight DESC").Find(&abilities).Error
 	} else {

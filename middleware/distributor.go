@@ -88,7 +88,7 @@ func Distribute() func(c *gin.Context) {
 			// Select a channel for the user
 			var err error
 
-			channel, err = model.CacheGetRandomSatisfiedChannel(tokenGroup.(string), Model.(string))
+			channel, err = model.CacheGetRandomSatisfiedChannel(tokenGroup.(string), Model.(string), false)
 			if err != nil {
 				message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", tokenGroup, Model)
 				if channel != nil {
