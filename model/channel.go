@@ -11,7 +11,7 @@ import (
 type Channel struct {
 	Id                 int     `json:"id"`
 	Type               int     `json:"type" gorm:"default:0"`
-	Key                string  `json:"key" gorm:"index"`
+	Key                string  `json:"key" gorm:"type:text"`
 	OpenAIOrganization *string `json:"openai_organization"`
 	Status             int     `json:"status" gorm:"default:1"`
 	Name               string  `json:"name" gorm:"index"`
