@@ -27,6 +27,8 @@ type GeneralOpenAIRequest struct {
 	User             string          `json:"user,omitempty"`
 	LogProbs         bool            `json:"logprobs,omitempty"`
 	TopLogProbs      int             `json:"top_logprobs,omitempty"`
+	EncodingFormat   string          `json:"encoding_format,omitempty"`
+	Dimensions       int             `json:"dimensions,omitempty"`
 }
 
 func (r GeneralOpenAIRequest) ParseInput() []string {
