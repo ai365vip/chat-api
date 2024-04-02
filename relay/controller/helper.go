@@ -55,7 +55,7 @@ func getPromptTokens(textRequest *relaymodel.GeneralOpenAIRequest, relayMode int
 	case constant.RelayModeChatCompletions:
 		if textRequest.Model == "gpt-4-vision" {
 			for i, msg := range textRequest.Messages {
-				contentStr := string(msg.Content)
+				contentStr := msg.Content.(string)
 
 				// 使用正则表达式查找所有URL
 				re := regexp.MustCompile(`http[s]?:\/\/[^\s]+`)

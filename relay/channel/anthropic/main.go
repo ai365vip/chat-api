@@ -47,7 +47,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 	}
 	for _, message := range textRequest.Messages {
 		if message.Role == "system" {
-			claudeRequest.System = string(message.Content)
+			claudeRequest.System = message.Content.(string)
 			continue
 		}
 		content := Message{

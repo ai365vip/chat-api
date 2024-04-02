@@ -49,9 +49,16 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 	var content string
 	// 将Content字段从最后一条消息中解析为字符串
 	lastMessageIndex := len(request.Messages) - 1 // 获取最后一条消息的索引
-	if err := json.Unmarshal(request.Messages[lastMessageIndex].Content, &content); err != nil {
+
+	contentBytes, ok := request.Messages[lastMessageIndex].Content.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("content is not of type []byte")
+	}
+
+	if err := json.Unmarshal(contentBytes, &content); err != nil {
 		return nil, err
 	}
+
 	Model, _ := c.Get("model")
 	if Model == "stable-diffusion-v" {
 		requestBody, contentType := prepareMultipartFormData(content)

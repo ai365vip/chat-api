@@ -57,7 +57,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 	for _, msg := range request.Messages {
 
 		if msg.Role == "user" {
-			contentString := string(msg.Content) // 将原始消息转换为字符串
+			contentString := msg.Content.(string) // 将原始消息转换为字符串
 
 			// 使用正则找出所有URL
 			urls := urlRegex.FindAllString(contentString, -1)
@@ -95,7 +95,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 			})
 		} else if msg.Role == "assistant" {
 			// 将json.RawMessage（实质上是[]byte）转换成string
-			contentString := string(msg.Content)
+			contentString := msg.Content.(string)
 			newMessages = append(newMessages, NewMessage{
 				Role: "assistant",
 				Content: []NewMessageType{{

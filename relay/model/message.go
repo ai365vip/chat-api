@@ -1,11 +1,9 @@
 package model
 
-import "encoding/json"
-
 type VisionMessage struct {
-	Role    string          `json:"role"`
-	Content json.RawMessage `json:"content"`
-	Name    *string         `json:"name,omitempty"`
+	Role    string  `json:"role"`
+	Content any     `json:"content"`
+	Name    *string `json:"name,omitempty"`
 }
 
 type MediaMessage struct {
@@ -15,11 +13,11 @@ type MediaMessage struct {
 }
 
 type Message struct {
-	Role       string          `json:"role"`
-	Content    json.RawMessage `json:"content"`
-	Name       *string         `json:"name,omitempty"`
-	ToolCalls  []Tool          `json:"tool_calls,omitempty"`
-	ToolCallId string          `json:"tool_call_id,omitempty"`
+	Role       string  `json:"role"`
+	Content    any     `json:"content"`
+	Name       *string `json:"name,omitempty"`
+	ToolCalls  []Tool  `json:"tool_calls,omitempty"`
+	ToolCallId string  `json:"tool_call_id,omitempty"`
 }
 
 type ImageURL struct {
@@ -54,27 +52,20 @@ type MediaMessageImage struct {
 }
 
 func (m Message) IsStringContent() bool {
-	var content interface{}
-	if err := json.Unmarshal(m.Content, &content); err != nil {
-		return false
-	}
-	_, ok := content.(string)
+	_, ok := m.Content.(string)
 	return ok
 }
 
 func (m Message) StringContent() string {
-	var content interface{}
-	if err := json.Unmarshal(m.Content, &content); err != nil {
-		return ""
+	content, ok := m.Content.(string)
+	if ok {
+		return content
 	}
-
-	switch v := content.(type) {
-	case string:
-		return v
-	case []interface{}:
+	contentList, ok := m.Content.([]any)
+	if ok {
 		var contentStr string
-		for _, contentItem := range v {
-			contentMap, ok := contentItem.(map[string]interface{})
+		for _, contentItem := range contentList {
+			contentMap, ok := contentItem.(map[string]any)
 			if !ok {
 				continue
 			}
@@ -85,26 +76,25 @@ func (m Message) StringContent() string {
 			}
 		}
 		return contentStr
-	default:
-		return ""
 	}
+	return ""
 }
 
 func (m Message) ParseContent() []MediaMessage {
 	var contentList []MediaMessage
-	var stringContent string
-	if err := json.Unmarshal(m.Content, &stringContent); err == nil {
+	content, ok := m.Content.(string)
+	if ok {
 		contentList = append(contentList, MediaMessage{
 			Type: ContentTypeText,
-			Text: stringContent,
+			Text: content,
 		})
 		return contentList
 	}
-	var arrayContent []json.RawMessage
-	if err := json.Unmarshal(m.Content, &arrayContent); err == nil {
-		for _, contentItem := range arrayContent {
-			var contentMap map[string]any
-			if err := json.Unmarshal(contentItem, &contentMap); err != nil {
+	anyList, ok := m.Content.([]any)
+	if ok {
+		for _, contentItem := range anyList {
+			contentMap, ok := contentItem.(map[string]any)
+			if !ok {
 				continue
 			}
 			switch contentMap["type"] {

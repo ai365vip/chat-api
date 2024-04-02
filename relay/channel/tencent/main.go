@@ -141,7 +141,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			}
 			response := streamResponseTencent2OpenAI(&TencentResponse)
 			if len(response.Choices) != 0 {
-				responseText += response.Choices[0].Delta.Content
+				responseText += common.AsString(response.Choices[0].Delta.Content)
 			}
 			jsonResponse, err := json.Marshal(response)
 			if err != nil {

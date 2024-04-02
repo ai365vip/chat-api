@@ -110,7 +110,7 @@ func updateTextRequestForVision(textRequest *model.GeneralOpenAIRequest) (*model
 	textRequest.MaxTokens = 4096
 	for i, msg := range textRequest.Messages {
 		// 假设msg.Content就是string，或者你需要根据Content的实际结构来调整
-		contentStr := string(msg.Content)
+		contentStr := msg.Content.(string)
 		// 正则查找URL并构建新的消息内容
 		newContent, err := createNewContentWithImages(contentStr)
 		if err != nil {

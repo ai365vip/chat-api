@@ -1,5 +1,10 @@
 package ali
 
+import (
+	"one-api/relay/channel/openai"
+	"one-api/relay/model"
+)
+
 type Message struct {
 	Content string `json:"content"`
 	Role    string `json:"role"`
@@ -16,12 +21,16 @@ type Parameters struct {
 	Seed              uint64  `json:"seed,omitempty"`
 	EnableSearch      bool    `json:"enable_search,omitempty"`
 	IncrementalOutput bool    `json:"incremental_output,omitempty"`
+	MaxTokens         int     `json:"max_tokens,omitempty"`
+	Temperature       float64 `json:"temperature,omitempty"`
+	ResultFormat      string  `json:"result_format,omitempty"`
 }
 
 type ChatRequest struct {
-	Model      string     `json:"model"`
-	Input      Input      `json:"input"`
-	Parameters Parameters `json:"parameters,omitempty"`
+	Model      string       `json:"model"`
+	Input      Input        `json:"input"`
+	Parameters Parameters   `json:"parameters,omitempty"`
+	Tools      []model.Tool `json:"tools,omitempty"`
 }
 
 type EmbeddingRequest struct {
@@ -60,8 +69,9 @@ type Usage struct {
 }
 
 type Output struct {
-	Text         string `json:"text"`
-	FinishReason string `json:"finish_reason"`
+	//Text         string                      `json:"text"`
+	//FinishReason string                      `json:"finish_reason"`
+	Choices []openai.TextResponseChoice `json:"choices"`
 }
 
 type ChatResponse struct {

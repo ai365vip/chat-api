@@ -137,13 +137,9 @@ type AudioResponse struct {
 	Text string `json:"text,omitempty"`
 }
 type ChatCompletionsStreamResponseChoice struct {
-	Index int `json:"index"`
-	Delta struct {
-		Content   string       `json:"content"`
-		Role      string       `json:"role,omitempty"`
-		ToolCalls []model.Tool `json:"tool_calls,omitempty"`
-	} `json:"delta"`
-	FinishReason *string `json:"finish_reason,omitempty"`
+	Index        int           `json:"index"`
+	Delta        model.Message `json:"delta"`
+	FinishReason *string       `json:"finish_reason,omitempty"`
 }
 
 type ChatCompletionsStreamResponse struct {

@@ -75,76 +75,90 @@ func CountAudioToken(text string, model string) int {
 	}
 }
 
+func processImageToken(m MediaMessage) (int, error) {
+	var imageUrl MessageImageUrl
+	var err error
+
+	// 尝试直接从 m.ImageUrl 中获取字符串URL
+	if str, ok := m.ImageUrl.(string); ok {
+		imageUrl = MessageImageUrl{Url: str, Detail: "auto"}
+	} else if imageUrlMap, ok := m.ImageUrl.(map[string]interface{}); ok {
+		// 尝试从 map 中解析 URL 和 Detail
+		url, urlOk := imageUrlMap["url"].(string)
+		detail, detailOk := imageUrlMap["detail"].(string)
+		if !urlOk {
+			return 0, fmt.Errorf("invalid image url structure")
+		}
+		if !detailOk {
+			detail = "auto" // 默认值，如果未提供 detail
+		}
+		imageUrl = MessageImageUrl{
+			Url:    url,
+			Detail: detail,
+		}
+	} else {
+		// 如果既不是字符串也不是预期的 map 结构，则返回错误
+		return 0, fmt.Errorf("unknown image url format")
+	}
+
+	// 调用 getImageToken 计算图像所需的令牌数量
+	tokenNum, err := getImageToken(&imageUrl)
+	if err != nil {
+		return 0, err
+	}
+
+	return tokenNum, nil
+}
+
 func CountTokenMessages(messages []model.Message, model string) int {
-	//recover when panic
 	tokenEncoder := getTokenEncoder(model)
-	var tokensPerMessage int
-	var tokensPerName int
+	tokensPerMessage := 3
+	tokensPerName := 1
 	if model == "gpt-3.5-turbo-0301" {
 		tokensPerMessage = 4
 		tokensPerName = -1 // If there's a name, the role is omitted
-	} else {
-		tokensPerMessage = 3
-		tokensPerName = 1
 	}
 	tokenNum := 0
 	for _, message := range messages {
 		tokenNum += tokensPerMessage
 		tokenNum += getTokenNum(tokenEncoder, message.Role)
-		var arrayContent []MediaMessage
-		if err := json.Unmarshal(message.Content, &arrayContent); err != nil {
 
-			var stringContent string
-			if err := json.Unmarshal(message.Content, &stringContent); err != nil {
-				return 0
-			} else {
-				tokenNum += getTokenNum(tokenEncoder, stringContent)
-				if message.Name != nil {
-					tokenNum += tokensPerName
-					tokenNum += getTokenNum(tokenEncoder, *message.Name)
-				}
-			}
+		contentBytes, ok := message.Content.([]byte)
+		if !ok {
+			continue
+		}
+
+		// 尝试首先解码为string，如果失败，则尝试解码为[]MediaMessage
+		var stringContent string
+		if err := json.Unmarshal(contentBytes, &stringContent); err == nil {
+			tokenNum += getTokenNum(tokenEncoder, stringContent)
 		} else {
+			var arrayContent []MediaMessage
+			if err := json.Unmarshal(contentBytes, &arrayContent); err != nil {
+				return 0 // 或者处理错误
+			}
+
 			for _, m := range arrayContent {
 				if m.Type == "image_url" {
-					var imageTokenNum int
-					if str, ok := m.ImageUrl.(string); ok {
-						imageTokenNum, err = getImageToken(&MessageImageUrl{Url: str, Detail: "auto"})
-					} else {
-						imageUrlMap := m.ImageUrl.(map[string]interface{})
-						detail, ok := imageUrlMap["detail"]
-						if ok {
-							imageUrlMap["detail"] = detail.(string)
-						} else {
-							imageUrlMap["detail"] = "auto"
-						}
-						imageUrl := MessageImageUrl{
-							Url:    imageUrlMap["url"].(string),
-							Detail: imageUrlMap["detail"].(string),
-						}
-						imageTokenNum, err = getImageToken(&imageUrl)
-					}
+					imageTokenNum, err := processImageToken(m)
 					if err != nil {
-						return 0
+						return 0 // 或者处理错误
 					}
-
 					tokenNum += imageTokenNum
-					//log.Printf("image token num: %d", imageTokenNum)
 				} else {
 					tokenNum += getTokenNum(tokenEncoder, m.Text)
 				}
 			}
 		}
+
+		if message.Name != nil && tokensPerName > 0 {
+			tokenNum += tokensPerName
+			tokenNum += getTokenNum(tokenEncoder, *message.Name)
+		}
 	}
-	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>
+	tokenNum += 3 // Every reply is primed with <|im_start|>assistant<|im_sep|>
 	return tokenNum
 }
-
-const (
-	lowDetailCost         = 85
-	highDetailCostPerTile = 170
-	additionalCost        = 85
-)
 
 func getImageToken(imageUrl *MessageImageUrl) (int, error) {
 	if imageUrl.Detail == "low" {
