@@ -8,7 +8,7 @@ type Midjourney struct {
 	Id                int             `json:"id"`
 	Code              int             `json:"code"`
 	UserId            int             `json:"user_id" gorm:"index"`
-	Action            string          `json:"action"`
+	Action            string          `json:"action" gorm:"type:varchar(40);index`
 	MjId              string          `json:"mj_id" gorm:"index"`
 	Prompt            string          `json:"prompt"`
 	PromptEn          string          `json:"prompt_en"`
@@ -19,8 +19,8 @@ type Midjourney struct {
 	StartTime         int64           `json:"start_time"`
 	FinishTime        int64           `json:"finish_time"`
 	ImageUrl          string          `json:"image_url"`
-	Status            string          `json:"status"`
-	Progress          string          `json:"progress"`
+	Status            string          `json:"status" gorm:"type:varchar(20);index`
+	Progress          string          `json:"progress" gorm:"type:varchar(30);index`
 	FailReason        string          `json:"fail_reason"`
 	Buttons           json.RawMessage `json:"buttons"`
 	Properties        json.RawMessage `json:"properties"`
