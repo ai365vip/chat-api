@@ -111,6 +111,13 @@ func (a *Adaptor) GetModelList() []string {
 func (a *Adaptor) GetChannelName() string {
 	return "openai"
 }
+
+func (a *Adaptor) ConvertImageRequest(request *model.ImageRequest) (any, error) {
+	if request == nil {
+		return nil, errors.New("request is nil")
+	}
+	return request, nil
+}
 func getAndValidateTextRequest(c *gin.Context, relayMode int) (*model.GeneralOpenAIRequest, error) {
 	textRequest := &model.GeneralOpenAIRequest{}
 	err := common.UnmarshalBodyReusable(c, textRequest)

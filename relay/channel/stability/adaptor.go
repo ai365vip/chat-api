@@ -25,7 +25,12 @@ type Adaptor struct {
 func (a *Adaptor) Init(meta *util.RelayMeta) {
 
 }
-
+func (a *Adaptor) ConvertImageRequest(request *model.ImageRequest) (any, error) {
+	if request == nil {
+		return nil, errors.New("request is nil")
+	}
+	return request, nil
+}
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 	requestURL := fmt.Sprintf("/v1/generation/%s/text-to-image", meta.APIVersion)
 	return util.GetFullRequestURL(meta.BaseURL, requestURL, meta.ChannelType), nil
