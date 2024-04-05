@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"one-api/relay/channel"
 	"one-api/relay/channel/openai"
+	"one-api/relay/constant"
 	"one-api/relay/model"
 	"one-api/relay/util"
 	"regexp"
@@ -39,6 +41,9 @@ func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 	if a.APIVersion == "v4" {
 		return fmt.Sprintf("%s/api/paas/v4/chat/completions", meta.BaseURL), nil
 	}
+	if meta.Mode == constant.RelayModeEmbeddings {
+		return fmt.Sprintf("%s/api/paas/v4/embeddings", meta.BaseURL), nil
+	}
 	method := "invoke"
 	if meta.IsStream {
 		method = "sse-invoke"
@@ -57,14 +62,24 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	if request.TopP >= 1 {
-		request.TopP = 0.99
+	switch relayMode {
+	case constant.RelayModeEmbeddings:
+		baiduEmbeddingRequest := ConvertEmbeddingRequest(*request)
+		return baiduEmbeddingRequest, nil
+	default:
+		// TopP (0.0, 1.0)
+		request.TopP = math.Min(0.99, request.TopP)
+		request.TopP = math.Max(0.01, request.TopP)
+
+		// Temperature (0.0, 1.0)
+		request.Temperature = math.Min(0.99, request.Temperature)
+		request.Temperature = math.Max(0.01, request.Temperature)
+		a.SetVersionByModeName(request.Model)
+		if a.APIVersion == "v4" {
+			return request, nil
+		}
+		return ConvertRequest(*request), nil
 	}
-	a.SetVersionByModeName(request.Model)
-	if a.APIVersion == "v4" {
-		return request, nil
-	}
-	return ConvertRequest(*request), nil
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
@@ -113,7 +128,11 @@ func (a *Adaptor) DoResponseV4(c *gin.Context, resp *http.Response, meta *util.R
 		aitext = responseText
 		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 	} else {
-		err, usage, aitext = openai.Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
+		if meta.Mode == constant.RelayModeEmbeddings {
+			err, usage = EmbeddingsHandler(c, resp)
+		} else {
+			err, usage, aitext = openai.Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
+		}
 	}
 	return
 }
@@ -184,4 +203,10 @@ func createNewContentWithImages(contentStr string) ([]interface{}, error) {
 		})
 	}
 	return newContent, nil
+}
+func ConvertEmbeddingRequest(request model.GeneralOpenAIRequest) *EmbeddingRequest {
+	return &EmbeddingRequest{
+		Model: "embedding-2",
+		Input: request.Input.(string),
+	}
 }

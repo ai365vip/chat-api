@@ -99,12 +99,11 @@ func responseZhipu2OpenAI(response *Response) *openai.TextResponse {
 		Usage:   response.Data.Usage,
 	}
 	for i, choice := range response.Data.Choices {
-		content, _ := json.Marshal(strings.Trim(choice.Content, "\""))
 		openaiChoice := openai.TextResponseChoice{
 			Index: i,
 			Message: model.Message{
 				Role:    choice.Role,
-				Content: content,
+				Content: strings.Trim(choice.Content, "\""),
 			},
 			FinishReason: "",
 		}
@@ -255,4 +254,51 @@ func Handler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = c.Writer.Write(jsonResponse)
 	return nil, &fullTextResponse.Usage
+}
+
+func EmbeddingsHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage) {
+	var zhipuResponse EmbeddingRespone
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+	}
+	err = json.Unmarshal(responseBody, &zhipuResponse)
+	if err != nil {
+		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+	}
+	fullTextResponse := embeddingResponseZhipu2OpenAI(&zhipuResponse)
+	jsonResponse, err := json.Marshal(fullTextResponse)
+	if err != nil {
+		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
+	}
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.WriteHeader(resp.StatusCode)
+	_, err = c.Writer.Write(jsonResponse)
+	return nil, &fullTextResponse.Usage
+}
+
+func embeddingResponseZhipu2OpenAI(response *EmbeddingRespone) *openai.EmbeddingResponse {
+	openAIEmbeddingResponse := openai.EmbeddingResponse{
+		Object: "list",
+		Data:   make([]openai.EmbeddingResponseItem, 0, len(response.Embeddings)),
+		Model:  response.Model,
+		Usage: model.Usage{
+			PromptTokens:     response.PromptTokens,
+			CompletionTokens: response.CompletionTokens,
+			TotalTokens:      response.Usage.TotalTokens,
+		},
+	}
+
+	for _, item := range response.Embeddings {
+		openAIEmbeddingResponse.Data = append(openAIEmbeddingResponse.Data, openai.EmbeddingResponseItem{
+			Object:    `embedding`,
+			Index:     item.Index,
+			Embedding: item.Embedding,
+		})
+	}
+	return &openAIEmbeddingResponse
 }
