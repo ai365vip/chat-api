@@ -385,7 +385,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
               <FormControl fullWidth error={Boolean(touched.subnet && errors.subnet)} sx={{ ...theme.typography.otherInput }}>
                 <InputLabel htmlFor="channel-subnet-label">IP 限制</InputLabel>
                 <OutlinedInput
-                  id="channel-name-label"
+                  id="channel-subnet-label"
                   label="IP 限制"
                   type="text"
                   value={values.subnet}
@@ -396,6 +396,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
                   helperText="请输入允许访问的网段，例如：192.168.0.0/24"
                   aria-describedby="helper-text-channel-subnet-label"
                 />
+                 <FormHelperText>请输入允许访问的网段，例如：192.168.0.0/24</FormHelperText>
                 {touched.subnet && errors.subnet && (
                   <FormHelperText error id="helper-tex-channel-subnet-label">
                     {errors.subnet}
