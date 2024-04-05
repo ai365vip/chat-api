@@ -1,9 +1,11 @@
 package controller
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/network"
 	"one-api/model"
 	"strconv"
 
@@ -229,6 +231,7 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.Group = token.Group
 		cleanToken.Models = token.Models
 		cleanToken.FixedContent = token.FixedContent
+		cleanToken.Subnet = token.Subnet
 	}
 	err = cleanToken.Update()
 	if err != nil {
@@ -304,4 +307,16 @@ func UpdateTokenBillingStrategy(c *gin.Context) {
 		"message": "Billing strategy updated successfully",
 		"data":    cleanToken,
 	})
+}
+func validateToken(c *gin.Context, token model.Token) error {
+	if len(token.Name) > 30 {
+		return fmt.Errorf("令牌名称过长")
+	}
+	if token.Subnet != nil && *token.Subnet != "" {
+		err := network.IsValidSubnets(*token.Subnet)
+		if err != nil {
+			return fmt.Errorf("无效的网段：%s", err.Error())
+		}
+	}
+	return nil
 }

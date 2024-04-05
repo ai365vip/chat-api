@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"one-api/common"
+	"one-api/common/network"
 	"one-api/model"
 	"strings"
 
@@ -155,6 +157,7 @@ func TokenAuth() func(c *gin.Context) {
 			abortWithMessage(c, http.StatusForbidden, "用户已被封禁")
 			return
 		}
+		ctx := c.Request.Context()
 		c.Set("id", token.UserId)
 		c.Set("token_id", token.Id)
 		c.Set("token_name", token.Name)
@@ -171,6 +174,12 @@ func TokenAuth() func(c *gin.Context) {
 		consumeQuota := true
 		if strings.HasPrefix(requestURL, "/v1/models") {
 			consumeQuota = false
+		}
+		if token.Subnet != nil && *token.Subnet != "" {
+			if !network.IsIpInSubnets(ctx, c.ClientIP(), *token.Subnet) {
+				abortWithMessage(c, http.StatusForbidden, fmt.Sprintf("该令牌只能在指定网段使用：%s，当前 ip：%s", *token.Subnet, c.ClientIP()))
+				return
+			}
 		}
 		c.Set("consume_quota", consumeQuota)
 		if len(parts) > 1 {

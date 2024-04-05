@@ -45,6 +45,7 @@ const originInputs = {
   is_edit: false,
   name: '',
   fixed_content:'',
+  subnet:'',
   remain_quota: 1,
   expired_time: -1,
   unlimited_quota: false,
@@ -380,6 +381,27 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
                 </FormControl>
                   )
                 )}
+
+              <FormControl fullWidth error={Boolean(touched.subnet && errors.subnet)} sx={{ ...theme.typography.otherInput }}>
+                <InputLabel htmlFor="channel-subnet-label">IP 限制</InputLabel>
+                <OutlinedInput
+                  id="channel-name-label"
+                  label="IP 限制"
+                  type="text"
+                  value={values.subnet}
+                  name="subnet"
+                  onBlur={handleBlur}
+                  onChange={handleChange}
+                  inputProps={{ autoComplete: 'subnet' }}
+                  helperText="请输入允许访问的网段，例如：192.168.0.0/24"
+                  aria-describedby="helper-text-channel-subnet-label"
+                />
+                {touched.subnet && errors.subnet && (
+                  <FormHelperText error id="helper-tex-channel-subnet-label">
+                    {errors.subnet}
+                  </FormHelperText>
+                )}
+              </FormControl>
 
               <FormControl fullWidth error={Boolean(touched.fixed_content && errors.fixed_content)} sx={{ ...theme.typography.otherInput }}>
                 <InputLabel htmlFor="channel-fixed_content-label">自定义后缀</InputLabel>

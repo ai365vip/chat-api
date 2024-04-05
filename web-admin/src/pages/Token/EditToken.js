@@ -22,12 +22,13 @@ const EditToken = (props) => {
     const originInputs = {
         name: '',
         fixed_content:'',
+        subnet:'',
         remain_quota: isEdit ? 0 : 500000,
         expired_time: -1,
         unlimited_quota: false
     };
     const [inputs, setInputs] = useState(originInputs);
-    const {name, remain_quota, expired_time, unlimited_quota,fixed_content} = inputs;
+    const {name, remain_quota, expired_time, unlimited_quota,fixed_content,subnet} = inputs;
     // const [visible, setVisible] = useState(false);
     const navigate = useNavigate();
     const handleInputChange = (name, value) => {
@@ -397,6 +398,20 @@ const EditToken = (props) => {
                             </div>
                         )}
                     </div>
+                    <Divider/>
+                    <div style={{marginTop: 10}}>
+                        <Typography.Text>IP 限制</Typography.Text>
+                    </div>
+                    <Input
+                        style={{marginTop: 20}}
+                        label='自定义'
+                        name='subnet'
+                        placeholder={'请输入允许访问的网段，例如：192.168.0.0/24'}
+                        onChange={(value) => handleInputChange('subnet', value)}
+                        value={subnet}
+                        autoComplete='new-password'
+                        required={!isEdit}
+                    />
                     <Divider/>
                     <div style={{marginTop: 10}}>
                         <Typography.Text>自定义内容</Typography.Text>
