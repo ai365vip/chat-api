@@ -92,6 +92,13 @@ func InitDB() (err error) {
 			return nil
 		}
 		common.SysLog("database migration started")
+		// 检查索引`idx_channels_key`是否存在于`channels`表上，如果存在就删除它
+		if db.Migrator().HasIndex(&Channel{}, "idx_channels_key") {
+			err = db.Migrator().DropIndex(&Channel{}, "idx_channels_key")
+			if err != nil {
+				return err // 处理错误
+			}
+		}
 		err = db.AutoMigrate(&Channel{})
 		if err != nil {
 			return err
