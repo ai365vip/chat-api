@@ -1,11 +1,15 @@
 package middleware
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"one-api/common"
 	"one-api/common/network"
 	"one-api/model"
+	relaymodel "one-api/relay/model"
 	"strings"
 
 	"github.com/gin-contrib/sessions"
@@ -157,6 +161,32 @@ func TokenAuth() func(c *gin.Context) {
 			abortWithMessage(c, http.StatusForbidden, "用户已被封禁")
 			return
 		}
+		c.Set("is_tools", false)
+		if strings.HasPrefix(c.Request.URL.Path, "/v1/chat/completions") || strings.HasPrefix(c.Request.URL.Path, "/v1/completions") {
+			var reqBody relaymodel.GeneralOpenAIRequest
+			body, err := ioutil.ReadAll(c.Request.Body)
+			if err != nil {
+				fmt.Println("Error reading body:", err)
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+
+			// 重新设置请求体，以便后续使用
+			c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
+			// 反序列化请求体到reqBody结构体
+			if err := json.Unmarshal(body, &reqBody); err != nil {
+				fmt.Println("Error unmarshalling request body:", err)
+				c.AbortWithStatus(http.StatusBadRequest)
+				return
+			}
+
+			// 检查Tools字段是否存在且非空
+			if len(reqBody.Tools) > 0 {
+				c.Set("is_tools", true)
+			}
+		}
+
 		ctx := c.Request.Context()
 		c.Set("id", token.UserId)
 		c.Set("token_id", token.Id)

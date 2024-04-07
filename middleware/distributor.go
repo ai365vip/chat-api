@@ -1,14 +1,10 @@
 package middleware
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"one-api/common"
 	"one-api/model"
-	relaymodel "one-api/relay/model"
 	"strconv"
 	"strings"
 
@@ -91,33 +87,17 @@ func Distribute() func(c *gin.Context) {
 		} else {
 			// Select a channel for the user
 			var err error
-			var reqBody relaymodel.GeneralOpenAIRequest
-			body, err := ioutil.ReadAll(c.Request.Body)
-			if err != nil {
-				fmt.Println("Error reading body:", err)
-				c.AbortWithStatus(http.StatusInternalServerError)
+
+			value, _ := c.Get("is_tools")
+
+			// 尝试将值转换为bool类型
+			isTools, ok := value.(bool)
+			if !ok {
+				// 如果转换失败，处理类型不匹配的情况
+				fmt.Println("is_tools value is not of type bool")
 				return
 			}
-
-			// 重新设置请求体，以便后续使用
-			c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-
-			// 反序列化请求体到reqBody结构体
-			if err := json.Unmarshal(body, &reqBody); err != nil {
-				fmt.Println("Error unmarshalling request body:", err)
-				c.AbortWithStatus(http.StatusBadRequest)
-				return
-			}
-
-			// 检查Tools字段是否存在且非空
-			if len(reqBody.Tools) > 0 {
-				c.Set("is_tools", true)
-				channel, err = model.CacheGetRandomSatisfiedChannel(tokenGroup.(string), Model.(string), false, true)
-			} else {
-				c.Set("is_tools", false)
-				channel, err = model.CacheGetRandomSatisfiedChannel(tokenGroup.(string), Model.(string), false, false)
-			}
-
+			channel, err = model.CacheGetRandomSatisfiedChannel(tokenGroup.(string), Model.(string), false, isTools)
 			if err != nil {
 				message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", tokenGroup, Model)
 				if channel != nil {
