@@ -19,7 +19,6 @@ require (
 	github.com/pkoukk/tiktoken-go v0.1.6
 	github.com/samber/lo v1.38.1
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/star-horizon/go-epay v0.0.0-20230204124159-fa2e2293fdc2
 	github.com/stretchr/testify v1.8.3
 	golang.org/x/crypto v0.17.0
 	golang.org/x/image v0.15.0
