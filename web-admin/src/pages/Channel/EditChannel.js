@@ -172,7 +172,7 @@ const EditChannel = (props) => {
             setPriority(data.priority || 0);
             setWeight(data.weight || 0);
             setRateLimited(data.rate_limited || false);
-            setIstools(data.is_tools || true);
+            setIstools(data.is_tools || false);
             // console.log(data);
         } else {
             showError(message);

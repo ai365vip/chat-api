@@ -233,6 +233,17 @@ func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPrior
 		return allChannels[i].GetPriority() > allChannels[j].GetPriority()
 	})
 
+	// 如果isTools为true，则过滤出IsTools也为true的频道
+	if isTools {
+		var filteredChannels []*Channel
+		for _, ch := range allChannels {
+			if ch.IsTools != nil && *ch.IsTools {
+				filteredChannels = append(filteredChannels, ch)
+			}
+		}
+		allChannels = filteredChannels
+	}
+
 	// 初始化当前优先级变量
 	var currentPriority int64 = allChannels[0].GetPriority()
 
@@ -242,12 +253,11 @@ func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPrior
 
 		// 筛选出当前优先级的所有频道
 		for _, ch := range allChannels {
-			// 当请求的isTools为true时，只选择IsTools同样为true的频道
-			// 当请求的isTools为false时，不对频道的IsTools值做限制
-			if ch.GetPriority() == currentPriority && (!isTools || (ch.IsTools != nil && *ch.IsTools)) {
+			if ch.GetPriority() == currentPriority {
 				priorityChannels = append(priorityChannels, ch)
 				totalWeight += ch.GetWeight()
 			}
+
 		}
 
 		if len(priorityChannels) == 0 {
