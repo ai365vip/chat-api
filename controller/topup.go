@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"time"
 
+	epay "one-api/epay"
+
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
-	epay "github.com/star-horizon/go-epay"
 )
 
 type EpayRequest struct {
