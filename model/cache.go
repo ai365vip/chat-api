@@ -207,14 +207,14 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool) (*Channel, error) {
+func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool, isTools bool) (*Channel, error) {
 	if strings.HasPrefix(model, "gpt-4-gizmo") {
 		model = "gpt-4-gizmo-*"
 	}
 
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetRandomSatisfiedChannel(group, model, ignoreFirstPriority)
+		return GetRandomSatisfiedChannel(group, model, ignoreFirstPriority, isTools)
 	}
 
 	channelSyncLock.RLock()
@@ -242,7 +242,9 @@ func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPrior
 
 		// 筛选出当前优先级的所有频道
 		for _, ch := range allChannels {
-			if ch.GetPriority() == currentPriority {
+			// 当请求的isTools为true时，只选择IsTools同样为true的频道
+			// 当请求的isTools为false时，不对频道的IsTools值做限制
+			if ch.GetPriority() == currentPriority && (!isTools || (ch.IsTools != nil && *ch.IsTools)) {
 				priorityChannels = append(priorityChannels, ch)
 				totalWeight += ch.GetWeight()
 			}

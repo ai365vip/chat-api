@@ -57,7 +57,17 @@ func Relay(c *gin.Context) {
 		retryTimes = 0
 	}
 	for i := retryTimes; i > 0; i-- {
-		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i != retryTimes)
+		value, _ := c.Get("is_tools")
+
+		// 尝试将值转换为bool类型
+		isTools, ok := value.(bool)
+		if !ok {
+			// 如果转换失败，处理类型不匹配的情况
+			fmt.Println("is_tools value is not of type bool")
+			return
+		}
+
+		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i != retryTimes, isTools)
 		if err != nil {
 			common.Errorf(ctx, "CacheGetRandomSatisfiedChannel failed: %w", err)
 			break

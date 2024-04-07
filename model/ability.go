@@ -20,6 +20,7 @@ type Ability struct {
 	Enabled   bool   `json:"enabled"`
 	Priority  *int64 `json:"priority" gorm:"bigint;default:0;index"`
 	Weight    uint   `json:"weight" gorm:"default:0;index"`
+	IsTools   *bool  `json:"is_tools" gorm:"default:true"`
 }
 
 type ModelBillingInfo struct {
@@ -226,8 +227,8 @@ func updateRateLimitStatus(channelId int, model string) {
 	channelRateLimitStatus.Store(key, rl)
 }
 
-func GetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool) (*Channel, error) {
-	abilities, err := getAbilitiesByPriority(group, model, ignoreFirstPriority)
+func GetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool, isTools bool) (*Channel, error) {
+	abilities, err := getAbilitiesByPriority(group, model, ignoreFirstPriority, isTools)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +314,7 @@ func GetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority b
 	return nil, errors.New("no channels available within rate limits")
 }
 
-func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool) ([]Ability, error) {
+func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool, isTools bool) ([]Ability, error) {
 	var abilities []Ability
 	groupCol := "`group`"
 	trueVal := "1"
@@ -329,6 +330,10 @@ func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool
 	} else {
 		maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model)
 		channelQuery = DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal+" and priority = (?)", group, model, maxPrioritySubQuery)
+	}
+	// 根据isTools筛选
+	if isTools {
+		channelQuery = channelQuery.Where("is_tools = true")
 	}
 	if common.UsingSQLite || common.UsingPostgreSQL {
 		err = channelQuery.Order("weight DESC").Find(&abilities).Error
@@ -391,6 +396,7 @@ func (channel *Channel) AddAbilities() error {
 				Enabled:   channel.Status == common.ChannelStatusEnabled,
 				Priority:  channel.Priority,
 				Weight:    uint(channel.GetWeight()),
+				IsTools:   channel.IsTools,
 			}
 			abilities = append(abilities, ability)
 		}

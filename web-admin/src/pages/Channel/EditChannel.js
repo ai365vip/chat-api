@@ -69,6 +69,7 @@ const EditChannel = (props) => {
     const [priority, setPriority] = useState(0);
     const [weight, setWeight] = useState(0);
     const [rateLimited, setRateLimited] = useState(false);
+    const [istools, setIstools] = useState(true);
     const [isimageurenabled, setIsImageURLEnabled] = useState(false);
 
     const handleInputChange = (name, value) => {
@@ -171,6 +172,7 @@ const EditChannel = (props) => {
             setPriority(data.priority || 0);
             setWeight(data.weight || 0);
             setRateLimited(data.rate_limited || false);
+            setIstools(data.is_tools || true);
             // console.log(data);
         } else {
             showError(message);
@@ -250,6 +252,7 @@ const EditChannel = (props) => {
         localInputs.priority = priority;
         localInputs.weight = weight;
         localInputs.rate_limited = rateLimited;
+        localInputs.is_tools = istools;
         localInputs.is_image_url_enabled = isimageurenabled ? 1 : 0;
         
         if (localInputs.base_url && localInputs.base_url.endsWith('/')) {
@@ -287,6 +290,7 @@ const EditChannel = (props) => {
                 priority: parseInt(priority, 10) || 0, 
                 weight: parseInt(weight, 10) || 0, 
                 rate_limited: rateLimited,
+                is_tools: istools,
             };
             });
     
@@ -654,6 +658,15 @@ const EditChannel = (props) => {
                                 onChange={() => setRateLimited(!rateLimited)}
                             />
                             <Typography.Text strong>启用频率限制（开启后渠道每分钟限制三次）</Typography.Text>
+                        </Space>
+                    </div>
+                    <div style={{marginTop: 10, display: 'flex'}}>
+                        <Space>
+                            <Checkbox
+                                checked={istools}
+                                onChange={() => setIstools(!istools)}
+                            />
+                            <Typography.Text strong>是否支持FC插件</Typography.Text>
                         </Space>
                     </div>
                     {

@@ -31,6 +31,7 @@ type Channel struct {
 	Headers            *string `json:"headers" gorm:"type:varchar(1024);default:''"`
 	Priority           *int64  `json:"priority" gorm:"bigint;default:0"`
 	AutoBan            *int    `json:"auto_ban" gorm:"default:1"`
+	IsTools            *bool   `json:"is_tools" gorm:"default:true"`
 	TestedTime         *int    `json:"tested_time" gorm:"bigint"`
 	ModelTest          string  `json:"model_test"`
 	RateLimited        *bool   `json:"rate_limited" gorm:"default:false"`
