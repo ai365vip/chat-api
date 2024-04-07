@@ -1,13 +1,11 @@
 package openai
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"image"
-	"log"
 	"math"
 	"one-api/common"
+	"one-api/common/image"
 	"one-api/common/logger"
 	"one-api/relay/model"
 	"strings"
@@ -75,146 +73,7 @@ func CountAudioToken(text string, model string) int {
 	}
 }
 
-func processImageToken(m MediaMessage) (int, error) {
-	var imageUrl MessageImageUrl
-	var err error
-
-	// 尝试直接从 m.ImageUrl 中获取字符串URL
-	if str, ok := m.ImageUrl.(string); ok {
-		imageUrl = MessageImageUrl{Url: str, Detail: "auto"}
-	} else if imageUrlMap, ok := m.ImageUrl.(map[string]interface{}); ok {
-		// 尝试从 map 中解析 URL 和 Detail
-		url, urlOk := imageUrlMap["url"].(string)
-		detail, detailOk := imageUrlMap["detail"].(string)
-		if !urlOk {
-			return 0, fmt.Errorf("invalid image url structure")
-		}
-		if !detailOk {
-			detail = "auto" // 默认值，如果未提供 detail
-		}
-		imageUrl = MessageImageUrl{
-			Url:    url,
-			Detail: detail,
-		}
-	} else {
-		// 如果既不是字符串也不是预期的 map 结构，则返回错误
-		return 0, fmt.Errorf("unknown image url format")
-	}
-
-	// 调用 getImageToken 计算图像所需的令牌数量
-	tokenNum, err := getImageToken(&imageUrl)
-	if err != nil {
-		return 0, err
-	}
-
-	return tokenNum, nil
-}
-
 func CountTokenMessages(messages []model.Message, model string) int {
-	tokenEncoder := getTokenEncoder(model)
-	tokensPerMessage := 3
-	tokensPerName := 1
-	if model == "gpt-3.5-turbo-0301" {
-		tokensPerMessage = 4
-		tokensPerName = -1 // If there's a name, the role is omitted
-	}
-	tokenNum := 0
-	for _, message := range messages {
-		tokenNum += tokensPerMessage
-		tokenNum += getTokenNum(tokenEncoder, message.Role)
-
-		contentBytes, ok := message.Content.([]byte)
-		if !ok {
-			continue
-		}
-
-		// 尝试首先解码为string，如果失败，则尝试解码为[]MediaMessage
-		var stringContent string
-		if err := json.Unmarshal(contentBytes, &stringContent); err == nil {
-			tokenNum += getTokenNum(tokenEncoder, stringContent)
-		} else {
-			var arrayContent []MediaMessage
-			if err := json.Unmarshal(contentBytes, &arrayContent); err != nil {
-				return 0 // 或者处理错误
-			}
-
-			for _, m := range arrayContent {
-				if m.Type == "image_url" {
-					imageTokenNum, err := processImageToken(m)
-					if err != nil {
-						return 0 // 或者处理错误
-					}
-					tokenNum += imageTokenNum
-				} else {
-					tokenNum += getTokenNum(tokenEncoder, m.Text)
-				}
-			}
-		}
-
-		if message.Name != nil && tokensPerName > 0 {
-			tokenNum += tokensPerName
-			tokenNum += getTokenNum(tokenEncoder, *message.Name)
-		}
-	}
-	tokenNum += 3 // Every reply is primed with <|im_start|>assistant<|im_sep|>
-	return tokenNum
-}
-
-func getImageToken(imageUrl *MessageImageUrl) (int, error) {
-	if imageUrl.Detail == "low" {
-		return 85, nil
-	}
-	var config image.Config
-	var err error
-	var format string
-	if strings.HasPrefix(imageUrl.Url, "http") {
-		common.SysLog(fmt.Sprintf("downloading image: %s", imageUrl.Url))
-		config, format, err = common.DecodeUrlImageData(imageUrl.Url)
-	} else {
-		common.SysLog(fmt.Sprintf("decoding image"))
-		config, format, err = common.DecodeBase64ImageData(imageUrl.Url)
-	}
-	if err != nil {
-		return 0, err
-	}
-
-	if config.Width == 0 || config.Height == 0 {
-		return 0, errors.New(fmt.Sprintf("fail to decode image config: %s", imageUrl.Url))
-	}
-	// TODO: 适配官方auto计费
-	if config.Width < 512 && config.Height < 512 {
-		if imageUrl.Detail == "auto" || imageUrl.Detail == "" {
-			// 如果图片尺寸小于512，强制使用low
-			imageUrl.Detail = "low"
-			return 85, nil
-		}
-	}
-
-	shortSide := config.Width
-	otherSide := config.Height
-	log.Printf("format: %s, width: %d, height: %d", format, config.Width, config.Height)
-	// 缩放倍数
-	scale := 1.0
-	if config.Height < shortSide {
-		shortSide = config.Height
-		otherSide = config.Width
-	}
-
-	// 将最小变的尺寸缩小到768以下，如果大于768，则缩放到768
-	if shortSide > 768 {
-		scale = float64(shortSide) / 768
-		shortSide = 768
-	}
-	// 将另一边按照相同的比例缩小，向上取整
-	otherSide = int(math.Ceil(float64(otherSide) / scale))
-	//log.Printf("shortSide: %d, otherSide: %d, scale: %f", shortSide, otherSide, scale)
-	// 计算图片的token数量(边的长度除以512，向上取整)
-	tiles := (shortSide + 511) / 512 * ((otherSide + 511) / 512)
-	//log.Printf("tiles: %d", tiles)
-	return tiles*170 + 85, nil
-}
-func countImageTokens(messages []Message, model string) int {
-	//recover when panic
 	tokenEncoder := getTokenEncoder(model)
 	// Reference:
 	// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
@@ -233,55 +92,84 @@ func countImageTokens(messages []Message, model string) int {
 	tokenNum := 0
 	for _, message := range messages {
 		tokenNum += tokensPerMessage
-		tokenNum += getTokenNum(tokenEncoder, message.Role)
-		var arrayContent []MediaMessage
-		if err := json.Unmarshal(message.Content, &arrayContent); err != nil {
-
-			var stringContent string
-			if err := json.Unmarshal(message.Content, &stringContent); err != nil {
-				return 0
-			} else {
-				tokenNum += getTokenNum(tokenEncoder, stringContent)
-				if message.Name != nil {
-					tokenNum += tokensPerName
-					tokenNum += getTokenNum(tokenEncoder, *message.Name)
-				}
-			}
-		} else {
-			for _, m := range arrayContent {
-				if m.Type == "image_url" {
-					var imageTokenNum int
-					if str, ok := m.ImageUrl.(string); ok {
-						imageTokenNum, err = getImageToken(&MessageImageUrl{Url: str, Detail: "auto"})
-					} else {
-						imageUrlMap := m.ImageUrl.(map[string]interface{})
-						detail, ok := imageUrlMap["detail"]
-						if ok {
-							imageUrlMap["detail"] = detail.(string)
+		switch v := message.Content.(type) {
+		case string:
+			tokenNum += getTokenNum(tokenEncoder, v)
+		case []any:
+			for _, it := range v {
+				m := it.(map[string]any)
+				switch m["type"] {
+				case "text":
+					tokenNum += getTokenNum(tokenEncoder, m["text"].(string))
+				case "image_url":
+					imageUrl, ok := m["image_url"].(map[string]any)
+					if ok {
+						url := imageUrl["url"].(string)
+						detail := ""
+						if imageUrl["detail"] != nil {
+							detail = imageUrl["detail"].(string)
+						}
+						imageTokens, err := countImageTokens(url, detail)
+						if err != nil {
+							logger.SysError("error counting image tokens: " + err.Error())
 						} else {
-							imageUrlMap["detail"] = "auto"
+							tokenNum += imageTokens
 						}
-						imageUrl := MessageImageUrl{
-							Url:    imageUrlMap["url"].(string),
-							Detail: imageUrlMap["detail"].(string),
-						}
-						imageTokenNum, err = getImageToken(&imageUrl)
 					}
-					if err != nil {
-						return 0
-					}
-
-					tokenNum += imageTokenNum
-					//log.Printf("image token num: %d", imageTokenNum)
-				} else {
-					tokenNum += getTokenNum(tokenEncoder, m.Text)
 				}
 			}
+		}
+		tokenNum += getTokenNum(tokenEncoder, message.Role)
+		if message.Name != nil {
+			tokenNum += tokensPerName
+			tokenNum += getTokenNum(tokenEncoder, *message.Name)
 		}
 	}
 	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>
 	return tokenNum
 }
+
+func countImageTokens(url string, detail string) (_ int, err error) {
+	var fetchSize = true
+	var width, height int
+
+	if detail == "" || detail == "auto" {
+		// assume by test, not sure if this is correct
+		detail = "high"
+	}
+	switch detail {
+	case "low":
+		return lowDetailCost, nil
+	case "high":
+		if fetchSize {
+			width, height, err = image.GetImageSize(url)
+			if err != nil {
+				return 0, err
+			}
+		}
+		if width > 2048 || height > 2048 { // max(width, height) > 2048
+			ratio := float64(2048) / math.Max(float64(width), float64(height))
+			width = int(float64(width) * ratio)
+			height = int(float64(height) * ratio)
+		}
+		if width > 768 && height > 768 { // min(width, height) > 768
+			ratio := float64(768) / math.Min(float64(width), float64(height))
+			width = int(float64(width) * ratio)
+			height = int(float64(height) * ratio)
+		}
+		numSquares := int(math.Ceil(float64(width)/512) * math.Ceil(float64(height)/512))
+		result := numSquares*highDetailCostPerTile + additionalCost
+		return result, nil
+	default:
+		return 0, errors.New("invalid detail option")
+	}
+}
+
+const (
+	lowDetailCost         = 85
+	highDetailCostPerTile = 170
+	additionalCost        = 85
+)
 
 func CountTokenInput(input any, model string) int {
 	switch v := input.(type) {
