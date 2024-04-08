@@ -34,9 +34,10 @@
 22. 支持分销查询页[chat-api-key-tool](https://github.com/ai365vip/chat-api-key-tool)（消费、MJ、设置发卡站）
 23. 支持渠道添加自定义请求头
 24. 支持令牌添加自定义后缀内容
-25. 支持midjourney-proxy-plus(支持/mj-turbo/mj、/mj-relax/mj，对应模型midjourney-turbo、midjourney-relax) 
+25. 支持midjourney-proxy-plus(支持/mj-turbo/mj、/mj-relax/mj，对应模型midjourney-turbo、midjourney-relax)
 26. 支持设置充值数量对应折扣
-27. stability-sd文生图
+27. 支持令牌使用IP限制
+28. 支持渠道设置是否可以使用FC插件，使用插件的请求自动寻找支持的渠道
 
 ## 部署
 
