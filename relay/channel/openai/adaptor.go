@@ -125,7 +125,7 @@ func updateTextRequestForVision(textRequest *model.GeneralOpenAIRequest) (*model
 	textRequest.Model = "gpt-4-vision-preview"
 	textRequest.MaxTokens = 4096
 	for i, msg := range textRequest.Messages {
-		// 假设msg.Content就是string，或者你需要根据Content的实际结构来调整
+
 		contentStr := msg.Content.(string)
 		// 正则查找URL并构建新的消息内容
 		newContent, err := createNewContentWithImages(contentStr)
@@ -158,8 +158,11 @@ func createNewContentWithImages(contentStr string) ([]interface{}, error) {
 
 	for _, url := range matches {
 		newContent = append(newContent, MediaMessageImage{
-			Type:     "image_url",
-			ImageUrl: MessageImageUrl{Url: url},
+			Type: "image_url",
+			ImageUrl: MessageImageUrl{
+				Url:    url,
+				Detail: "high",
+			},
 		})
 	}
 	return newContent, nil
