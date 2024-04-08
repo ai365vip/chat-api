@@ -140,10 +140,10 @@ func buildTestRequest(modelTest string) *relaymodel.GeneralOpenAIRequest {
 		Stream:    false,
 		Model:     modelTest,
 	}
-	content, _ := json.Marshal("hi")
+	//content, _ := json.Marshal("hi")
 	testMessage := relaymodel.Message{
 		Role:    "user",
-		Content: content,
+		Content: "hi",
 	}
 	testRequest.Messages = append(testRequest.Messages, testMessage)
 	return testRequest
