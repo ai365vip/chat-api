@@ -296,8 +296,11 @@ const ChannelsTable = () => {
     const [searchGroup, setSearchGroup] = useState('');
     const [searching, setSearching] = useState(false);
     const [updatingBalance, setUpdatingBalance] = useState(false);
-    const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
-    const [showPrompt, setShowPrompt] = useState(shouldShowPrompt("channel-test"));
+     // State 初始化时直接从 localStorage 读取 pageSize
+     const [pageSize, setPageSize] = useState(() => {
+        const savedPageSize = window.localStorage.getItem('pageSize');
+        return savedPageSize ? Number(savedPageSize) : ITEMS_PER_PAGE; // 默认值作为回退
+    });
     const [channelCount, setChannelCount] = useState(pageSize);
     const [groupOptions, setGroupOptions] = useState([]);
     const [showEdit, setShowEdit] = useState(false);
@@ -349,10 +352,10 @@ const ChannelsTable = () => {
         setChannelCount(newChannels.length >= pageSize ? newChannels.length + pageSize : newChannels.length);
     };
     
-
-    const loadChannels = async (startIdx, pageSize, idSort) => {
+    
+    const loadChannels = async (startIdx, pageSize) => {
         setLoading(true);
-        const res = await API.get(`/api/channel/?p=${startIdx}&page_size=${pageSize}&id_sort=${idSort}`);
+        const res = await API.get(`/api/channel/?p=${startIdx}&page_size=${pageSize}`);
         const {success, message, data} = res.data;
         if (success) {
             if (startIdx === 0) {
@@ -369,25 +372,19 @@ const ChannelsTable = () => {
     };
 
     const refresh = async () => {
-        await loadChannels(activePage - 1, pageSize, idSort);
+        await loadChannels(activePage - 1, pageSize);
     };
 
     useEffect(() => {
-        const savedPageSize = window.localStorage.getItem('pageSize');
-        if (savedPageSize) {
-            setPageSize(Number(savedPageSize)); // 读取时转换回数字
-        }
-        // console.log('default effect')
-        const localIdSort = localStorage.getItem('id-sort') === 'true';
-        setIdSort(localIdSort)
-        loadChannels(0, pageSize, localIdSort)
+        console.log(`Loading channels with pageSize: ${pageSize}`);
+        loadChannels(0, pageSize)
             .then()
             .catch((reason) => {
                 showError(reason);
             });
         fetchGroups().then();
-    }, []);
-
+    }, [pageSize]);
+   
 
     const manageChannel = async (id, action, record, value) => {
         let data = {id};
@@ -563,6 +560,7 @@ const ChannelsTable = () => {
     
                 if (failedDeletions.length < selectedChannels.size) {
                     showSuccess(`成功删除了 ${selectedChannels.size - failedDeletions.length} 个通道。`);
+                    refresh()
                 }
                 setSelectedChannels(new Set());
             },
@@ -570,48 +568,37 @@ const ChannelsTable = () => {
     };
   
 
-    
-    
-  
-    const testSelectedChannels = async () => {
-        if (selectedChannels.size === 0) {
-            showError("没有选中的渠道");
+    const copySelectedChannel = async () => {
+        if (selectedChannels.size !== 1) {
+            showError("请选择一个渠道进行复制"); // 确保只选择了一个渠道
+            return;
+        }
+        const channelId = Array.from(selectedChannels)[0];
+        const channelToCopy = channels.find(channel => String(channel.id) === String(channelId));
+        if (!channelToCopy) {
+            showError("选中的渠道未找到，请刷新页面后重试。");
+            // 这里你可以加入刷新逻辑，或者按实际需要采取其他动作
             return;
         }
 
-        setLoading(true);
-        let errors = [];
-        let updatedChannels = [...channels];
-
-        for (const channelId of selectedChannels) {
-            try {
-                const res = await API.get(`/api/channel/test/${channelId}/`);
-                const { success, time } = res.data;
-                if (success) {
-                    // 更新相应渠道的测试时间和响应时间
-                    const indexToUpdate = updatedChannels.findIndex(channel => channel.id === channelId);
-                    if (indexToUpdate !== -1) {
-                        updatedChannels[indexToUpdate].response_time = time * 1000;
-                        updatedChannels[indexToUpdate].test_time = Date.now() / 1000;
-                    }
-                } else {
-                    errors.push(`ID ${channelId}: 测试失败`);
-                }
-            } catch (error) {
-                errors.push(`ID ${channelId}: ${error.message}`);
+        try {
+            const newChannel = {...channelToCopy, id: undefined}; // 示例：清除id以创建一个新渠道
+            // 发送复制请求到后端API
+            const response = await API.post('/api/channel/', newChannel);
+            if (response.data.success) {
+                showSuccess("渠道复制成功");
+                // 刷新列表来显示新的渠道
+                refresh();
+            } else {
+                showError(response.data.message);
             }
-        }
-
-        setChannels(updatedChannels);
-        setLoading(false);
-
-        if (errors.length > 0) {
-            showError(errors.join(", "));
-        } else {
-            showSuccess(`成功测试了 ${selectedChannels.size} 个渠道`);
+        } catch (error) {
+            showError("渠道复制失败: " + error.message);
         }
     };
 
+      
+      
 
     const updateChannelBalance = async (record) => {
         const res = await API.get(`/api/channel/update_balance/${record.id}/`);
@@ -709,6 +696,10 @@ const ChannelsTable = () => {
     return (
         <>
             <EditChannel refresh={refresh} visible={showEdit} handleClose={closeEdit} editingChannel={editingChannel}/>
+            
+            
+            <div style={{position: 'sticky', top: 0, zIndex: 1000, backgroundColor: 'white'}}>
+            
             <Form labelPosition='left'>
                 <div style={{display: 'flex',marginBottom: 20 }}>
                     <Space>
@@ -777,17 +768,37 @@ const ChannelsTable = () => {
                         >
                             查询
                         </Button>
-                        <Button
+                        <Button style={{marginRight: 28}} 
                             theme='light'
                             type='danger'
                             onClick={resetSearch}
                         >
                             清除搜索条件
                         </Button>
+                        <>
+                            {selectedChannels.size === 0 && (
+                                <Button theme='light' type='primary' style={{marginRight: 8}} onClick={() => {
+                                    setEditingChannel({
+                                        id: undefined,
+                                    });
+                                    setShowEdit(true);
+                                }}>添加渠道</Button>
+                            )}
+                            
+                            {selectedChannels.size === 1 && (
+                                <Button theme='light' type='primary' style={{marginRight: 8}} onClick={copySelectedChannel}>复制渠道</Button>
+                            )}
+
+                            {selectedChannels.size > 1 && (
+                                <Button theme='light' type='danger' style={{marginRight: 8}} onClick={deleteSelectedChannels}>删除选中</Button>
+                            )}
+                        </>
+
                     </Space>
                 </div>
             </Form>
 
+            </div>
             <Table
                 rowSelection={{
                     onChange: (selectedRowKeys) => {
@@ -821,14 +832,7 @@ const ChannelsTable = () => {
             )}
             <div style={{display: isMobile()?'':'flex', marginTop: isFiltering ? '10px' : (isMobile() ? '0' : '-45px'), zIndex: 999, position: 'relative', pointerEvents: 'none'}}>
                 <Space style={{pointerEvents: 'auto'}}>
-                    <Button theme='light' type='primary' style={{marginRight: 8}} onClick={
-                        () => {
-                            setEditingChannel({
-                                id: undefined,
-                            });
-                            setShowEdit(true)
-                        }
-                    }>添加渠道</Button>
+
                     <Popconfirm
                         title="确定？"
                         okType={'warning'}
@@ -853,7 +857,6 @@ const ChannelsTable = () => {
                     >
                         <Button theme='light' type='danger' style={{marginRight: 8}}>删除禁用通道</Button>
                     </Popconfirm>
-                    <Button theme='light' type='danger' style={{marginRight: 8}} onClick={deleteSelectedChannels} >删除选中</Button>
 
                 </Space>
             </div>
