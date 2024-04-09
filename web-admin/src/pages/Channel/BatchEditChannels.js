@@ -27,21 +27,20 @@ function type2secretPrompt(type) {
     }
 }
 
-const EditChannel = (props) => {
-    const navigate = useNavigate();
-    const channelId = props.editingChannel.id;
-    const isEdit = channelId !== undefined;
-    const [loading, setLoading] = useState(isEdit);
+const BatchEditChannels = (props) => {
+    
+    const {
+        visible,
+        handleClose,
+        editingChannelIds, // 使用编辑渠道的ID数组代替单个渠道ID
+        refresh,
+    } = props;
+
     const handleCancel = () => {
         props.handleClose()
     };
     const originInputs = {
-        name: '',
-        type: 1,
-        key: '',
         openai_organization: '',
-        base_url: '',
-        other: '',
         model_mapping: '',
         headers: '',
         models: [],
@@ -53,8 +52,6 @@ const EditChannel = (props) => {
         weight:'',
         groups: ['default']
     };
-    const [batch, setBatch] = useState(false);
-    const [autoBan, setAutoBan] = useState(true);
     // const [autoBan, setAutoBan] = useState(true);
     const [inputs, setInputs] = useState(originInputs);
     const [originModelOptions, setOriginModelOptions] = useState([]);
@@ -63,122 +60,24 @@ const EditChannel = (props) => {
     const [basicModels, setBasicModels] = useState([]);
     const [fullModels, setFullModels] = useState([]);
     const [customModel, setCustomModel] = useState('');
-    const [batchProxy, setBatchProxy] = useState(false);
-    const [proxyInputs, setProxyInputs] = useState(''); // 新增状态来存储批量代理输入
     const [restartDelay, setRestartDelay] = useState(0); 
-    const [priority, setPriority] = useState(0);
     const [weight, setWeight] = useState(0);
-    const [rateLimited, setRateLimited] = useState(false);
     const [istools, setIstools] = useState(true);
     const [isimageurenabled, setIsImageURLEnabled] = useState(false);
-
+    const [loading, setLoading] = useState(false);
+    const [autoBan, setAutoBan] = useState(true);
+    const [rateLimited, setRateLimited] = useState(false);
+    const [priority, setPriority] = useState(0);
+    const [modelTest, setModelTest] = useState('gpt-3.5-turbo');
     const handleInputChange = (name, value) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
         if (name === 'type' && inputs.models.length === 0) {
             let localModels = [];
-            // eslint-disable-next-line default-case
-            switch (value) {
-                case 14:
-                    localModels = ['claude-instant-1.2', 'claude-2.0', 'claude-2.1', 'claude-3-haiku-20240307','claude-3-opus-20240229', 'claude-3-opus','claude-3-sonnet-20240229'];
-                    break;
-                case 11:
-                    localModels = ['PaLM-2'];
-                    break;
-                case 15:
-                    localModels = ['ERNIE-Bot', 'ERNIE-Bot-turbo', 'ERNIE-Bot-4', 'Embedding-V1'];
-                    break;
-                case 17:
-                    localModels = ['qwen-turbo', 'qwen-plus', 'text-embedding-v1'];
-                    break;
-                case 16:
-                    localModels = ['chatglm_pro', 'chatglm_std', 'chatglm_lite','glm-4', 'glm-4v','glm-v4', 'glm-3-turbo',];
-                    break;
-                case 18:
-                    localModels = ['SparkDesk'];
-                    break;
-                case 19:
-                    localModels = ['360GPT_S2_V9', 'embedding-bert-512-v1', 'embedding_s1_v1', 'semantic_similarity_s1_v1'];
-                    break;
-                case 23:
-                    localModels = ['hunyuan'];
-                    break;
-                case 24:
-                    localModels = ['gemini-pro','gemini-pro-vision','gemini-1.5-pro'];
-                    break;
-                case 2:
-                    localModels = ['midjourney'];
-                    break;
-                case 28:
-                    localModels = ['stable-diffusion'];
-                    break;
-                case 29:
-                    localModels = ['gemma-7b-it','llama2-7b-2048','llama2-70b-4096','mixtral-8x7b-32768'];
-                    break;
-                case 30:
-                    localModels = ['Baichuan2-Turbo','Baichuan2-Turbo-192k'];
-                    break;
-                case 31:
-                    localModels = ['abab5.5s-chat','abab5.5-chat','abab6-chat'];
-                    break;
-                case 32:
-                    localModels = ['open-mistral-7b','open-mixtral-8x7b','mistral-small-latest','mistral-medium-latest','mistral-large-latest'];
-                    break;
-                case 33:
-                    localModels = ['qwen:0.5b-chat'];
-                    break;
-                case 34:
-                    localModels = ['yi-34b-chat-0205','yi-34b-chat-200k','yi-vl-plus'];
-                    break;
-            }
             setInputs((inputs) => ({...inputs, models: localModels}));
         }
         //setAutoBan
     };
-
-
-    const loadChannel = async () => {
-        setLoading(true)
-        let res = await API.get(`/api/channel/${channelId}`);
-        const {success, message, data} = res.data;
-        if (success) {
-            if (data.models === '') {
-                data.models = [];
-            } else {
-                data.models = data.models.split(',');
-            }
-            if (data.group === '') {
-                data.groups = [];
-            } else {
-                data.groups = data.group.split(',');
-            }
-            if (data.model_mapping !== '') {
-                data.model_mapping = JSON.stringify(JSON.parse(data.model_mapping), null, 2);
-            }
-            if (data.headers !== '') {
-                data.headers = JSON.stringify(JSON.parse(data.headers), null, 2);
-            }
-            setInputs(data);
-            if (data.auto_ban === 0) {
-                setAutoBan(false);
-            } else {
-                setAutoBan(true);
-            }
-            if (data.is_image_url_enabled === 0) {
-                setIsImageURLEnabled(false);
-            } else {
-                setIsImageURLEnabled(true);
-            }
-            setRestartDelay(data.tested_time || 0);
-            setPriority(data.priority || 0);
-            setWeight(data.weight || 0);
-            setRateLimited(data.rate_limited || false);
-            setIstools(data.is_tools || false);
-            // console.log(data);
-        } else {
-            showError(message);
-        }
-        setLoading(false);
-    };
+    
 
     const fetchModels = async () => {
         try {
@@ -212,26 +111,14 @@ const EditChannel = (props) => {
     useEffect(() => {
         setModelOptions(originModelOptions);
     }, [originModelOptions]);
-    
 
     useEffect(() => {
         fetchModels().then();
         fetchGroups().then();
-        if (isEdit) {
-            loadChannel().then(() => {});
-          } else {
-            setInputs(originInputs)
-          }
-       
-    }, [props.editingChannel.id]);
-
-
+    }, []); // 预先加载内容
 
     const submit = async () => {
-        if (!isEdit && !batchProxy && (inputs.name === '')) {
-            showInfo('请填写渠道名称！');
-            return;
-          }
+        let failCount = 0;
         if (inputs.models.length === 0) {
             showInfo('请至少选择一个模型！');
             return;
@@ -242,7 +129,7 @@ const EditChannel = (props) => {
             return;
         }
         if (inputs.headers !== '' && !verifyJSON(inputs.headers)) {
-            showInfo('自定义请求头必须是合法的 JSON 格式！');
+            showInfo('模型映射必须是合法的 JSON 格式！');
             return;
         }
         let localInputs = {...inputs};
@@ -269,81 +156,35 @@ const EditChannel = (props) => {
             localInputs.model_test = 'gpt-3.5-turbo';
         }
 
-        let channelsToCreate = [];
-        let createPromises = []; // 存储所有待执行的Promise
-        // 处理批量添加代理的逻辑
-        if (batchProxy) {
-            const proxyEntries = proxyInputs.split('\n').filter(proxy => proxy.trim()); // 过滤空行
-    
-            channelsToCreate = proxyEntries.map(proxyEntry => {
-            const [name, address] = proxyEntry.split(',').map(part => part.trim()); // 获取名称和代理地址
-            if (!address) {
-                throw new Error('代理地址格式无效。');
-            }
-            return {
-                ...inputs, // 复制当前输入作为基础
-                base_url: address,
-                name: name || `Channel for ${address}`, // 如果没有指定名称，则使用默认名称
-                models: inputs.models.join(','), // 将模型数组转换为字符串
-                group: inputs.groups.join(','), // 将群组数组转换为字符串
-                tested_time: parseInt(restartDelay, 10) || 0,
-                priority: parseInt(priority, 10) || 0, 
-                weight: parseInt(weight, 10) || 0, 
-                rate_limited: rateLimited,
-                is_tools: istools,
-            };
-            });
-    
-            // 批量创建渠道
-            for (const channelData of channelsToCreate) {
-            try {
-                let res = await API.post(`/api/channel/`, channelData);
-                const { success, message } = res.data;
-                if (success) {
-                showSuccess(`渠道 ${channelData.name} 创建成功！`);
-                } else {
-                showError(`渠道 ${channelData.name} 创建失败：${message}`);
-                }
-            } catch (error) {
-                showError(`渠道 ${channelData.name} 创建异常：${error.message}`);
-            }
-            }
-            // 等待所有的创建操作完成
-            await Promise.all(createPromises);
-
-            // 创建操作完成后，刷新列表
-            props.refresh();
-            props.handleClose();
-
-            return; // 结束函数执行
-        }
-        let res;
-        if (!Array.isArray(localInputs.models)) {
-            showError('提交失败，请勿重复提交！');
-            handleCancel();
-            return;
-        }
         localInputs.models = localInputs.models.join(',');
         localInputs.group = localInputs.groups.join(',');
-        if (isEdit) {
-            res = await API.put(`/api/channel/`, {...localInputs, id: parseInt(channelId)});
-        } else {
-            res = await API.post(`/api/channel/`, localInputs);
-        }
-        const {success, message} = res.data;
-        if (success) {
-            if (isEdit) {
-                showSuccess('渠道更新成功！');
-            } else {
-                showSuccess('渠道创建成功！');
-                setInputs(originInputs);
+    
+        for (let channelId of editingChannelIds) {
+            try {
+                const response = await API.put(`/api/channel/`, {...localInputs, id: parseInt(channelId)});
+                if (!response.data.success) {
+                    failCount++;
+                }
+            } catch (error) {
+                failCount++;
+                console.error(`Failed to update channel ${channelId}: `, error);
             }
-            props.refresh();
-            props.handleClose();
-        } else {
-            showError(message);
         }
+    
+        if (failCount === 0) {
+            showSuccess('All selected channels have been updated successfully.');
+        } else {
+            showError(`${failCount} channels failed to update.`);
+        }
+    
+        setLoading(false);
+        handleClose(); // 关闭编辑界面
+        refresh(); // 刷新数据展示
     };
+    
+    
+
+
 
     const addCustomModel = () => {
         if (customModel.trim() === '') return;                // 确保自定义模型非空
@@ -360,8 +201,8 @@ const EditChannel = (props) => {
         <>
             <SideSheet
                 maskClosable={false}
-                placement={isEdit ? 'right' : 'left'}
-                title={<Title level={3}>{isEdit ? '更新渠道信息' : '创建新的渠道'}</Title>}
+                placement={'left'}
+                title={<Title level={3}>{'批量更新渠道信息'}</Title>}
                 headerStyle={{borderBottom: '1px solid var(--semi-color-border)'}}
                 bodyStyle={{borderBottom: '1px solid var(--semi-color-border)'}}
                 visible={props.visible}
@@ -432,37 +273,8 @@ const EditChannel = (props) => {
                             </>
                         )
                     }
-                    {
-                        inputs.type === 8 && (
-                            <>
-                                <div style={{marginTop: 10}}>
-                                    <Typography.Text strong>Base URL：</Typography.Text>
-                                </div>
-                                <Input
-                                    name='base_url'
-                                    placeholder={'请输入自定义渠道的 Base URL'}
-                                    onChange={value => {
-                                        handleInputChange('base_url', value)
-                                    }}
-                                    value={inputs.base_url}
-                                    autoComplete='new-password'
-                                />
-                            </>
-                        )
-                    }
-                    <div style={{marginTop: 10}}>
-                        <Typography.Text strong>名称：</Typography.Text>
-                    </div>
-                    <Input
-                        required
-                        name='name'
-                        placeholder={'请为渠道命名'}
-                        onChange={value => {
-                            handleInputChange('name', value)
-                        }}
-                        value={inputs.name}
-                        autoComplete='new-password'
-                    />
+
+
                     <div style={{marginTop: 10}}>
                         <Typography.Text strong>分组：</Typography.Text>
                     </div>
@@ -599,46 +411,7 @@ const EditChannel = (props) => {
                     }>
                         填入模板
                     </Typography.Text>
-                    <div style={{marginTop: 10}}>
-                        <Typography.Text strong>密钥：</Typography.Text>
-                    </div>
-                    {
-                        batch ?
-                            <TextArea
-                                label='密钥'
-                                name='key'
-                                placeholder={'请输入密钥，一行一个'}
-                                onChange={value => {
-                                    handleInputChange('key', value)
-                                }}
-                                value={inputs.key}
-                                style={{minHeight: 150, fontFamily: 'JetBrains Mono, Consolas'}}
-                                autoComplete='new-password'
-                            />
-                            :
-                            <Input
-                                label='密钥'
-                                name='key'
-                                placeholder={type2secretPrompt(inputs.type)}
-                                onChange={value => {
-                                    handleInputChange('key', value)
-                                }}
-                                value={inputs.key}
-                                autoComplete='new-password'
-                            />
-                    }
-                    <div style={{marginTop: 10}}>
-                        <Typography.Text strong>组织：</Typography.Text>
-                    </div>
-                    <Input
-                        label='组织，可选，不填则为默认组织'
-                        name='openai_organization'
-                        placeholder='请输入组织org-xxx'
-                        onChange={value => {
-                            handleInputChange('openai_organization', value)
-                        }}
-                        value={inputs.openai_organization}
-                    />
+
                     <div style={{marginTop: 10, display: 'flex'}}>
                         <Space>
                             <Checkbox
@@ -751,40 +524,6 @@ const EditChannel = (props) => {
                         </div>
                     </div>
 
-                    {
-                        !isEdit && (
-                            <div style={{marginTop: 10, display: 'flex'}}>
-                                <Space>
-                                    <Checkbox
-                                        checked={batch}
-                                        label='批量创建'
-                                        name='batch'
-                                        onChange={() => setBatch(!batch)}
-                                    />
-                                    <Typography.Text strong>批量创建</Typography.Text>
-                                </Space>
-                            </div>
-                        )
-                    }
-                    {
-                        inputs.type !== 3 && inputs.type !== 8 && inputs.type !== 22 && (
-                            <>
-                                <div style={{marginTop: 10}}>
-                                    <Typography.Text strong>代理：</Typography.Text>
-                                </div>
-                                <Input
-                                    label='代理'
-                                    name='base_url'
-                                    placeholder={'此项可选，用于通过代理站来进行 API 调用'}
-                                    onChange={value => {
-                                        handleInputChange('base_url', value)
-                                    }}
-                                    value={inputs.base_url}
-                                    autoComplete='new-password'
-                                />
-                            </>
-                        )
-                    }
                     <div style={{marginTop: 10}}>
                         <Typography.Text strong>自定义请求头：</Typography.Text>
                     </div>
@@ -801,24 +540,6 @@ const EditChannel = (props) => {
                         value={inputs.headers}
                         autoComplete='new-password'
                     />
-                    {
-                        inputs.type === 22 && (
-                            <>
-                                <div style={{marginTop: 10}}>
-                                    <Typography.Text strong>私有部署地址：</Typography.Text>
-                                </div>
-                                <Input
-                                    name='base_url'
-                                    placeholder={'请输入私有部署地址，格式为：https://fastgpt.run/api/openapi'}
-                                    onChange={value => {
-                                        handleInputChange('base_url', value)
-                                    }}
-                                    value={inputs.base_url}
-                                    autoComplete='new-password'
-                                />
-                            </>
-                        )
-                    }
 
                 </Spin>
             </SideSheet>
@@ -826,4 +547,4 @@ const EditChannel = (props) => {
     );
 };
 
-export default EditChannel;
+export default BatchEditChannels;

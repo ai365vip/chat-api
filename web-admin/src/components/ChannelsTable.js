@@ -33,7 +33,7 @@ import {
     AutoComplete, Dropdown, SplitButtonGroup,Input
 } from "@douyinfe/semi-ui";
 import EditChannel from "../pages/Channel/EditChannel";
-
+import BatchEditChannels from "../pages/Channel/BatchEditChannels";
 
 let type2label = undefined;
 
@@ -313,7 +313,9 @@ const ChannelsTable = () => {
     const [editingChannel, setEditingChannel] = useState({
         id: undefined,
     });
+    const [showBatchEdit, setShowBatchEdit] = useState(false);
 
+    
     
     const onGptVersionChange = (value) => {
         setGptVersion(value); // 直接使用传入的 value 更新状态
@@ -376,7 +378,6 @@ const ChannelsTable = () => {
     };
 
     useEffect(() => {
-        console.log(`Loading channels with pageSize: ${pageSize}`);
         loadChannels(0, pageSize)
             .then()
             .catch((reason) => {
@@ -696,7 +697,13 @@ const ChannelsTable = () => {
     return (
         <>
             <EditChannel refresh={refresh} visible={showEdit} handleClose={closeEdit} editingChannel={editingChannel}/>
-            
+            <BatchEditChannels
+             refresh={refresh} 
+            visible={showBatchEdit}
+            handleClose={() => setShowBatchEdit(false)}
+            editingChannelIds={Array.from(selectedChannels)}
+
+        />
             
             <div style={{position: 'sticky', top: 0, zIndex: 1000, backgroundColor: 'white'}}>
             
@@ -791,6 +798,13 @@ const ChannelsTable = () => {
 
                             {selectedChannels.size > 1 && (
                                 <Button theme='light' type='danger' style={{marginRight: 8}} onClick={deleteSelectedChannels}>删除选中</Button>
+                            )}
+                            {selectedChannels.size > 1 && (
+                                // 在点击按钮的事件处理器中
+                                <Button theme='light' type='secondary' onClick={() => {
+                                    console.log('批量编辑按钮点击'); // 调试信息
+                                    setShowBatchEdit(true);
+                                }}>批量编辑</Button>
                             )}
                         </>
 
