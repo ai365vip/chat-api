@@ -113,9 +113,50 @@ const BatchEditChannels = (props) => {
     }, [originModelOptions]);
 
     useEffect(() => {
+        // 当editingChannelIds改变时，获取第一个channelId的信息，并设置到表单
+        if (editingChannelIds.length > 0) {
+            fetchChannelDataByID(editingChannelIds[0]);
+        } else {
+            // 如果没有选择任何channel，则可以将表单重置为默认值或者其他指定值
+            setInputs(originInputs);
+        }
         fetchModels().then();
         fetchGroups().then();
-    }, []); // 预先加载内容
+    }, [editingChannelIds]); // 注意将 editingChannelIds 加入依赖列表
+    
+    // 基于channel ID获取channel数据的函数
+    const fetchChannelDataByID = async (channelId) => {
+        setLoading(true);
+        try {
+            const response = await API.get(`/api/channel/${channelId}`);
+            if (response.data && response.data.success) {
+                const channelData = response.data.data;
+                setInputs({
+                    ...inputs,
+                    // 此处根据实际后端返回的数据结构进行调整
+                    models: channelData.models ? channelData.models.split(',') : [],
+                    auto_ban: channelData.auto_ban === 1,
+                    is_image_url_enabled: channelData.is_image_url_enabled === 1,
+                    model_test: channelData.model_test || 'gpt-3.5-turbo',
+                    tested_time: channelData.tested_time || 0,
+                    priority: channelData.priority || 0,
+                    weight: channelData.weight || 0,
+                    groups: channelData.groups ? channelData.groups.split(',') : ['default'],
+                    model_mapping: channelData.model_mapping || '',
+                    headers: channelData.headers || '',
+
+                });
+            } else {
+                showError('获取渠道信息失败');
+            }
+        } catch (error) {
+            console.error(error);
+            showError('获取渠道信息时发生错误');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
 
     const submit = async () => {
         let failCount = 0;
