@@ -338,6 +338,7 @@ const EditChannel = (props) => {
                 showSuccess('渠道创建成功！');
                 setInputs(originInputs);
             }
+            props.refresh();
             props.handleClose();
         } else {
             showError(message);
