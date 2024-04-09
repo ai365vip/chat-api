@@ -11,21 +11,7 @@ const MODEL_MAPPING_EXAMPLE = {
     'gpt-4-32k-0314': 'gpt-4-32k'
 };
 
-function type2secretPrompt(type) {
-    // inputs.type === 15 ? '按照如下格式输入：APIKey|SecretKey' : (inputs.type === 18 ? '按照如下格式输入：APPID|APISecret|APIKey' : '请输入渠道对应的鉴权密钥')
-    switch (type) {
-        case 15:
-            return '按照如下格式输入：APIKey|SecretKey';
-        case 18:
-            return '按照如下格式输入：APPID|APISecret|APIKey';
-        case 22:
-            return '按照如下格式输入：APIKey-AppId，例如：fastgpt-0sp2gtvfdgyi4k30jwlgwf1i-64f335d84283f05518e9e041';
-        case 23:
-            return '按照如下格式输入：AppId|SecretId|SecretKey';
-        default:
-            return '请输入渠道对应的鉴权密钥';
-    }
-}
+
 
 const BatchEditChannels = (props) => {
     
@@ -126,35 +112,47 @@ const BatchEditChannels = (props) => {
     
     // 基于channel ID获取channel数据的函数
     const fetchChannelDataByID = async (channelId) => {
-        setLoading(true);
-        try {
-            const response = await API.get(`/api/channel/${channelId}`);
-            if (response.data && response.data.success) {
-                const channelData = response.data.data;
-                setInputs({
-                    ...inputs,
-                    // 此处根据实际后端返回的数据结构进行调整
-                    models: channelData.models ? channelData.models.split(',') : [],
-                    auto_ban: channelData.auto_ban || 1,
-                    is_image_url_enabled: channelData.is_image_url_enabled || 1,
-                    model_test: channelData.model_test || 'gpt-3.5-turbo',
-                    tested_time: channelData.tested_time || 0,
-                    priority: channelData.priority || 0,
-                    weight: channelData.weight || 0,
-                    groups: channelData.groups ? channelData.groups.split(',') : ['default'],
-                    model_mapping: channelData.model_mapping || '',
-                    headers: channelData.headers || '',
-
-                });
+        setLoading(true)
+        let res = await API.get(`/api/channel/${channelId}`);
+        const {success, message, data} = res.data;
+        if (success) {
+            if (data.models === '') {
+                data.models = [];
             } else {
-                showError('获取渠道信息失败');
+                data.models = data.models.split(',');
             }
-        } catch (error) {
-            console.error(error);
-            showError('获取渠道信息时发生错误');
-        } finally {
-            setLoading(false);
+            if (data.group === '') {
+                data.groups = [];
+            } else {
+                data.groups = data.group.split(',');
+            }
+            if (data.model_mapping !== '') {
+                data.model_mapping = JSON.stringify(JSON.parse(data.model_mapping), null, 2);
+            }
+            if (data.headers !== '') {
+                data.headers = JSON.stringify(JSON.parse(data.headers), null, 2);
+            }
+            setInputs(data);
+            if (data.auto_ban === 0) {
+                setAutoBan(false);
+            } else {
+                setAutoBan(true);
+            }
+            if (data.is_image_url_enabled === 0) {
+                setIsImageURLEnabled(false);
+            } else {
+                setIsImageURLEnabled(true);
+            }
+            setRestartDelay(data.tested_time || 0);
+            setPriority(data.priority || 0);
+            setWeight(data.weight || 0);
+            setRateLimited(data.rate_limited || false);
+            setIstools(data.is_tools || false);
+            // console.log(data);
+        } else {
+            showError(message);
         }
+        setLoading(false);
     };
     
 

@@ -584,6 +584,7 @@ const ChannelsTable = () => {
 
         try {
             const newChannel = {...channelToCopy, id: undefined}; // 示例：清除id以创建一个新渠道
+            console.log(newChannel );
             // 发送复制请求到后端API
             const response = await API.post('/api/channel/', newChannel);
             if (response.data.success) {
