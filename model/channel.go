@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"one-api/common"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -50,20 +51,47 @@ func GetAllChannels(startIdx int, num int, selectAll bool, idSort bool) ([]*Chan
 	return channels, err
 }
 
-func SearchChannels(keyword string, group string) (channels []*Channel, err error) {
+func SearchChannels(keyword string, group string, typeKey string, models string) (channels []*Channel, err error) {
 	keyCol := "`key`"
 	if common.UsingPostgreSQL {
 		keyCol = `"key"`
 	}
+
+	query := DB.Omit("key")
+
+	if keyword != "" {
+		query = query.Where("id = ? OR name LIKE ? OR "+keyCol+" = ?", common.String2Int(keyword), "%"+keyword+"%", keyword)
+	}
+
 	if group != "" {
 		groupCol := "`group`"
 		if common.UsingPostgreSQL {
 			groupCol = `"group"`
 		}
-		err = DB.Omit("key").Where("(id = ? or name LIKE ? or "+keyCol+" = ?) and "+groupCol+" LIKE ?", common.String2Int(keyword), keyword+"%", keyword, "%"+group+"%").Order("id desc").Find(&channels).Error
-	} else {
-		err = DB.Omit("key").Where("id = ? or name LIKE ? or "+keyCol+" = ?", common.String2Int(keyword), keyword+"%", keyword).Order("id desc").Find(&channels).Error
+		query = query.Where(groupCol+" LIKE ?", "%"+group+"%")
 	}
+
+	if typeKey != "" {
+		typeCol := "`type`"
+		if common.UsingPostgreSQL {
+			typeCol = `"type"`
+		}
+		query = query.Where(typeCol+" = ?", typeKey)
+	}
+
+	if models != "" {
+		modelsCol := "`models`"
+		if common.UsingPostgreSQL {
+			modelsCol = `"models"`
+		}
+		modelsSlice := strings.Split(models, ",")
+		for _, model := range modelsSlice {
+			model = strings.TrimSpace(model) // 去除可能的前后空格
+			query = query.Where(modelsCol+" LIKE ?", "%"+model+"%")
+		}
+	}
+
+	err = query.Order("id desc").Find(&channels).Error
 	return channels, err
 }
 

@@ -39,8 +39,10 @@ func GetAllChannels(c *gin.Context) {
 func SearchChannels(c *gin.Context) {
 	keyword := c.Query("keyword")
 	group := c.Query("group")
+	typeKey := c.Query("typeKey")
+	models := c.Query("model")
 	//idSort, _ := strconv.ParseBool(c.Query("id_sort"))
-	channels, err := model.SearchChannels(keyword, group)
+	channels, err := model.SearchChannels(keyword, group, typeKey, models)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
