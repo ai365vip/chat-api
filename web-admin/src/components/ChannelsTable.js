@@ -30,7 +30,7 @@ import {
     Typography, 
     InputNumber,
     Select,
-    AutoComplete, Dropdown, SplitButtonGroup
+    AutoComplete, Dropdown, SplitButtonGroup,Input
 } from "@douyinfe/semi-ui";
 import EditChannel from "../pages/Channel/EditChannel";
 
@@ -276,27 +276,7 @@ const ChannelsTable = () => {
                     >
                         <Button theme='light' type='danger' style={{marginRight: 1}}>删除</Button>
                     </Popconfirm>
-                    {/*{
-                        record.status === 1 ?
-                            <Button theme='light' type='warning' style={{marginRight: 1}} onClick={
-                                async () => {
-                                    manageChannel(
-                                        record.id,
-                                        'disable',
-                                        record
-                                    )
-                                }
-                            }>禁用</Button> :
-                            <Button theme='light' type='secondary' style={{marginRight: 1}} onClick={
-                                async () => {
-                                    manageChannel(
-                                        record.id,
-                                        'enable',
-                                        record
-                                    );
-                                }
-                            }>启用</Button>
-                    }*/}
+
                     <Button theme='light' type='tertiary' style={{marginRight: 1}} onClick={
                         () => {
                             setEditingChannel(record);
@@ -324,6 +304,9 @@ const ChannelsTable = () => {
     const [isFiltering, setIsFiltering] = useState(false);
     const [selectedChannels, setSelectedChannels] = useState(new Set());
     const [gptVersion, setGptVersion] = useState('gpt-3.5-turbo');
+    const [searchTypeKey, setSearchTypeKey] = useState('');
+    const [searchModel, setSearchModel] = useState('');
+
     const [editingChannel, setEditingChannel] = useState({
         id: undefined,
     });
@@ -332,7 +315,6 @@ const ChannelsTable = () => {
     const onGptVersionChange = (value) => {
         setGptVersion(value); // 直接使用传入的 value 更新状态
     };
-
 
     const removeRecord = id => {
         let newDataSource = [...channels];
@@ -391,6 +373,10 @@ const ChannelsTable = () => {
     };
 
     useEffect(() => {
+        const savedPageSize = window.localStorage.getItem('pageSize');
+        if (savedPageSize) {
+            setPageSize(Number(savedPageSize)); // 读取时转换回数字
+        }
         // console.log('default effect')
         const localIdSort = localStorage.getItem('id-sort') === 'true';
         setIdSort(localIdSort)
@@ -478,15 +464,21 @@ const ChannelsTable = () => {
         }
     };
 
-    const searchChannels = async (searchKeyword, searchGroup) => {
+    const searchChannels = async (searchKeyword, searchGroup,searchTypeKey,searchModel) => {
         setSearching(true);
     
         let queryParameters = '';
-        if (searchKeyword || searchGroup) {
+        if (searchKeyword || searchGroup || searchTypeKey|| searchModel ) {
             setIsFiltering(true);
             queryParameters += `?keyword=${encodeURIComponent(searchKeyword)}`;
             if (searchGroup) {
                 queryParameters += `&group=${encodeURIComponent(searchGroup)}`;
+            }
+            if (searchTypeKey) {
+                queryParameters += `&typeKey=${encodeURIComponent(searchTypeKey)}`;
+            }
+            if (searchModel) {
+                queryParameters += `&model=${encodeURIComponent(searchModel)}`;
             }
         } else {
             setIsFiltering(false); // 没有筛选条件，不处于筛选模式
@@ -663,14 +655,16 @@ const ChannelsTable = () => {
     };
 
     const handlePageSizeChange = async(size) => {
-        setPageSize(size)
-        setActivePage(1)
+        window.localStorage.setItem('pageSize', size.toString()); // 保存用户的选择到本地存储
+        setPageSize(size);
+        setActivePage(1);
         loadChannels(0, size, idSort)
             .then()
             .catch((reason) => {
                 showError(reason);
-            })
+            });
     };
+    
 
     const fetchGroups = async () => {
         try {
@@ -702,36 +696,94 @@ const ChannelsTable = () => {
         }
     };
 
+    const resetSearch = () => {
+        // 重置所有相关状态
+        setSearchKeyword('');
+        setSearchGroup('');
+        setSearchTypeKey('');
+        setSearchModel('');
+        searchChannels('', '', '', '');
+        refresh()
+    };
+
     return (
         <>
             <EditChannel refresh={refresh} visible={showEdit} handleClose={closeEdit} editingChannel={editingChannel}/>
-            <Form onSubmit={() => {searchChannels(searchKeyword, searchGroup)}} labelPosition='left'>
-                <div style={{display: 'flex'}}>
+            <Form labelPosition='left'>
+                <div style={{display: 'flex',marginBottom: 20 }}>
                     <Space>
-                    <Form.Input
-                      field='search'
-                      label='关键词'
-                      placeholder='ID，名称和密钥 ...'
-                      value={searchKeyword}
-                      loading={searching}
-                      onChange={(value) => {
-                          setSearchKeyword(value.trim());
-                      }}
-                      onKeyDown={(e) => {
-                          // 当用户按下 Enter 键时开始搜索
-                          if (e.key === 'Enter') {
-                              e.preventDefault();  // 阻止表单默认行为
-                              searchChannels(searchKeyword, searchGroup);
-                          }
-                      }}
-                  />
+                    
+                        <Input
+                            field='search'
+                            label='关键词'
+                            placeholder='ID，名称和密钥 ...'
+                            value={searchKeyword}
+                            loading={searching}
+                            onChange={(value) => {
+                            setSearchKeyword(value.trim());
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();  // 阻止表单默认行为
+                                    searchChannels(searchKeyword, searchGroup, searchTypeKey, searchModel);
+                                }
+                            }}
+                        />
+                        <Input
+                            field='model' 
+                            label='模型' 
+                            placeholder='输入模型...' 
+                            value={searchModel} 
+                            onChange={(value) => { 
+                                setSearchModel(value.trim()); 
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();  // 阻止表单默认行为
+                                    searchChannels(searchKeyword, searchGroup, searchTypeKey, searchModel);
+                                }
+                            }}
+                        />
+                        <Select placeholder="分组" style={{ width: 300 }}
+                            field="group" 
+                            value={searchGroup} 
+                            optionList={groupOptions} 
+                            onChange={(value) => {
+                                setSearchGroup(value)
+                                searchChannels(searchKeyword, value, searchTypeKey, searchModel);
+                            }}
+                            autoComplete='new-password'
+                        />
+                        <Select
+                            placeholder="类型"
+                            style={{ width: 300 }}
+                            value={searchTypeKey} 
+                            optionList={CHANNEL_OPTIONS.map(option => ({
+                                label: option.text, // 显示给用户的文本
+                                value: option.key   // 实际的选中值
+                            }))}
+                            onChange={(value) => {
+                                setSearchTypeKey(value);
+                                // 直接使用 value 调用 searchChannels
+                                searchChannels(searchKeyword, searchGroup, value, searchModel);
+                            }}
+                            autoComplete='new-password'
+                        />
 
-                        <Form.Select field="group" label='分组' optionList={groupOptions} onChange={(v) => {
-                            setSearchGroup(v)
-                            searchChannels(searchKeyword, v)
-                            
-                        }}/>
-
+                        
+                        {/* 查询按钮 */}
+                        <Button
+                            onClick={() => searchChannels(searchKeyword, searchGroup, searchTypeKey, searchModel)}
+                        >
+                            查询
+                        </Button>
+                        <Button
+                            theme='light'
+                            type='danger'
+                            onClick={resetSearch}
+                        >
+                            清除搜索条件
+                        </Button>
                     </Space>
                 </div>
             </Form>
@@ -785,6 +837,7 @@ const ChannelsTable = () => {
                     >
                         <Button theme='light' type='warning' style={{marginRight: 8}}>测试已启用通道</Button>
                     </Popconfirm>
+
                     <Popconfirm
                         title="确定？"
                         okType={'secondary'}
@@ -802,8 +855,6 @@ const ChannelsTable = () => {
                     </Popconfirm>
                     <Button theme='light' type='danger' style={{marginRight: 8}} onClick={deleteSelectedChannels} >删除选中</Button>
 
-                    {/*<Button theme='light' type='primary' style={{marginRight: 8}} onClick={testSelectedChannels}>测试选中</Button>*/}
-                    <Button theme='light' type='primary' style={{marginRight: 8}} onClick={refresh}>刷新</Button>
                 </Space>
             </div>
         </>

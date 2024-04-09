@@ -6,7 +6,7 @@ import RedemptionsTable from "../../components/RedemptionsTable";
 const File = () => (
     <>
         <Layout>
-            <Layout.Header>
+            <Layout.Header style={{marginBottom: 20 }} >
                 <h3>管理渠道</h3>
             </Layout.Header>
             <Layout.Content>
