@@ -135,8 +135,8 @@ const BatchEditChannels = (props) => {
                     ...inputs,
                     // 此处根据实际后端返回的数据结构进行调整
                     models: channelData.models ? channelData.models.split(',') : [],
-                    auto_ban: channelData.auto_ban === 1,
-                    is_image_url_enabled: channelData.is_image_url_enabled === 1,
+                    auto_ban: channelData.auto_ban || 1,
+                    is_image_url_enabled: channelData.is_image_url_enabled || 1,
                     model_test: channelData.model_test || 'gpt-3.5-turbo',
                     tested_time: channelData.tested_time || 0,
                     priority: channelData.priority || 0,
