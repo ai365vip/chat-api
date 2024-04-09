@@ -802,7 +802,6 @@ const ChannelsTable = () => {
                             {selectedChannels.size > 1 && (
                                 // 在点击按钮的事件处理器中
                                 <Button theme='light' type='secondary' onClick={() => {
-                                    console.log('批量编辑按钮点击'); // 调试信息
                                     setShowBatchEdit(true);
                                 }}>批量编辑</Button>
                             )}
