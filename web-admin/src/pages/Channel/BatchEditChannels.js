@@ -112,48 +112,67 @@ const BatchEditChannels = (props) => {
     
     // 基于channel ID获取channel数据的函数
     const fetchChannelDataByID = async (channelId) => {
-        setLoading(true)
-        let res = await API.get(`/api/channel/${channelId}`);
-        const {success, message, data} = res.data;
-        if (success) {
-            if (data.models === '') {
-                data.models = [];
+        setLoading(true);
+        try {
+            let res = await API.get(`/api/channel/${channelId}`);
+            const { success, message, data } = res.data;
+            if (success) {
+                // 创建一个新的对象来存储更新后的字段
+                let newData = {};
+    
+                // 对于每个字段，检查它是否存在于响应数据中
+                if (data.models !== undefined) {
+                    newData.models = data.models === '' ? [] : data.models.split(',');
+                }
+                if (data.groups !== undefined) {
+                    newData.groups = data.group === '' ? [] : data.group.split(',');
+                }
+                if (data.model_mapping !== undefined) {
+                    newData.model_mapping = data.model_mapping === '' ? '' : JSON.stringify(JSON.parse(data.model_mapping), null, 2);
+                }
+                if (data.headers !== undefined) {
+                    newData.headers = data.headers === '' ? '' : JSON.stringify(JSON.parse(data.headers), null, 2);
+                }
+                if (data.auto_ban !== undefined) {
+                    newData.auto_ban = data.auto_ban;
+                    setAutoBan(data.auto_ban === 1);
+                }
+                if (data.is_image_url_enabled !== undefined) {
+                    newData.is_image_url_enabled = data.is_image_url_enabled;
+                    setIsImageURLEnabled(data.is_image_url_enabled === 1);
+                }
+                if (data.tested_time !== undefined) {
+                    newData.tested_time = data.tested_time;
+                    setRestartDelay(data.tested_time);
+                }
+                if (data.priority !== undefined) {
+                    newData.priority = data.priority;
+                    setPriority(data.priority);
+                }
+                if (data.weight !== undefined) {
+                    newData.weight = data.weight;
+                    setWeight(data.weight);
+                }
+                if (data.rate_limited !== undefined) {
+                    newData.rate_limited = data.rate_limited;
+                    setRateLimited(data.rate_limited);
+                }
+                if (data.is_tools !== undefined) {
+                    newData.is_tools = data.is_tools;
+                    setIstools(data.is_tools);
+                }
+    
+                // 更新状态
+                setInputs(inputs => ({ ...inputs, ...newData }));
             } else {
-                data.models = data.models.split(',');
+                showError(message);
             }
-            if (data.group === '') {
-                data.groups = [];
-            } else {
-                data.groups = data.group.split(',');
-            }
-            if (data.model_mapping !== '') {
-                data.model_mapping = JSON.stringify(JSON.parse(data.model_mapping), null, 2);
-            }
-            if (data.headers !== '') {
-                data.headers = JSON.stringify(JSON.parse(data.headers), null, 2);
-            }
-            setInputs(data);
-            if (data.auto_ban === 0) {
-                setAutoBan(false);
-            } else {
-                setAutoBan(true);
-            }
-            if (data.is_image_url_enabled === 0) {
-                setIsImageURLEnabled(false);
-            } else {
-                setIsImageURLEnabled(true);
-            }
-            setRestartDelay(data.tested_time || 0);
-            setPriority(data.priority || 0);
-            setWeight(data.weight || 0);
-            setRateLimited(data.rate_limited || false);
-            setIstools(data.is_tools || false);
-            // console.log(data);
-        } else {
-            showError(message);
+        } catch (error) {
+            showError(error.message);
         }
         setLoading(false);
     };
+    
     
 
     const submit = async () => {
