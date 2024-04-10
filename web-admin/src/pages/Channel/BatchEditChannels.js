@@ -161,6 +161,10 @@ const BatchEditChannels = (props) => {
                     newData.is_tools = data.is_tools;
                     setIstools(data.is_tools);
                 }
+                if (data.model_test !== undefined) {
+                    newData.model_test = data.model_test;
+                    setModelTest(data.model_test);
+                }
     
                 // 更新状态
                 setInputs(inputs => ({ ...inputs, ...newData }));
