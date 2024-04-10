@@ -20,22 +20,22 @@ var ModelRatio = map[string]float64{
 	"gpt-4-32k":               30,
 	"gpt-4-32k-0314":          30,
 	"gpt-4-32k-0613":          30,
-	"gpt-4-1106-preview":      10,   // $0.01 / 1K tokens
-	"gpt-4-0125-preview":      10,   // $0.01 / 1K tokens
-	"gpt-4-turbo-preview":     10,   // $0.01 / 1K tokens
-	"gpt-4-turbo":             10,   // $0.01 / 1K tokens
-	"gpt-4-turbo-2024-04-09":  10,   // $0.01 / 1K tokens
-	"gpt-4-vision-preview":    10,   // $0.01 / 1K tokens
-	"gpt-3.5-turbo":           0.25, // $0.0005 / 1K tokens
-	"gpt-3.5-turbo-0301":      0.75,
-	"gpt-3.5-turbo-0613":      0.75,
+	"gpt-4-1106-preview":      10, // $0.01 / 1K tokens
+	"gpt-4-0125-preview":      10, // $0.01 / 1K tokens
+	"gpt-4-turbo-preview":     10, // $0.01 / 1K tokens
+	"gpt-4-turbo":             10, // $0.01 / 1K tokens
+	"gpt-4-turbo-2024-04-09":  10, // $0.01 / 1K tokens
+	"gpt-4-vision-preview":    10, // $0.01 / 1K tokens
+	"gpt-3.5-turbo":           3,  // $0.0005 / 1K tokens
+	"gpt-3.5-turbo-0301":      1.5,
+	"gpt-3.5-turbo-0613":      1.5,
 	"gpt-3.5-turbo-16k":       1.5, // $0.003 / 1K tokens
-	"gpt-3.5-turbo-16k-0613":  1.5,
-	"gpt-3.5-turbo-instruct":  0.75, // $0.0015 / 1K tokens
-	"gpt-3.5-turbo-1106":      0.5,  // $0.001 / 1K tokens
-	"gpt-3.5-turbo-0125":      0.25, // $0.0005 / 1K tokens
-	"davinci-002":             1,    // $0.002 / 1K tokens
-	"babbage-002":             0.2,  // $0.0004 / 1K tokens
+	"gpt-3.5-turbo-16k-0613":  3,
+	"gpt-3.5-turbo-instruct":  1.5, // $0.0015 / 1K tokens
+	"gpt-3.5-turbo-1106":      1,   // $0.001 / 1K tokens
+	"gpt-3.5-turbo-0125":      0.5, // $0.0005 / 1K tokens
+	"davinci-002":             1,   // $0.002 / 1K tokens
+	"babbage-002":             0.2, // $0.0004 / 1K tokens
 	"text-ada-001":            0.2,
 	"text-babbage-001":        0.25,
 	"text-curie-001":          1,
