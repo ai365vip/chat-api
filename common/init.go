@@ -18,7 +18,7 @@ var (
 func printHelp() {
 	fmt.Println("Chat API " + Version + " - All in one API service for OpenAI API.")
 	fmt.Println("Copyright (C) 2023 JustSong. All rights reserved.")
-	fmt.Println("GitHub: https://one-ap")
+	fmt.Println("GitHub: https://github.com/ai365vip/chat-api")
 	fmt.Println("Usage: one-api [--port <port>] [--log-dir <log directory>] [--version] [--help]")
 }
 
@@ -36,13 +36,10 @@ func init() {
 	}
 
 	if os.Getenv("SESSION_SECRET") != "" {
-		ss := os.Getenv("SESSION_SECRET")
-		if ss == "random_string" {
-			log.Println("WARNING: SESSION_SECRET is set to the default value 'random_string', please change it to a random string.")
-			log.Println("警告：SESSION_SECRET被设置为默认值'random_string'，请修改为随机字符串。")
-			log.Fatal("Please set SESSION_SECRET to a random string.")
+		if os.Getenv("SESSION_SECRET") == "random_string" {
+			SysError("SESSION_SECRET is set to an example value, please change it to a random string.")
 		} else {
-			SessionSecret = ss
+			SessionSecret = os.Getenv("SESSION_SECRET")
 		}
 	}
 	if os.Getenv("SQLITE_PATH") != "" {
@@ -50,15 +47,17 @@ func init() {
 	}
 	if *LogDir != "" {
 		var err error
-		*LogDir, err = filepath.Abs(*LogDir)
+		newLogDir, err := filepath.Abs(*LogDir)
 		if err != nil {
 			log.Fatal(err)
 		}
 		if _, err := os.Stat(*LogDir); os.IsNotExist(err) {
-			err = os.Mkdir(*LogDir, 0777)
-			if err != nil {
+			if err := os.Mkdir(*LogDir, 0777); err != nil {
 				log.Fatal(err)
 			}
 		}
+
+		*LogDir = newLogDir
 	}
+
 }

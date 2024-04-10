@@ -131,6 +131,7 @@ func main() {
 	server.Use(middleware.RequestId())
 	middleware.SetUpLogger(server)
 	// Initialize session store
+
 	store := cookie.NewStore([]byte(common.SessionSecret))
 	server.Use(sessions.Sessions("session", store))
 
