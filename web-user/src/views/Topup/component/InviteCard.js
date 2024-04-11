@@ -232,35 +232,7 @@ const InviteCard = () => {
             aria-describedby="helper-text-channel-quota-label"
             disabled={true}
           />
-          <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'10px'}>
-          <Stack direction="row" spacing={2}>
-            <Typography variant="h5">总收益:</Typography>
-            <Typography variant="h4">{inviteQuota(userAffHistor)}</Typography>
-            <Typography variant="h5">邀请人数:</Typography>
-            <Typography variant="h4">{userAffConut}</Typography>
-          </Stack>
-        </Stack>
-        <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'10px'}>
-          <Typography variant="h5">待使用收益:</Typography>
-          <Typography variant="h4">{inviteQuota(userAffQuota)}</Typography>
-          <Button variant='contained' onClick={handleOpenTransfer} size='small' sx={{marginLeft: 2}}>
-            划转
-          </Button>
-          {options.ProporTions !== "0" && (
-            <>
-              <Button variant='contained' onClick={handleOpenWithdrawal} size='small' sx={{marginLeft: 2}}>
-                提现
-              </Button>
-            </>
-          )}
-        </Stack>
-        {options.ProporTions !== "0" && (
-          <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'5px'}>
-            <Button variant="contained" onClick={goWithdrawal}>
-              提现记录
-            </Button>
-          </Stack>
-        )}
+          
 
           {/* 模态对话框：提现 */}
           <Modal
@@ -384,7 +356,54 @@ const InviteCard = () => {
           </Paper>
         </Modal>
         </Stack>
+        <Box sx={{ 
+          boxShadow: theme.shadows[3], // 使用主题中的阴影
+          borderRadius: theme.shape.borderRadius, // 使用主题中的圆角
+          bgcolor: theme.palette.background.paper, // 设置背景色
+          mt: 4, // 设置顶部边距
+          mb: 4, // 设置底部边距
+          pt: 2, // 内部上边距
+          pb: 2, // 内部下边距
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'row' }}>
+            {/* 总收益 */}
+            <Stack direction="column" alignItems="center" justifyContent="center" spacing={1} sx={{ flex: 1, textAlign: 'center' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: theme.palette.secondary.main }}>总收益</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.primary.main }}>{inviteQuota(userAffHistor)}</Typography>
+            </Stack>
+            
+            {/* 邀请人数 */}
+            <Stack direction="column" alignItems="center" justifyContent="center" spacing={1} sx={{ flex: 1, textAlign: 'center' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: theme.palette.secondary.main }}>邀请人数</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.primary.main }}>{userAffConut}</Typography>
+            </Stack>
+
+            {/* 待使用收益 */}
+            <Stack direction="column" alignItems="center" justifyContent="center" spacing={1} sx={{ flex: 1, textAlign: 'center'}}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: theme.palette.secondary.main }}>待使用收益</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.error.main }}>{inviteQuota(userAffQuota)}</Typography>
+            </Stack>
+          </Box>
+      
+          {/* 操作按钮区域 */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', pt: 1 }}>
+            <Button variant='contained' onClick={handleOpenTransfer} size='small' sx={{ mx: 1 }}>
+              划转
+            </Button>
+            {options.ProporTions !== "0" && (
+              <>
+                <Button variant='contained' onClick={handleOpenWithdrawal} color="success" size='small' sx={{ mx: 1 }}>
+                  提现
+                </Button>
+                <Button variant="outlined" onClick={goWithdrawal} size='small' sx={{ mx: 1 }}>
+                  提现记录
+                </Button>
+              </>
+            )}
+          </Box>
+        </Box>
       </SubCard>
+      
     </Box>
   );
 };

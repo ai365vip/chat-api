@@ -24,7 +24,7 @@ const panel = {
   children: [
     {
       id: 'dashboard',
-      title: '总览',
+      title: '数据总览',
       type: 'item',
       url: '/dashboard',
       icon: icons.IconDashboard,
@@ -33,7 +33,7 @@ const panel = {
     },
     {
       id: 'token',
-      title: '令牌',
+      title: '令牌管理',
       type: 'item',
       url: '/token',
       icon: icons.IconKey,
@@ -41,7 +41,7 @@ const panel = {
     },
     {
       id: 'log',
-      title: '日志',
+      title: '消费日志',
       type: 'item',
       url: '/log',
       icon: icons.IconBrandGoogleAnalytics,
@@ -57,7 +57,7 @@ const panel = {
     //},
     {
       id: 'topup',
-      title: '充值',
+      title: '钱包充值',
       type: 'item',
       url: '/topup',
       icon: icons.IconGardenCart,
@@ -65,21 +65,21 @@ const panel = {
     },
     {
       id: 'about',
-      title: '教程',
+      title: '使用教程',
       type: 'item',
       url: '/about',
       icon: icons.IconInfoCircle,
       breadcrumbs: false
     },
-    //{
-    //  id: 'profile',
-    //  title: '个人设置',
-    //  type: 'item',
-    //  url: '/profile',
-    //  icon: icons.IconUserScan,
-    //  breadcrumbs: false,
-    //  isAdmin: true
-    //}
+    {
+      id: 'profile',
+      title: '个人设置',
+      type: 'item',
+      url: '/profile',
+      icon: icons.IconUserScan,
+      breadcrumbs: false,
+      isAdmin: true
+    }
   ]
 };
 

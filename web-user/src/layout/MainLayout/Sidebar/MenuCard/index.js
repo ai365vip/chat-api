@@ -16,11 +16,11 @@ import {
   Typography,Box,Chip 
   // linearProgressClasses
 } from '@mui/material';
-
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import User1 from 'assets/images/users/user-round.svg';
 import { useNavigate } from 'react-router-dom';
 import { API } from 'utils/api';
-
+import { calculateQuota } from 'utils/common';
 
 
 const CardStyle = styled(Card)(({ theme }) => ({
@@ -105,7 +105,21 @@ const MenuCard = () => {
 
                 
               }
-              secondary={<Typography sx={{ marginLeft: 1 }} variant="caption"> 欢迎回来 </Typography>}
+              secondary={
+                <Typography
+                  sx={{ mt: 1, display: 'flex' }}
+                  variant="subtitle1"
+                >
+                  <Chip
+                    icon={<MonetizationOnIcon />} // 在Chip内部使用图标
+                    label={calculateQuota(inputs.quota)}
+                    color="secondary" // 设置颜色
+                    variant="outlined" // 设置变体，使其看起来更像按钮
+                    sx={{ cursor: 'pointer' }} // 进一步强调可点击的视觉效果
+                  />
+
+                </Typography>
+              }
             />
           </ListItem>
         </List>
