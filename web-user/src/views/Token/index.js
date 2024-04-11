@@ -11,7 +11,7 @@ import Alert from '@mui/material/Alert';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Toolbar from '@mui/material/Toolbar';
 
-import { Button, Card, Box, Stack, Container, Typography,TextField } from '@mui/material';
+import { Button, Card, Box, Stack, Container,TextField } from '@mui/material';
 import TokensTableRow from './component/TableRow';
 import TokenTableHead from './component/TableHead';
 import { API } from 'utils/api';
@@ -256,20 +256,6 @@ export default function Token() {
 
   return (
     <>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
-        <Typography variant="h4">令牌</Typography>
-
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => {
-            handleOpenModal(0);
-          }}
-          startIcon={<IconPlus />}
-        >
-          新建令牌
-        </Button>
-      </Stack>
       <Stack mb={5}>
         <Alert severity="info">
           将OpenAI API基础地址https://api.openai.com替换为<b>{siteInfo.server_address}</b>，复制下面的密钥即可使用。
@@ -334,8 +320,22 @@ export default function Token() {
                   </Button>
               
               )}
-              <Button onClick={handleRefresh} startIcon={<IconRefresh width={'18px'} />}>
+              <Button 
+                onClick={handleRefresh} 
+                startIcon={<IconRefresh  />}
+                style={{ marginRight: '8px' }}  // 添加右边距
+              >
                 刷新
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => {
+                  handleOpenModal(0);
+                }}
+                startIcon={<IconPlus />}
+              >
+                新建令牌
               </Button>
             </ButtonGroup>
           </Container>

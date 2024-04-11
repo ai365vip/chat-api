@@ -10,7 +10,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Toolbar from '@mui/material/Toolbar';
 import { useNavigate } from 'react-router';
-import { Button, Card, Stack, Container, Typography, Box } from '@mui/material';
+import { Button, Card, Container, Box } from '@mui/material';
 import LogTableRow from './component/TableRow';
 import LogTableHead from './component/TableHead';
 import TableToolBar from './component/TableToolBar';
@@ -106,9 +106,6 @@ export default function Log() {
 
   return (
     <>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
-        <Typography variant="h4">日志</Typography>
-      </Stack>
       <Card>
         <Box component="form" onSubmit={searchLogs} noValidate>
           <TableToolBar filterName={searchKeyword} handleFilterName={handleSearchKeyword} userIsAdmin={userIsAdmin} />
