@@ -78,7 +78,6 @@ const panel = {
       url: '/profile',
       icon: icons.IconUserScan,
       breadcrumbs: false,
-      isAdmin: true
     }
   ]
 };
