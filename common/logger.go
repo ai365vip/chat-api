@@ -36,13 +36,26 @@ func SetupLogger() {
 			setupLogLock.Unlock()
 			setupLogWorking = false
 		}()
-		logPath := filepath.Join(*LogDir, fmt.Sprintf("oneapi-%s.log", time.Now().Format("20060102")))
-		fd, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+		// 创建普通日志文件
+		logPath := filepath.Join(*LogDir, fmt.Sprintf("chatapi-%s.log", time.Now().Format("20060102")))
+		logFd, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			log.Fatal("failed to open log file")
+			log.Fatal("failed to open log file:", err)
 		}
-		gin.DefaultWriter = io.MultiWriter(os.Stdout, fd)
-		gin.DefaultErrorWriter = io.MultiWriter(os.Stderr, fd)
+
+		// 创建错误日志文件
+		errorLogPath := filepath.Join(*LogDir, fmt.Sprintf("chatapi-error-%s.log", time.Now().Format("20060102")))
+		errorFd, err := os.OpenFile(errorLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Fatal("failed to open error log file:", err)
+		}
+
+		// 设置 Gin 的日志输出
+		gin.DefaultWriter = io.MultiWriter(os.Stdout, logFd)
+
+		// 设置 Gin 的错误日志输出
+		gin.DefaultErrorWriter = io.MultiWriter(os.Stderr, errorFd)
 	}
 }
 
