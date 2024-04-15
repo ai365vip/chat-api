@@ -8,6 +8,7 @@ import (
 	"one-api/common"
 	"one-api/controller"
 	"one-api/middleware"
+	"regexp"
 	"strings"
 
 	"github.com/gin-contrib/gzip"
@@ -15,19 +16,37 @@ import (
 )
 
 func serveUserIndexPage(c *gin.Context) {
+	// 从Gin上下文中获取默认的用户索引页面
+	userIndexPage := c.MustGet("defaultUserIndexPage").([]byte)
+	userIndexPageStr := string(userIndexPage)
 
+	// 尝试从公共选项映射中获取系统文本
 	systemText, exists := common.OptionMap["SystemText"]
 
-	if !exists || systemText == "" {
-		userIndexPage := c.MustGet("defaultUserIndexPage").([]byte)
-		common.SystemText = string(userIndexPage)
-		common.OptionMap["SystemText"] = common.SystemText
+	// 正则表达式用于查找和替换script标签中的src属性
+	re := regexp.MustCompile(`static/js/main\.[a-z0-9]+\.js"`)
 
+	// 从userIndexPage中提取当前JS文件名
+	matches := re.FindStringSubmatch(userIndexPageStr)
+	if len(matches) == 0 {
+		c.String(http.StatusInternalServerError, "No script tag found in the default user index page")
+		return
+	}
+	currentScriptTag := matches[0]
+
+	if !exists || systemText == "" {
+		// 如果系统文本不存在或为空，直接使用默认页面
+		common.SystemText = userIndexPageStr
+		common.OptionMap["SystemText"] = common.SystemText
 		c.Data(http.StatusOK, "text/html; charset=utf-8", userIndexPage)
 		return
 	}
 
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(systemText))
+	// 如果系统文本存在，更新其script标签
+	updatedSystemText := re.ReplaceAllString(systemText, currentScriptTag)
+	common.OptionMap["SystemText"] = updatedSystemText
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(updatedSystemText))
 }
 
 func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIndexPage []byte, defaultUserIndexPage []byte) {
