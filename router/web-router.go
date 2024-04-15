@@ -19,7 +19,6 @@ func serveUserIndexPage(c *gin.Context) {
 	// 从Gin上下文中获取默认的用户索引页面
 	userIndexPage := c.MustGet("defaultUserIndexPage").([]byte)
 	userIndexPageStr := string(userIndexPage)
-
 	// 尝试从公共选项映射中获取系统文本
 	systemText, exists := common.OptionMap["SystemText"]
 
