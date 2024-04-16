@@ -108,7 +108,7 @@ type Message struct {
 func getPromptTokens(textRequest *relaymodel.GeneralOpenAIRequest, relayMode int) int {
 	switch relayMode {
 	case constant.RelayModeChatCompletions:
-		if textRequest.Model == "gpt-4-vision" {
+		if textRequest.Model == "gpt-4-vision" || textRequest.Model == "claude-3-opus" || textRequest.Model == "glm-v4" {
 			for i, msg := range textRequest.Messages {
 				contentStr := msg.Content.(string)
 

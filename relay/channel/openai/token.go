@@ -116,7 +116,19 @@ func CountTokenMessages(messages []model.Message, model string) int {
 							tokenNum += imageTokens
 						}
 					}
+				case "image":
+					source, ok := m["source"].(map[string]any)
+					if ok {
+						data := source["data"].(string)
+						imageTokens, err := claudeImageTokens(data)
+						if err != nil {
+							logger.SysError("计算图像Token时出错: " + err.Error())
+						} else {
+							tokenNum += imageTokens
+						}
+					}
 				}
+
 			}
 		}
 		tokenNum += getTokenNum(tokenEncoder, message.Role)
@@ -125,7 +137,7 @@ func CountTokenMessages(messages []model.Message, model string) int {
 			tokenNum += getTokenNum(tokenEncoder, *message.Name)
 		}
 	}
-	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>
+	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>s
 	return tokenNum
 }
 
@@ -163,6 +175,29 @@ func countImageTokens(url string, detail string) (_ int, err error) {
 	default:
 		return 0, errors.New("invalid detail option")
 	}
+}
+
+func claudeImageTokens(url string) (int, error) {
+	var width, height int
+
+	width, height, err := image.GetImageSize(url)
+	if err != nil {
+		return 0, err
+	}
+
+	// 根据图像尺寸计算Token数
+	if width <= 200 && height <= 200 {
+		return 54, nil
+	} else if width <= 1000 && height <= 1000 {
+		return 1334, nil
+	} else if width <= 1092 && height <= 1092 {
+		return 1590, nil
+	}
+
+	// 对其他尺寸使用比例成本计算
+	numSquares := int(math.Ceil(float64(width)/512) * math.Ceil(float64(height)/512))
+	result := numSquares*highDetailCostPerTile + additionalCost
+	return result, nil
 }
 
 const (

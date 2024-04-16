@@ -28,6 +28,7 @@ const (
 	RelayModeMidjourneyImageSeed
 	RelayModeMidjourneyTaskFetchByCondition
 	RelayMidjourneyImage
+	RelayModeMessages
 )
 
 func Path2RelayMode(path string) int {
@@ -52,6 +53,8 @@ func Path2RelayMode(path string) int {
 		relayMode = RelayModeAudioTranscription
 	} else if strings.HasPrefix(path, "/v1/audio/translations") {
 		relayMode = RelayModeAudioTranslation
+	} else if strings.HasPrefix(path, "/v1/messages") {
+		relayMode = RelayModeMessages
 	}
 	return relayMode
 }

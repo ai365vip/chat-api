@@ -129,7 +129,13 @@ func TokenAuth() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var err error
 		key, parts := processAuthHeader(c.Request.Header.Get("Authorization"))
-		if key == "" || key == "midjourney-proxy" {
+		if key == "" {
+			headerKey := "x-api-key"
+			if c.Request.Header.Get("mj-api-secret") != "" {
+				headerKey = "mj-api-secret"
+			}
+			key, parts = processAuthHeader(c.Request.Header.Get(headerKey))
+		} else if key == "midjourney-proxy" {
 			key, parts = processAuthHeader(c.Request.Header.Get("mj-api-secret"))
 		}
 

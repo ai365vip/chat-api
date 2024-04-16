@@ -30,6 +30,8 @@ func relay(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCode {
 		fallthrough
 	case constant.RelayModeAudioTranscription:
 		err = controller.RelayAudioHelper(c, relayMode)
+	case constant.RelayModeMessages:
+		err = controller.RelayClaude(c)
 	default:
 		err = controller.RelayTextHelper(c)
 	}

@@ -30,6 +30,7 @@ type RelayMeta struct {
 	RequestURLPath  string
 	PromptTokens    int // only for DoResponse
 	FixedContent    string
+	IsClaude        bool
 }
 
 func GetRelayMeta(c *gin.Context) *RelayMeta {

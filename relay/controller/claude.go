@@ -11,7 +11,6 @@ import (
 	"one-api/common/logger"
 	dbmodel "one-api/model"
 	"one-api/relay/channel/openai"
-	"one-api/relay/constant"
 	"one-api/relay/helper"
 	"one-api/relay/model"
 	"one-api/relay/util"
@@ -22,17 +21,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
+func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 
 	ctx := c.Request.Context()
 	meta := util.GetRelayMeta(c)
 	// get & validate textRequest
+	meta.IsClaude = true
 	textRequest, err := getAndValidateTextRequest(c, meta.Mode)
 	if err != nil {
 		logger.Errorf(ctx, "getAndValidateTextRequest failed: %s", err.Error())
 		return openai.ErrorWrapper(err, "invalid_text_request", http.StatusBadRequest)
 	}
-	meta.IsClaude = false
+
 	meta.IsStream = textRequest.Stream
 
 	// map model name
@@ -94,27 +94,14 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 
 	// get request body
 	var requestBody io.Reader
-	if meta.APIType == constant.APITypeOpenAI {
-		// no need to convert request for openai
-		if isModelMapped {
-			jsonStr, err := json.Marshal(textRequest)
-			if err != nil {
-				return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
-			}
-			requestBody = bytes.NewBuffer(jsonStr)
-		} else {
-			requestBody = c.Request.Body
-		}
-	} else {
-		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, textRequest)
-		if err != nil {
-			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
-		}
-		jsonData, err := json.Marshal(convertedRequest)
+	if isModelMapped {
+		jsonStr, err := json.Marshal(textRequest)
 		if err != nil {
 			return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
 		}
-		requestBody = bytes.NewBuffer(jsonData)
+		requestBody = bytes.NewBuffer(jsonStr)
+	} else {
+		requestBody = c.Request.Body
 	}
 	// do response
 	startTime := time.Now()
