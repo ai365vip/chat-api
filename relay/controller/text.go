@@ -106,6 +106,7 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 			requestBody = c.Request.Body
 		}
 	} else {
+
 		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, textRequest)
 		if err != nil {
 			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
@@ -120,6 +121,7 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	startTime := time.Now()
 	// do request
 	resp, err := adaptor.DoRequest(c, meta, requestBody)
+
 	if err != nil {
 		logger.Errorf(ctx, "DoRequest failed: %s", err.Error())
 		return openai.ErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)

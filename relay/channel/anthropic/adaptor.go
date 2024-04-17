@@ -50,45 +50,37 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	return ConvertRequest(*request), nil
+
+	// 获取model参数确认是否为指定的处理类型
+	Model, _ := c.Get("model")
+	if Model != "claude-3-opus" && Model != "claude-3-haiku" {
+		return ConvertRequest(*request), nil
+	}
+
+	var buf bytes.Buffer
+	_, err := buf.ReadFrom(c.Request.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read request body: %v", err)
+	}
+	originalRequestBody := buf.Bytes()
+
+	// 反序列化到TextRequest结构体
+	var textRequest model.GeneralOpenAIRequest
+	if err := json.Unmarshal(originalRequestBody, &textRequest); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal request body: %v", err)
+	}
+
+	updatedTextRequest, err := updateTextRequestForVision(&textRequest, Model)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update text request for vision: %v", err)
+	}
+
+	return ConvertRequest(*updatedTextRequest), nil
+
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
-	Model, _ := c.Get("model")
-	if Model == "claude-3-opus" {
-		// 序列化原始请求体
-		var buf bytes.Buffer
-		_, err := buf.ReadFrom(c.Request.Body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read request body: %v", err)
-		}
-		originalRequestBody := buf.Bytes()
-
-		// 反序列化到TextRequest结构体
-		var textRequest model.GeneralOpenAIRequest
-		if err := json.Unmarshal(originalRequestBody, &textRequest); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal request body: %v", err)
-		}
-
-		updatedTextRequest, err := updateTextRequestForVision(&textRequest)
-		if err != nil {
-			return nil, fmt.Errorf("failed to update text request for vision: %v", err)
-		}
-		textRequest = *updatedTextRequest
-		// 将更新后的TextRequest重新序列化
-		updatedRequestBody, err := json.Marshal(textRequest)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal updated request body: %v", err)
-		}
-
-		// 使用新的请求体创建reader
-		requestBodyReader := bytes.NewReader(updatedRequestBody)
-
-		// 调用DoRequestHelper函数，传入新的请求体
-		return channel.DoRequestHelper(a, c, meta, requestBodyReader)
-	} else {
-		return channel.DoRequestHelper(a, c, meta, requestBody)
-	}
+	return channel.DoRequestHelper(a, c, meta, requestBody)
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (aitext string, usage *model.Usage, err *model.ErrorWithStatusCode) {
@@ -120,8 +112,13 @@ func (a *Adaptor) GetModelList() []string {
 func (a *Adaptor) GetChannelName() string {
 	return "authropic"
 }
-func updateTextRequestForVision(textRequest *model.GeneralOpenAIRequest) (*model.GeneralOpenAIRequest, error) {
-	textRequest.Model = "claude-3-opus-20240229"
+func updateTextRequestForVision(textRequest *model.GeneralOpenAIRequest, model any) (*model.GeneralOpenAIRequest, error) {
+
+	if model == "claude-3-haiku" {
+		textRequest.Model = "claude-3-haiku-20240307"
+	} else {
+		textRequest.Model = "claude-3-opus-20240229"
+	}
 	for i, msg := range textRequest.Messages {
 		// 假设msg.Content就是string，或者你需要根据Content的实际结构来调整
 		contentStr := msg.Content.(string)

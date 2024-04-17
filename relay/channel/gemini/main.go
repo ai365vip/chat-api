@@ -83,6 +83,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 				if imageNum > VisionMaxImageNum {
 					continue
 				}
+
 				imageInfo, ok := part.ImageUrl.(model.MessageImageUrl)
 				if !ok {
 					log.Println("ImageUrl 类型断言失败")

@@ -1,5 +1,10 @@
 package model
 
+import (
+	"encoding/json"
+	"log"
+)
+
 type VisionMessage struct {
 	Role    string  `json:"role"`
 	Content any     `json:"content"`
@@ -82,22 +87,22 @@ func (m Message) StringContent() string {
 
 func (m Message) ParseContent() []MediaMessage {
 	var contentList []MediaMessage
-	content, ok := m.Content.(string)
-	if ok {
+
+	switch content := m.Content.(type) {
+	case string:
 		contentList = append(contentList, MediaMessage{
 			Type: ContentTypeText,
 			Text: content,
 		})
 		return contentList
-	}
-	anyList, ok := m.Content.([]any)
-	if ok {
-		for _, contentItem := range anyList {
+	case []any:
+		for _, contentItem := range content {
 			contentMap, ok := contentItem.(map[string]any)
 			if !ok {
 				continue
 			}
 			switch contentMap["type"] {
+
 			case ContentTypeText:
 				if subStr, ok := contentMap["text"].(string); ok {
 					contentList = append(contentList, MediaMessage{
@@ -121,24 +126,62 @@ func (m Message) ParseContent() []MediaMessage {
 						},
 					})
 				}
-			case ContentTypeImage:
-				if sourceMap, ok := contentMap["source"].(map[string]interface{}); ok {
-					data, dataOk := sourceMap["data"].(string)
-					mediaType, mediaTypeOk := sourceMap["media_type"].(string)
-					if dataOk && mediaTypeOk {
-						contentList = append(contentList, MediaMessage{
-							Type: ContentTypeImage,
-							ImageUrl: MessageImageUrl{
-								Url:    data,
-								Detail: mediaType,
-							},
-						})
+
+			}
+
+		}
+		return contentList
+
+	default:
+
+		bytes, err := json.Marshal(content)
+
+		if err != nil {
+			log.Printf("Failed to serialize content: %v", err)
+			return nil
+		}
+
+		// 定义一个可以接受解析后内容的变量
+		var parsedContent []map[string]any
+		err = json.Unmarshal(bytes, &parsedContent)
+		if err != nil {
+			log.Printf("Failed to parse bytes back into structure: %v", err)
+			return nil
+		}
+
+		// 现在可以遍历 parsedContent，它是一个 map 的切片
+		var contentList []MediaMessage
+		for _, contentMap := range parsedContent {
+			// 你可以直接访问 contentMap，因为它已经是 map[string]any 类型
+			switch contentMap["type"] {
+			case ContentTypeText:
+				if subStr, ok := contentMap["text"].(string); ok {
+					contentList = append(contentList, MediaMessage{
+						Type: ContentTypeText,
+						Text: subStr,
+					})
+				}
+			case ContentTypeImageURL:
+				if subObj, ok := contentMap["image_url"].(map[string]any); ok {
+
+					detail, ok := subObj["detail"]
+					if ok {
+						subObj["detail"] = detail.(string)
+					} else {
+						subObj["detail"] = "auto"
 					}
+					contentList = append(contentList, MediaMessage{
+						Type: ContentTypeImageURL,
+						ImageUrl: MessageImageUrl{
+							Url:    subObj["url"].(string),
+							Detail: subObj["detail"].(string),
+						},
+					})
 				}
 			}
 		}
 		return contentList
+
 	}
 
-	return nil
 }

@@ -53,6 +53,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		claudeRequest.Model = "claude-2.1"
 	}
 	for _, message := range textRequest.Messages {
+
 		if message.Role == "system" && claudeRequest.System == "" {
 			claudeRequest.System = message.StringContent()
 			continue
@@ -70,6 +71,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		}
 		var contents []Content
 		openaiContent := message.ParseContent()
+
 		for _, part := range openaiContent {
 			var content Content
 			if part.Type == model.ContentTypeText {
@@ -77,13 +79,14 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 				content.Text = part.Text
 			} else if part.Type == model.ContentTypeImageURL {
 				content.Type = "image"
+
+				content.Source = &ImageSource{
+					Type: "base64",
+				}
 				imageInfo, ok := part.ImageUrl.(model.MessageImageUrl)
 				if !ok {
 					log.Println("ImageUrl 类型断言失败")
 					return nil
-				}
-				content.Source = &ImageSource{
-					Type: "base64",
 				}
 				mimeType, data, _ := image.GetImageFromUrl(imageInfo.Url)
 				content.Source.MediaType = mimeType
