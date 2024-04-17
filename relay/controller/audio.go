@@ -124,6 +124,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 		// because the user has enough quota
 		preConsumedQuota = 0
 	}
+
 	if preConsumedQuota > 0 {
 		err = model.PreConsumeTokenQuota(tokenId, preConsumedQuota)
 		if err != nil {
@@ -242,8 +243,8 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 			if ratio != 0 && quota <= 0 {
 				quota = 1
 			}
-
-			err = model.PostConsumeTokenQuota(tokenId, quota)
+			quotaDelta := quota - preConsumedQuota
+			err = model.PostConsumeTokenQuota(tokenId, quotaDelta)
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}
