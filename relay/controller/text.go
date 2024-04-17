@@ -16,7 +16,6 @@ import (
 	"one-api/relay/model"
 	"one-api/relay/util"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -126,25 +125,25 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		logger.Errorf(ctx, "DoRequest failed: %s", err.Error())
 		return openai.ErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
-	meta.IsStream = meta.IsStream || strings.HasPrefix(resp.Header.Get("Content-Type"), "text/event-stream")
-	if resp.StatusCode != http.StatusOK {
+	errorHappened := (resp.StatusCode != http.StatusOK) || (meta.IsStream && resp.Header.Get("Content-Type") == "application/json")
+	if errorHappened {
 		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
 		return util.RelayErrorHandler(resp)
 	}
 
 	// 执行 DoResponse 方法
 	aitext, usage, respErr := adaptor.DoResponse(c, resp, meta)
-
-	// 记录结束时间
-	endTime := time.Now()
-
-	// 计算执行时间（单位：秒）
-	duration := int(endTime.Sub(startTime).Seconds())
 	if respErr != nil {
 		logger.Errorf(ctx, "respErr is not nil: %+v", respErr)
 		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
 		return respErr
 	}
+	// 记录结束时间
+	endTime := time.Now()
+
+	// 计算执行时间（单位：秒）
+	duration := int(endTime.Sub(startTime).Seconds())
+
 	// post-consume quota
 	go postConsumeQuota(ctx, usage, meta, textRequest, ratio, preConsumedQuota, modelRatio, groupRatio, aitext, duration)
 	return nil

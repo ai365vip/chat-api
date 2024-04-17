@@ -122,7 +122,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io
 
 // 更新TextRequest为gpt-4-vision使用
 func updateTextRequestForVision(textRequest *model.GeneralOpenAIRequest) (*model.GeneralOpenAIRequest, error) {
-	textRequest.Model = "gpt-4-vision-preview"
+	textRequest.Model = "gpt-4-turbo"
 	textRequest.MaxTokens = 4096
 	for i, msg := range textRequest.Messages {
 
