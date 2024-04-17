@@ -296,14 +296,15 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithS
 
 	var usage model.Usage
 	responseText := ""
+	sendStopMessage := false
 
 	for scanner.Scan() {
-		line := scanner.Text() + "\n" // 确保添加换行符以维持原始数据格式
+		line := scanner.Text() + "\n"
 		// 直接将原始行写入到响应流中
-		_, writeErr := c.Writer.Write([]byte(line))
-		if writeErr != nil {
+		if _, writeErr := c.Writer.Write([]byte(line)); writeErr != nil {
 			// 记录错误，并考虑是否中断处理
 			logger.SysError("Error writing to stream: " + writeErr.Error())
+			sendStopMessage = true // 发生错误时发送停止消息
 			break
 		}
 		// 确保响应是即时发送的
@@ -314,13 +315,11 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithS
 			data := strings.TrimPrefix(line, "data: ")
 			// 处理data
 			var claudeResponse StreamResponse
-			err := json.Unmarshal([]byte(data), &claudeResponse)
-			if err != nil {
+			if err := json.Unmarshal([]byte(data), &claudeResponse); err != nil {
 				logger.SysError("Error unmarshalling stream response: " + err.Error())
 				continue // 或者处理错误
 			}
 
-			// 假设有基于claudeResponse的逻辑来更新usage和构建responseText
 			response, meta := streamResponseClaude2OpenAI(&claudeResponse)
 			if meta != nil {
 				usage.PromptTokens += meta.Usage.InputTokens
@@ -333,7 +332,19 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithS
 		}
 	}
 
+	// 发生错误时，发送结束消息
+	if sendStopMessage {
+		sendStreamStopMessage(c)
+	}
+
 	return nil, &usage, responseText
+}
+
+// 发送流结束消息
+func sendStreamStopMessage(c *gin.Context) {
+	messageStop := "event: message_stop\ndata: {\"type\": \"message_stop\"}\n\n"
+	c.Writer.Write([]byte(messageStop))
+	c.Writer.Flush()
 }
 
 func ClaudeHandler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
