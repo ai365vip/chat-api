@@ -58,6 +58,7 @@ func Relay(c *gin.Context) {
 		common.Errorf(ctx, "relay error happen, status code is %d, won't retry in this case", bizErr.StatusCode)
 		retryTimes = 0
 	}
+	failedChannelIds := []int{}
 	for i := retryTimes; i > 0; i-- {
 		value, _ := c.Get("is_tools")
 
@@ -69,11 +70,12 @@ func Relay(c *gin.Context) {
 			return
 		}
 
-		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i != retryTimes, isTools)
+		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i != retryTimes, isTools, failedChannelIds, i)
 		if err != nil {
 			common.Errorf(ctx, "CacheGetRandomSatisfiedChannel failed: %w", err)
 			break
 		}
+
 		common.Infof(ctx, "using channel #%d to retry (remain times %d)", channel.Id, i)
 		if channel.Id == lastFailedChannelId {
 			continue

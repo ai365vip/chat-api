@@ -98,7 +98,8 @@ func Distribute() func(c *gin.Context) {
 				fmt.Println("is_tools value is not of type bool")
 				return
 			}
-			channel, err = model.CacheGetRandomSatisfiedChannel(tokenGroup.(string), Model.(string), false, isTools)
+			failedChannelIds := []int{}
+			channel, err = model.CacheGetRandomSatisfiedChannel(tokenGroup.(string), Model.(string), false, isTools, failedChannelIds, 0)
 			if err != nil {
 				message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", tokenGroup, Model)
 				if channel != nil {
