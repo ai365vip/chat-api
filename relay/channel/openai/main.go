@@ -65,6 +65,12 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 					}
 					for _, choice := range streamResponse.Choices {
 						responseText += common.AsString(choice.Delta.Content)
+						if choice.Delta.ToolCalls != nil {
+							for _, tool := range choice.Delta.ToolCalls {
+								responseText += common.AsString(tool.Function.Name)
+								responseText += common.AsString(tool.Function.Arguments)
+							}
+						}
 						if choice.FinishReason != nil && *choice.FinishReason == "stop" {
 							needInjectFixedContent = true // 需要注入fixedContent
 						}
