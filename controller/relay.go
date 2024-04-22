@@ -58,7 +58,7 @@ func Relay(c *gin.Context) {
 		common.Errorf(ctx, "relay error happen, status code is %d, won't retry in this case", bizErr.StatusCode)
 		retryTimes = 0
 	}
-	failedChannelIds := []int{}
+	failedChannelIds := []int{lastFailedChannelId}
 	for i := retryTimes; i > 0; i-- {
 		value, _ := c.Get("is_tools")
 
@@ -76,7 +76,7 @@ func Relay(c *gin.Context) {
 			break
 		}
 
-		common.Infof(ctx, "using channel #%d to retry (remain times %d)", channel.Id, i)
+		common.Infof(ctx, "使用渠道 #%d 重试 (剩余重试 %d次)", channel.Id, i)
 		if channel.Id == lastFailedChannelId {
 			continue
 		}
