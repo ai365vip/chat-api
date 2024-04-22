@@ -20,6 +20,7 @@ const (
 	APITypeDummy // this one is only for count, do not add any channel after this
 	APITypeStability
 	APITypeOllama
+	APITypeAwsClaude
 )
 
 func ChannelType2APIType(channelType int) int {
@@ -51,6 +52,8 @@ func ChannelType2APIType(channelType int) int {
 		apiType = APITypeStability
 	case common.ChannelTypeOllama:
 		apiType = APITypeOllama
+	case common.ChannelTypeAwsClaude:
+		apiType = APITypeAwsClaude
 	}
 	return apiType
 }

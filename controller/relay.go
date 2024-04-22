@@ -6,15 +6,15 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
+	"one-api/common/ctxkey"
 	"one-api/middleware"
 	"one-api/model"
 	"one-api/relay/channel/midjourney"
 	"one-api/relay/constant"
 	"one-api/relay/controller"
+	dbmodel "one-api/relay/model"
 	"one-api/relay/util"
 	"strconv"
-
-	dbmodel "one-api/relay/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -50,7 +50,7 @@ func Relay(c *gin.Context) {
 	lastFailedChannelId := channelId
 	channelName := c.GetString("channel_name")
 	group := c.GetString("group")
-	originalModel := c.GetString("original_model")
+	originalModel := c.GetString(ctxkey.OriginalModel)
 	go processChannelRelayError(c, channelId, channelName, bizErr)
 	requestId := c.GetString("X-Chatapi-Request-Id")
 	retryTimes := common.RetryTimes

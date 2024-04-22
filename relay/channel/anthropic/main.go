@@ -100,8 +100,32 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 	return &claudeRequest
 }
 
+func ResponseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
+	var responseText string
+	if len(claudeResponse.Content) > 0 {
+		responseText = claudeResponse.Content[0].Text
+	}
+	choice := openai.TextResponseChoice{
+		Index: 0,
+		Message: model.Message{
+			Role:    "assistant",
+			Content: responseText,
+			Name:    nil,
+		},
+		FinishReason: stopReasonClaude2OpenAI(claudeResponse.StopReason),
+	}
+	fullTextResponse := openai.TextResponse{
+		Id:      fmt.Sprintf("chatcmpl-%s", claudeResponse.Id),
+		Model:   claudeResponse.Model,
+		Object:  "chat.completion",
+		Created: helper.GetTimestamp(),
+		Choices: []openai.TextResponseChoice{choice},
+	}
+	return &fullTextResponse
+}
+
 // https://docs.anthropic.com/claude/reference/messages-streaming
-func streamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCompletionsStreamResponse, *Response) {
+func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCompletionsStreamResponse, *Response) {
 	var response *Response
 	var responseText string
 	var stopReason string
@@ -210,7 +234,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 				logger.SysError("error unmarshalling stream response: " + err.Error())
 				return true
 			}
-			response, meta := streamResponseClaude2OpenAI(&claudeResponse)
+			response, meta := StreamResponseClaude2OpenAI(&claudeResponse)
 			if meta != nil {
 				usage.PromptTokens += meta.Usage.InputTokens
 				usage.CompletionTokens += meta.Usage.OutputTokens
@@ -320,7 +344,7 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithS
 				continue // 或者处理错误
 			}
 
-			response, meta := streamResponseClaude2OpenAI(&claudeResponse)
+			response, meta := StreamResponseClaude2OpenAI(&claudeResponse)
 			if meta != nil {
 				usage.PromptTokens += meta.Usage.InputTokens
 				usage.CompletionTokens += meta.Usage.OutputTokens

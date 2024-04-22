@@ -225,6 +225,7 @@ const (
 	ChannelTypeMistral        = 32
 	ChannelTypeOllama         = 33
 	ChannelTypeLingYiWanWu    = 34
+	ChannelTypeAwsClaude      = 35
 )
 
 var ChannelBaseURLs = []string{
@@ -263,6 +264,8 @@ var ChannelBaseURLs = []string{
 	"https://api.mistral.ai",      // 32
 	"http://localhost:11434",      // 33
 	"https://api.lingyiwanwu.com", // 34
+	"",                            // 35
+
 }
 
 const (
@@ -271,4 +274,8 @@ const (
 	ConfigKeyAPIVersion = ConfigKeyPrefix + "api_version"
 	ConfigKeyLibraryID  = ConfigKeyPrefix + "library_id"
 	ConfigKeyPlugin     = ConfigKeyPrefix + "plugin"
+	ConfigSK            = ConfigKeyPrefix + "sk"
+	ConfigAK            = ConfigKeyPrefix + "ak"
+	ConfigRegion        = ConfigKeyPrefix + "region"
+	ConfigUserID        = ConfigKeyPrefix + "user_id"
 )

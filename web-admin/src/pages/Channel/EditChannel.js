@@ -51,7 +51,10 @@ const EditChannel = (props) => {
         tested_time:'',
         priority:'',
         weight:'',
-        groups: ['default']
+        groups: ['default'],
+        region: '',
+        sk: '',
+        ak: ''
     };
     const [batch, setBatch] = useState(false);
     const [autoBan, setAutoBan] = useState(true);
@@ -71,7 +74,11 @@ const EditChannel = (props) => {
     const [rateLimited, setRateLimited] = useState(false);
     const [istools, setIstools] = useState(true);
     const [isimageurenabled, setIsImageURLEnabled] = useState(false);
-
+    const [config, setConfig] = useState({
+        region: '',
+        sk: '',
+        ak: ''
+      });
     const handleInputChange = (name, value) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
         if (name === 'type' && inputs.models.length === 0) {
@@ -80,6 +87,9 @@ const EditChannel = (props) => {
             switch (value) {
                 case 14:
                     localModels = ['claude-instant-1.2', 'claude-2.0', 'claude-2.1', 'claude-3-haiku-20240307','claude-3-opus-20240229', 'claude-3-opus','claude-3-sonnet-20240229'];
+                    break;
+                case 35:
+                    localModels = ['claude-instant-1.2', 'claude-2.0', 'claude-2.1', 'claude-3-haiku-20240307','claude-3-opus-20240229','claude-3-sonnet-20240229'];
                     break;
                 case 11:
                     localModels = ['PaLM-2'];
@@ -135,6 +145,9 @@ const EditChannel = (props) => {
         //setAutoBan
     };
 
+    const handleConfigChange = ( { name, value }) => {
+        setConfig((inputs) => ({...inputs, [name]: value}));
+      };
 
     const loadChannel = async () => {
         setLoading(true)
@@ -158,6 +171,9 @@ const EditChannel = (props) => {
                 data.headers = JSON.stringify(JSON.parse(data.headers), null, 2);
             }
             setInputs(data);
+            if (data.config !== '') {
+                setConfig(JSON.parse(data.config));
+            }
             if (data.auto_ban === 0) {
                 setAutoBan(false);
             } else {
@@ -245,6 +261,9 @@ const EditChannel = (props) => {
             showInfo('自定义请求头必须是合法的 JSON 格式！');
             return;
         }
+        if (config.ak !== '' && config.sk !== '' && config.region !== '') {
+            inputs.key = `${config.ak}|${config.sk}|${config.region}`;
+        }
         let localInputs = {...inputs};
          // 将 autoBan 状态转换为对应的整数值并添加到 localInputs 中
         localInputs.auto_ban = autoBan ? 1 : 0;
@@ -268,7 +287,7 @@ const EditChannel = (props) => {
         if (!localInputs.model_test) {
             localInputs.model_test = 'gpt-3.5-turbo';
         }
-
+        
         let channelsToCreate = [];
         let createPromises = []; // 存储所有待执行的Promise
         // 处理批量添加代理的逻辑
@@ -325,6 +344,7 @@ const EditChannel = (props) => {
         }
         localInputs.models = localInputs.models.join(',');
         localInputs.group = localInputs.groups.join(',');
+        localInputs.config = JSON.stringify(config);
         if (isEdit) {
             res = await API.put(`/api/channel/`, {...localInputs, id: parseInt(channelId)});
         } else {
@@ -344,7 +364,10 @@ const EditChannel = (props) => {
             showError(message);
         }
     };
-
+    useEffect(() => {
+        console.log(config);
+    }, [config]);
+    
     const addCustomModel = () => {
         if (customModel.trim() === '') return;                // 确保自定义模型非空
         if (inputs.models.includes(customModel)) return;      // 确保未重复添加
@@ -599,46 +622,117 @@ const EditChannel = (props) => {
                     }>
                         填入模板
                     </Typography.Text>
-                    <div style={{marginTop: 10}}>
-                        <Typography.Text strong>密钥：</Typography.Text>
-                    </div>
+                    
                     {
-                        batch ?
-                            <TextArea
-                                label='密钥'
-                                name='key'
-                                placeholder={'请输入密钥，一行一个'}
-                                onChange={value => {
-                                    handleInputChange('key', value)
-                                }}
-                                value={inputs.key}
-                                style={{minHeight: 150, fontFamily: 'JetBrains Mono, Consolas'}}
-                                autoComplete='new-password'
-                            />
-                            :
-                            <Input
-                                label='密钥'
-                                name='key'
-                                placeholder={type2secretPrompt(inputs.type)}
-                                onChange={value => {
-                                    handleInputChange('key', value)
-                                }}
-                                value={inputs.key}
-                                autoComplete='new-password'
-                            />
+                        inputs.type === 35 && (
+                            <div> {/* 新增的包裹元素 */}
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>region，例如：us-west-2：</Typography.Text>
+                                </div>
+                                <Input
+                                    label='Region'
+                                    name='region'
+                                    placeholder={'region，例如：us-west-2'}
+                                    onChange={(value) => handleConfigChange({ name: 'region', value })}
+                                    value={config.region}
+                                    autoComplete='new-password'
+                                />
+
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>AWS IAM Access Key：</Typography.Text>
+                                </div>
+                                <Input
+                                    label='AK'
+                                    name='ak'
+                                    placeholder={'AWS IAM Access Key'}
+                                    onChange={(value) => handleConfigChange({ name: 'ak', value })}
+                                    value={config.ak}
+                                    autoComplete='new-password'
+                                />
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>AWS IAM Secret Key：</Typography.Text>
+                                </div>
+                                <Input
+                                    label='SK'
+                                    name='sk'
+                                    placeholder={'AWS IAM Secret Key'}
+                                    onChange={(value) => handleConfigChange({ name: 'sk', value })}
+                                    value={config.sk}
+                                    autoComplete='new-password'
+                                />
+                            </div> // 新增的包裹元素的结束标签
+                        )
                     }
-                    <div style={{marginTop: 10}}>
-                        <Typography.Text strong>组织：</Typography.Text>
-                    </div>
-                    <Input
-                        label='组织，可选，不填则为默认组织'
-                        name='openai_organization'
-                        placeholder='请输入组织org-xxx'
-                        onChange={value => {
-                            handleInputChange('openai_organization', value)
-                        }}
-                        value={inputs.openai_organization}
-                    />
+
+                    {
+                        inputs.type !== 35 && (
+                            <div>
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>密钥：</Typography.Text>
+                                </div>
+
+                                {
+                                    batch ?
+                                    <TextArea
+                                        label='密钥'
+                                        name='key'
+                                        placeholder={'请输入密钥，一行一个'}
+                                        onChange={value => {
+                                            handleInputChange('key', value)
+                                        }}
+                                        value={inputs.key}
+                                        style={{minHeight: 150, fontFamily: 'JetBrains Mono, Consolas'}}
+                                        autoComplete='new-password'
+                                    />
+                                    :
+                                    <Input
+                                        label='密钥'
+                                        name='key'
+                                        placeholder={type2secretPrompt(inputs.type)}
+                                        onChange={value => {
+                                            handleInputChange('key', value)
+                                        }}
+                                        value={inputs.key}
+                                        autoComplete='new-password'
+                                    />
+                                }
+                            </div>
+                        )
+                    }
+
+                    {
+                       inputs.type !== 35 &&  !isEdit && (
+                            <div style={{marginTop: 10, display: 'flex'}}>
+                                <Space>
+                                    <Checkbox
+                                        checked={batch}
+                                        label='批量创建'
+                                        name='batch'
+                                        onChange={() => setBatch(!batch)}
+                                    />
+                                    <Typography.Text strong>批量创建</Typography.Text>
+                                </Space>
+                            </div>
+                        )
+                    }
+                    {
+                        inputs.type !== 35 && (
+                            <div> 
+                            <div style={{marginTop: 10}}>
+                                <Typography.Text strong>组织：</Typography.Text>
+                            </div>
+                            <Input
+                                label='组织，可选，不填则为默认组织'
+                                name='openai_organization'
+                                placeholder='请输入组织org-xxx'
+                                onChange={value => {
+                                    handleInputChange('openai_organization', value)
+                                }}
+                                value={inputs.openai_organization}
+                            />
+                        </div> 
+                        )
+                    }
                     <div style={{marginTop: 10, display: 'flex'}}>
                         <Space>
                             <Checkbox
@@ -751,23 +845,9 @@ const EditChannel = (props) => {
                         </div>
                     </div>
 
+                    
                     {
-                        !isEdit && (
-                            <div style={{marginTop: 10, display: 'flex'}}>
-                                <Space>
-                                    <Checkbox
-                                        checked={batch}
-                                        label='批量创建'
-                                        name='batch'
-                                        onChange={() => setBatch(!batch)}
-                                    />
-                                    <Typography.Text strong>批量创建</Typography.Text>
-                                </Space>
-                            </div>
-                        )
-                    }
-                    {
-                        inputs.type !== 3 && inputs.type !== 8 && inputs.type !== 22 && (
+                        inputs.type !== 3 && inputs.type !== 35 && inputs.type !== 8 && inputs.type !== 22 && (
                             <>
                                 <div style={{marginTop: 10}}>
                                     <Typography.Text strong>代理：</Typography.Text>

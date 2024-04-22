@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"one-api/common"
+	"one-api/middleware"
 	"one-api/model"
 	"one-api/relay/constant"
 	"one-api/relay/helper"
@@ -73,7 +74,7 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	}
 	c.Set("channel", channel.Type)
 	c.Set("base_url", channel.GetBaseURL())
-
+	middleware.SetupContextForSelectedChannel(c, channel, "")
 	meta := util.GetRelayMeta(c)
 
 	apiType := constant.ChannelType2APIType(channel.Type)
@@ -103,7 +104,7 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	if err != nil {
 		return err, nil
 	}
-	if resp.StatusCode != http.StatusOK {
+	if resp != nil && resp.StatusCode != http.StatusOK {
 		err := util.RelayErrorHandler(resp)
 		return fmt.Errorf("status code %d: %s", resp.StatusCode, err.Error.Message), &err.Error
 	}
