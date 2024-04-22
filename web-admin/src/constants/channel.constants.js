@@ -6,6 +6,7 @@ export const CHANNEL_OPTIONS = [
     {key: 3, text: 'Azure OpenAI', value: 3, color: 'blue', label: 'Azure OpenAI'},
     {key: 24, text: 'Google Gemini', value: 24, color: 'orange', label: 'Google Gemini'},
     {key: 16, text: '智谱 ChatGLM', value: 16, color: 'violet', label: '智谱 ChatGLM'},
+    {key: 36, text: 'Coze', value: 36, color: 'lime', label: 'Coze'},
     {key: 29, text: 'Groq', value: 29, color: 'lime' , label: 'Groq'},
     {key: 30, text: '百川大模型', value: 30, color: 'orange' , label: '百川大模型'},
     {key: 31, text: 'MiniMax', value: 31, color: 'red' , label: 'MiniMax'},

@@ -77,7 +77,8 @@ const EditChannel = (props) => {
     const [config, setConfig] = useState({
         region: '',
         sk: '',
-        ak: ''
+        ak: '',
+        user_id: ''
       });
     const handleInputChange = (name, value) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
@@ -559,6 +560,35 @@ const EditChannel = (props) => {
                             </>
                         )
                     }
+                    {
+                        inputs.type === 17 && (
+                        <>
+                            <div style={{marginTop: 10}}>
+                                <Typography.Text strong>插件参数：</Typography.Text>
+                            </div>
+                                <Input
+                                label='插件参数'
+                                name='other'
+                                placeholder={'请输入插件参数，即 X-DashScope-Plugin 请求头的取值'}
+                                onChange={value => {
+                                    handleInputChange('other', value)
+                                }}
+                                value={inputs.other}
+                                autoComplete='new-password'
+                                />
+                         </>
+                        )
+                    }
+                    {
+                        inputs.type === 36 && (
+                            <div style={{marginTop: 10}}>
+                                <Typography.Text>
+                                对于 Coze 而言，模型名称即 Bot ID，你可以添加一个前缀 `bot-`，例如：`bot-123456`。
+                                </Typography.Text>
+                        </div>    
+                        
+                        )
+                    }
                     <div style={{marginTop: 10}}>
                         <Typography.Text strong>模型：</Typography.Text>
                     </div>
@@ -663,7 +693,23 @@ const EditChannel = (props) => {
                             </div> // 新增的包裹元素的结束标签
                         )
                     }
-
+                    {
+                        inputs.type === 36 && (
+                        <div>
+                            <div style={{marginTop: 10}}>
+                                <Typography.Text strong>用户 ID：</Typography.Text>
+                            </div>
+                            <Input
+                                label='User ID'
+                                name='user_id'
+                                placeholder={'生成该密钥的用户 ID'}
+                                onChange={(value) => handleConfigChange({ name: 'user_id', value })}
+                                value={config.user_id}
+                                autoComplete='new-password'
+                            />
+                        </div>
+                        )
+                    }
                     {
                         inputs.type !== 35 && (
                             <div>
@@ -699,6 +745,7 @@ const EditChannel = (props) => {
                             </div>
                         )
                     }
+                    
 
                     {
                        inputs.type !== 35 &&  !isEdit && (

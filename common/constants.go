@@ -226,6 +226,7 @@ const (
 	ChannelTypeOllama         = 33
 	ChannelTypeLingYiWanWu    = 34
 	ChannelTypeAwsClaude      = 35
+	ChannelTypeCoze           = 36
 )
 
 var ChannelBaseURLs = []string{
@@ -265,7 +266,7 @@ var ChannelBaseURLs = []string{
 	"http://localhost:11434",      // 33
 	"https://api.lingyiwanwu.com", // 34
 	"",                            // 35
-
+	"https://api.coze.com",        // 36
 }
 
 const (
