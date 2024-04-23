@@ -121,9 +121,8 @@ const (
 	ChannelTypeMistral        = 32
 	ChannelTypeOllama         = 33
 	ChannelTypeLingYiWanWu    = 34
-	ChannelTypeOaifree        = 35
-	ChannelTypeAwsClaude      = 36
-	ChannelTypeCoze           = 37
+	ChannelTypeAwsClaude      = 35
+	ChannelTypeCoze           = 36
 )
 
 var ChannelBaseURLs = []string{
@@ -162,9 +161,8 @@ var ChannelBaseURLs = []string{
 	"https://api.mistral.ai",      // 32
 	"http://localhost:11434",      // 33
 	"https://api.lingyiwanwu.com", // 34
-	"https://api.oaifree.com",     // 35
-	"",                            // 36
-	"https://api.coze.com",        // 37
+	"",                            // 35
+	"https://api.coze.com",        // 36
 }
 
 const (
