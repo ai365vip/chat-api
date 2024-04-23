@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/common/logger"
 	"one-api/model"
 	"one-api/relay/channel/openai"
@@ -194,8 +195,8 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 	}
 	userQuota, err := model.CacheGetUserQuota(ctx, meta.UserId)
 	token, err := model.GetTokenById(meta.TokenId)
-	BillingByRequestEnabled, _ := strconv.ParseBool(common.OptionMap["BillingByRequestEnabled"])
-	ModelRatioEnabled, _ := strconv.ParseBool(common.OptionMap["ModelRatioEnabled"])
+	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
+	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
 	modelRatioString := ""
 	quota := 0
 	completionRatio := common.GetCompletionRatio(textRequest.Model)
@@ -212,7 +213,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 			} else {
 				groupRatio := common.GetGroupRatio(meta.Group)
 				ratio = modelRatio2 * groupRatio
-				quota = int(ratio * common.QuotaPerUnit)
+				quota = int(ratio * config.QuotaPerUnit)
 				modelRatioString = fmt.Sprintf("按次计费")
 			}
 		} else {
@@ -227,7 +228,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 		} else {
 			groupRatio := common.GetGroupRatio(meta.Group)
 			ratio = modelRatio2 * groupRatio
-			quota = int(ratio * common.QuotaPerUnit)
+			quota = int(ratio * config.QuotaPerUnit)
 			modelRatioString = fmt.Sprintf("按次计费")
 		}
 	} else {
@@ -258,7 +259,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 	logger.Info(ctx, fmt.Sprintf("用户%d 扣费%d，预扣费 %d 实际扣费 %d。", meta.UserId, quotaDelta, preConsumedQuota, quota))
 
 	multiplier := fmt.Sprintf("%s，分组倍率 %.2f", modelRatioString, groupRatio)
-	LogContentEnabled, _ := strconv.ParseBool(common.OptionMap["LogContentEnabled"])
+	LogContentEnabled, _ := strconv.ParseBool(config.OptionMap["LogContentEnabled"])
 	logContent := ""
 	if LogContentEnabled {
 		logContent = fmt.Sprintf("用户: %s \nAI: %s", usertext, aitext)

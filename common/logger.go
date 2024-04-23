@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"one-api/common/config"
 	"os"
 	"path/filepath"
 	"sync"
@@ -106,8 +107,8 @@ func FatalLog(v ...any) {
 }
 
 func LogQuota(quota int) string {
-	if DisplayInCurrencyEnabled {
-		return fmt.Sprintf("＄%.2f 额度", float64(quota)/QuotaPerUnit)
+	if config.DisplayInCurrencyEnabled {
+		return fmt.Sprintf("＄%.2f 额度", float64(quota)/config.QuotaPerUnit)
 	} else {
 		return fmt.Sprintf("%d 点额度", quota)
 	}

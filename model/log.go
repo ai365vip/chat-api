@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"one-api/common"
+	"one-api/common/config"
 	"strings"
 
 	"gorm.io/gorm"
@@ -133,7 +134,7 @@ func GetLogMjByKey(DB *gorm.DB, key string) (midjourneys []*Midjourney, err erro
 }
 
 func RecordLog(userId int, logType int, quota int, multiplier string) {
-	if logType == LogTypeConsume && !common.LogConsumeEnabled {
+	if logType == LogTypeConsume && !config.LogConsumeEnabled {
 		return
 	}
 	log := &Log{
@@ -155,7 +156,7 @@ func RecordLog(userId int, logType int, quota int, multiplier string) {
 
 func RecordConsumeLog(ctx context.Context, userId int, channelId int, channelName string, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int, multiplier string, userQuota int, useTimeSeconds int, isStream bool) {
 	common.LogInfo(ctx, fmt.Sprintf("record consume log: userId=%d, 用户调用前余额=%d, channelId=%d, promptTokens=%d, completionTokens=%d, modelName=%s, tokenName=%s, quota=%d,multiplier=%s", userId, userQuota, channelId, promptTokens, completionTokens, modelName, tokenName, quota, multiplier))
-	if !common.LogConsumeEnabled {
+	if !config.LogConsumeEnabled {
 		return
 	}
 	username := GetUsernameById(userId)
@@ -187,12 +188,13 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, channelNam
 
 }
 
-func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int) (logs []*Log, err error) {
-	var tx *gorm.DB
-	if logType == LogTypeUnknown {
-		tx = DB
-	} else {
-		tx = DB.Where("type = ?", logType)
+func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int) ([]*Log, int64, error) {
+	var logs []*Log
+	var count int64
+
+	tx := DB.Model(&Log{})
+	if logType != LogTypeUnknown {
+		tx = tx.Where("type = ?", logType)
 	}
 	if modelName != "" {
 		tx = tx.Where("model_name = ?", modelName)
@@ -212,8 +214,16 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	if channel != 0 {
 		tx = tx.Where("channel_id = ?", channel)
 	}
+
+	// 先计算符合条件的总记录数
+	err := tx.Count(&count).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 获取具体的日志记录
 	err = tx.Order("id desc").Limit(num).Offset(startIdx).Find(&logs).Error
-	return logs, err
+	return logs, count, err
 }
 
 func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStatistics []*LogStatistic, err error) {
@@ -334,12 +344,15 @@ func GetProLogs(db *gorm.DB, logType int, startTimestamp int64, endTimestamp int
 	return logs, total, nil
 }
 
-func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int) (logs []*Log, err error) {
-	var tx *gorm.DB
-	if logType == LogTypeUnknown {
-		tx = DB.Where("user_id = ?", userId)
-	} else {
-		tx = DB.Where("user_id = ? and type = ?", userId, logType)
+func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int) ([]*Log, int64, error) {
+	var logs []*Log
+	var count int64
+
+	// 假设 Log 是你的日志记录结构体
+	tx := DB.Model(&Log{}).Where("user_id = ?", userId)
+
+	if logType != LogTypeUnknown {
+		tx = tx.Where("type = ?", logType)
 	}
 	if modelName != "" {
 		tx = tx.Where("model_name = ?", modelName)
@@ -353,22 +366,34 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	if endTimestamp != 0 {
 		tx = tx.Where("created_at <= ?", endTimestamp)
 	}
-	err = tx.Order("id desc").Limit(num).Offset(startIdx).Omit("id").Find(&logs).Error
-	return logs, err
+
+	// 计算总数
+	err := tx.Count(&count).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 获取具体的日志记录
+	err = tx.Order("id desc").Limit(num).Offset(startIdx).Find(&logs).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return logs, count, nil
 }
 
 func SearchAllLogs(keyword string) (logs []*Log, err error) {
-	err = DB.Where("type = ? or content LIKE ?", keyword, keyword+"%").Order("id desc").Limit(common.MaxRecentItems).Find(&logs).Error
+	err = DB.Where("type = ? or content LIKE ?", keyword, keyword+"%").Order("id desc").Limit(config.MaxRecentItems).Find(&logs).Error
 	return logs, err
 }
 
 func SearchProLogs(keyword string) (logs []*Log, err error) {
-	err = DB.Where("type = ? or content LIKE ?", keyword, keyword+"%").Order("id desc").Limit(common.MaxRecentItems).Find(&logs).Error
+	err = DB.Where("type = ? or content LIKE ?", keyword, keyword+"%").Order("id desc").Limit(config.MaxRecentItems).Find(&logs).Error
 	return logs, err
 }
 
 func SearchUserLogs(userId int, keyword string) (logs []*Log, err error) {
-	err = DB.Where("user_id = ? and type = ?", userId, keyword).Order("id desc").Limit(common.MaxRecentItems).Omit("id").Find(&logs).Error
+	err = DB.Where("user_id = ? and type = ?", userId, keyword).Order("id desc").Limit(config.MaxRecentItems).Omit("id").Find(&logs).Error
 	return logs, err
 }
 

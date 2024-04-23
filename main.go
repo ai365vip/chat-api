@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/controller"
 	"one-api/middleware"
 	"one-api/model"
@@ -40,7 +41,7 @@ func main() {
 		log.Println("Warning: .env file not found or error loading")
 	}
 
-	common.SysLog("Chat API " + common.Version + " started")
+	common.SysLog("Chat API " + config.Version + " started")
 	if os.Getenv("GIN_MODE") != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -103,7 +104,7 @@ func main() {
 	go controller.UpdateMidjourneyTask()
 	//go controller.UpdateMidjourneyTaskBulk()
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
-		common.BatchUpdateEnabled = true
+		config.BatchUpdateEnabled = true
 		common.SysLog("batch update enabled with interval " + strconv.Itoa(common.BatchUpdateInterval) + "s")
 		model.InitBatchUpdater()
 	}
@@ -132,7 +133,7 @@ func main() {
 	middleware.SetUpLogger(server)
 	// Initialize session store
 
-	store := cookie.NewStore([]byte(common.SessionSecret))
+	store := cookie.NewStore([]byte(config.SessionSecret))
 	server.Use(sessions.Sessions("session", store))
 
 	router.SetRouter(server, adminFS, userFS, adminIndexPage, userIndexPage)

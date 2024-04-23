@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/common/network"
 	"one-api/model"
 	"strconv"
@@ -20,7 +21,7 @@ func GetAllTokens(c *gin.Context) {
 		p = 0
 	}
 	if size <= 0 {
-		size = common.ItemsPerPage
+		size = config.ItemsPerPage
 	} else if size > 100 {
 		size = 100
 	}

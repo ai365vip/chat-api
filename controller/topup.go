@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/model"
 	"strconv"
 	"time"
@@ -32,13 +33,13 @@ type AmountRequest struct {
 }
 
 func GetEpayClient() *epay.Client {
-	if common.PayAddress == "" || common.EpayId == "" || common.EpayKey == "" {
+	if config.PayAddress == "" || config.EpayId == "" || config.EpayKey == "" {
 		return nil
 	}
 	withUrl, err := epay.NewClientWithUrl(&epay.Config{
-		PartnerID: common.EpayId,
-		Key:       common.EpayKey,
-	}, common.PayAddress)
+		PartnerID: config.EpayId,
+		Key:       config.EpayKey,
+	}, config.PayAddress)
 	if err != nil {
 		return nil
 	}
@@ -56,7 +57,7 @@ func GetAmount(count float64, topupratio float64, topupamount float64, user mode
 
 func RequestEpay(c *gin.Context) {
 	var req EpayRequest
-	TopupAmountEnabled, _ := strconv.ParseBool(common.OptionMap["TopupAmountEnabled"])
+	TopupAmountEnabled, _ := strconv.ParseBool(config.OptionMap["TopupAmountEnabled"])
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		c.JSON(200, gin.H{"message": err.Error(), "data": 10})
@@ -84,8 +85,8 @@ func RequestEpay(c *gin.Context) {
 		payType = epay.WechatPay
 	}
 
-	returnUrl, _ := url.Parse(common.ServerAddress + "/log")
-	notifyUrl, _ := url.Parse(common.ServerAddress + "/api/user/epay/notify")
+	returnUrl, _ := url.Parse(config.ServerAddress + "/log")
+	notifyUrl, _ := url.Parse(config.ServerAddress + "/api/user/epay/notify")
 	tradeNo := strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond), 10)
 	payMoney := amount
 	client := GetEpayClient()
@@ -164,7 +165,7 @@ func EpayNotify(c *gin.Context) {
 			}
 			//user, _ := model.GetUserById(topUp.UserId, false)
 			//user.Quota += topUp.Amount * 500000
-			multipliedQuota := float64(topUp.Amount) * common.QuotaPerUnit
+			multipliedQuota := float64(topUp.Amount) * config.QuotaPerUnit
 			err = model.IncreaseUserQuota(topUp.UserId, int(multipliedQuota))
 			if err != nil {
 				log.Printf("易支付回调更新用户失败: %v", topUp)
@@ -181,7 +182,7 @@ func EpayNotify(c *gin.Context) {
 			notifyWxPusher(topUp)
 			model.RecordLog(topUp.UserId, model.LogTypeTopup, int(multipliedQuota), fmt.Sprintf("在线充值成功，充值: %v，支付金额：%.2f", common.LogQuota(int(multipliedQuota)), topUp.Money))
 			model.VipInsert(topUp.UserId, int(multipliedQuota))
-			GroupEnable, _ := strconv.ParseBool(common.OptionMap["GroupEnable"])
+			GroupEnable, _ := strconv.ParseBool(config.OptionMap["GroupEnable"])
 			if GroupEnable {
 				err = model.VipUserQuota(topUp.UserId)
 				if err != nil {
@@ -204,15 +205,15 @@ func EpayNotify(c *gin.Context) {
 }
 
 func notifyEmail(topUp *model.TopUp) {
-	emailNotifEnabled, _ := strconv.ParseBool(common.OptionMap["EmailNotificationsEnabled"])
+	emailNotifEnabled, _ := strconv.ParseBool(config.OptionMap["EmailNotificationsEnabled"])
 	if emailNotifEnabled {
-		notificationEmail := common.OptionMap["NotificationEmail"]
+		notificationEmail := config.OptionMap["NotificationEmail"]
 		if notificationEmail == "" {
 			// 如果没有设置专门的通知邮箱，则尝试获取 RootUserEmail
-			if common.RootUserEmail == "" {
-				common.RootUserEmail = model.GetRootUserEmail()
+			if config.RootUserEmail == "" {
+				config.RootUserEmail = model.GetRootUserEmail()
 			}
-			notificationEmail = common.RootUserEmail
+			notificationEmail = config.RootUserEmail
 		}
 		subject := fmt.Sprintf("充值成功通知: 用户「%d」充值：%v，支付金额：%.2f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
 		content := fmt.Sprintf("用户「%d」使用在线充值成功。充值：%v，支付金额：%.2f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
@@ -224,7 +225,7 @@ func notifyEmail(topUp *model.TopUp) {
 }
 
 func notifyWxPusher(topUp *model.TopUp) {
-	wxNotifEnabled, _ := strconv.ParseBool(common.OptionMap["WxPusherNotificationsEnabled"])
+	wxNotifEnabled, _ := strconv.ParseBool(config.OptionMap["WxPusherNotificationsEnabled"])
 	if wxNotifEnabled {
 		subject := fmt.Sprintf("充值成功通知: 用户「%d」充值：%v，支付金额：%.2f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
 		content := fmt.Sprintf("用户「%d」使用在线充值成功。充值：%v，支付金额：%.2f", topUp.UserId, common.LogQuota(topUp.Amount*500000), topUp.Money)
@@ -236,15 +237,15 @@ func notifyWxPusher(topUp *model.TopUp) {
 }
 
 func notifyEmailForFail() {
-	emailNotifEnabled, _ := strconv.ParseBool(common.OptionMap["EmailNotificationsEnabled"])
+	emailNotifEnabled, _ := strconv.ParseBool(config.OptionMap["EmailNotificationsEnabled"])
 	if emailNotifEnabled {
-		notificationEmail := common.OptionMap["NotificationEmail"]
+		notificationEmail := config.OptionMap["NotificationEmail"]
 		if notificationEmail == "" {
 			// 如果没有设置专门的通知邮箱，则尝试获取 RootUserEmail
-			if common.RootUserEmail == "" {
-				common.RootUserEmail = model.GetRootUserEmail()
+			if config.RootUserEmail == "" {
+				config.RootUserEmail = model.GetRootUserEmail()
 			}
-			notificationEmail = common.RootUserEmail
+			notificationEmail = config.RootUserEmail
 		}
 		subject := "支付回调失败通知"
 		content := "一个支付回调未能成功处理，请检查系统日志获取更多信息。"
@@ -256,7 +257,7 @@ func notifyEmailForFail() {
 }
 
 func notifyWxPusherForFail() {
-	wxNotifEnabled, _ := strconv.ParseBool(common.OptionMap["WxPusherNotificationsEnabled"])
+	wxNotifEnabled, _ := strconv.ParseBool(config.OptionMap["WxPusherNotificationsEnabled"])
 	if wxNotifEnabled {
 		subject := "支付回调失败通知"
 		content := "一个支付回调未能成功处理，请检查系统日志获取更多信息。"
@@ -269,7 +270,7 @@ func notifyWxPusherForFail() {
 
 func RequestAmount(c *gin.Context) {
 	var req AmountRequest
-	TopupAmountEnabled, _ := strconv.ParseBool(common.OptionMap["TopupAmountEnabled"])
+	TopupAmountEnabled, _ := strconv.ParseBool(config.OptionMap["TopupAmountEnabled"])
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		c.JSON(200, gin.H{"message": "error", "data": "参数错误"})
@@ -305,7 +306,7 @@ func GetAllTopUps(c *gin.Context) {
 		Status:     c.Query("status"),
 	}
 
-	logs := model.GetAllTopUps(p*common.ItemsPerPage, common.ItemsPerPage, topups)
+	logs := model.GetAllTopUps(p*config.ItemsPerPage, config.ItemsPerPage, topups)
 	if logs == nil {
 		logs = make([]*model.TopUp, 0)
 	}

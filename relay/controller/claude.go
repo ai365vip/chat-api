@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/common/logger"
 	dbmodel "one-api/model"
 	"one-api/relay/channel/openai"
@@ -47,7 +48,7 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 	meta.PromptTokens = promptTokens
 	ratio := modelRatio * groupRatio
 	preConsumedQuota := 0
-	preConsumedTokens := common.PreConsumedQuota
+	preConsumedTokens := config.PreConsumedQuota
 	if textRequest.MaxTokens != 0 {
 		preConsumedTokens = promptTokens + textRequest.MaxTokens
 	}
@@ -55,8 +56,8 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 	if err != nil {
 		log.Println("获取token出错:", err)
 	}
-	BillingByRequestEnabled, _ := strconv.ParseBool(common.OptionMap["BillingByRequestEnabled"])
-	ModelRatioEnabled, _ := strconv.ParseBool(common.OptionMap["ModelRatioEnabled"])
+	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
+	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
 	if BillingByRequestEnabled && ModelRatioEnabled {
 		if token.BillingEnabled {
 			modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
@@ -64,7 +65,7 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 				preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 			} else {
 				ratio = modelRatio2 * groupRatio
-				preConsumedQuota = int(ratio * common.QuotaPerUnit)
+				preConsumedQuota = int(ratio * config.QuotaPerUnit)
 			}
 		} else {
 			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
@@ -75,7 +76,7 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 		} else {
 			ratio = modelRatio2 * groupRatio
-			preConsumedQuota = int(ratio * common.QuotaPerUnit)
+			preConsumedQuota = int(ratio * config.QuotaPerUnit)
 		}
 	} else {
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)

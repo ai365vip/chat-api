@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"one-api/common"
+	"one-api/common/config"
 	"sync"
 	"time"
 )
@@ -30,7 +31,7 @@ func UpdateQuotaData() {
 	for {
 		common.SysLog("正在更新数据看板数据...")
 		SaveQuotaDataCache()
-		time.Sleep(time.Duration(common.DataExportInterval) * time.Minute)
+		time.Sleep(time.Duration(config.DataExportInterval) * time.Minute)
 	}
 }
 

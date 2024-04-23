@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-	"one-api/common"
+	"one-api/common/config"
 	"one-api/controller"
 	"one-api/middleware"
 	"regexp"
@@ -20,7 +20,7 @@ func serveUserIndexPage(c *gin.Context) {
 	userIndexPage := c.MustGet("defaultUserIndexPage").([]byte)
 	userIndexPageStr := string(userIndexPage)
 	// 尝试从公共选项映射中获取系统文本
-	systemText, exists := common.OptionMap["SystemText"]
+	systemText, exists := config.OptionMap["SystemText"]
 
 	// 正则表达式用于查找和替换script标签中的src属性
 	re := regexp.MustCompile(`static/js/main\.[a-z0-9]+\.js"`)
@@ -35,15 +35,15 @@ func serveUserIndexPage(c *gin.Context) {
 
 	if !exists || systemText == "" {
 		// 如果系统文本不存在或为空，直接使用默认页面
-		common.SystemText = userIndexPageStr
-		common.OptionMap["SystemText"] = common.SystemText
+		config.SystemText = userIndexPageStr
+		config.OptionMap["SystemText"] = config.SystemText
 		c.Data(http.StatusOK, "text/html; charset=utf-8", userIndexPage)
 		return
 	}
 
 	// 如果系统文本存在，更新其script标签
 	updatedSystemText := re.ReplaceAllString(systemText, currentScriptTag)
-	common.OptionMap["SystemText"] = updatedSystemText
+	config.OptionMap["SystemText"] = updatedSystemText
 
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(updatedSystemText))
 }

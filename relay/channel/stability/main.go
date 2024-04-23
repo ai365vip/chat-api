@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/relay/model"
 	"one-api/relay/util"
 	"os"
@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // 请求参数结构体
@@ -371,7 +373,7 @@ func uploadToSmMs(meta *util.RelayMeta, base64Data string) ([]string, error) {
 		return nil, fmt.Errorf("failed to marshal request body: %v", err)
 	}
 
-	MjUrl := common.ServerAddress
+	MjUrl := config.ServerAddress
 	reqUrl := fmt.Sprintf("%s/mj/submit/upload-discord-images", MjUrl)
 	req, err := http.NewRequest("POST", reqUrl, bytes.NewBuffer(reqBodyBytes))
 	if err != nil {

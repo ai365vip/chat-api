@@ -25,6 +25,7 @@ const OperationSetting = () => {
         DisplayInCurrencyEnabled: '',
         DisplayTokenStatEnabled: '',
         BillingByRequestEnabled: '',
+        BlankReplyRetryEnabled: '',
         ModelRatioEnabled: '',
         DrawingEnabled: '',
         DataExportEnabled: '',
@@ -114,6 +115,7 @@ const OperationSetting = () => {
         }
         await updateOption('DisplayInCurrencyEnabled', inputs.DisplayInCurrencyEnabled);
         await updateOption('DisplayTokenStatEnabled', inputs.DisplayTokenStatEnabled);
+        await updateOption('BlankReplyRetryEnabled', inputs.BlankReplyRetryEnabled);
     };
 
     const submiChannel = async () => {
@@ -240,6 +242,14 @@ const OperationSetting = () => {
                                     checked={inputs.DisplayTokenStatEnabled === 'true'}
                                     name='DisplayTokenStatEnabled'
                                     onChange={(e) => handleCheckboxChange('DisplayTokenStatEnabled', e.target.checked)}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <Typography.Text>空回复重试</Typography.Text>
+                                <Checkbox
+                                    checked={inputs.BlankReplyRetryEnabled === 'true'}
+                                    name='BlankReplyRetryEnabled'
+                                    onChange={(e) => handleCheckboxChange('BlankReplyRetryEnabled', e.target.checked)}
                                 />
                             </div>
                         </div>

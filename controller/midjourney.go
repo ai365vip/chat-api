@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/model"
 	"one-api/relay/channel/midjourney"
 	"one-api/relay/util"
@@ -372,7 +373,7 @@ func compensateForTaskFailure(ctx context.Context, task *model.Midjourney) {
 		modelRatio, _ := common.GetModelRatio2("mj_" + Mode + strings.ToLower(task.Action))
 		groupRatio := common.GetGroupRatio(group)
 		ratio := modelRatio * groupRatio
-		quota := int(ratio * common.QuotaPerUnit)
+		quota := int(ratio * config.QuotaPerUnit)
 		if quota != 0 {
 			err := model.IncreaseUserQuota(task.UserId, quota)
 			if err != nil {
@@ -435,7 +436,7 @@ func GetAllMidjourney(c *gin.Context) {
 		EndTimestamp:   c.Query("end_timestamp"),
 	}
 
-	logs := model.GetAllTasks(p*common.ItemsPerPage, common.ItemsPerPage, queryParams)
+	logs := model.GetAllTasks(p*config.ItemsPerPage, config.ItemsPerPage, queryParams)
 	if logs == nil {
 		logs = make([]*model.Midjourney, 0)
 	}
@@ -461,13 +462,13 @@ func GetUserMidjourney(c *gin.Context) {
 		EndTimestamp:   c.Query("end_timestamp"),
 	}
 
-	logs := model.GetAllUserTask(userId, p*common.ItemsPerPage, common.ItemsPerPage, queryParams)
+	logs := model.GetAllUserTask(userId, p*config.ItemsPerPage, config.ItemsPerPage, queryParams)
 	if logs == nil {
 		logs = make([]*model.Midjourney, 0)
 	}
-	if !strings.Contains(common.ServerAddress, "localhost") {
+	if !strings.Contains(config.ServerAddress, "localhost") {
 		for i, midjourney := range logs {
-			midjourney.ImageUrl = common.ServerAddress + "/mj/image/" + midjourney.MjId
+			midjourney.ImageUrl = config.ServerAddress + "/mj/image/" + midjourney.MjId
 			logs[i] = midjourney
 		}
 	}

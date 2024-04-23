@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"one-api/common"
+	"one-api/common/config"
 	"strconv"
 	"strings"
 	"time"
@@ -135,13 +136,13 @@ func inviteUser(inviterId int) (err error) {
 		return err
 	}
 	user.AffCount++
-	user.AffQuota += common.QuotaForInviter
-	user.AffHistoryQuota += common.QuotaForInviter
+	user.AffQuota += config.QuotaForInviter
+	user.AffHistoryQuota += config.QuotaForInviter
 	return DB.Save(user).Error
 }
 
 func (user *User) TransferAffQuotaToQuota(quota int) error {
-	transferAmount := int(float64(quota) * common.QuotaPerUnit)
+	transferAmount := int(float64(quota) * config.QuotaPerUnit)
 
 	// 开始数据库事务
 	tx := DB.Begin()
@@ -163,8 +164,8 @@ func (user *User) TransferAffQuotaToQuota(quota int) error {
 
 	// 再次检查是否超出限额
 	log.Println(transferAmount)
-	log.Println(int(common.MiniQuota * common.QuotaPerUnit))
-	if transferAmount < int(common.MiniQuota*common.QuotaPerUnit) {
+	log.Println(int(config.MiniQuota * config.QuotaPerUnit))
+	if transferAmount < int(config.MiniQuota*config.QuotaPerUnit) {
 		return errors.New("超出最低限额！")
 	}
 
@@ -182,7 +183,7 @@ func (user *User) TransferAffQuotaToQuota(quota int) error {
 }
 
 func (user *User) AffQuotaToQuota(quota int, alipayAccount string) error {
-	transferAmount := int(float64(quota) * common.QuotaPerUnit)
+	transferAmount := int(float64(quota) * config.QuotaPerUnit)
 
 	// 开始数据库事务
 	tx := DB.Begin()
@@ -203,7 +204,7 @@ func (user *User) AffQuotaToQuota(quota int, alipayAccount string) error {
 	}
 
 	// 再次检查是否超出限额
-	if transferAmount < int(common.MiniQuota*common.QuotaPerUnit) {
+	if transferAmount < int(config.MiniQuota*config.QuotaPerUnit) {
 		return errors.New("超出最低限额！")
 	}
 
@@ -259,25 +260,25 @@ func (user *User) Insert(inviterId int) error {
 			return err
 		}
 	}
-	user.Quota = common.QuotaForNewUser
+	user.Quota = config.QuotaForNewUser
 	user.AccessToken = common.GetUUID()
 	user.AffCode = common.GetRandomString(4)
 	result := DB.Create(user)
 	if result.Error != nil {
 		return result.Error
 	}
-	if common.QuotaForNewUser > 0 {
-		RecordLog(user.Id, LogTypeSystem, 0, fmt.Sprintf("新用户注册赠送 %s", common.LogQuota(common.QuotaForNewUser)))
+	if config.QuotaForNewUser > 0 {
+		RecordLog(user.Id, LogTypeSystem, 0, fmt.Sprintf("新用户注册赠送 %s", common.LogQuota(config.QuotaForNewUser)))
 	}
 	if inviterId != 0 {
-		if common.QuotaForInvitee > 0 {
-			_ = IncreaseUserQuota(user.Id, common.QuotaForInvitee)
-			RecordLog(user.Id, LogTypeSystem, 0, fmt.Sprintf("使用邀请码赠送 %s", common.LogQuota(common.QuotaForInvitee)))
+		if config.QuotaForInvitee > 0 {
+			_ = IncreaseUserQuota(user.Id, config.QuotaForInvitee)
+			RecordLog(user.Id, LogTypeSystem, 0, fmt.Sprintf("使用邀请码赠送 %s", common.LogQuota(config.QuotaForInvitee)))
 		}
-		if common.QuotaForInviter > 0 {
-			RecordLog(inviterId, LogTypeSystem, 0, fmt.Sprintf("邀请用户赠送 %s", common.LogQuota(common.QuotaForInviter)))
+		if config.QuotaForInviter > 0 {
+			RecordLog(inviterId, LogTypeSystem, 0, fmt.Sprintf("邀请用户赠送 %s", common.LogQuota(config.QuotaForInviter)))
 			_ = inviteUser(inviterId)
-		} else if common.ProporTions > 0 {
+		} else if config.ProporTions > 0 {
 			_ = inviteUser(inviterId)
 		}
 
@@ -291,7 +292,7 @@ func VipInsert(userid int, affquota int) error {
 		return err
 	}
 
-	proportionsStr, _ := common.OptionMap["ProporTions"]
+	proportionsStr, _ := config.OptionMap["ProporTions"]
 	proportions, err := strconv.ParseFloat(proportionsStr, 64)
 	if err != nil {
 		return fmt.Errorf("invalid ProporTions value: %v", err)
@@ -514,7 +515,7 @@ func IncreaseUserQuota(id int, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
-	if common.BatchUpdateEnabled {
+	if config.BatchUpdateEnabled {
 		addNewRecord(BatchUpdateTypeUserQuota, id, quota)
 		return nil
 	}
@@ -522,9 +523,9 @@ func IncreaseUserQuota(id int, quota int) (err error) {
 }
 
 func VipUserQuota(id int) (err error) {
-	VipUserGroup := common.OptionMap["VipUserGroup"]
+	VipUserGroup := config.OptionMap["VipUserGroup"]
 	Group, _ := GetUserGroup(id)
-	UserGroup := common.OptionMap["UserGroup"]
+	UserGroup := config.OptionMap["UserGroup"]
 	if UserGroup == Group {
 		err = DB.Model(&User{}).Where("id = ?", id).Update("group", VipUserGroup).Error
 		return err
@@ -586,7 +587,7 @@ func DecreaseUserQuota(id int, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
-	if common.BatchUpdateEnabled {
+	if config.BatchUpdateEnabled {
 		addNewRecord(BatchUpdateTypeUserQuota, id, -quota)
 		return nil
 	}
@@ -634,7 +635,7 @@ func GetRootUserEmail() (email string) {
 }
 
 func UpdateUserUsedQuotaAndRequestCount(id int, quota int) {
-	if common.BatchUpdateEnabled {
+	if config.BatchUpdateEnabled {
 		addNewRecord(BatchUpdateTypeUsedQuota, id, quota)
 		addNewRecord(BatchUpdateTypeRequestCount, id, 1)
 		return

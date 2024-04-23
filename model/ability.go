@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"one-api/common"
+	"one-api/common/config"
 	"strings"
 	"sync"
 	"time"
@@ -70,7 +71,7 @@ func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
 	// 解析ModelRatio 和 ModelPrice 的值
 	modelRatio := make(ModelRatios)
 	if len(modelRatio) == 0 {
-		jsonStr := common.OptionMap["ModelRatio"]
+		jsonStr := config.OptionMap["ModelRatio"]
 		if jsonStr == "" {
 			jsonStr = common.ModelRatioJSONString()
 		}

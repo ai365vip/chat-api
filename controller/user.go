@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/model"
 	"strconv"
 	"time"
@@ -20,7 +21,7 @@ type LoginRequest struct {
 }
 
 func Login(c *gin.Context) {
-	if !common.PasswordLoginEnabled {
+	if !config.PasswordLoginEnabled {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "管理员关闭了密码登录",
 			"success": false,
@@ -109,14 +110,14 @@ func Logout(c *gin.Context) {
 
 func Register(c *gin.Context) {
 
-	if !common.RegisterEnabled {
+	if !config.RegisterEnabled {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "管理员关闭了新用户注册",
 			"success": false,
 		})
 		return
 	}
-	if !common.PasswordRegisterEnabled {
+	if !config.PasswordRegisterEnabled {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "管理员关闭了通过密码进行注册，请使用第三方账户验证的形式进行注册",
 			"success": false,
@@ -140,7 +141,7 @@ func Register(c *gin.Context) {
 		})
 		return
 	}
-	if common.EmailVerificationEnabled {
+	if config.EmailVerificationEnabled {
 		if user.Email == "" || user.VerificationCode == "" {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -173,7 +174,7 @@ func Register(c *gin.Context) {
 	}
 	affCode := user.AffCode // this code is the inviter's code, not the user's own code
 	inviterId, _ := model.GetUserIdByAffCode(affCode)
-	UserGroup, _ := common.OptionMap["UserGroup"]
+	UserGroup, _ := config.OptionMap["UserGroup"]
 	cleanUser := model.User{
 		Username:    user.Username,
 		Password:    user.Password,
@@ -183,7 +184,7 @@ func Register(c *gin.Context) {
 		Group:       UserGroup,
 	}
 
-	if common.EmailVerificationEnabled {
+	if config.EmailVerificationEnabled {
 		cleanUser.Email = user.Email
 	}
 	if err := cleanUser.Insert(inviterId); err != nil {
@@ -205,7 +206,7 @@ func GetAllUsers(c *gin.Context) {
 	if p < 0 {
 		p = 0
 	}
-	users, err := model.GetAllUsers(p*common.ItemsPerPage, common.ItemsPerPage)
+	users, err := model.GetAllUsers(p*config.ItemsPerPage, config.ItemsPerPage)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -897,7 +898,7 @@ func EmailBind(c *gin.Context) {
 		return
 	}
 	if user.Role == common.RoleRootUser {
-		common.RootUserEmail = email
+		config.RootUserEmail = email
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -929,7 +930,7 @@ func TopUp(c *gin.Context) {
 		})
 		return
 	}
-	GroupEnable, _ := strconv.ParseBool(common.OptionMap["GroupEnable"])
+	GroupEnable, _ := strconv.ParseBool(config.OptionMap["GroupEnable"])
 	if GroupEnable {
 		err = model.VipUserQuota(id)
 		if err != nil {

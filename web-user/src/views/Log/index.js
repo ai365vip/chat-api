@@ -37,26 +37,30 @@ export default function Log() {
   const [initPage, setInitPage] = useState(true);
   const userIsAdmin = isAdmin();
   const navigate = useNavigate();
-
+  const [rowsPerPage, setRowsPerPage] = useState(ITEMS_PER_PAGE);
+  const [logCount, setLogCount] = useState(ITEMS_PER_PAGE);
   const loadLogs = async (startIdx) => {
     setSearching(true);
     const url = userIsAdmin ? '/api/log/' : '/api/log/self/';
     const query = searchKeyword;
 
     query.p = startIdx;
+    query.pageSize = rowsPerPage;
     if (!userIsAdmin) {
       delete query.username;
       delete query.channel;
     }
     const res = await API.get(url, { params: query });
-    const { success, message, data } = res.data;
+    const { success, message, data,total } = res.data;
     if (success) {
       if (startIdx === 0) {
         setLogs(data);
+        setLogCount(total);
       } else {
         let newLogs = [...logs];
-        newLogs.splice(startIdx * ITEMS_PER_PAGE, data.length, ...data);
+        newLogs.splice(startIdx * rowsPerPage, data.length, ...data);
         setLogs(newLogs);
+        setLogCount(total);
       }
     } else {
       showError(message);
@@ -64,15 +68,23 @@ export default function Log() {
     setSearching(false);
   };
 
-  const onPaginationChange = (event, activePage) => {
+  const onPaginationChange = (event, newPage) => {
     (async () => {
-      if (activePage === Math.ceil(logs.length / ITEMS_PER_PAGE)) {
-        // In this case we have to load more data and then append them.
-        await loadLogs(activePage);
+      if (newPage === Math.ceil(logs.length / rowsPerPage)) {
+        // 需要加载更多数据
+        await loadLogs(newPage);
       }
-      setActivePage(activePage);
+      setActivePage(newPage);
     })();
   };
+  
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setActivePage(0);
+    loadLogs(0);
+  };
+
+  
 
   const searchLogs = async (event) => {
     event.preventDefault();
@@ -102,7 +114,7 @@ export default function Log() {
         showError(reason);
       });
     setInitPage(false);
-  }, [initPage]);
+  }, [initPage,rowsPerPage]);
 
   return (
     <>
@@ -142,21 +154,26 @@ export default function Log() {
             <Table sx={{ minWidth: 800 }}>
               <LogTableHead userIsAdmin={userIsAdmin} />
               <TableBody>
-                {logs.slice(activePage * ITEMS_PER_PAGE, (activePage + 1) * ITEMS_PER_PAGE).map((row, index) => (
-                  <LogTableRow item={row} key={`${row.id}_${index}`} userIsAdmin={userIsAdmin} />
+                {logs.slice(activePage * rowsPerPage, (activePage + 1) * rowsPerPage).map((row, index) => (
+                    <LogTableRow item={row} key={`${row.id}_${index}`} userIsAdmin={userIsAdmin} />
                 ))}
-              </TableBody>
+            </TableBody>
+
             </Table>
           </TableContainer>
         </PerfectScrollbar>
         <TablePagination
-          page={activePage}
           component="div"
-          count={logs.length + (logs.length % ITEMS_PER_PAGE === 0 ? 1 : 0)}
-          rowsPerPage={ITEMS_PER_PAGE}
+          page={activePage}
+          count={logCount}
+          rowsPerPage={rowsPerPage}
           onPageChange={onPaginationChange}
-          rowsPerPageOptions={[ITEMS_PER_PAGE]}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[10, 25, 50, 100]}  // 确保这里的选项包含了默认的每页行数
         />
+
+
+
       </Card>
     </>
   );

@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/common/logger"
 	"one-api/model"
 	"one-api/relay/channel/openai"
@@ -107,8 +108,8 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 	if err != nil {
 		log.Println("获取token出错:", err)
 	}
-	BillingByRequestEnabled, _ := strconv.ParseBool(common.OptionMap["BillingByRequestEnabled"])
-	ModelRatioEnabled, _ := strconv.ParseBool(common.OptionMap["ModelRatioEnabled"])
+	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
+	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
 
 	if BillingByRequestEnabled && ModelRatioEnabled {
 		if token.BillingEnabled {
@@ -118,7 +119,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 			} else {
 				ratio = modelRatio2 * groupRatio
-				quota = int(ratio * common.QuotaPerUnit)
+				quota = int(ratio * config.QuotaPerUnit)
 				modelRatioString = fmt.Sprintf("按次计费")
 			}
 		} else {

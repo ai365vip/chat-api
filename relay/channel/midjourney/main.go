@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/model"
 	"one-api/relay/constant"
 	"one-api/relay/util"
@@ -122,7 +123,7 @@ func getMidjourneyTaskModel(c *gin.Context, originTask *model.Midjourney) (midjo
 		// 否则，使用之前的逻辑来设置ImageUrl
 		midjourneyTask.ImageUrl = ""
 		if originTask.ImageUrl != "" {
-			midjourneyTask.ImageUrl = common.ServerAddress + "/mj/image/" + originTask.MjId
+			midjourneyTask.ImageUrl = config.ServerAddress + "/mj/image/" + originTask.MjId
 			if originTask.Status != "SUCCESS" {
 				midjourneyTask.ImageUrl += "?rand=" + strconv.FormatInt(time.Now().UnixNano(), 10)
 			}
@@ -504,7 +505,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 		"mj_turbo_customzoom": true,
 		"mj_relax_customzoom": true,
 	}
-	quota := int(ratio * common.QuotaPerUnit)
+	quota := int(ratio * config.QuotaPerUnit)
 	if excludedActions[mjAction] {
 		consumeQuota = false
 	}

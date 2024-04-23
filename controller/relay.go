@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/common/ctxkey"
 	"one-api/middleware"
 	"one-api/model"
@@ -53,7 +54,7 @@ func Relay(c *gin.Context) {
 	originalModel := c.GetString(ctxkey.OriginalModel)
 	go processChannelRelayError(c, channelId, channelName, bizErr)
 	requestId := c.GetString("X-Chatapi-Request-Id")
-	retryTimes := common.RetryTimes
+	retryTimes := config.RetryTimes
 	if !shouldRetry(c, bizErr.StatusCode) {
 		common.Errorf(ctx, "relay error happen, status code is %d, won't retry in this case", bizErr.StatusCode)
 		retryTimes = 0
@@ -123,7 +124,7 @@ func RelayMidjourney(c *gin.Context) {
 		retryTimesStr := c.Query("retry")
 		retryTimes, _ := strconv.Atoi(retryTimesStr)
 		if retryTimesStr == "" {
-			retryTimes = common.RetryTimes
+			retryTimes = config.RetryTimes
 		}
 		if retryTimes > 0 {
 			c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?retry=%d", c.Request.URL.Path, retryTimes-1))

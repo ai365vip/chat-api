@@ -3,115 +3,12 @@ package common
 import (
 	"os"
 	"strconv"
-	"sync"
 	"time"
-
-	"github.com/google/uuid"
 )
-
-var StartTime = time.Now().Unix() // unit: second
-var Version = "v0.0.0"            // this hard coding will be replaced automatically when building, no need to manually change
-var SystemName = "Chat API"
-var SystemText = ""
-var ServerAddress = "http://localhost:3000"
-var PayAddress = ""
-var EpayId = ""
-var EpayKey = ""
-var Price = 7.3
-var RedempTionCount = 30
-var Footer = ""
-var Logo = ""
-var TopUpLink = ""
-var ChatLink = ""
-var QuotaPerUnit = 500 * 1000.0 // $0.002 / 1K tokens
-var DisplayInCurrencyEnabled = true
-var DisplayTokenStatEnabled = true
-var EmailNotificationsEnabled = true
-var WxPusherNotificationsEnabled = true
-var ModelRatioEnabled = true
-var BillingByRequestEnabled = true
-var GroupEnable = true
-var LogContentEnabled = true
-var Wx = true
-var Zfb = true
-var DrawingEnabled = true
-var DataExportEnabled = true
-var DataExportInterval = 5 // unit: minute
-var MiniQuota = 1.0
-var ProporTions = 10
-var UserGroup = "default"
-var VipUserGroup = "default"
-
-// Any options with "Secret", "Token" in its key won't be return by GetOptions
-
-var SessionSecret = uuid.New().String()
-
-var OptionMap map[string]string
-var OptionMapRWMutex sync.RWMutex
-
-var ItemsPerPage = 10
-var MaxRecentItems = 100
-
-var PasswordLoginEnabled = true
-var PasswordRegisterEnabled = true
-var EmailVerificationEnabled = false
-var GitHubOAuthEnabled = false
-var WeChatAuthEnabled = false
-var TurnstileCheckEnabled = false
-var RegisterEnabled = true
-var ApproximateTokenEnabled = false
-
-var EmailDomainRestrictionEnabled = false
-var EmailDomainWhitelist = []string{
-	"gmail.com",
-	"163.com",
-	"126.com",
-	"qq.com",
-	"outlook.com",
-	"hotmail.com",
-	"icloud.com",
-	"yahoo.com",
-	"foxmail.com",
-}
 
 var DebugEnabled = os.Getenv("DEBUG") == "true"
 var MemoryCacheEnabled = os.Getenv("MEMORY_CACHE_ENABLED") == "true"
 
-var LogConsumeEnabled = true
-
-var SMTPServer = ""
-var SMTPPort = 587
-var SMTPAccount = ""
-var SMTPFrom = ""
-var SMTPToken = ""
-
-var AppToken = ""
-var Uids = ""
-
-var GitHubClientId = ""
-var GitHubClientSecret = ""
-
-var WeChatServerAddress = ""
-var WeChatServerToken = ""
-var WeChatAccountQRCodeImageURL = ""
-
-var TurnstileSiteKey = ""
-var TurnstileSecretKey = ""
-
-var QuotaForNewUser = 0
-var QuotaForInviter = 0
-var QuotaForInvitee = 0
-var ChannelDisableThreshold = 5.0
-var AutomaticDisableChannelEnabled = false
-var AutomaticEnableChannelEnabled = false
-var TopupRatioEnabled = true
-var TopupAmountEnabled = false
-var QuotaRemindThreshold = 1000
-var PreConsumedQuota = 500
-
-var RetryTimes = 0
-
-var RootUserEmail = ""
 var GeminiSafetySetting = GetOrDefaultString("GEMINI_SAFETY_SETTING", "BLOCK_NONE")
 var IsMasterNode = os.Getenv("NODE_TYPE") != "slave"
 
@@ -120,7 +17,6 @@ var RequestInterval = time.Duration(requestInterval) * time.Second
 
 var SyncFrequency = GetOrDefault("SYNC_FREQUENCY", 60) // unit is second
 
-var BatchUpdateEnabled = false
 var BatchUpdateInterval = GetOrDefault("BATCH_UPDATE_INTERVAL", 5)
 
 var RelayTimeout = GetOrDefault("RELAY_TIMEOUT", 0) // unit is second
@@ -225,8 +121,9 @@ const (
 	ChannelTypeMistral        = 32
 	ChannelTypeOllama         = 33
 	ChannelTypeLingYiWanWu    = 34
-	ChannelTypeAwsClaude      = 35
-	ChannelTypeCoze           = 36
+	ChannelTypeOaifree        = 35
+	ChannelTypeAwsClaude      = 36
+	ChannelTypeCoze           = 37
 )
 
 var ChannelBaseURLs = []string{
@@ -265,8 +162,9 @@ var ChannelBaseURLs = []string{
 	"https://api.mistral.ai",      // 32
 	"http://localhost:11434",      // 33
 	"https://api.lingyiwanwu.com", // 34
-	"",                            // 35
-	"https://api.coze.com",        // 36
+	"https://api.oaifree.com",     // 35
+	"",                            // 36
+	"https://api.coze.com",        // 37
 }
 
 const (

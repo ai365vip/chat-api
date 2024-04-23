@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/model"
 	"strconv"
 	"strings"
@@ -17,7 +18,7 @@ func GetAllChannels(c *gin.Context) {
 		p = 0
 	}
 	if pageSize < 0 {
-		pageSize = common.ItemsPerPage
+		pageSize = config.ItemsPerPage
 	}
 	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
 	channels, err := model.GetAllChannels(p*pageSize, pageSize, false, idSort)

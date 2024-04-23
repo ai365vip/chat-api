@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/model"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
@@ -67,7 +68,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 		}
 	}
 
-	preConsumedTokens := common.PreConsumedQuota
+	preConsumedTokens := config.PreConsumedQuota
 	modelRatio := common.GetModelRatio(audioRequest.Model)
 	groupRatio := common.GetGroupRatio(group)
 	ratio := modelRatio * groupRatio
@@ -77,8 +78,8 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 		log.Println("获取token出错:", err)
 	}
 
-	BillingByRequestEnabled, _ := strconv.ParseBool(common.OptionMap["BillingByRequestEnabled"])
-	ModelRatioEnabled, _ := strconv.ParseBool(common.OptionMap["ModelRatioEnabled"])
+	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
+	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
 
 	if BillingByRequestEnabled && ModelRatioEnabled {
 		if token.BillingEnabled {
@@ -88,7 +89,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 					preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 				} else {
 					ratio = modelRatio2 * groupRatio
-					preConsumedQuota = int(ratio * common.QuotaPerUnit)
+					preConsumedQuota = int(ratio * config.QuotaPerUnit)
 				}
 			} else {
 				preConsumedQuota = int(float64(preConsumedTokens) * ratio)
@@ -102,7 +103,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 		} else {
 			ratio = modelRatio2 * groupRatio
-			preConsumedQuota = int(ratio * common.QuotaPerUnit)
+			preConsumedQuota = int(ratio * config.QuotaPerUnit)
 		}
 	} else {
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
@@ -218,7 +219,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 						modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 					} else {
 						ratio = modelRatio2 * groupRatio
-						quota = int(ratio * common.QuotaPerUnit)
+						quota = int(ratio * config.QuotaPerUnit)
 						modelRatioString = fmt.Sprintf("按次计费")
 					}
 				} else {
@@ -232,7 +233,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 				} else {
 					ratio = modelRatio2 * groupRatio
-					quota = int(ratio * common.QuotaPerUnit)
+					quota = int(ratio * config.QuotaPerUnit)
 					modelRatioString = fmt.Sprintf("按次计费")
 				}
 			} else {

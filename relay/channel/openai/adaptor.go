@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/relay/channel"
 	"one-api/relay/channel/minimax"
 	"one-api/relay/constant"
@@ -181,6 +182,19 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		err, responseText = StreamHandler(c, resp, meta.Mode, meta.FixedContent)
 		aitext = responseText
 		usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+		if usage.CompletionTokens == 0 {
+			if config.BlankReplyRetryEnabled {
+				return "", nil, &model.ErrorWithStatusCode{
+					Error: model.Error{
+						Message: "No completion tokens generated",
+						Type:    "chat_api_error",
+						Param:   "completionTokens",
+						Code:    500,
+					},
+					StatusCode: 500,
+				}
+			}
+		}
 	} else {
 		err, usage, aitext = Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
 	}

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	relaymodel "one-api/relay/model"
 	"strconv"
 	"strings"
@@ -14,7 +15,7 @@ import (
 )
 
 func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
-	if !common.AutomaticDisableChannelEnabled {
+	if !config.AutomaticDisableChannelEnabled {
 		return false
 	}
 	if err == nil {
@@ -58,7 +59,7 @@ func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
 }
 
 func ShouldEnableChannel(err error, openAIErr *relaymodel.Error) bool {
-	if !common.AutomaticEnableChannelEnabled {
+	if !config.AutomaticEnableChannelEnabled {
 		return false
 	}
 	if err != nil {

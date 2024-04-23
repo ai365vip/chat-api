@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"one-api/common"
+	"one-api/common/config"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,6 +23,9 @@ var (
 	UserId2StatusCacheSeconds = common.SyncFrequency
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 func CacheGetTokenByKey(key string) (*Token, error) {
 	keyCol := "`key`"
 	if common.UsingPostgreSQL {
@@ -95,7 +99,7 @@ func CacheGetUserQuota(ctx context.Context, id int) (quota int, err error) {
 	if err != nil {
 		return 0, nil
 	}
-	if quota <= common.PreConsumedQuota { // when user's quota is less than pre-consumed quota, we need to fetch from db
+	if quota <= config.PreConsumedQuota { // when user's quota is less than pre-consumed quota, we need to fetch from db
 		common.Infof(ctx, "user %d's cached quota is too low: %d, refreshing from db", quota, id)
 		return fetchAndUpdateUserQuota(ctx, id)
 	}
@@ -273,57 +277,47 @@ func selectChannel(channels []*Channel, excluded map[int]struct{}, ignoreFirstPr
 		return nil, errors.New("频道列表为空")
 	}
 
-	currentPriority := channels[0].GetPriority()
-	// 如果忽略第一优先级且i等于1，更新currentPriority为下一个优先级
-	if ignoreFirstPriority && i == 1 {
-		nextPriority, exists := getNextLowerPriority(channels, currentPriority)
-		if !exists {
-			return nil, errors.New("没有可用的更低优先级频道")
-		}
-		currentPriority = nextPriority
+	currentPriority, err := resolveInitialPriority(channels, ignoreFirstPriority, i)
+	if err != nil {
+		return nil, err
 	}
 
-	var priorityChannels []*Channel
-	var totalWeight int
-
 	for {
-		if ignoreFirstPriority {
-			priorityChannels, totalWeight = filterAndWeightChannels(channels, currentPriority, excluded)
-
-		} else {
-			for _, ch := range channels {
-				if ch.GetPriority() == currentPriority {
-					priorityChannels = append(priorityChannels, ch)
-					totalWeight += ch.GetWeight()
-				}
-
+		filteredChannels, totalWeight := filterAndWeightChannels(channels, currentPriority, excluded)
+		if len(filteredChannels) == 0 {
+			if nextPriority, exists := getNextLowerPriority(channels, currentPriority); exists {
+				currentPriority = nextPriority
+				continue
 			}
+			return nil, errors.New("没有可用的更低优先级频道")
 		}
 
-		if len(priorityChannels) == 0 {
-			// 没有符合当前优先级的频道，尝试更低的优先级
-			nextPriority, exists := getNextLowerPriority(channels, currentPriority)
-			if !exists {
-				break
-			}
-			currentPriority = nextPriority
-			continue
-		}
-
-		selectedChannel, err := weightedRandomSelection(priorityChannels, totalWeight, model)
-		if err == nil {
+		if selectedChannel, err := trySelectChannel(filteredChannels, totalWeight, model); err == nil {
 			return selectedChannel, nil
 		}
 
-		// 准备尝试下一个优先级
-		nextPriority, exists := getNextLowerPriority(channels, currentPriority)
-		if !exists {
+		if nextPriority, exists := getNextLowerPriority(channels, currentPriority); exists {
+			currentPriority = nextPriority
+		} else {
 			break
 		}
-		currentPriority = nextPriority
 	}
 
 	return nil, errors.New("没有可用的符合条件的频道")
+}
+
+func resolveInitialPriority(channels []*Channel, ignoreFirstPriority bool, i int) (int64, error) {
+	if ignoreFirstPriority && i == 1 {
+		if nextPriority, exists := getNextLowerPriority(channels, channels[0].GetPriority()); exists {
+			return nextPriority, nil
+		}
+		return 0, errors.New("没有可用的更低优先级频道")
+	}
+	return channels[0].GetPriority(), nil
+}
+
+func trySelectChannel(channels []*Channel, totalWeight int, model string) (*Channel, error) {
+	return weightedRandomSelection(channels, totalWeight, model)
 }
 
 // filterAndWeightChannels 过滤出同一优先级的频道，并计算总权重
@@ -339,12 +333,32 @@ func filterAndWeightChannels(channels []*Channel, priority int64, excluded map[i
 	return priorityChannels, totalWeight
 }
 
+func randomSelection(channels []*Channel, model string) (*Channel, error) {
+	filteredChannels := make([]*Channel, 0)
+	for _, channel := range channels {
+		if channel.RateLimited == nil || (channel.RateLimited != nil && !*channel.RateLimited) {
+			filteredChannels = append(filteredChannels, channel)
+		}
+	}
+	if len(filteredChannels) == 0 {
+		return nil, errors.New("没有未受限的频道可用")
+	}
+	selected := filteredChannels[rand.Intn(len(filteredChannels))]
+	updateRateLimitStatus(selected.Id, model)
+	return selected, nil
+}
+
 // weightedRandomSelection 根据权重随机选择一个频道
 func weightedRandomSelection(channels []*Channel, totalWeight int, model string) (*Channel, error) {
-	randomWeight := rand.Intn(totalWeight + 1)
+	if totalWeight == 0 {
+		// 所有权重都是0，随机选择一个频道
+		return randomSelection(channels, model)
+	}
+
+	randomWeight := rand.Intn(totalWeight)
 	for _, channel := range channels {
 		randomWeight -= channel.GetWeight()
-		if randomWeight <= 0 {
+		if randomWeight < 0 {
 			if channel.RateLimited != nil && *channel.RateLimited {
 				_, ok := checkRateLimit(channel.Id, model)
 				if !ok {

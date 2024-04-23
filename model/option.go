@@ -2,6 +2,7 @@ package model
 
 import (
 	"one-api/common"
+	"one-api/common/config"
 	"strconv"
 	"strings"
 	"time"
@@ -20,89 +21,97 @@ func AllOption() ([]*Option, error) {
 }
 
 func InitOptionMap() {
-	common.OptionMapRWMutex.Lock()
-	common.OptionMap = make(map[string]string)
-	common.OptionMap["FileUploadPermission"] = strconv.Itoa(common.FileUploadPermission)
-	common.OptionMap["FileDownloadPermission"] = strconv.Itoa(common.FileDownloadPermission)
-	common.OptionMap["ImageUploadPermission"] = strconv.Itoa(common.ImageUploadPermission)
-	common.OptionMap["ImageDownloadPermission"] = strconv.Itoa(common.ImageDownloadPermission)
-	common.OptionMap["PasswordLoginEnabled"] = strconv.FormatBool(common.PasswordLoginEnabled)
-	common.OptionMap["PasswordRegisterEnabled"] = strconv.FormatBool(common.PasswordRegisterEnabled)
-	common.OptionMap["EmailVerificationEnabled"] = strconv.FormatBool(common.EmailVerificationEnabled)
-	common.OptionMap["GitHubOAuthEnabled"] = strconv.FormatBool(common.GitHubOAuthEnabled)
-	common.OptionMap["WeChatAuthEnabled"] = strconv.FormatBool(common.WeChatAuthEnabled)
-	common.OptionMap["TurnstileCheckEnabled"] = strconv.FormatBool(common.TurnstileCheckEnabled)
-	common.OptionMap["RegisterEnabled"] = strconv.FormatBool(common.RegisterEnabled)
-	common.OptionMap["AutomaticDisableChannelEnabled"] = strconv.FormatBool(common.AutomaticDisableChannelEnabled)
-	common.OptionMap["LogConsumeEnabled"] = strconv.FormatBool(common.LogConsumeEnabled)
-	common.OptionMap["DisplayInCurrencyEnabled"] = strconv.FormatBool(common.DisplayInCurrencyEnabled)
-	common.OptionMap["DisplayTokenStatEnabled"] = strconv.FormatBool(common.DisplayTokenStatEnabled)
-	common.OptionMap["DrawingEnabled"] = strconv.FormatBool(common.DrawingEnabled)
-	common.OptionMap["TopupRatioEnabled"] = strconv.FormatBool(common.TopupRatioEnabled)
-	common.OptionMap["TopupAmountEnabled"] = strconv.FormatBool(common.TopupAmountEnabled)
-	common.OptionMap["DataExportEnabled"] = strconv.FormatBool(common.DataExportEnabled)
-	common.OptionMap["ChannelDisableThreshold"] = strconv.FormatFloat(common.ChannelDisableThreshold, 'f', -1, 64)
-	common.OptionMap["EmailDomainRestrictionEnabled"] = strconv.FormatBool(common.EmailDomainRestrictionEnabled)
-	common.OptionMap["EmailDomainWhitelist"] = strings.Join(common.EmailDomainWhitelist, ",")
-	common.OptionMap["SMTPServer"] = ""
-	common.OptionMap["SMTPFrom"] = ""
-	common.OptionMap["SMTPPort"] = strconv.Itoa(common.SMTPPort)
-	common.OptionMap["SMTPAccount"] = ""
-	common.OptionMap["SMTPToken"] = ""
-	common.OptionMap["Notice"] = ""
-	common.OptionMap["About"] = ""
-	common.OptionMap["HomePageContent"] = ""
-	common.OptionMap["Footer"] = common.Footer
-	common.OptionMap["SystemName"] = common.SystemName
-	common.OptionMap["SystemText "] = common.SystemText
-	common.OptionMap["Logo"] = common.Logo
-	common.OptionMap["ServerAddress"] = ""
-	common.OptionMap["PayAddress"] = ""
-	common.OptionMap["EpayId"] = ""
-	common.OptionMap["EpayKey"] = ""
-	common.OptionMap["Price"] = strconv.FormatFloat(common.Price, 'f', -1, 64)
-	common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
-	common.OptionMap["TopupRatio"] = common.TopupRatioJSONString()
-	common.OptionMap["TopupAmount"] = common.TopupAmountJSONString()
-	common.OptionMap["GitHubClientId"] = ""
-	common.OptionMap["GitHubClientSecret"] = ""
-	common.OptionMap["WeChatServerAddress"] = ""
-	common.OptionMap["WeChatServerToken"] = ""
-	common.OptionMap["WeChatAccountQRCodeImageURL"] = ""
-	common.OptionMap["TurnstileSiteKey"] = ""
-	common.OptionMap["TurnstileSecretKey"] = ""
-	common.OptionMap["QuotaForNewUser"] = strconv.Itoa(common.QuotaForNewUser)
-	common.OptionMap["QuotaForInviter"] = strconv.Itoa(common.QuotaForInviter)
-	common.OptionMap["QuotaForInvitee"] = strconv.Itoa(common.QuotaForInvitee)
-	common.OptionMap["QuotaRemindThreshold"] = strconv.Itoa(common.QuotaRemindThreshold)
-	common.OptionMap["PreConsumedQuota"] = strconv.Itoa(common.PreConsumedQuota)
-	common.OptionMap["ModelRatio"] = common.ModelRatioJSONString()
-	common.OptionMap["ModelPrice"] = common.ModelRatio2JSONString()
-	common.OptionMap["GroupRatio"] = common.GroupRatio2JSONString()
-	common.OptionMap["CompletionRatio"] = common.CompletionRatio2JSONString()
-	common.OptionMap["TopUpLink"] = common.TopUpLink
-	common.OptionMap["ChatLink"] = common.ChatLink
-	common.OptionMap["QuotaPerUnit"] = strconv.FormatFloat(common.QuotaPerUnit, 'f', -1, 64)
-	common.OptionMap["RetryTimes"] = strconv.Itoa(common.RetryTimes)
-	common.OptionMap["AppToken"] = ""
-	common.OptionMap["Uids"] = ""
-	common.OptionMap["NotificationEmail"] = ""
-	common.OptionMap["WxPusherNotificationsEnabled"] = strconv.FormatBool(common.WxPusherNotificationsEnabled)
-	common.OptionMap["EmailNotificationsEnabled"] = strconv.FormatBool(common.EmailNotificationsEnabled)
-	common.OptionMap["BillingByRequestEnabled"] = strconv.FormatBool(common.BillingByRequestEnabled)
-	common.OptionMap["ModelRatioEnabled"] = strconv.FormatBool(common.ModelRatioEnabled)
-	common.OptionMap["YzfZfb"] = strconv.FormatBool(common.Zfb)
-	common.OptionMap["YzfWx"] = strconv.FormatBool(common.Wx)
-	common.OptionMap["GroupEnable"] = strconv.FormatBool(common.GroupEnable)
-	common.OptionMap["LogContentEnabled"] = strconv.FormatBool(common.LogContentEnabled)
-	common.OptionMap["DataExportInterval"] = strconv.Itoa(common.DataExportInterval)
-	common.OptionMap["UserGroup"] = common.UserGroup
-	common.OptionMap["VipUserGroup"] = common.VipUserGroup
-	common.OptionMap["MiniQuota"] = strconv.FormatFloat(common.MiniQuota, 'f', -1, 64)
-	common.OptionMap["ProporTions"] = strconv.Itoa(common.ProporTions)
-	common.OptionMap["RedempTionCount"] = strconv.Itoa(common.RedempTionCount)
+	config.OptionMapRWMutex.Lock()
+	config.OptionMap = make(map[string]string)
+	config.OptionMap["FileUploadPermission"] = strconv.Itoa(common.FileUploadPermission)
+	config.OptionMap["FileDownloadPermission"] = strconv.Itoa(common.FileDownloadPermission)
+	config.OptionMap["ImageUploadPermission"] = strconv.Itoa(common.ImageUploadPermission)
+	config.OptionMap["ImageDownloadPermission"] = strconv.Itoa(common.ImageDownloadPermission)
+	config.OptionMap["PasswordLoginEnabled"] = strconv.FormatBool(config.PasswordLoginEnabled)
+	config.OptionMap["PasswordRegisterEnabled"] = strconv.FormatBool(config.PasswordRegisterEnabled)
+	config.OptionMap["EmailVerificationEnabled"] = strconv.FormatBool(config.EmailVerificationEnabled)
+	config.OptionMap["GitHubOAuthEnabled"] = strconv.FormatBool(config.GitHubOAuthEnabled)
+	config.OptionMap["WeChatAuthEnabled"] = strconv.FormatBool(config.WeChatAuthEnabled)
+	config.OptionMap["TurnstileCheckEnabled"] = strconv.FormatBool(config.TurnstileCheckEnabled)
+	config.OptionMap["RegisterEnabled"] = strconv.FormatBool(config.RegisterEnabled)
+	config.OptionMap["AutomaticDisableChannelEnabled"] = strconv.FormatBool(config.AutomaticDisableChannelEnabled)
+	config.OptionMap["LogConsumeEnabled"] = strconv.FormatBool(config.LogConsumeEnabled)
+	config.OptionMap["DisplayInCurrencyEnabled"] = strconv.FormatBool(config.DisplayInCurrencyEnabled)
+	config.OptionMap["DisplayTokenStatEnabled"] = strconv.FormatBool(config.DisplayTokenStatEnabled)
+	config.OptionMap["DrawingEnabled"] = strconv.FormatBool(config.DrawingEnabled)
+	config.OptionMap["TopupRatioEnabled"] = strconv.FormatBool(config.TopupRatioEnabled)
+	config.OptionMap["TopupAmountEnabled"] = strconv.FormatBool(config.TopupAmountEnabled)
+	config.OptionMap["DataExportEnabled"] = strconv.FormatBool(config.DataExportEnabled)
+	config.OptionMap["BlankReplyRetryEnabled"] = strconv.FormatBool(config.BlankReplyRetryEnabled)
+	config.OptionMap["ChannelDisableThreshold"] = strconv.FormatFloat(config.ChannelDisableThreshold, 'f', -1, 64)
+	config.OptionMap["EmailDomainRestrictionEnabled"] = strconv.FormatBool(config.EmailDomainRestrictionEnabled)
+	config.OptionMap["EmailDomainWhitelist"] = strings.Join(config.EmailDomainWhitelist, ",")
+	config.OptionMap["SMTPServer"] = ""
+	config.OptionMap["SMTPFrom"] = ""
+	config.OptionMap["SMTPPort"] = strconv.Itoa(config.SMTPPort)
+	config.OptionMap["SMTPAccount"] = ""
+	config.OptionMap["SMTPToken"] = ""
+	config.OptionMap["Notice"] = ""
+	config.OptionMap["About"] = ""
+	config.OptionMap["Faqs"] = ""
+	config.OptionMap["GroupModelLimits"] = ""
+	config.OptionMap["Models"] = ""
+	config.OptionMap["PerUseData"] = ""
+	config.OptionMap["PricingData"] = ""
+	config.OptionMap["HomePageContent"] = ""
+	config.OptionMap["Footer"] = config.Footer
+	config.OptionMap["SystemName"] = config.SystemName
+	config.OptionMap["SystemText "] = config.SystemText
+	config.OptionMap["Logo"] = config.Logo
+	config.OptionMap["ServerAddress"] = ""
+	config.OptionMap["PayAddress"] = ""
+	config.OptionMap["EpayId"] = ""
+	config.OptionMap["EpayKey"] = ""
+	config.OptionMap["Price"] = strconv.FormatFloat(config.Price, 'f', -1, 64)
+	config.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
+	config.OptionMap["TopupRatio"] = common.TopupRatioJSONString()
+	config.OptionMap["TopupAmount"] = common.TopupAmountJSONString()
+	config.OptionMap["GitHubClientId"] = ""
+	config.OptionMap["GitHubClientSecret"] = ""
+	config.OptionMap["WeChatServerAddress"] = ""
+	config.OptionMap["WeChatServerToken"] = ""
+	config.OptionMap["WeChatAccountQRCodeImageURL"] = ""
+	config.OptionMap["TurnstileSiteKey"] = ""
+	config.OptionMap["TurnstileSecretKey"] = ""
+	config.OptionMap["QuotaForNewUser"] = strconv.Itoa(config.QuotaForNewUser)
+	config.OptionMap["QuotaForInviter"] = strconv.Itoa(config.QuotaForInviter)
+	config.OptionMap["QuotaForInvitee"] = strconv.Itoa(config.QuotaForInvitee)
+	config.OptionMap["QuotaRemindThreshold"] = strconv.Itoa(config.QuotaRemindThreshold)
+	config.OptionMap["PreConsumedQuota"] = strconv.Itoa(config.PreConsumedQuota)
+	config.OptionMap["ModelRatio"] = common.ModelRatioJSONString()
+	config.OptionMap["ModelPrice"] = common.ModelRatio2JSONString()
+	config.OptionMap["GroupRatio"] = common.GroupRatio2JSONString()
+	config.OptionMap["CompletionRatio"] = common.CompletionRatio2JSONString()
+	config.OptionMap["TopUpLink"] = config.TopUpLink
+	config.OptionMap["ChatLink"] = config.ChatLink
+	config.OptionMap["QuotaPerUnit"] = strconv.FormatFloat(config.QuotaPerUnit, 'f', -1, 64)
+	config.OptionMap["RetryTimes"] = strconv.Itoa(config.RetryTimes)
+	config.OptionMap["AppToken"] = ""
+	config.OptionMap["Uids"] = ""
+	config.OptionMap["NotificationEmail"] = ""
+	config.OptionMap["WxPusherNotificationsEnabled"] = strconv.FormatBool(config.WxPusherNotificationsEnabled)
+	config.OptionMap["EmailNotificationsEnabled"] = strconv.FormatBool(config.EmailNotificationsEnabled)
+	config.OptionMap["BillingByRequestEnabled"] = strconv.FormatBool(config.BillingByRequestEnabled)
+	config.OptionMap["GroupModelEnabled"] = strconv.FormatBool(config.GroupModelEnabled)
+	config.OptionMap["GroupModelLimitsEnabled"] = strconv.FormatBool(config.GroupModelLimitsEnabled)
+	config.OptionMap["ModelRatioEnabled"] = strconv.FormatBool(config.ModelRatioEnabled)
+	config.OptionMap["YzfZfb"] = strconv.FormatBool(config.Zfb)
+	config.OptionMap["YzfWx"] = strconv.FormatBool(config.Wx)
+	config.OptionMap["GroupEnable"] = strconv.FormatBool(config.GroupEnable)
+	config.OptionMap["LogContentEnabled"] = strconv.FormatBool(config.LogContentEnabled)
+	config.OptionMap["DataExportInterval"] = strconv.Itoa(config.DataExportInterval)
+	config.OptionMap["UserGroup"] = config.UserGroup
+	config.OptionMap["VipUserGroup"] = config.VipUserGroup
+	config.OptionMap["MiniQuota"] = strconv.FormatFloat(config.MiniQuota, 'f', -1, 64)
+	config.OptionMap["ProporTions"] = strconv.Itoa(config.ProporTions)
+	config.OptionMap["RedempTionCount"] = strconv.Itoa(config.RedempTionCount)
 
-	common.OptionMapRWMutex.Unlock()
+	config.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
 }
 
@@ -141,9 +150,9 @@ func UpdateOption(key string, value string) error {
 }
 
 func updateOptionMap(key string, value string) (err error) {
-	common.OptionMapRWMutex.Lock()
-	defer common.OptionMapRWMutex.Unlock()
-	common.OptionMap[key] = value
+	config.OptionMapRWMutex.Lock()
+	defer config.OptionMapRWMutex.Unlock()
+	config.OptionMap[key] = value
 	if strings.HasSuffix(key, "Permission") {
 		intValue, _ := strconv.Atoi(value)
 		switch key {
@@ -161,81 +170,87 @@ func updateOptionMap(key string, value string) (err error) {
 		boolValue := value == "true"
 		switch key {
 		case "PasswordRegisterEnabled":
-			common.PasswordRegisterEnabled = boolValue
+			config.PasswordRegisterEnabled = boolValue
 		case "PasswordLoginEnabled":
-			common.PasswordLoginEnabled = boolValue
+			config.PasswordLoginEnabled = boolValue
 		case "EmailVerificationEnabled":
-			common.EmailVerificationEnabled = boolValue
+			config.EmailVerificationEnabled = boolValue
 		case "GitHubOAuthEnabled":
-			common.GitHubOAuthEnabled = boolValue
+			config.GitHubOAuthEnabled = boolValue
 		case "WeChatAuthEnabled":
-			common.WeChatAuthEnabled = boolValue
+			config.WeChatAuthEnabled = boolValue
 		case "TurnstileCheckEnabled":
-			common.TurnstileCheckEnabled = boolValue
+			config.TurnstileCheckEnabled = boolValue
 		case "RegisterEnabled":
-			common.RegisterEnabled = boolValue
+			config.RegisterEnabled = boolValue
 		case "EmailDomainRestrictionEnabled":
-			common.EmailDomainRestrictionEnabled = boolValue
+			config.EmailDomainRestrictionEnabled = boolValue
 		case "AutomaticDisableChannelEnabled":
-			common.AutomaticDisableChannelEnabled = boolValue
+			config.AutomaticDisableChannelEnabled = boolValue
 		case "LogConsumeEnabled":
-			common.LogConsumeEnabled = boolValue
+			config.LogConsumeEnabled = boolValue
 		case "DisplayInCurrencyEnabled":
-			common.DisplayInCurrencyEnabled = boolValue
+			config.DisplayInCurrencyEnabled = boolValue
 		case "WxPusherNotificationsEnabled":
-			common.WxPusherNotificationsEnabled = boolValue
+			config.WxPusherNotificationsEnabled = boolValue
 		case "EmailNotificationsEnabled":
-			common.EmailNotificationsEnabled = boolValue
+			config.EmailNotificationsEnabled = boolValue
 		case "BillingByRequestEnabled":
-			common.BillingByRequestEnabled = boolValue
+			config.BillingByRequestEnabled = boolValue
+		case "GroupModelEnabled":
+			config.GroupModelEnabled = boolValue
+		case "GroupModelLimitsEnabled":
+			config.GroupModelLimitsEnabled = boolValue
 		case "ModelRatioEnabled":
-			common.ModelRatioEnabled = boolValue
+			config.ModelRatioEnabled = boolValue
 		case "YzfZfb":
-			common.Zfb = boolValue
+			config.Zfb = boolValue
 		case "YzfWx":
-			common.Wx = boolValue
+			config.Wx = boolValue
 		case "GroupEnable":
-			common.GroupEnable = boolValue
+			config.GroupEnable = boolValue
 		case "LogContentEnabled":
-			common.LogContentEnabled = boolValue
+			config.LogContentEnabled = boolValue
 		case "DisplayTokenStatEnabled":
-			common.DisplayTokenStatEnabled = boolValue
+			config.DisplayTokenStatEnabled = boolValue
 		case "DrawingEnabled":
-			common.DrawingEnabled = boolValue
+			config.DrawingEnabled = boolValue
 		case "DataExportEnabled":
-			common.DataExportEnabled = boolValue
+			config.DataExportEnabled = boolValue
 		case "TopupRatioEnabled":
-			common.TopupRatioEnabled = boolValue
+			config.TopupRatioEnabled = boolValue
 		case "TopupAmountEnabled":
-			common.TopupAmountEnabled = boolValue
+			config.TopupAmountEnabled = boolValue
+		case "BlankReplyRetryEnabled":
+			config.BlankReplyRetryEnabled = boolValue
 		}
 	}
 	switch key {
 	case "EmailDomainWhitelist":
-		common.EmailDomainWhitelist = strings.Split(value, ",")
+		config.EmailDomainWhitelist = strings.Split(value, ",")
 	case "SMTPServer":
-		common.SMTPServer = value
+		config.SMTPServer = value
 	case "SMTPPort":
 		intValue, _ := strconv.Atoi(value)
-		common.SMTPPort = intValue
+		config.SMTPPort = intValue
 	case "SMTPAccount":
-		common.SMTPAccount = value
+		config.SMTPAccount = value
 	case "SMTPFrom":
-		common.SMTPFrom = value
+		config.SMTPFrom = value
 	case "SMTPToken":
-		common.SMTPToken = value
+		config.SMTPToken = value
 	case "ServerAddress":
-		common.ServerAddress = value
+		config.ServerAddress = value
 	case "PayAddress":
-		common.PayAddress = value
+		config.PayAddress = value
 	case "EpayId":
-		common.EpayId = value
+		config.EpayId = value
 	case "EpayKey":
-		common.EpayKey = value
+		config.EpayKey = value
 	case "Price":
-		common.Price, _ = strconv.ParseFloat(value, 64)
+		config.Price, _ = strconv.ParseFloat(value, 64)
 	case "MiniQuota":
-		common.MiniQuota, _ = strconv.ParseFloat(value, 64)
+		config.MiniQuota, _ = strconv.ParseFloat(value, 64)
 	case "TopupGroupRatio":
 		err = common.UpdateTopupGroupRatioByJSONString(value)
 	case "TopupRatio":
@@ -243,45 +258,45 @@ func updateOptionMap(key string, value string) (err error) {
 	case "TopupAmount":
 		err = common.UpdateAmountRatioByJSONString(value)
 	case "GitHubClientId":
-		common.GitHubClientId = value
+		config.GitHubClientId = value
 	case "GitHubClientSecret":
-		common.GitHubClientSecret = value
+		config.GitHubClientSecret = value
 	case "Footer":
-		common.Footer = value
+		config.Footer = value
 	case "SystemName":
-		common.SystemName = value
+		config.SystemName = value
 	case "SystemText":
-		common.SystemText = value
+		config.SystemText = value
 	case "Logo":
-		common.Logo = value
+		config.Logo = value
 	case "WeChatServerAddress":
-		common.WeChatServerAddress = value
+		config.WeChatServerAddress = value
 	case "WeChatServerToken":
-		common.WeChatServerToken = value
+		config.WeChatServerToken = value
 	case "WeChatAccountQRCodeImageURL":
-		common.WeChatAccountQRCodeImageURL = value
+		config.WeChatAccountQRCodeImageURL = value
 	case "TurnstileSiteKey":
-		common.TurnstileSiteKey = value
+		config.TurnstileSiteKey = value
 	case "TurnstileSecretKey":
-		common.TurnstileSecretKey = value
+		config.TurnstileSecretKey = value
 	case "QuotaForNewUser":
-		common.QuotaForNewUser, _ = strconv.Atoi(value)
+		config.QuotaForNewUser, _ = strconv.Atoi(value)
 	case "QuotaForInviter":
-		common.QuotaForInviter, _ = strconv.Atoi(value)
+		config.QuotaForInviter, _ = strconv.Atoi(value)
 	case "QuotaForInvitee":
-		common.QuotaForInvitee, _ = strconv.Atoi(value)
+		config.QuotaForInvitee, _ = strconv.Atoi(value)
 	case "QuotaRemindThreshold":
-		common.QuotaRemindThreshold, _ = strconv.Atoi(value)
+		config.QuotaRemindThreshold, _ = strconv.Atoi(value)
 	case "PreConsumedQuota":
-		common.PreConsumedQuota, _ = strconv.Atoi(value)
+		config.PreConsumedQuota, _ = strconv.Atoi(value)
 	case "RetryTimes":
-		common.RetryTimes, _ = strconv.Atoi(value)
+		config.RetryTimes, _ = strconv.Atoi(value)
 	case "DataExportInterval":
-		common.DataExportInterval, _ = strconv.Atoi(value)
+		config.DataExportInterval, _ = strconv.Atoi(value)
 	case "ProporTions":
-		common.ProporTions, _ = strconv.Atoi(value)
+		config.ProporTions, _ = strconv.Atoi(value)
 	case "RedempTionCount":
-		common.RedempTionCount, _ = strconv.Atoi(value)
+		config.RedempTionCount, _ = strconv.Atoi(value)
 	case "ModelRatio":
 		err = common.UpdateModelRatioByJSONString(value)
 	case "ModelPrice":
@@ -291,29 +306,29 @@ func updateOptionMap(key string, value string) (err error) {
 	case "CompletionRatio":
 		err = common.UpdateCompletionRatioByJSONString(value)
 	case "TopUpLink":
-		common.TopUpLink = value
+		config.TopUpLink = value
 	case "ChatLink":
-		common.ChatLink = value
+		config.ChatLink = value
 	case "ChannelDisableThreshold":
-		common.ChannelDisableThreshold, _ = strconv.ParseFloat(value, 64)
+		config.ChannelDisableThreshold, _ = strconv.ParseFloat(value, 64)
 	case "QuotaPerUnit":
-		common.QuotaPerUnit, _ = strconv.ParseFloat(value, 64)
+		config.QuotaPerUnit, _ = strconv.ParseFloat(value, 64)
 	case "AppToken":
-		common.AppToken = value
+		config.AppToken = value
 	case "Uids":
-		common.Uids = value
+		config.Uids = value
 	case "UserGroup":
-		common.UserGroup = value
+		config.UserGroup = value
 	case "VipUserGroup":
-		common.VipUserGroup = value
+		config.VipUserGroup = value
 	}
 	return err
 }
 
 // GetOptionFromMap retrieves an option value from the shared OptionMap based on its key.
 func GetOptionFromMap(key string) (string, bool) {
-	common.OptionMapRWMutex.RLock()
-	defer common.OptionMapRWMutex.RUnlock()
-	value, exists := common.OptionMap[key]
+	config.OptionMapRWMutex.RLock()
+	defer config.OptionMapRWMutex.RUnlock()
+	value, exists := config.OptionMap[key]
 	return value, exists
 }

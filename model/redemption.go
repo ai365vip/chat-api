@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"one-api/common"
+	"one-api/common/config"
 	"strconv"
 	"time"
 
@@ -58,7 +59,7 @@ func Redeem(key string, userId int) (quota int, err error) {
 	if common.UsingPostgreSQL {
 		keyCol = `"key"`
 	}
-	RedempTionCount := strconv.Itoa(common.RedempTionCount)
+	RedempTionCount := strconv.Itoa(config.RedempTionCount)
 
 	err = DB.Transaction(func(tx *gorm.DB) error {
 		err := tx.Set("gorm:query_option", "FOR UPDATE").Where(keyCol+" = ?", key).First(redemption).Error

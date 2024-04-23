@@ -81,8 +81,10 @@ const LogsTable = () => {
     const columns = [
         {
             title: '时间',
-            dataIndex: 'timestamp2string',
+            dataIndex: 'created_at',
+            render: (text) => timestamp2string(text),
         },
+        
         {
             title: '渠道',
             dataIndex: 'channel',
@@ -262,10 +264,11 @@ const LogsTable = () => {
     const [loading, setLoading] = useState(true);
     const [activePage, setActivePage] = useState(1);
     const [logCount, setLogCount] = useState(ITEMS_PER_PAGE);
-    const [searchKeyword, setSearchKeyword] = useState('');
-    const [searching, setSearching] = useState(false);
+
     const [logType, setLogType] = useState(0);
     const isAdminUser = isAdmin();
+    const [pageSize, setPageSize] = useState(parseInt(localStorage.getItem('pageSize') || ITEMS_PER_PAGE));
+
     let now = new Date();
     // 初始化start_timestamp为前一天
     const [inputs, setInputs] = useState({
@@ -286,6 +289,7 @@ const LogsTable = () => {
     const handleInputChange = (value, name) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
     };
+
 
     const getLogSelfStat = async () => {
         let localStartTimestamp = Date.parse(start_timestamp) / 1000;
@@ -345,53 +349,46 @@ const LogsTable = () => {
         }
     };
 
-    const setLogsFormat = (logs) => {
-        for (let i = 0; i < logs.length; i++) {
-            logs[i].timestamp2string = timestamp2string(logs[i].created_at);
-            logs[i].key = '' + logs[i].id;
-        }
-        // data.key = '' + data.id
-        setLogs(logs);
-        setLogCount(logs.length + ITEMS_PER_PAGE);
-    }
-
-    const loadLogs = async (startIdx) => {
+    
+    
+    const loadLogs = async (pageIndex) => {
         setLoading(true);
-
-        let url = '';
-        let localStartTimestamp = Date.parse(start_timestamp) / 1000;
-        let localEndTimestamp = Date.parse(end_timestamp) / 1000;
-        if (isAdminUser) {
-            url = `/api/log/?p=${startIdx}&type=${logType}&username=${username}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&channel=${channel}`;
-        } else {
-            url = `/api/log/self/?p=${startIdx}&type=${logType}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
-        }
-        const res = await API.get(url);
-        const {success, message, data} = res.data;
-        if (success) {
-            if (startIdx === 0) {
-                setLogsFormat(data);
+        const localStartTimestamp = Date.parse(start_timestamp) / 1000;
+        const localEndTimestamp = Date.parse(end_timestamp) / 1000;
+        const url = `/api/log/?p=${pageIndex}&type=${logType}&username=${username}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&channel=${channel}&pageSize=${pageSize}`;
+        try {
+            const res = await API.get(url);
+            const { success, data, total } = res.data;
+            if (success) {
+                setLogs(data);
+                setLogCount(total);
             } else {
-                let newLogs = [...logs];
-                newLogs.splice(startIdx * ITEMS_PER_PAGE, data.length, ...data);
-                setLogsFormat(newLogs);
+                showError(res.data.message);
             }
-        } else {
-            showError(message);
+        } catch (error) {
+            showError('加载数据失败');
         }
         setLoading(false);
     };
+    
 
-    const pageData = logs.slice((activePage - 1) * ITEMS_PER_PAGE, activePage * ITEMS_PER_PAGE);
-
-    const handlePageChange = page => {
-        setActivePage(page);
-        if (page === Math.ceil(logs.length / ITEMS_PER_PAGE) + 1) {
-            // In this case we have to load more data and then append them.
-            loadLogs(page - 1).then(r => {
-            });
-        }
+        
+    const handlePageChange = (newActivePage) => {
+        setActivePage(newActivePage);
     };
+    
+    const handlePageSizeChange = async (size) => {
+        setPageSize(size); // 更新 pageSize 状态
+        localStorage.setItem('pageSize', size.toString()); // 将新的 pageSize 存储到 localStorage
+        setActivePage(1); // 重置到第一页
+        await loadLogs(0); // 重新加载日志
+    };
+    
+
+    useEffect(() => {
+        // 这里假设后端分页是从 0 开始，所以传递 activePage - 1
+        loadLogs(activePage - 1);
+    }, [activePage]);
 
     const refresh = async () => {
         // setLoading(true);
@@ -411,53 +408,17 @@ const LogsTable = () => {
     useEffect(() => {
         refresh().then();
         getOptions();
-    }, [logType]);
+    }, [logType,pageSize]);
 
-    const searchLogs = async () => {
-        if (searchKeyword === '') {
-            // if keyword is blank, load files instead.
-            await loadLogs(0);
-            setActivePage(1);
-            return;
+    useEffect(() => {
+        const savedPageSize = localStorage.getItem('pageSize');
+        if (savedPageSize) {
+            setPageSize(parseInt(savedPageSize, 10)); // 使用从 localStorage 获取的 pageSize 更新状态
         }
-        setSearching(true);
-        const res = await API.get(`/api/log/self/search?keyword=${searchKeyword}`);
-        const {success, message, data} = res.data;
-        if (success) {
-            setLogs(data);
-            setActivePage(1);
-        } else {
-            showError(message);
-        }
-        setSearching(false);
-    };
-
-    const handleKeywordChange = async (e, {value}) => {
-        setSearchKeyword(value.trim());
-    };
-
-    const sortLog = (key) => {
-        if (logs.length === 0) return;
-        setLoading(true);
-        let sortedLogs = [...logs];
-        if (typeof sortedLogs[0][key] === 'string') {
-            sortedLogs.sort((a, b) => {
-                return ('' + a[key]).localeCompare(b[key]);
-            });
-        } else {
-            sortedLogs.sort((a, b) => {
-                if (a[key] === b[key]) return 0;
-                if (a[key] > b[key]) return -1;
-                if (a[key] < b[key]) return 1;
-            });
-        }
-        if (sortedLogs[0].id === logs[0].id) {
-            sortedLogs.reverse();
-        }
-        setLogs(sortedLogs);
-        setLoading(false);
-    };
-
+    }, []);
+    
+    
+ 
     return (
         <>
             <Layout>
@@ -504,13 +465,23 @@ const LogsTable = () => {
                         </Form.Section>
                     </>
                 </Form>
-                <Table columns={columns} dataSource={pageData} pagination={{
-                    currentPage: activePage,
-                    pageSize: ITEMS_PER_PAGE,
-                    total: logCount,
-                    pageSizeOpts: [10, 20, 50, 100],
-                    onPageChange: handlePageChange,
-                }} loading={loading}/>
+                <Table
+                    columns={columns}
+                    dataSource={logs}
+                    loading={loading}
+                    pagination={{
+                        currentPage: activePage,
+                        pageSize: pageSize,
+                        total: logCount,
+                        pageSizeOpts: [10, 20, 50, 100],
+                        showSizeChanger: true,
+                        onPageSizeChange: (size) => {
+                            handlePageSizeChange(size).then()
+                        },
+                        onPageChange: handlePageChange,
+                    }}
+                />
+
                 <Select defaultValue="0" style={{width: 120}} onChange={
                     (value) => {
                         setLogType(parseInt(value));
