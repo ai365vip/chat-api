@@ -124,9 +124,11 @@ func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io
 func (a *Adaptor) DoResponseV4(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (aitext string, usage *model.Usage, err *model.ErrorWithStatusCode) {
 	if meta.IsStream {
 		var responseText string
-		err, responseText = openai.StreamHandler(c, resp, meta.Mode, meta.FixedContent)
+		var toolCount int
+		err, responseText, toolCount = openai.StreamHandler(c, resp, meta.Mode, meta.FixedContent)
 		aitext = responseText
 		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+		usage.CompletionTokens += toolCount * 7
 	} else {
 		if meta.Mode == constant.RelayModeEmbeddings {
 			err, usage = EmbeddingsHandler(c, resp)

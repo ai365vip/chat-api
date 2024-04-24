@@ -178,10 +178,11 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 	aitext = ""
 	if meta.IsStream {
 		var responseText string
-
-		err, responseText = StreamHandler(c, resp, meta.Mode, meta.FixedContent)
+		var toolCount int
+		err, responseText, toolCount = StreamHandler(c, resp, meta.Mode, meta.FixedContent)
 		aitext = responseText
 		usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+		usage.CompletionTokens += toolCount * 7
 		if usage.CompletionTokens == 0 {
 			if config.BlankReplyRetryEnabled {
 				return "", nil, &model.ErrorWithStatusCode{

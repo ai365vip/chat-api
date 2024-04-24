@@ -74,6 +74,36 @@ func CountAudioToken(text string, model string) int {
 	}
 }
 
+func CountTokenChatRequest(messages []model.Message, model string) int {
+	tkm := 0
+	msgTokens := CountTokenMessages(messages, model)
+	tkm += msgTokens
+	for _, message := range messages {
+		if message.ToolCalls != nil {
+			toolTokens := processToolCalls(message.ToolCalls, model)
+			if toolTokens == -1 {
+				return 0
+			}
+			tkm += 8 + toolTokens
+		}
+	}
+	return tkm
+}
+
+func processToolCalls(toolCalls []model.Tool, model string) int {
+	countStr := ""
+	for _, tool := range toolCalls {
+		countStr += tool.Function.Name
+		if tool.Function.Description != "" {
+			countStr += tool.Function.Description
+		}
+		if tool.Function.Parameters != nil {
+			countStr += fmt.Sprintf("%v", tool.Function.Parameters)
+		}
+	}
+	return CountTokenInput(countStr, model)
+}
+
 func CountTokenMessages(messages []model.Message, model string) int {
 	tokenEncoder := getTokenEncoder(model)
 	// Reference:

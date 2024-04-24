@@ -17,8 +17,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedContent string) (*model.ErrorWithStatusCode, string) {
+func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedContent string) (*model.ErrorWithStatusCode, string, int) {
 	responseText := ""
+	toolCount := 0
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
@@ -66,6 +67,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 					for _, choice := range streamResponse.Choices {
 						responseText += common.AsString(choice.Delta.Content)
 						if choice.Delta.ToolCalls != nil {
+							if len(choice.Delta.ToolCalls) > toolCount {
+								toolCount = len(choice.Delta.ToolCalls)
+							}
 							for _, tool := range choice.Delta.ToolCalls {
 								responseText += common.AsString(tool.Function.Name)
 								responseText += common.AsString(tool.Function.Arguments)
@@ -134,9 +138,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 	})
 	err := resp.Body.Close()
 	if err != nil {
-		return ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), ""
+		return ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), "", 0
 	}
-	return nil, responseText
+	return nil, responseText, toolCount
 }
 
 func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
