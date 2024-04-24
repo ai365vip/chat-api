@@ -128,7 +128,7 @@ export default function MjLog() {
           <Container>
             <ButtonGroup variant="outlined" aria-label="outlined small primary button group">
               <Button onClick={handleRefresh} startIcon={<IconRefresh width={'18px'} />}>
-                刷新/清除搜索条件
+                重置
               </Button>
 
               <Button onClick={searchLogs} startIcon={<IconSearch width={'18px'} />}>

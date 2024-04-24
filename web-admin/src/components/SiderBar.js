@@ -34,7 +34,7 @@ const SiderBar = () => {
             text: '首页',
             itemKey: 'detail',
             to: '/detail',
-            icon: <IconCalendarClock />,
+            icon: <IconHome />,
             className: isAdmin()? "semi-navigation-item-normal" : "tableHiddle"
         },
         {

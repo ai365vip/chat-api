@@ -269,38 +269,30 @@ const LogsTable = () => {
     const isAdminUser = isAdmin();
     const [pageSize, setPageSize] = useState(parseInt(localStorage.getItem('pageSize') || ITEMS_PER_PAGE));
 
-    let now = new Date();
-    // 初始化start_timestamp为前一天
+    const now = new Date();
+
+    // 设置开始时间为今天的0点
+    now.setHours(0, 0, 0, 0); 
+    const startOfTodayTimestamp = now.getTime() / 1000; 
+    const endTimestamp = new Date().getTime() / 1000 + 600; 
     const [inputs, setInputs] = useState({
         username: '',
         token_name: '',
         model_name: '',
-        start_timestamp: timestamp2string(now.getTime() / 1000 - 86400),
-        end_timestamp: timestamp2string(now.getTime() / 1000 + 3600),
+        start_timestamp: timestamp2string(startOfTodayTimestamp),  
+        end_timestamp: timestamp2string(endTimestamp),
         channel: ''
     });
     const {username, token_name, model_name, start_timestamp, end_timestamp, channel} = inputs;
 
     const [stat, setStat] = useState({
         quota: 0,
-        token: 0
+        tpm: 0,
+        rpm: 0
     });
 
     const handleInputChange = (value, name) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
-    };
-
-
-    const getLogSelfStat = async () => {
-        let localStartTimestamp = Date.parse(start_timestamp) / 1000;
-        let localEndTimestamp = Date.parse(end_timestamp) / 1000;
-        let res = await API.get(`/api/log/self/stat?type=${logType}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`);
-        const {success, message, data} = res.data;
-        if (success) {
-            setStat(data);
-        } else {
-            showError(message);
-        }
     };
 
     const getLogStat = async () => {
@@ -319,9 +311,7 @@ const LogsTable = () => {
         if (!showStat) {
             if (isAdminUser) {
                 await getLogStat();
-            } else {
-                await getLogSelfStat();
-            }
+            } 
         }
         setShowStat(!showStat);
     };
@@ -394,6 +384,7 @@ const LogsTable = () => {
         // setLoading(true);
         setActivePage(1);
         await loadLogs(0);
+        await handleEyeClick(0);
     };
 
     const copyText = async (text) => {
@@ -408,13 +399,15 @@ const LogsTable = () => {
     useEffect(() => {
         refresh().then();
         getOptions();
+        
     }, [logType,pageSize]);
 
     useEffect(() => {
         const savedPageSize = localStorage.getItem('pageSize');
         if (savedPageSize) {
-            setPageSize(parseInt(savedPageSize, 10)); // 使用从 localStorage 获取的 pageSize 更新状态
+            setPageSize(parseInt(savedPageSize, 10)); 
         }
+        
     }, []);
     
     
@@ -423,12 +416,20 @@ const LogsTable = () => {
         <>
             <Layout>
                 <Header>
-                    <h3>使用明细（总消耗额度：
-                        {showStat && renderQuota(stat.quota)}
-                        {!showStat &&
-                            <span onClick={handleEyeClick} style={{cursor: 'pointer', color: 'gray'}}>点击查看</span>}
-                        ）
-                    </h3>
+                <h3 style={{
+                    color: '#333', 
+                    fontSize: '1.2rem', 
+                    marginBottom: '10px',
+                    backgroundColor: '#f8f8f8', 
+                    padding: '10px',
+                    borderRadius: '5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                    使用明细（总消耗额度：<span style={{ color: '#5ca941' }}>{renderQuota(stat.quota)}</span>,
+                    RPM: <span style={{ color: '#ff5722' }}>{stat.rpm}</span>,
+                    TPM: <span style={{ color: '#2196f3' }}>{stat.tpm}</span>）
+                </h3>
+
                 </Header>
                 <Form layout='horizontal' style={{marginTop: 10}}>
                     <>
@@ -449,16 +450,12 @@ const LogsTable = () => {
                                          value={end_timestamp} type='dateTime'
                                          name='end_timestamp'
                                          onChange={value => handleInputChange(value, 'end_timestamp')}/>
-                        {
-                            isAdminUser && <>
-                                <Form.Input field="channel" label='渠道 ID' style={{width: 176}} value={channel}
+                        <Form.Input field="channel" label='渠道 ID' style={{width: 176}} value={channel}
                                             placeholder='可选值' name='channel'
                                             onChange={value => handleInputChange(value, 'channel')}/>
-                                <Form.Input field="username" label='用户名称' style={{width: 176}} value={username}
-                                            placeholder={'可选值'} name='username'
-                                            onChange={value => handleInputChange(value, 'username')}/>
-                            </>
-                        }
+                        <Form.Input field="username" label='用户名称' style={{width: 176}} value={username}
+                                    placeholder={'可选值'} name='username'
+                                    onChange={value => handleInputChange(value, 'username')}/>
                         <Form.Section>
                             <Button label='查询' type="primary" htmlType="submit" className="btn-margin-right"
                                     onClick={refresh}>查询</Button>

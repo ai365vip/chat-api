@@ -6,6 +6,7 @@ import (
 	"one-api/common"
 	"one-api/common/config"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -404,26 +405,43 @@ type Stat struct {
 }
 
 func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (stat Stat) {
-	tx := DB.Table("logs").Select("sum(quota) quota, count(*) rpm, sum(prompt_tokens) + sum(completion_tokens) tpm")
+	// 获取当前时间的UNIX时间戳
+	currentTime := time.Now().Unix()
+
+	// 计算一分钟前的时间戳
+	oneMinuteAgo := currentTime - 60
+
+	// 创建基本查询，用于计算总quota
+	baseQuery := DB.Table("logs")
 	if username != "" {
-		tx = tx.Where("username = ?", username)
+		baseQuery = baseQuery.Where("username = ?", username)
 	}
 	if tokenName != "" {
-		tx = tx.Where("token_name = ?", tokenName)
+		baseQuery = baseQuery.Where("token_name = ?", tokenName)
 	}
 	if startTimestamp != 0 {
-		tx = tx.Where("created_at >= ?", startTimestamp)
+		baseQuery = baseQuery.Where("created_at >= ?", startTimestamp)
 	}
 	if endTimestamp != 0 {
-		tx = tx.Where("created_at <= ?", endTimestamp)
+		baseQuery = baseQuery.Where("created_at <= ?", endTimestamp)
 	}
 	if modelName != "" {
-		tx = tx.Where("model_name = ?", modelName)
+		baseQuery = baseQuery.Where("model_name = ?", modelName)
 	}
 	if channel != 0 {
-		tx = tx.Where("channel_id = ?", channel)
+		baseQuery = baseQuery.Where("channel_id = ?", channel)
 	}
-	tx.Where("type = ?", LogTypeConsume).Scan(&stat)
+	if logType != 0 {
+		baseQuery = baseQuery.Where("type = ?", logType)
+	}
+
+	// 计算总quota
+	baseQuery.Select("sum(quota) as quota").Scan(&stat.Quota)
+
+	// 从基本查询开始，添加时间约束，用于计算最近一分钟的rpm和tpm
+	baseQuery.Where("created_at >= ?", oneMinuteAgo).Where("created_at <= ?", currentTime).
+		Select("count(*) as rpm, sum(prompt_tokens) + sum(completion_tokens) as tpm").Scan(&stat)
+
 	return stat
 }
 

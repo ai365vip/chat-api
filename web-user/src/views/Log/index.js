@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { showError } from 'utils/common';
+import { showError,renderQuota } from 'utils/common';
 
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -10,7 +10,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Toolbar from '@mui/material/Toolbar';
 import { useNavigate } from 'react-router';
-import { Button, Card, Container, Box } from '@mui/material';
+import { Button, Card, Box } from '@mui/material';
 import LogTableRow from './component/TableRow';
 import LogTableHead from './component/TableHead';
 import TableToolBar from './component/TableToolBar';
@@ -20,13 +20,17 @@ import { ITEMS_PER_PAGE } from 'constants';
 import { IconRefresh, IconSearch,IconPhoto } from '@tabler/icons-react';
 
 export default function Log() {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0); 
+  const startOfTodayTimestamp = now.getTime() / 1000; 
+  const endTimestamp = new Date().getTime() / 1000 + 600; 
   const originalKeyword = {
     p: 0,
     username: '',
     token_name: '',
     model_name: '',
-    start_timestamp: 0,
-    end_timestamp: new Date().getTime() / 1000 + 3600,
+    start_timestamp: startOfTodayTimestamp,
+    end_timestamp: endTimestamp,
     type: 0,
     channel: ''
   };
@@ -39,6 +43,11 @@ export default function Log() {
   const navigate = useNavigate();
   const [rowsPerPage, setRowsPerPage] = useState(ITEMS_PER_PAGE);
   const [logCount, setLogCount] = useState(ITEMS_PER_PAGE);
+  const [stat, setStat] = useState({
+    quota: 0,
+    tpm: 0,
+    rpm: 0
+});
   const loadLogs = async (startIdx) => {
     setSearching(true);
     const url = userIsAdmin ? '/api/log/' : '/api/log/self/';
@@ -68,6 +77,23 @@ export default function Log() {
     setSearching(false);
   };
 
+  const getLogSelfStat = async () => {
+    const query = searchKeyword;
+    const url = 'api/log/self/stat';
+
+    if (!userIsAdmin) {
+      delete query.username;
+      delete query.channel;
+    }
+    const res = await API.get(url, { params: query });
+    const {success, message, data} = res.data;
+    if (success) {
+        setStat(data);
+    } else {
+        showError(message);
+    }
+};
+
   const onPaginationChange = (event, newPage) => {
     (async () => {
       if (newPage === Math.ceil(logs.length / rowsPerPage)) {
@@ -90,6 +116,7 @@ export default function Log() {
     event.preventDefault();
     await loadLogs(0);
     setActivePage(0);
+    getLogSelfStat()
     return;
   };
 
@@ -100,6 +127,7 @@ export default function Log() {
   // 处理刷新
   const handleRefresh = () => {
     setInitPage(true);
+    getLogSelfStat()
   };
   const goToLogPage = () => {
     navigate('/mjlog');
@@ -114,6 +142,7 @@ export default function Log() {
         showError(reason);
       });
     setInitPage(false);
+    getLogSelfStat()
   }, [initPage,rowsPerPage]);
 
   return (
@@ -124,30 +153,47 @@ export default function Log() {
         </Box>
         <Toolbar
           sx={{
-            textAlign: 'right',
-            height: 50,
             display: 'flex',
+            flexDirection: ['column', 'row'], // 在小屏设备上使用列布局，在大屏设备上使用行布局
+            alignItems: 'center',
             justifyContent: 'space-between',
-            p: (theme) => theme.spacing(0, 1, 0, 3)
+            p: (theme) => theme.spacing(0, 2),
+            backgroundColor: '#f8f8f8',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            minHeight: '64px',
+            '& h3': {
+              color: '#333',
+              fontSize: '1.2rem',
+              margin: '10px 0', // 在小屏设备上提供一些垂直间距
+              flexGrow: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start'
+            },
+            '& .MuiButtonGroup-root': {
+              margin: (theme) => theme.spacing(1, 0), // 在小屏设备上提供一些垂直间距
+            }
           }}
         >
-          <Container>
-            <ButtonGroup variant="outlined" aria-label="outlined small primary button group">
-              <Button onClick={handleRefresh} startIcon={<IconRefresh width={'18px'} />}>
-                刷新/清除搜索条件
-              </Button>
-
-              <Button onClick={searchLogs} startIcon={<IconSearch width={'18px'} />}>
-                搜索
-              </Button>
-              <Button
-                  onClick={goToLogPage}
-                  startIcon={<IconPhoto width={'18px'} />}>
-                MJ
-              </Button>
-            </ButtonGroup>
-          </Container>
+          <h3>
+            总消耗额度：<span style={{ color: '#5ca941' }}>{renderQuota(stat.quota, 2)}</span>,
+            RPM: <span style={{ color: '#ff5722' }}>{stat.rpm}</span>,
+            TPM: <span style={{ color: '#2196f3' }}>{stat.tpm}</span>
+          </h3>
+          <ButtonGroup variant="outlined" aria-label="outlined primary button group">
+            <Button onClick={handleRefresh} startIcon={<IconRefresh width={'18px'} />}>
+              重置
+            </Button>
+            <Button onClick={searchLogs} startIcon={<IconSearch width={'18px'} />}>
+              搜索
+            </Button>
+            <Button onClick={goToLogPage} startIcon={<IconPhoto width={'18px'} />}>
+              MJ
+            </Button>
+          </ButtonGroup>
         </Toolbar>
+
+
         {searching && <LinearProgress />}
         <PerfectScrollbar component="div">
           <TableContainer sx={{ overflow: 'unset' }}>
