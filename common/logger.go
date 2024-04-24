@@ -38,6 +38,10 @@ func SetupLogger() {
 			setupLogWorking = false
 		}()
 
+		if err := os.MkdirAll(*LogDir, 0755); err != nil {
+			log.Fatal("failed to create log directory:", err)
+		}
+
 		// 创建普通日志文件
 		logPath := filepath.Join(*LogDir, fmt.Sprintf("chatapi-%s.log", time.Now().Format("20060102")))
 		logFd, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
