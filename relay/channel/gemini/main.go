@@ -53,7 +53,17 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 			MaxOutputTokens: textRequest.MaxTokens,
 		},
 	}
-	if textRequest.Functions != nil {
+	if textRequest.Tools != nil {
+		functions := make([]model.Function, 0, len(textRequest.Tools))
+		for _, tool := range textRequest.Tools {
+			functions = append(functions, tool.Function)
+		}
+		geminiRequest.Tools = []ChatTools{
+			{
+				FunctionDeclarations: functions,
+			},
+		}
+	} else if textRequest.Functions != nil {
 		geminiRequest.Tools = []ChatTools{
 			{
 				FunctionDeclarations: textRequest.Functions,
@@ -159,33 +169,54 @@ type ChatPromptFeedback struct {
 	SafetyRatings []ChatSafetyRating `json:"safetyRatings"`
 }
 
-func responseGeminiChat2OpenAI(response *ChatResponse, fixedContent string) *openai.TextResponse {
+func getToolCalls(candidate *ChatCandidate) []model.Tool {
+	var toolCalls []model.Tool
+
+	item := candidate.Content.Parts[0]
+	if item.FunctionCall == nil {
+		return toolCalls
+	}
+	argsBytes, err := json.Marshal(item.FunctionCall.Arguments)
+	if err != nil {
+		logger.FatalLog("getToolCalls failed: " + err.Error())
+		return toolCalls
+	}
+	toolCall := model.Tool{
+		Id:   fmt.Sprintf("call_%s", common.GetUUID()),
+		Type: "function",
+		Function: model.Function{
+			Arguments: string(argsBytes),
+			Name:      item.FunctionCall.FunctionName,
+		},
+	}
+	toolCalls = append(toolCalls, toolCall)
+	return toolCalls
+}
+
+func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 	fullTextResponse := openai.TextResponse{
 		Id:      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
 		Object:  "chat.completion",
-		Created: common.GetTimestamp(),
+		Created: helper.GetTimestamp(),
 		Choices: make([]openai.TextResponseChoice, 0, len(response.Candidates)),
 	}
 	for i, candidate := range response.Candidates {
-		if len(candidate.Content.Parts) == 0 { // 添加验证确保Parts不为空
-			continue // 或者进行适当的错误处理
-		}
-		modifiedText := candidate.Content.Parts[0].Text
-		if fixedContent != "" {
-			modifiedText += "\n\n" + fixedContent
-		}
-		content, err := json.Marshal(modifiedText)
-		if err != nil {
-			// 处理错误，例如记录日志
-			continue // 这里简单跳过有问题的项目
-		}
 		choice := openai.TextResponseChoice{
 			Index: i,
 			Message: model.Message{
-				Role:    "assistant",
-				Content: json.RawMessage(content),
+				Role: "assistant",
 			},
 			FinishReason: constant.StopFinishReason,
+		}
+		if len(candidate.Content.Parts) > 0 {
+			if candidate.Content.Parts[0].FunctionCall != nil {
+				choice.Message.ToolCalls = getToolCalls(&candidate)
+			} else {
+				choice.Message.Content = candidate.Content.Parts[0].Text
+			}
+		} else {
+			choice.Message.Content = ""
+			choice.FinishReason = candidate.FinishReason
 		}
 		fullTextResponse.Choices = append(fullTextResponse.Choices, choice)
 	}
@@ -295,7 +326,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 
 func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
 	responseBody, err := io.ReadAll(resp.Body)
-	fixedContent := c.GetString("fixed_content")
+
 	responseText := ""
 	if err != nil {
 		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil, responseText
@@ -320,7 +351,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 			StatusCode: resp.StatusCode,
 		}, nil, responseText
 	}
-	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse, fixedContent)
+	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse)
 	fullTextResponse.Model = modelName
 	completionTokens := openai.CountTokenText(geminiResponse.GetResponseText(), modelName)
 	responseText = geminiResponse.GetResponseText()
