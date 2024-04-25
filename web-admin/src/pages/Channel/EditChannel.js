@@ -140,6 +140,9 @@ const EditChannel = (props) => {
                 case 34:
                     localModels = ['yi-34b-chat-0205','yi-34b-chat-200k','yi-vl-plus'];
                     break;
+                case 37:
+                    localModels = ['command','command-nightly','command-light','command-light-nightly','command-r','command-r-plus'];
+                    break;
             }
             setInputs((inputs) => ({...inputs, models: localModels}));
         }

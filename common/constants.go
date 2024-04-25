@@ -123,6 +123,7 @@ const (
 	ChannelTypeLingYiWanWu    = 34
 	ChannelTypeAwsClaude      = 35
 	ChannelTypeCoze           = 36
+	ChannelTypeCohere         = 37
 )
 
 var ChannelBaseURLs = []string{
@@ -163,6 +164,7 @@ var ChannelBaseURLs = []string{
 	"https://api.lingyiwanwu.com", // 34
 	"",                            // 35
 	"https://api.coze.com",        // 36
+	"https://api.cohere.ai",       //37
 }
 
 const (
