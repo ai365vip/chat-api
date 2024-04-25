@@ -49,6 +49,10 @@ func serveUserIndexPage(c *gin.Context) {
 }
 
 func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIndexPage []byte, defaultUserIndexPage []byte) {
+	// 设置默认的 User Index Page
+	router.Use(func(c *gin.Context) {
+		c.Set("defaultUserIndexPage", defaultUserIndexPage)
+	})
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())
@@ -64,11 +68,6 @@ func SetWebRouter(router *gin.Engine, adminFS embed.FS, userFS embed.FS, adminIn
 		log.Fatalf("Failed to create sub FS for user app: %v", err)
 	}
 	router.StaticFS("/panel", http.FS(userStaticFiles))
-
-	// 设置默认的 User Index Page
-	router.Use(func(c *gin.Context) {
-		c.Set("defaultUserIndexPage", defaultUserIndexPage)
-	})
 
 	router.NoRoute(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.RequestURI, "/v1") || strings.HasPrefix(c.Request.RequestURI, "/api") {

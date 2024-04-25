@@ -436,7 +436,7 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	}
 
 	// 计算总quota
-	baseQuery.Select("sum(quota) as quota").Scan(&stat.Quota)
+	baseQuery.Select("COALESCE(sum(quota), 0) as quota").Scan(&stat.Quota)
 
 	// 从基本查询开始，添加时间约束，用于计算最近一分钟的rpm和tpm
 	baseQuery.Where("created_at >= ?", oneMinuteAgo).Where("created_at <= ?", currentTime).
