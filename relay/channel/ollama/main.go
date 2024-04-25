@@ -54,6 +54,7 @@ func responseOllama2OpenAI(response *ChatResponse) *openai.TextResponse {
 	fullTextResponse := openai.TextResponse{
 		Id:      fmt.Sprintf("chatcmpl-%s", helper.GetUUID()),
 		Object:  "chat.completion",
+		Model:   response.Model,
 		Created: helper.GetTimestamp(),
 		Choices: []openai.TextResponseChoice{choice},
 		Usage: model.Usage{
