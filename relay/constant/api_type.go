@@ -15,8 +15,6 @@ const (
 	APITypeAIProxyLibrary
 	APITypeTencent
 	APITypeGemini
-	APITypeChatBot
-	APITypeLobeChat
 	APITypeDummy // this one is only for count, do not add any channel after this
 	APITypeStability
 	APITypeOllama
@@ -46,10 +44,6 @@ func ChannelType2APIType(channelType int) int {
 		apiType = APITypeTencent
 	case common.ChannelTypeGemini:
 		apiType = APITypeGemini
-	case common.ChannelTypeChatBot:
-		apiType = APITypeChatBot
-	case common.ChannelTypeLobeChat:
-		apiType = APITypeLobeChat
 	case common.ChannelTypeStability:
 		apiType = APITypeStability
 	case common.ChannelTypeOllama:

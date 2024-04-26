@@ -21,8 +21,6 @@ export const CHANNEL_OPTIONS = [
     {key: 19, text: '360 智脑', value: 19, color: 'blue', label: '360 智脑'},
     {key: 23, text: '腾讯混元', value: 23, color: 'teal', label: '腾讯混元'},
     {key: 8, text: '自定义渠道', value: 8, color: 'pink', label: '自定义渠道'},
-    {key: 26, text: 'LobeChat', value: 26, color: 'blue', label: 'LobeChat' },
-    {key: 28, text: 'Stability SD', value: 28, color: 'teal', label: 'Stability SD'},
     {key: 11, text: 'Google PaLM2', value: 11, color: 'orange', label: 'Google PaLM2'},
     {key: 22, text: '知识库：FastGPT', value: 22, color: 'blue', label: '知识库：FastGPT'},
     {key: 21, text: '知识库：AI Proxy', value: 21, color: 'purple', label: '知识库：AI Proxy'},
