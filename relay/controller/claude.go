@@ -112,10 +112,13 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 		logger.Errorf(ctx, "DoRequest failed: %s", err.Error())
 		return openai.ErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
-	meta.IsStream = meta.IsStream || strings.HasPrefix(resp.Header.Get("Content-Type"), "text/event-stream")
-	if resp != nil && resp.StatusCode != http.StatusOK {
-		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
-		return util.RelayErrorHandler(resp)
+	if resp != nil {
+		errorHappened := (resp.StatusCode != http.StatusOK) || (meta.IsStream && strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json"))
+		if errorHappened {
+			logger.Errorf(ctx, "errorHappened is not nil: %+v", errorHappened)
+			util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
+			return util.RelayErrorHandler(resp)
+		}
 	}
 
 	// 执行 DoResponse 方法

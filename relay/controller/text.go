@@ -132,6 +132,7 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	if resp != nil {
 		errorHappened := (resp.StatusCode != http.StatusOK) || (meta.IsStream && strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json"))
 		if errorHappened {
+			logger.Errorf(ctx, "errorHappened is not nil: %+v", errorHappened)
 			util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
 			return util.RelayErrorHandler(resp)
 		}
