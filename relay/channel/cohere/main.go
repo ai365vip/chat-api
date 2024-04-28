@@ -18,6 +18,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var (
+	WebSearchConnector = Connector{ID: "web-search"}
+)
+
 func stopReasonCohere2OpenAI(reason *string) string {
 	if reason == nil {
 		return ""
@@ -45,6 +49,10 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 	}
 	if cohereRequest.Model == "" {
 		cohereRequest.Model = "command-r"
+	}
+	if strings.HasSuffix(cohereRequest.Model, "-internet") {
+		cohereRequest.Model = strings.TrimSuffix(cohereRequest.Model, "-internet")
+		cohereRequest.Connectors = append(cohereRequest.Connectors, WebSearchConnector)
 	}
 	for _, message := range textRequest.Messages {
 		if message.Role == "user" {

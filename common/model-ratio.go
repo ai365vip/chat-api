@@ -320,7 +320,9 @@ func GetCompletionRatio(name string) float64 {
 	if strings.HasPrefix(name, "gemini-") {
 		return 3
 	}
-
+	if strings.HasPrefix(name, "command-") && strings.HasSuffix(name, "-internet") {
+		name = strings.TrimSuffix(name, "-internet")
+	}
 	switch name {
 	case "llama2-70b-4096":
 		return 0.8 / 0.64
