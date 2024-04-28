@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/common/helper"
+	"one-api/common/image"
 	"one-api/common/logger"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
@@ -31,9 +32,27 @@ func ConvertRequest(request model.GeneralOpenAIRequest) *ChatRequest {
 		Stream: request.Stream,
 	}
 	for _, message := range request.Messages {
+		openaiContent := message.ParseContent()
+		var imageUrls []string
+		var contentText string
+		for _, part := range openaiContent {
+			switch part.Type {
+			case model.ContentTypeText:
+				contentText = part.Text
+			case model.ContentTypeImageURL:
+				imageInfo, ok := part.ImageUrl.(model.MessageImageUrl)
+				if !ok {
+					logger.SysError("ImageUrl 类型断言失败")
+					return nil
+				}
+				_, data, _ := image.GetImageFromUrl(imageInfo.Url)
+				imageUrls = append(imageUrls, data)
+			}
+		}
 		ollamaRequest.Messages = append(ollamaRequest.Messages, Message{
 			Role:    message.Role,
-			Content: message.StringContent(),
+			Content: contentText,
+			Images:  imageUrls,
 		})
 	}
 	return &ollamaRequest
