@@ -236,9 +236,6 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 
 func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, string) {
 	responseText := ""
-	fixedContent := c.GetString("fixed_content")
-	dataChan := make(chan string)
-	stopChan := make(chan bool)
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
@@ -252,14 +249,16 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 		}
 		return 0, nil, nil
 	})
+	dataChan := make(chan string)
+	stopChan := make(chan bool)
 	go func() {
 		for scanner.Scan() {
 			data := scanner.Text()
 			data = strings.TrimSpace(data)
-			if !strings.HasPrefix(data, "\"text\": \"") {
+			if !strings.HasPrefix(data, "data: ") {
 				continue
 			}
-			data = strings.TrimPrefix(data, "\"text\": \"")
+			data = strings.TrimPrefix(data, "data: ")
 			data = strings.TrimSuffix(data, "\"")
 			dataChan <- data
 		}
@@ -269,23 +268,17 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case data := <-dataChan:
-			// this is used to prevent annoying \ related format bug
-			data = fmt.Sprintf("{\"content\": \"%s\"}", data)
-			type dummyStruct struct {
-				Content string `json:"content"`
+			var geminiResponse ChatResponse
+			err := json.Unmarshal([]byte(data), &geminiResponse)
+			if err != nil {
+				logger.SysError("error unmarshalling stream response: " + err.Error())
+				return true
 			}
-			var dummy dummyStruct
-			err := json.Unmarshal([]byte(data), &dummy)
-			responseText += dummy.Content
-			var choice openai.ChatCompletionsStreamResponseChoice
-			choice.Delta.Content = dummy.Content
-			response := openai.ChatCompletionsStreamResponse{
-				Id:      fmt.Sprintf("chatcmpl-%s", helper.GetUUID()),
-				Object:  "chat.completion.chunk",
-				Created: helper.GetTimestamp(),
-				Model:   "gemini-pro",
-				Choices: []openai.ChatCompletionsStreamResponseChoice{choice},
+			response := streamResponseGeminiChat2OpenAI(&geminiResponse)
+			if response == nil {
+				return true
 			}
+			responseText += fmt.Sprintf("%v", response.Choices[0].Delta.Content)
 			jsonResponse, err := json.Marshal(response)
 			if err != nil {
 				logger.SysError("error marshalling stream response: " + err.Error())
@@ -294,24 +287,6 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonResponse)})
 			return true
 		case <-stopChan:
-			if fixedContent != "" {
-				modifiedText := "\n\n" + fixedContent
-				var choice openai.ChatCompletionsStreamResponseChoice
-				choice.Delta.Content = modifiedText
-				response := openai.ChatCompletionsStreamResponse{
-					Id:      fmt.Sprintf("chatcmpl-%s", helper.GetUUID()),
-					Object:  "chat.completion.chunk",
-					Created: helper.GetTimestamp(),
-					Model:   "gemini-pro",
-					Choices: []openai.ChatCompletionsStreamResponseChoice{choice},
-				}
-				jsonResponse, err := json.Marshal(response)
-				if err != nil {
-					logger.SysError("error marshalling stream response: " + err.Error())
-					return true
-				}
-				c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonResponse)})
-			}
 
 			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 			return false
