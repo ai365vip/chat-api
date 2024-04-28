@@ -125,7 +125,7 @@ func (a *Adaptor) DoResponseV4(c *gin.Context, resp *http.Response, meta *util.R
 	if meta.IsStream {
 		var responseText string
 		var toolCount int
-		err, responseText, toolCount = openai.StreamHandler(c, resp, meta.Mode, meta.FixedContent)
+		err, responseText, toolCount = openai.StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
 		aitext = responseText
 		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 		usage.CompletionTokens += toolCount * 7

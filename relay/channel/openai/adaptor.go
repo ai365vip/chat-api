@@ -179,7 +179,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 	if meta.IsStream {
 		var responseText string
 		var toolCount int
-		err, responseText, toolCount = StreamHandler(c, resp, meta.Mode, meta.FixedContent)
+		err, responseText, toolCount = StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
 		aitext = responseText
 		usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 		usage.CompletionTokens += toolCount * 7

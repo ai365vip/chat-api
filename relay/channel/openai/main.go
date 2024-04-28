@@ -17,7 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedContent string) (*model.ErrorWithStatusCode, string, int) {
+func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName string, fixedContent string) (*model.ErrorWithStatusCode, string, int) {
 	responseText := ""
 	toolCount := 0
 	scanner := bufio.NewScanner(resp.Body)
@@ -77,6 +77,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 						}
 						if choice.FinishReason != nil && *choice.FinishReason == "stop" {
 							needInjectFixedContent = true // 需要注入fixedContent
+							stopMessage = data
 						}
 					}
 
@@ -91,28 +92,25 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, fixedCont
 						responseText += choice.Text
 						if choice.FinishReason == "stop" {
 							needInjectFixedContent = true // 需要注入fixedContent
+							stopMessage = data
 						}
 					}
 				}
 
 				if needInjectFixedContent {
-					stopMessage = data // 暂存当前停止消息
-					continue           // 继续下一个循环迭代
+					break
 				}
 			}
 
 			// 如果没有标记需要注入固定内容，那么直接发送
-			if !needInjectFixedContent && dataChan != nil {
+			if !needInjectFixedContent {
 				dataChan <- data
 			}
 		}
-
-		if needInjectFixedContent && stopMessage != "" {
-			if fixedContent != "" {
-				// 发送固定内容
-				fixedContentMessage := GenerateFixedContentMessage(fixedContent)
-				dataChan <- fixedContentMessage
-			}
+		if needInjectFixedContent && fixedContent != "" {
+			fixedContentMessage := GenerateFixedContentMessage(fixedContent, modelName)
+			dataChan <- fixedContentMessage
+		} else {
 			// 发送暂存的停止消息
 			dataChan <- stopMessage
 		}
@@ -232,12 +230,13 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 
 	return nil, &textResponse.Usage, responseText
 }
-func GenerateFixedContentMessage(fixedContent string) string {
+func GenerateFixedContentMessage(fixedContent string, modelName string) string {
 	// 在 fixedContent 的开始处添加换行符
 	modifiedFixedContent := "\n\n" + fixedContent
 	content := map[string]interface{}{
 		"id":      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
 		"object":  "chat.completion",
+		"model":   modelName,
 		"created": common.GetTimestamp(), // 这里可能需要根据实际情况动态生成
 		"choices": []map[string]interface{}{
 			{
