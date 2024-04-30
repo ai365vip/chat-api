@@ -39,6 +39,7 @@ type User struct {
 	InviterId        int            `json:"inviter_id" gorm:"type:int;column:inviter_id;index"`
 	CreatedAt        int64          `json:"created_at" gorm:"index"`
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
+	LastLoginAt      int64          `json:"last_login_at"`
 }
 
 type RechargeRecord struct {

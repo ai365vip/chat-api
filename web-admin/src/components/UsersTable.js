@@ -89,6 +89,16 @@ const UsersTable = () => {
         },
     },     
     {
+        title: '最后登录', dataIndex: 'last_login_at', render: (text, record, index) => {
+            if (!record.last_login_at) { // 检查 created_at 是否为空
+                return <Tag color='grey'>无</Tag>;
+            }
+            // Convert timestamp to readable date format.
+            const date = new Date(record.last_login_at * 1000); // 假设时间戳是秒级别的。
+            return `${date.getFullYear()}-${('0' + (date.getMonth() + 1)).slice(-2)}-${('0' + date.getDate()).slice(-2)} ${('0' + date.getHours()).slice(-2)}:${('0' + date.getMinutes()).slice(-2)}`;
+        },
+    }, 
+    {
         title: '', dataIndex: 'operate', render: (text, record, index) => (<div>
             {
                 record.DeletedAt !== null ? <></>:

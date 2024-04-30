@@ -84,6 +84,11 @@ func setupLogin(user *model.User, c *gin.Context) {
 		Status:      user.Status,
 		Group:       user.Group,
 	}
+	user.LastLoginAt = time.Now().Unix()
+	err = user.Update(false)
+	if err != nil {
+		common.SysError(fmt.Sprintf("update user last_login_at err: %s", err.Error()))
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "",
 		"success": true,
