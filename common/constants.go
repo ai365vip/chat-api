@@ -9,6 +9,8 @@ import (
 var DebugEnabled = os.Getenv("DEBUG") == "true"
 var MemoryCacheEnabled = os.Getenv("MEMORY_CACHE_ENABLED") == "true"
 
+var AdjustHour = GetAdjustHour("ADJUSTHOUR", 0)
+
 var GeminiSafetySetting = GetOrDefaultString("GEMINI_SAFETY_SETTING", "BLOCK_NONE")
 var IsMasterNode = os.Getenv("NODE_TYPE") != "slave"
 
