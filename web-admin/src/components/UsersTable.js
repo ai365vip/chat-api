@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {API, isAdmin, showError, showSuccess} from '../helpers';
-import {Button, Modal, Popconfirm, Popover, Table, Tag, Form, Tooltip, Space} from "@douyinfe/semi-ui";
+import {Button, Modal, Popconfirm, Select, Table, Tag, Form, Tooltip, Space} from "@douyinfe/semi-ui";
 import {ITEMS_PER_PAGE} from '../constants';
 import {renderGroup, renderNumber, renderQuota, renderText, stringToColor} from '../helpers/render';
 import AddUser from "../pages/User/AddUser";
@@ -149,6 +149,8 @@ const UsersTable = () => {
     const [userCount, setUserCount] = useState(ITEMS_PER_PAGE);
     const [showAddUser, setShowAddUser] = useState(false);
     const [showEditUser, setShowEditUser] = useState(false);
+    const [searchGroup, setSearchGroup] = useState('');
+    const [groupOptions, setGroupOptions] = useState([]);
     const [editingUser, setEditingUser] = useState({
         id: undefined,
     });
@@ -192,6 +194,22 @@ const UsersTable = () => {
         }
         setLoading(false);
     };
+    const fetchGroups = async () => {
+        try {
+          let res = await API.get(`/api/group/`);
+          if (res === undefined) {
+            return;
+          }
+          setGroupOptions(
+            res.data.data.map((group) => ({
+              label: group,
+              value: group,
+            })),
+          );
+        } catch (error) {
+          showError(error.message);
+        }
+      };
 
     const onPaginationChange = (e, {activePage}) => {
         (async () => {
@@ -209,6 +227,7 @@ const UsersTable = () => {
             .catch((reason) => {
                 showError(reason);
             });
+        fetchGroups().then();
     }, []);
 
     const manageUser = async (username, action, record) => {
@@ -247,15 +266,15 @@ const UsersTable = () => {
         }
     };
 
-    const searchUsers = async () => {
-        if (searchKeyword === '') {
+    const searchUsers = async (searchKeyword, searchGroup) => {
+        if (searchKeyword === '' && searchGroup === '') {
             // if keyword is blank, load files instead.
             await loadUsers(0);
             setActivePage(1);
             return;
         }
         setSearching(true);
-        const res = await API.get(`/api/user/search?keyword=${searchKeyword}`);
+        const res = await API.get(`/api/user/search?keyword=${searchKeyword}&group=${searchGroup}`);
         const {success, message, data} = res.data;
         if (success) {
             setUsers(data);
@@ -318,18 +337,46 @@ const UsersTable = () => {
         <>
             <AddUser refresh={refresh} visible={showAddUser} handleClose={closeAddUser}></AddUser>
             <EditUser refresh={refresh} visible={showEditUser} handleClose={closeEditUser} editingUser={editingUser}></EditUser>
-            <Form onSubmit={searchUsers}>
-                <Form.Input
-                    label='搜索关键字'
-                    icon='search'
-                    field='keyword'
-                    iconPosition='left'
-                    placeholder='搜索用户的 ID，用户名，显示名称，以及邮箱地址 ...'
-                    value={searchKeyword}
-                    loading={searching}
-                    onChange={value => handleKeywordChange(value)}
-                />
-            </Form>
+            <Form
+        onSubmit={() => {
+          searchUsers(searchKeyword, searchGroup);
+        }}
+        labelPosition='left'
+      >
+        <div style={{ display: 'flex' }}>
+          <Space>
+          <Form.Input
+            label='搜索关键字'
+            icon='search'
+            field='keyword'
+            iconPosition='left'
+            placeholder='搜索用户的 ID，用户名，显示名称，以及邮箱地址 ...'
+            value={searchKeyword}
+            loading={searching}
+            onChange={(value) => handleKeywordChange(value)}
+          />
+           <Select placeholder="分组" style={{ width: 100 }}
+                field="group" 
+                value={searchGroup} 
+                optionList={groupOptions} 
+                onChange={(value) => {
+                    setSearchGroup(value);
+                    searchUsers(searchKeyword, value);
+                    }}
+                autoComplete='new-password'
+            />
+          <Button
+            label='查询'
+            type='primary'
+            htmlType='submit'
+            className='btn-margin-right'
+            style={{ marginRight: 8 }}
+          >
+            查询
+          </Button>
+          </Space>
+        </div>
+      </Form>
 
             <Table columns={columns} dataSource={pageData} pagination={{
                 currentPage: activePage,

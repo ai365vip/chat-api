@@ -705,7 +705,7 @@ const ChannelsTable = () => {
 
         />
             
-            <div style={{position: 'sticky', top: 0, zIndex: 1000, backgroundColor: 'white'}}>
+            <div style={{position: 'sticky', top: 0, zIndex: 1000}}>
             
             <Form labelPosition='left'>
                 <div style={{display: 'flex',marginBottom: 20 }}>
