@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/common/config"
+	"one-api/common/logger"
 	"one-api/model"
 	"one-api/relay/constant"
 	"one-api/relay/util"
@@ -569,10 +570,14 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}
-			err = model.CacheUpdateUserQuota(c, userId)
+			err = model.CacheDecreaseUserQuota(userId, userQuota)
 			if err != nil {
-				common.SysError("error update user quota cache: " + err.Error())
+				logger.Error(ctx, "decrease_user_quota_failed"+err.Error())
 			}
+			//err = model.CacheUpdateUserQuota(c, userId)
+			//if err != nil {
+			//	common.SysError("error update user quota cache: " + err.Error())
+			//}
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
 				multiplier := fmt.Sprintf("模型固定价格 %.2f，分组倍率 %.2f，操作 %s", modelRatio, groupRatio, mjAction)

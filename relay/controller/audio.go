@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/common/config"
+	"one-api/common/logger"
 	"one-api/model"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
@@ -249,10 +250,14 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}
-			err = model.CacheUpdateUserQuota(c, userId)
+			err = model.CacheDecreaseUserQuota(userId, userQuota)
 			if err != nil {
-				common.SysError("error update user quota cache: " + err.Error())
+				logger.Error(ctx, "decrease_user_quota_failed"+err.Error())
 			}
+			//err = model.CacheUpdateUserQuota(c, userId)
+			//if err != nil {
+			//	common.SysError("error update user quota cache: " + err.Error())
+			//}
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
 				multiplier := fmt.Sprintf("%s，分组倍率 %.2f", modelRatioString, groupRatio)

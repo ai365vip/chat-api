@@ -268,10 +268,14 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 	if err != nil {
 		logger.Error(ctx, "error consuming token remain quota: "+err.Error())
 	}
-	err = model.CacheUpdateUserQuota(ctx, meta.UserId)
+	err = model.CacheDecreaseUserQuota(meta.UserId, quotaDelta)
 	if err != nil {
-		logger.Error(ctx, "error update user quota cache: "+err.Error())
+		logger.Error(ctx, "decrease_user_quota_failed"+err.Error())
 	}
+	//err = model.CacheUpdateUserQuota(ctx, meta.UserId)
+	//if err != nil {
+	//	logger.Error(ctx, "error update user quota cache: "+err.Error())
+	//}
 	logModel := textRequest.Model
 	if strings.HasPrefix(logModel, "gpt-4-gizmo") {
 		logModel = "gpt-4-gizmo-*"
