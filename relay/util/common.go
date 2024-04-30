@@ -122,6 +122,16 @@ func (e GeneralErrorResponse) ToMessage() string {
 }
 
 func RelayErrorHandler(resp *http.Response) (ErrorWithStatusCode *relaymodel.ErrorWithStatusCode) {
+	if resp == nil {
+		return &relaymodel.ErrorWithStatusCode{
+			StatusCode: 500,
+			Error: relaymodel.Error{
+				Message: "resp is nil",
+				Type:    "upstream_error",
+				Code:    "bad_response",
+			},
+		}
+	}
 	ErrorWithStatusCode = &relaymodel.ErrorWithStatusCode{
 		StatusCode: resp.StatusCode,
 		Error: relaymodel.Error{
