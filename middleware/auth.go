@@ -102,6 +102,7 @@ func getModelForPath(path string) string {
 	pathToModel := map[string]string{
 		"/v1/moderations":          "text-moderation-stable",
 		"/v1/images/generations":   "dall-e-2",
+		"/v1/images/edits":         "dall-e-2",
 		"/v1/audio/speech":         "tts-1",
 		"/v1/audio/transcriptions": "whisper-1",
 		"/v1/audio/translations":   "whisper-1",

@@ -197,7 +197,15 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 			}
 		}
 	} else {
-		err, usage, aitext = Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
+		switch meta.Mode {
+		case constant.RelayModeImagesGenerations:
+			err, _ = ImageHandler(c, resp)
+		case constant.RelayModeEdits:
+			err, _ = ImagesEditsHandler(c, resp)
+		default:
+			err, usage, aitext = Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
+		}
+
 	}
 	return
 }

@@ -23,8 +23,10 @@ import (
 func relay(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCode {
 	var err *dbmodel.ErrorWithStatusCode
 	switch relayMode {
-	case constant.RelayModeImagesGenerations:
+	case constant.RelayModeImagesGenerations,
+		constant.RelayModeEdits:
 		err = controller.RelayImageHelper(c, relayMode)
+
 	case constant.RelayModeAudioSpeech:
 		fallthrough
 	case constant.RelayModeAudioTranslation:
@@ -52,7 +54,7 @@ func Relay(c *gin.Context) {
 	channelName := c.GetString("channel_name")
 	group := c.GetString("group")
 	originalModel := c.GetString(ctxkey.OriginalModel)
-	go processChannelRelayError(c, channelId, channelName, bizErr)
+	processChannelRelayError(c, channelId, channelName, bizErr)
 	requestId := c.GetString("X-Chatapi-Request-Id")
 	retryTimes := config.RetryTimes
 	if !shouldRetry(c, bizErr.StatusCode) {
@@ -82,7 +84,7 @@ func Relay(c *gin.Context) {
 			continue
 		}
 		middleware.SetupContextForSelectedChannel(c, channel, originalModel)
-		requestBody, err := common.GetRequestBody(c)
+		requestBody, _ := common.GetRequestBody(c)
 
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 		bizErr = relay(c, relayMode)
@@ -92,7 +94,7 @@ func Relay(c *gin.Context) {
 		channelId := c.GetInt("channel_id")
 		lastFailedChannelId = channelId
 		channelName := c.GetString("channel_name")
-		go processChannelRelayError(c, channelId, channelName, bizErr)
+		processChannelRelayError(c, channelId, channelName, bizErr)
 	}
 	if bizErr != nil {
 		if bizErr.StatusCode == http.StatusTooManyRequests {

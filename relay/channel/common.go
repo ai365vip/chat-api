@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"one-api/common/ctxkey"
 	"one-api/relay/util"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,7 @@ func SetupCommonRequestHeader(c *gin.Context, req *http.Request, meta *util.Rela
 
 func DoRequestHelper(a Adaptor, c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
 	fullRequestURL, err := a.GetRequestURL(meta)
+
 	if err != nil {
 		return nil, fmt.Errorf("get request url failed: %w", err)
 	}
@@ -32,6 +34,7 @@ func DoRequestHelper(a Adaptor, c *gin.Context, meta *util.RelayMeta, requestBod
 	if err != nil {
 		return nil, fmt.Errorf("new request failed: %w", err)
 	}
+	req.Header.Set("Content-Type", c.GetString(ctxkey.ContentType))
 	err = a.SetupRequestHeader(c, req, meta)
 	if err != nil {
 		return nil, fmt.Errorf("setup request header failed: %w", err)

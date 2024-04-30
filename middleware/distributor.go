@@ -13,7 +13,7 @@ import (
 )
 
 type ModelRequest struct {
-	Model string `json:"model"`
+	Model string `json:"model" form:"model"`
 }
 
 func Distribute() func(c *gin.Context) {
@@ -118,6 +118,7 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("channel", channel.Type)
 	c.Set("channel_id", channel.Id)
 	c.Set("channel_name", channel.Name)
+	c.Set(ctxkey.ContentType, c.Request.Header.Get("Content-Type"))
 	c.Set("headers", channel.GetModelHeaders())
 	c.Set(ctxkey.OriginalModel, modelName)
 	ban := true

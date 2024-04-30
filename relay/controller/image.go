@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/common/config"
+	"one-api/common/ctxkey"
 	"one-api/common/logger"
 	"one-api/model"
 	"one-api/relay/channel/openai"
@@ -19,6 +20,7 @@ import (
 	relaymodel "one-api/relay/model"
 	"one-api/relay/util"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -57,14 +59,14 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 	if bizErr != nil {
 		return bizErr
 	}
-
 	imageCostRatio, err := getImageCostRatio(imageRequest)
 	if err != nil {
 		return openai.ErrorWrapper(err, "get_image_cost_ratio_failed", http.StatusInternalServerError)
 	}
 
 	var requestBody io.Reader
-	if isModelMapped || meta.ChannelType == common.ChannelTypeAzure { // make Azure channel request body
+	if strings.ToLower(c.GetString(ctxkey.ContentType)) == "application/json" &&
+		isModelMapped || meta.ChannelType == common.ChannelTypeAzure { // make Azure channel request body // make Azure channel request body
 		jsonStr, err := json.Marshal(imageRequest)
 		if err != nil {
 			return openai.ErrorWrapper(err, "marshal_image_request_failed", http.StatusInternalServerError)
@@ -188,4 +190,18 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 	}
 
 	return nil
+}
+
+func ImagesEditsHandler(c *gin.Context, resp *http.Response) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage) {
+	c.Writer.WriteHeader(resp.StatusCode)
+	for k, v := range resp.Header {
+		c.Writer.Header().Set(k, v[0])
+	}
+
+	if _, err := io.Copy(c.Writer, resp.Body); err != nil {
+		return openai.ErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil
+	}
+	defer resp.Body.Close()
+
+	return nil, nil
 }

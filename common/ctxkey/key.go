@@ -18,4 +18,5 @@ const (
 	TokenName         = "token_name"
 	BaseURL           = "base_url"
 	AvailableModels   = "available_models"
+	ContentType       = "content_type"
 )
