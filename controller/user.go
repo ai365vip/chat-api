@@ -199,6 +199,18 @@ func Register(c *gin.Context) {
 		})
 		return
 	}
+	user.ValidateAndFill()
+	cleanToken := model.Token{
+		UserId:         user.Id,
+		Name:           "初始令牌",
+		Key:            common.GenerateKey(),
+		CreatedTime:    0,
+		AccessedTime:   0,
+		ExpiredTime:    -1,
+		RemainQuota:    -1,
+		UnlimitedQuota: true,
+	}
+	cleanToken.Insert()
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
