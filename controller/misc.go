@@ -57,34 +57,11 @@ func GetNotice(c *gin.Context) {
 func GetAbout(c *gin.Context) {
 	config.OptionMapRWMutex.RLock()
 	defer config.OptionMapRWMutex.RUnlock()
-
-	// 从 OptionMap 中提取四个数据集
-	pricingData, pricingExists := config.OptionMap["PricingData"]
-	perUseData, perUseExists := config.OptionMap["PerUseData"]
-	models, modelsExists := config.OptionMap["Models"]
-	faqs, faqsExists := config.OptionMap["Faqs"]
-
-	// 检查四个集合是否都存在
-	if !pricingExists || !perUseExists || !modelsExists || !faqsExists {
-		c.JSON(http.StatusNotFound, gin.H{
-			"success": false,
-			"message": "One or more required data sets are missing",
-		})
-		return
-	}
-
-	// 如果都存在，则返回这四个数据集
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data": gin.H{
-			"PricingData": pricingData,
-			"PerUseData":  perUseData,
-			"Models":      models,
-			"Faqs":        faqs,
-		},
+		"data":    config.OptionMap["About"],
 	})
-	return
 }
 
 func GetMidjourney(c *gin.Context) {
