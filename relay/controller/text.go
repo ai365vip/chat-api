@@ -12,10 +12,10 @@ import (
 	"one-api/common/logger"
 	dbmodel "one-api/model"
 	"one-api/relay/channel/openai"
-	"one-api/relay/constant"
 	"one-api/relay/helper"
 	"one-api/relay/model"
 	"one-api/relay/util"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -24,7 +24,12 @@ import (
 )
 
 func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
-
+	modelMap := map[string]string{
+		"claude-3-haiku": "claude-3-haiku-20240307",
+		"claude-3-opus":  "claude-3-opus-20240229",
+		"gpt-4-vision":   "gpt-4-turbo",
+		"glm-v4":         "glm-4v",
+	}
 	ctx := c.Request.Context()
 	meta := util.GetRelayMeta(c)
 	// get & validate textRequest
@@ -36,10 +41,8 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	meta.IsClaude = false
 	meta.IsStream = textRequest.Stream
 
-	// map model name
-	var isModelMapped bool
 	meta.OriginModelName = textRequest.Model
-	textRequest.Model, isModelMapped = util.GetMappedModelName(textRequest.Model, meta.ModelMapping)
+	textRequest.Model, _ = util.GetMappedModelName(textRequest.Model, meta.ModelMapping)
 	meta.ActualModelName = textRequest.Model
 	// get model ratio & group ratio
 	modelRatio := common.GetModelRatio(textRequest.Model)
@@ -96,19 +99,49 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 
 	// get request body
 	var requestBody io.Reader
-	if meta.APIType == constant.APITypeOpenAI {
-		// no need to convert request for openai
-		if isModelMapped {
-			jsonStr, err := json.Marshal(textRequest)
-			if err != nil {
-				return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
-			}
-			requestBody = bytes.NewBuffer(jsonStr)
-		} else {
-			requestBody = c.Request.Body
+	if meta.ActualModelName == "gpt-4-vision" || meta.ActualModelName == "claude-3-haiku" ||
+		meta.ActualModelName == "claude-3-opus" ||
+		meta.ActualModelName == "glm-v4" {
+		var buf bytes.Buffer
+		_, err := buf.ReadFrom(c.Request.Body)
+		if err != nil {
+			return openai.ErrorWrapper(err, "failed_to_read_request_body", http.StatusInternalServerError)
 		}
-	} else {
+		originalRequestBody := buf.Bytes()
 
+		// 反序列化到TextRequest结构体
+		var textRequest model.GeneralOpenAIRequest
+		if err := json.Unmarshal(originalRequestBody, &textRequest); err != nil {
+			return openai.ErrorWrapper(err, "failed to unmarshal request body", http.StatusInternalServerError)
+		}
+		if modelName, ok := modelMap[meta.ActualModelName]; ok {
+			textRequest.Model = modelName
+		}
+
+		for i, msg := range textRequest.Messages {
+
+			contentStr := msg.Content.(string)
+			// 正则查找URL并构建新的消息内容
+			newContent, err := createNewContentWithImages(contentStr)
+			if err != nil {
+				return openai.ErrorWrapper(err, "create_new_content_error", http.StatusInternalServerError)
+			}
+			newContentBytes, err := json.Marshal(newContent)
+			if err != nil {
+				logger.Errorf(ctx, "cannot marshal new content: %v", err)
+			}
+			textRequest.Messages[i].Content = json.RawMessage(newContentBytes)
+		}
+		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, &textRequest)
+		if err != nil {
+			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
+		}
+		jsonData, err := json.Marshal(convertedRequest)
+		if err != nil {
+			return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
+		}
+		requestBody = bytes.NewBuffer(jsonData)
+	} else {
 		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, textRequest)
 		if err != nil {
 			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
@@ -153,4 +186,28 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	// post-consume quota
 	go postConsumeQuota(ctx, usage, meta, textRequest, ratio, preConsumedQuota, modelRatio, groupRatio, aitext, duration)
 	return nil
+}
+func createNewContentWithImages(contentStr string) ([]interface{}, error) {
+	re := regexp.MustCompile(`http[s]?:\/\/[^\s]+`)
+	matches := re.FindAllString(contentStr, -1)
+	description := re.ReplaceAllString(contentStr, "")
+
+	newContent := []interface{}{
+		openai.OpenAIMessageContent{Type: "text", Text: strings.TrimSpace(description)},
+	}
+	// 如果没有找到匹配的URL，直接返回已有结果和nil错误
+	if len(matches) == 0 {
+		return newContent, nil
+	}
+
+	for _, url := range matches {
+		newContent = append(newContent, openai.MediaMessageImage{
+			Type: "image_url",
+			ImageUrl: openai.MessageImageUrl{
+				Url:    url,
+				Detail: "high",
+			},
+		})
+	}
+	return newContent, nil
 }

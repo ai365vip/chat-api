@@ -1,12 +1,9 @@
 package openai
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/common/config"
@@ -15,7 +12,6 @@ import (
 	"one-api/relay/constant"
 	"one-api/relay/model"
 	"one-api/relay/util"
-	"regexp"
 
 	"strings"
 
@@ -83,91 +79,10 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
-	Model, _ := c.Get("model")
-	if Model == "gpt-4-vision" {
-		// 序列化原始请求体
-		var buf bytes.Buffer
-		_, err := buf.ReadFrom(c.Request.Body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read request body: %v", err)
-		}
-		originalRequestBody := buf.Bytes()
-
-		// 反序列化到TextRequest结构体
-		var textRequest model.GeneralOpenAIRequest
-		if err := json.Unmarshal(originalRequestBody, &textRequest); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal request body: %v", err)
-		}
-
-		updatedTextRequest, err := updateTextRequestForVision(&textRequest)
-		if err != nil {
-			return nil, fmt.Errorf("failed to update text request for vision: %v", err)
-		}
-		textRequest = *updatedTextRequest
-		// 将更新后的TextRequest重新序列化
-		updatedRequestBody, err := json.Marshal(textRequest)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal updated request body: %v", err)
-		}
-
-		// 使用新的请求体创建reader
-		requestBodyReader := bytes.NewReader(updatedRequestBody)
-
-		// 调用DoRequestHelper函数，传入新的请求体
-		return channel.DoRequestHelper(a, c, meta, requestBodyReader)
-	} else {
-		return channel.DoRequestHelper(a, c, meta, requestBody)
-	}
+	return channel.DoRequestHelper(a, c, meta, requestBody)
 
 }
 
-// 更新TextRequest为gpt-4-vision使用
-func updateTextRequestForVision(textRequest *model.GeneralOpenAIRequest) (*model.GeneralOpenAIRequest, error) {
-	textRequest.Model = "gpt-4-turbo"
-	textRequest.MaxTokens = 4096
-	for i, msg := range textRequest.Messages {
-
-		contentStr := msg.Content.(string)
-		// 正则查找URL并构建新的消息内容
-		newContent, err := createNewContentWithImages(contentStr)
-		if err != nil {
-			log.Printf("Create new content error: %v\n", err)
-			continue
-		}
-		newContentBytes, err := json.Marshal(newContent)
-		if err != nil {
-			return nil, fmt.Errorf("cannot marshal new content: %v", err)
-		}
-		textRequest.Messages[i].Content = json.RawMessage(newContentBytes)
-	}
-	return textRequest, nil
-}
-
-// 正则查找URL并构建新的消息内容
-func createNewContentWithImages(contentStr string) ([]interface{}, error) {
-	re := regexp.MustCompile(`http[s]?:\/\/[^\s]+`)
-	matches := re.FindAllString(contentStr, -1)
-	description := re.ReplaceAllString(contentStr, "")
-
-	newContent := []interface{}{
-		OpenAIMessageContent{Type: "text", Text: strings.TrimSpace(description)},
-	}
-	// 如果没有找到匹配的URL，直接返回已有结果和nil错误
-	if len(matches) == 0 {
-		return newContent, nil
-	}
-
-	for _, url := range matches {
-		newContent = append(newContent, MediaMessageImage{
-			Type: "image_url",
-			ImageUrl: MessageImageUrl{
-				Url:    url,
-				Detail: "high",
-			},
-		})
-	}
-	return newContent, nil
-}
 func (a *Adaptor) ConvertImageRequest(request *model.ImageRequest) (any, error) {
 	if request == nil {
 		return nil, errors.New("request is nil")
