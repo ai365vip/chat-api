@@ -27,7 +27,9 @@ func UpdateQuotaData() {
 			common.SysLog(fmt.Sprintf("UpdateQuotaData panic: %s", r))
 		}
 	}()
-	ticker := time.NewTicker(time.Duration(config.DataExportInterval) * time.Minute)
+
+	var currentInterval = config.DataExportInterval
+	ticker := time.NewTicker(time.Duration(currentInterval) * time.Minute)
 	defer ticker.Stop()
 
 	for {
@@ -35,6 +37,12 @@ func UpdateQuotaData() {
 		case <-ticker.C:
 			common.SysLog("正在更新数据看板数据...")
 			SaveQuotaDataCache()
+			// 检查间隔是否已更改
+			if currentInterval != config.DataExportInterval {
+				ticker.Stop()
+				currentInterval = config.DataExportInterval
+				ticker = time.NewTicker(time.Duration(currentInterval) * time.Minute)
+			}
 		}
 	}
 }
