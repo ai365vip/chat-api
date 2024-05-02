@@ -12,7 +12,6 @@ import (
 	"one-api/common/logger"
 	dbmodel "one-api/model"
 	"one-api/relay/channel/openai"
-	"one-api/relay/constant"
 	"one-api/relay/helper"
 	"one-api/relay/model"
 	"one-api/relay/util"
@@ -41,10 +40,9 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	}
 	meta.IsClaude = false
 	meta.IsStream = textRequest.Stream
-	var isModelMapped bool
-	meta.OriginModelName = textRequest.Model
 
-	textRequest.Model, isModelMapped = util.GetMappedModelName(textRequest.Model, meta.ModelMapping)
+	meta.OriginModelName = textRequest.Model
+	textRequest.Model, _ = util.GetMappedModelName(textRequest.Model, meta.ModelMapping)
 	meta.ActualModelName = textRequest.Model
 	// get model ratio & group ratio
 	modelRatio := common.GetModelRatio(textRequest.Model)
@@ -98,13 +96,12 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	if adaptor == nil {
 		return openai.ErrorWrapper(fmt.Errorf("invalid api type: %d", meta.APIType), "invalid_api_type", http.StatusBadRequest)
 	}
-	contentimage := false
+
 	// get request body
 	var requestBody io.Reader
 	if meta.ActualModelName == "gpt-4-vision" || meta.ActualModelName == "claude-3-haiku" ||
 		meta.ActualModelName == "claude-3-opus" ||
 		meta.ActualModelName == "glm-v4" {
-		contentimage = true
 		var buf bytes.Buffer
 		_, err := buf.ReadFrom(c.Request.Body)
 		if err != nil {
@@ -135,20 +132,15 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 			}
 			textRequest.Messages[i].Content = json.RawMessage(newContentBytes)
 		}
-
-	}
-	if meta.APIType == constant.APITypeOpenAI {
-		// no need to convert request for openai
-		shouldResetRequestBody := contentimage || isModelMapped || meta.ChannelType == common.ChannelTypeBaichuan // frequency_penalty 0 is not acceptable for baichuan
-		if shouldResetRequestBody {
-			jsonStr, err := json.Marshal(textRequest)
-			if err != nil {
-				return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
-			}
-			requestBody = bytes.NewBuffer(jsonStr)
-		} else {
-			requestBody = c.Request.Body
+		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, &textRequest)
+		if err != nil {
+			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
 		}
+		jsonData, err := json.Marshal(convertedRequest)
+		if err != nil {
+			return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
+		}
+		requestBody = bytes.NewBuffer(jsonData)
 	} else {
 		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, textRequest)
 		if err != nil {
@@ -158,7 +150,6 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		if err != nil {
 			return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
 		}
-		logger.Debugf(ctx, "converted request: \n%s", string(jsonData))
 		requestBody = bytes.NewBuffer(jsonData)
 	}
 	// do response
