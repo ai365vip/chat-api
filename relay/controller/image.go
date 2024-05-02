@@ -103,6 +103,9 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 	groupRatio := common.GetGroupRatio(group)
 	ratio := modelRatio * groupRatio
 	userQuota, err := model.CacheGetUserQuota(c, meta.UserId)
+	if err != nil {
+		return openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
+	}
 	sizeRatio := 1.0
 	modelRatioString := ""
 	quota := 0
@@ -122,7 +125,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 			} else {
 				ratio = modelRatio2 * groupRatio
 				quota = int(ratio * config.QuotaPerUnit)
-				modelRatioString = fmt.Sprintf("按次计费")
+				modelRatioString = "按次计费"
 			}
 		} else {
 			quota = int(ratio*sizeRatio*imageCostRatio*1000) * imageRequest.N
@@ -136,7 +139,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 		} else {
 			ratio = modelRatio2 * groupRatio
 			quota = int(ratio * 1 * 500000)
-			modelRatioString = fmt.Sprintf("按次计费")
+			modelRatioString = "按次计费"
 		}
 	} else {
 		quota = int(ratio*sizeRatio*imageCostRatio*1000) * imageRequest.N
@@ -163,7 +166,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 		if err != nil {
 			common.SysError("error consuming token remain quota: " + err.Error())
 		}
-		err = model.CacheDecreaseUserQuota(meta.UserId, userQuota)
+		err = model.CacheDecreaseUserQuota(meta.UserId, quota)
 		if err != nil {
 			logger.Error(ctx, "decrease_user_quota_failed"+err.Error())
 		}
@@ -174,7 +177,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 		if quota != 0 {
 			tokenName := c.GetString("token_name")
 			multiplier := fmt.Sprintf(" %s，分组倍率 %.2f", modelRatioString, groupRatio)
-			logContent := fmt.Sprintf(" ")
+			logContent := " "
 			model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, channelName, 0, 0, imageRequest.Model, tokenName, quota, logContent, meta.TokenId, multiplier, userQuota, int(useTimeSeconds), false)
 			model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
 			channelId := c.GetInt("channel_id")

@@ -126,8 +126,11 @@ func loadOptionsFromDatabase() {
 }
 
 func SyncOptions(frequency int) {
+	ticker := time.NewTicker(time.Duration(frequency) * time.Second)
+	defer ticker.Stop()
+
 	for {
-		time.Sleep(time.Duration(frequency) * time.Second)
+		<-ticker.C // 等待下一个tick
 		common.SysLog("syncing options from database")
 		loadOptionsFromDatabase()
 	}

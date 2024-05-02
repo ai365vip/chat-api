@@ -22,16 +22,20 @@ type QuotaData struct {
 }
 
 func UpdateQuotaData() {
-	// recover
 	defer func() {
 		if r := recover(); r != nil {
 			common.SysLog(fmt.Sprintf("UpdateQuotaData panic: %s", r))
 		}
 	}()
+	ticker := time.NewTicker(time.Duration(config.DataExportInterval) * time.Minute)
+	defer ticker.Stop()
+
 	for {
-		common.SysLog("正在更新数据看板数据...")
-		SaveQuotaDataCache()
-		time.Sleep(time.Duration(config.DataExportInterval) * time.Minute)
+		select {
+		case <-ticker.C:
+			common.SysLog("正在更新数据看板数据...")
+			SaveQuotaDataCache()
+		}
 	}
 }
 

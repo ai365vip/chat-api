@@ -570,7 +570,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *MidjourneyResponse {
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}
-			err = model.CacheDecreaseUserQuota(userId, userQuota)
+			err = model.CacheDecreaseUserQuota(userId, quota)
 			if err != nil {
 				logger.Error(ctx, "decrease_user_quota_failed"+err.Error())
 			}

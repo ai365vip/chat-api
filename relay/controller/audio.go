@@ -221,7 +221,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 					} else {
 						ratio = modelRatio2 * groupRatio
 						quota = int(ratio * config.QuotaPerUnit)
-						modelRatioString = fmt.Sprintf("按次计费")
+						modelRatioString = "按次计费"
 					}
 				} else {
 					quota = int(float64(quota) * ratio)
@@ -235,7 +235,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 				} else {
 					ratio = modelRatio2 * groupRatio
 					quota = int(ratio * config.QuotaPerUnit)
-					modelRatioString = fmt.Sprintf("按次计费")
+					modelRatioString = "按次计费"
 				}
 			} else {
 				quota = int(float64(quota) * ratio)
@@ -250,7 +250,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}
-			err = model.CacheDecreaseUserQuota(userId, userQuota)
+			err = model.CacheDecreaseUserQuota(userId, quotaDelta)
 			if err != nil {
 				logger.Error(ctx, "decrease_user_quota_failed"+err.Error())
 			}
@@ -261,7 +261,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
 				multiplier := fmt.Sprintf("%s，分组倍率 %.2f", modelRatioString, groupRatio)
-				logContent := fmt.Sprintf(" ")
+				logContent := " "
 				model.RecordConsumeLog(ctx, userId, channelId, channelName, promptTokens, 0, audioRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota, int(useTimeSeconds), false)
 				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 				channelId := c.GetInt("channel_id")

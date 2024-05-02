@@ -194,7 +194,13 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 
 	}
 	userQuota, err := model.CacheGetUserQuota(ctx, meta.UserId)
+	if err != nil {
+		openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
+	}
 	token, err := model.GetTokenById(meta.TokenId)
+	if err != nil {
+		log.Println("获取token出错:", err)
+	}
 	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
 	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
 	modelRatioString := ""
@@ -214,7 +220,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 				groupRatio := common.GetGroupRatio(meta.Group)
 				ratio = modelRatio2 * groupRatio
 				quota = int(ratio * config.QuotaPerUnit)
-				modelRatioString = fmt.Sprintf("按次计费")
+				modelRatioString = "按次计费"
 			}
 		} else {
 			quota = int(float64(quota) * ratio)
@@ -229,7 +235,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 			groupRatio := common.GetGroupRatio(meta.Group)
 			ratio = modelRatio2 * groupRatio
 			quota = int(ratio * config.QuotaPerUnit)
-			modelRatioString = fmt.Sprintf("按次计费")
+			modelRatioString = "按次计费"
 		}
 	} else {
 		quota = int(float64(quota) * ratio)

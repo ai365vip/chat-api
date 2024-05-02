@@ -707,17 +707,21 @@ func GetUsernameById(id int) (username string) {
 }
 
 func UpdateUserQuotaData() {
-	// recover
-	defer func() {
-		if r := recover(); r != nil {
-			common.SysLog(fmt.Sprintf("UpdateUserQuotaData panic: %s", r))
-		}
-	}()
-	for {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+
+	for range ticker.C {
 		common.SysLog("正在更新用户余额日期...")
 
 		// 获取当前时间戳
 		currentTime := time.Now().Unix()
+
+		// 预查询是否存在过期记录，减少不必要的事务
+		var count int64
+		DB.Model(&RechargeRecord{}).Where("end_date <= ? AND end_date != -1 AND amount > 0", currentTime).Count(&count)
+		if count == 0 {
+			continue // 如果没有记录，跳过此次循环
+		}
 
 		// 启动一个事务来更新用户余额和处理过期的充值记录
 		err := DB.Transaction(func(tx *gorm.DB) error {
@@ -758,7 +762,5 @@ func UpdateUserQuotaData() {
 		} else {
 			common.SysLog("成功更新用户余额并清理过期充值记录。")
 		}
-
-		time.Sleep(time.Duration(60) * time.Minute) // 每小时运行一次
 	}
 }
