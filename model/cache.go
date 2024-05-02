@@ -126,25 +126,13 @@ func CacheDecreaseUserQuota(id int, quota int) error {
 	key := fmt.Sprintf("user_quota:%d", id)
 	_, err := common.RedisGet(key)
 	if err != nil {
-		if _, err := fetcacheDecreaseUserQuota(id); err != nil {
+		if _, err := fetchAndUpdateUserQuota(context.Background(), id); err != nil {
 			return err
 		}
 	}
 
 	// 有数据或已设置完成，执行减少操作
 	return common.RedisDecrease(key, int64(quota))
-}
-
-func fetcacheDecreaseUserQuota(id int) (quota int, err error) {
-	quota, err = GetUserQuota(id)
-	if err != nil {
-		return 0, err
-	}
-	err = common.RedisSet(fmt.Sprintf("user_quota:%d", id), fmt.Sprintf("%d", quota), time.Duration(UserId2QuotaCacheSeconds)*time.Second)
-	if err != nil {
-		common.SysError("Redis set user quota error: " + err.Error())
-	}
-	return
 }
 
 func CacheIsUserEnabled(userId int) (bool, error) {
