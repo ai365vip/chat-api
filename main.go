@@ -41,7 +41,7 @@ func main() {
 		log.Println("Warning: .env file not found or error loading")
 	}
 
-	common.SysLog("Chat API " + config.Version + " started")
+	common.SysLog("Chat API " + common.Version + " started")
 	if os.Getenv("GIN_MODE") != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}

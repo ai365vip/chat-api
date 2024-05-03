@@ -17,7 +17,8 @@ func GetStatus(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data": gin.H{
-			"start_time":          config.StartTime,
+			"version":             common.Version,
+			"start_time":          common.StartTime,
 			"email_verification":  config.EmailVerificationEnabled,
 			"github_oauth":        config.GitHubOAuthEnabled,
 			"github_client_id":    config.GitHubClientId,
