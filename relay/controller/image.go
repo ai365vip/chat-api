@@ -39,8 +39,6 @@ func isWithinRange(element string, value int) bool {
 func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatusCode {
 	ctx := c.Request.Context()
 	meta := util.GetRelayMeta(c)
-	channelName := c.GetString("channel_name")
-	group := c.GetString("group")
 	startTime := time.Now()
 	imageRequest, err := getImageRequest(c, meta.Mode)
 	if err != nil {
@@ -100,7 +98,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 	}
 
 	modelRatio := common.GetModelRatio(imageRequest.Model)
-	groupRatio := common.GetGroupRatio(group)
+	groupRatio := common.GetGroupRatio(meta.Group)
 	ratio := modelRatio * groupRatio
 	userQuota, err := model.CacheGetUserQuota(c, meta.UserId)
 	if err != nil {
@@ -178,10 +176,9 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 			tokenName := c.GetString("token_name")
 			multiplier := fmt.Sprintf(" %s，分组倍率 %.2f", modelRatioString, groupRatio)
 			logContent := " "
-			model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, channelName, 0, 0, imageRequest.Model, tokenName, quota, logContent, meta.TokenId, multiplier, userQuota, int(useTimeSeconds), false)
+			model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, meta.ChannelName, 0, 0, imageRequest.Model, tokenName, quota, logContent, meta.TokenId, multiplier, userQuota, int(useTimeSeconds), false)
 			model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
-			channelId := c.GetInt("channel_id")
-			model.UpdateChannelUsedQuota(channelId, quota)
+			model.UpdateChannelUsedQuota(meta.ChannelId, quota)
 		}
 	}(c.Request.Context())
 
