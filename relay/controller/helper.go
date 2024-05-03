@@ -215,7 +215,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 			modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
 			if !ok {
 				quota = int(float64(quota) * ratio)
-				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+				modelRatioString = fmt.Sprintf("模型倍率 %.2f，补全倍率%.2f", modelRatio, completionRatio)
 			} else {
 				groupRatio := common.GetGroupRatio(meta.Group)
 				ratio = modelRatio2 * groupRatio
@@ -224,13 +224,13 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 			}
 		} else {
 			quota = int(float64(quota) * ratio)
-			modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+			modelRatioString = fmt.Sprintf("模型倍率 %.2f，补全倍率%.2f", modelRatio, completionRatio)
 		}
 	} else if BillingByRequestEnabled {
 		modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
 		if !ok {
 			quota = int(float64(quota) * ratio)
-			modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+			modelRatioString = fmt.Sprintf("模型倍率 %.2f，补全倍率%.2f", modelRatio, completionRatio)
 		} else {
 			groupRatio := common.GetGroupRatio(meta.Group)
 			ratio = modelRatio2 * groupRatio
@@ -239,7 +239,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 		}
 	} else {
 		quota = int(float64(quota) * ratio)
-		modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
+		modelRatioString = fmt.Sprintf("模型倍率 %.2f，补全倍率%.2f", modelRatio, completionRatio)
 	}
 	if ratio != 0 && quota <= 0 {
 		quota = 1
