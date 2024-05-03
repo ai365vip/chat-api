@@ -34,13 +34,7 @@ var availableVoices = []string{
 }
 
 func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCode {
-
-	tokenId := c.GetInt("token_id")
-	channelType := c.GetInt("channel")
-	channelId := c.GetInt("channel_id")
-	channelName := c.GetString("channel_name")
-	userId := c.GetInt("id")
-	group := c.GetString("group")
+	meta := util.GetRelayMeta(c)
 	startTime := time.Now()
 	var audioRequest openai.TextToSpeechRequest
 	if !strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") {
@@ -71,10 +65,10 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 
 	preConsumedTokens := config.PreConsumedQuota
 	modelRatio := common.GetModelRatio(audioRequest.Model)
-	groupRatio := common.GetGroupRatio(group)
+	groupRatio := common.GetGroupRatio(meta.Group)
 	ratio := modelRatio * groupRatio
 	preConsumedQuota := 0
-	token, err := model.GetTokenById(tokenId)
+	token, err := model.GetTokenById(meta.TokenId)
 	if err != nil {
 		log.Println("获取token出错:", err)
 	}
@@ -110,14 +104,14 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	}
 
-	userQuota, err := model.CacheGetUserQuota(c, userId)
+	userQuota, err := model.CacheGetUserQuota(c, meta.UserId)
 	if err != nil {
 		return openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
 	}
 	if userQuota-preConsumedQuota < 0 {
 		return openai.ErrorWrapper(errors.New("user quota is not enough"), "insufficient_user_quota", http.StatusForbidden)
 	}
-	err = model.CacheDecreaseUserQuota(userId, preConsumedQuota)
+	err = model.CacheDecreaseUserQuota(meta.UserId, preConsumedQuota)
 	if err != nil {
 		return openai.ErrorWrapper(err, "decrease_user_quota_failed", http.StatusInternalServerError)
 	}
@@ -128,7 +122,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 	}
 
 	if preConsumedQuota > 0 {
-		err = model.PreConsumeTokenQuota(tokenId, preConsumedQuota)
+		err = model.PreConsumeTokenQuota(meta.TokenId, preConsumedQuota)
 		if err != nil {
 			return openai.ErrorWrapper(err, "pre_consume_token_quota_failed", http.StatusForbidden)
 		}
@@ -147,17 +141,22 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 		}
 	}
 
-	baseURL := common.ChannelBaseURLs[channelType]
+	baseURL := common.ChannelBaseURLs[meta.ChannelType]
 	requestURL := c.Request.URL.String()
 	if c.GetString("base_url") != "" {
 		baseURL = c.GetString("base_url")
 	}
+	fullRequestURL := util.GetFullRequestURL(baseURL, requestURL, meta.ChannelType)
+	if meta.ChannelType == common.ChannelTypeAzure {
+		apiVersion := meta.APIVersion
+		if relayMode == constant.RelayModeAudioTranscription {
+			// https://learn.microsoft.com/en-us/azure/ai-services/openai/whisper-quickstart?tabs=command-line#rest-api
+			fullRequestURL = fmt.Sprintf("%s/openai/deployments/%s/audio/transcriptions?api-version=%s", baseURL, audioRequest.Model, apiVersion)
 
-	fullRequestURL := util.GetFullRequestURL(baseURL, requestURL, channelType)
-	if relayMode == constant.RelayModeAudioTranscription && channelType == common.ChannelTypeAzure {
-		// https://learn.microsoft.com/en-us/azure/ai-services/openai/whisper-quickstart?tabs=command-line#rest-api
-		apiVersion := util.GetAPIVersion(c)
-		fullRequestURL = fmt.Sprintf("%s/openai/deployments/%s/audio/transcriptions?api-version=%s", baseURL, audioRequest.Model, apiVersion)
+		} else if relayMode == constant.RelayModeAudioSpeech {
+			// https://learn.microsoft.com/en-us/azure/ai-services/openai/text-to-speech-quickstart?tabs=command-line#rest-api
+			fullRequestURL = fmt.Sprintf("%s/openai/deployments/%s/audio/speech?api-version=%s", baseURL, audioRequest.Model, apiVersion)
+		}
 	}
 	requestBody := c.Request.Body
 
@@ -165,8 +164,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 	if err != nil {
 		return openai.ErrorWrapper(err, "new_request_failed", http.StatusInternalServerError)
 	}
-	req.Header.Set("Authorization", c.Request.Header.Get("Authorization"))
-	if relayMode == constant.RelayModeAudioTranscription && channelType == common.ChannelTypeAzure {
+	if (relayMode == constant.RelayModeAudioTranscription || relayMode == constant.RelayModeAudioSpeech) && meta.ChannelType == common.ChannelTypeAzure {
 		// https://learn.microsoft.com/en-us/azure/ai-services/openai/whisper-quickstart?tabs=command-line#rest-api
 		apiKey := c.Request.Header.Get("Authorization")
 		apiKey = strings.TrimPrefix(apiKey, "Bearer ")
@@ -246,11 +244,11 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 				quota = 1
 			}
 			quotaDelta := quota - preConsumedQuota
-			err = model.PostConsumeTokenQuota(tokenId, quotaDelta)
+			err = model.PostConsumeTokenQuota(meta.TokenId, quotaDelta)
 			if err != nil {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}
-			err = model.CacheDecreaseUserQuota(userId, quotaDelta)
+			err = model.CacheDecreaseUserQuota(meta.UserId, quotaDelta)
 			if err != nil {
 				logger.Error(ctx, "decrease_user_quota_failed"+err.Error())
 			}
@@ -262,10 +260,9 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 				tokenName := c.GetString("token_name")
 				multiplier := fmt.Sprintf("%s，分组倍率 %.2f", modelRatioString, groupRatio)
 				logContent := " "
-				model.RecordConsumeLog(ctx, userId, channelId, channelName, promptTokens, 0, audioRequest.Model, tokenName, quota, logContent, tokenId, multiplier, userQuota, int(useTimeSeconds), false)
-				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
-				channelId := c.GetInt("channel_id")
-				model.UpdateChannelUsedQuota(channelId, quota)
+				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, meta.ChannelName, promptTokens, 0, audioRequest.Model, tokenName, quota, logContent, meta.TokenId, multiplier, userQuota, int(useTimeSeconds), false)
+				model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
+				model.UpdateChannelUsedQuota(meta.ChannelId, quota)
 			}
 		}()
 	}(c.Request.Context())
