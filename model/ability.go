@@ -7,6 +7,7 @@ import (
 	"log"
 	"one-api/common"
 	"one-api/common/config"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -33,15 +34,20 @@ type ModelBillingInfo struct {
 
 type ModelRatios map[string]float64
 
-func GetGroupModels(group string) []string {
-	var models []string
-	// Find distinct models
+func GetGroupModels(group string) ([]string, error) {
 	groupCol := "`group`"
+	trueVal := "1"
 	if common.UsingPostgreSQL {
 		groupCol = `"group"`
+		trueVal = "true"
 	}
-	DB.Table("abilities").Where(groupCol+" = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models)
-	return models
+	var models []string
+	err := DB.Model(&Ability{}).Distinct("model").Where(groupCol+" = ? and enabled = "+trueVal, group).Pluck("model", &models).Error
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(models)
+	return models, err
 }
 
 func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {

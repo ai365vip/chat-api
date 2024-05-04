@@ -2,11 +2,14 @@ package controller
 
 import (
 	"fmt"
+	"log"
 	"one-api/common"
+	"one-api/model"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
 	"one-api/relay/helper"
 	relaymodel "one-api/relay/model"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -103,9 +106,45 @@ func init() {
 }
 
 func ListModels(c *gin.Context) {
+	ctx := c.Request.Context()
+	var availableModels []string
+	if c.GetString("available_models") != "" {
+		availableModels = strings.Split(c.GetString("available_models"), ",")
+	} else if c.GetString("group") == "" {
+		userId := c.GetInt("id")
+		userGroup, _ := model.CacheGetUserGroup(userId)
+		availableModels, _ = model.CacheGetGroupModels(ctx, userGroup)
+	} else {
+		userGroup := c.GetString("group")
+		availableModels, _ = model.CacheGetGroupModels(ctx, userGroup)
+	}
+	log.Println(availableModels)
+	modelSet := make(map[string]bool)
+	for _, availableModel := range availableModels {
+		modelSet[availableModel] = true
+	}
+	availableOpenAIModels := make([]OpenAIModels, 0)
+	for _, model := range openAIModels {
+		if _, ok := modelSet[model.Id]; ok {
+			modelSet[model.Id] = false
+			availableOpenAIModels = append(availableOpenAIModels, model)
+		}
+	}
+	for modelName, ok := range modelSet {
+		if ok {
+			availableOpenAIModels = append(availableOpenAIModels, OpenAIModels{
+				Id:      modelName,
+				Object:  "model",
+				Created: 1626777600,
+				OwnedBy: "custom",
+				Root:    modelName,
+				Parent:  nil,
+			})
+		}
+	}
 	c.JSON(200, gin.H{
 		"object": "list",
-		"data":   openAIModels,
+		"data":   availableOpenAIModels,
 	})
 }
 

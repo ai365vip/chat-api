@@ -21,6 +21,7 @@ var (
 	UserId2GroupCacheSeconds  = common.SyncFrequency
 	UserId2QuotaCacheSeconds  = common.SyncFrequency
 	UserId2StatusCacheSeconds = common.SyncFrequency
+	GroupModelsCacheSeconds   = common.SyncFrequency
 )
 
 func init() {
@@ -407,4 +408,22 @@ func getNextLowerPriority(channels []*Channel, currentPriority int64) (int64, bo
 		}
 	}
 	return lowestFound, found
+}
+func CacheGetGroupModels(ctx context.Context, group string) ([]string, error) {
+	if !common.RedisEnabled {
+		return GetGroupModels(group)
+	}
+	modelsStr, err := common.RedisGet(fmt.Sprintf("group_models:%s", group))
+	if err == nil {
+		return strings.Split(modelsStr, ","), nil
+	}
+	models, err := GetGroupModels(group)
+	if err != nil {
+		return nil, err
+	}
+	err = common.RedisSet(fmt.Sprintf("group_models:%s", group), strings.Join(models, ","), time.Duration(GroupModelsCacheSeconds)*time.Second)
+	if err != nil {
+		common.SysError("Redis set group models error: " + err.Error())
+	}
+	return models, nil
 }

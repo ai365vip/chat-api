@@ -74,6 +74,7 @@ const EditChannel = (props) => {
     const [rateLimited, setRateLimited] = useState(false);
     const [istools, setIstools] = useState(true);
     const [isimageurenabled, setIsImageURLEnabled] = useState(false);
+    
     const [config, setConfig] = useState({
         region: '',
         sk: '',
@@ -148,7 +149,35 @@ const EditChannel = (props) => {
         }
         //setAutoBan
     };
-
+    const handleGetModels = async () => {
+        try {
+            const baseUrl = inputs.base_url.endsWith('/') ? inputs.base_url.slice(0, -1) : inputs.base_url;
+            const url = `${baseUrl}/v1/models`;
+    
+            // 发起 GET 请求获取模型数据，动态设置 Authorization 头部
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${inputs.key}`
+                }
+            });
+    
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+    
+            // 将响应数据转为 JSON
+            const data = await response.json();
+    
+            // 提取所有模型的 id
+            const modelIds = data.data.map(model => model.id);
+    
+            // 更新状态，只存储模型的 id
+            setInputs(inputs => ({...inputs, models: modelIds}));
+        } catch (error) {
+            showError(error)
+        }
+    };
+    
     const handleConfigChange = ( { name, value }) => {
         setConfig((inputs) => ({...inputs, [name]: value}));
       };
@@ -368,9 +397,6 @@ const EditChannel = (props) => {
             showError(message);
         }
     };
-    useEffect(() => {
-        console.log(config);
-    }, [config]);
     
     const addCustomModel = () => {
         if (customModel.trim() === '') return;                // 确保自定义模型非空
@@ -490,6 +516,77 @@ const EditChannel = (props) => {
                         value={inputs.name}
                         autoComplete='new-password'
                     />
+                    {
+                        inputs.type !== 3 && inputs.type !== 35 && inputs.type !== 8 && inputs.type !== 22 && (
+                            <>
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>代理：</Typography.Text>
+                                </div>
+                                <Input
+                                    label='代理'
+                                    name='base_url'
+                                    placeholder={'此项可选，用于通过代理站来进行 API 调用'}
+                                    onChange={value => {
+                                        handleInputChange('base_url', value)
+                                    }}
+                                    value={inputs.base_url}
+                                    autoComplete='new-password'
+                                />
+                            </>
+                        )
+                    }
+                    {
+                        inputs.type !== 35 && (
+                            <div>
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>密钥：</Typography.Text>
+                                </div>
+
+                                {
+                                    batch ?
+                                    <TextArea
+                                        label='密钥'
+                                        name='key'
+                                        placeholder={'请输入密钥，一行一个'}
+                                        onChange={value => {
+                                            handleInputChange('key', value)
+                                        }}
+                                        value={inputs.key}
+                                        style={{minHeight: 150, fontFamily: 'JetBrains Mono, Consolas'}}
+                                        autoComplete='new-password'
+                                    />
+                                    :
+                                    <Input
+                                        label='密钥'
+                                        name='key'
+                                        placeholder={type2secretPrompt(inputs.type)}
+                                        onChange={value => {
+                                            handleInputChange('key', value)
+                                        }}
+                                        value={inputs.key}
+                                        autoComplete='new-password'
+                                    />
+                                }
+                            </div>
+                        )
+                    }
+                    
+
+                    {
+                       inputs.type !== 35 &&  !isEdit && (
+                            <div style={{marginTop: 10, display: 'flex'}}>
+                                <Space>
+                                    <Checkbox
+                                        checked={batch}
+                                        label='批量创建'
+                                        name='batch'
+                                        onChange={() => setBatch(!batch)}
+                                    />
+                                    <Typography.Text strong>批量创建</Typography.Text>
+                                </Space>
+                            </div>
+                        )
+                    }
                     <div style={{marginTop: 10}}>
                         <Typography.Text strong>分组：</Typography.Text>
                     </div>
@@ -611,8 +708,8 @@ const EditChannel = (props) => {
                     <div style={{lineHeight: '40px', marginBottom: '12px'}}>
                         <Space>
                             <Button type='primary' onClick={() => {
-                                handleInputChange('models', basicModels);
-                            }}>填入基础模型</Button>
+                                handleGetModels('models', basicModels);
+                            }}>填入支持模型</Button>
                             <Button type='secondary' onClick={() => {
                                 handleInputChange('models', fullModels);
                             }}>填入所有模型</Button>
@@ -713,58 +810,7 @@ const EditChannel = (props) => {
                         </div>
                         )
                     }
-                    {
-                        inputs.type !== 35 && (
-                            <div>
-                                <div style={{marginTop: 10}}>
-                                    <Typography.Text strong>密钥：</Typography.Text>
-                                </div>
-
-                                {
-                                    batch ?
-                                    <TextArea
-                                        label='密钥'
-                                        name='key'
-                                        placeholder={'请输入密钥，一行一个'}
-                                        onChange={value => {
-                                            handleInputChange('key', value)
-                                        }}
-                                        value={inputs.key}
-                                        style={{minHeight: 150, fontFamily: 'JetBrains Mono, Consolas'}}
-                                        autoComplete='new-password'
-                                    />
-                                    :
-                                    <Input
-                                        label='密钥'
-                                        name='key'
-                                        placeholder={type2secretPrompt(inputs.type)}
-                                        onChange={value => {
-                                            handleInputChange('key', value)
-                                        }}
-                                        value={inputs.key}
-                                        autoComplete='new-password'
-                                    />
-                                }
-                            </div>
-                        )
-                    }
                     
-
-                    {
-                       inputs.type !== 35 &&  !isEdit && (
-                            <div style={{marginTop: 10, display: 'flex'}}>
-                                <Space>
-                                    <Checkbox
-                                        checked={batch}
-                                        label='批量创建'
-                                        name='batch'
-                                        onChange={() => setBatch(!batch)}
-                                    />
-                                    <Typography.Text strong>批量创建</Typography.Text>
-                                </Space>
-                            </div>
-                        )
-                    }
                     {
                         inputs.type !== 35 && (
                             <div> 
@@ -894,27 +940,6 @@ const EditChannel = (props) => {
                             />
                         </div>
                     </div>
-
-                    
-                    {
-                        inputs.type !== 3 && inputs.type !== 35 && inputs.type !== 8 && inputs.type !== 22 && (
-                            <>
-                                <div style={{marginTop: 10}}>
-                                    <Typography.Text strong>代理：</Typography.Text>
-                                </div>
-                                <Input
-                                    label='代理'
-                                    name='base_url'
-                                    placeholder={'此项可选，用于通过代理站来进行 API 调用'}
-                                    onChange={value => {
-                                        handleInputChange('base_url', value)
-                                    }}
-                                    value={inputs.base_url}
-                                    autoComplete='new-password'
-                                />
-                            </>
-                        )
-                    }
                     <div style={{marginTop: 10}}>
                         <Typography.Text strong>自定义请求头：</Typography.Text>
                     </div>

@@ -193,12 +193,25 @@ func TokenAuth() func(c *gin.Context) {
 				c.Set("is_tools", true)
 			}
 		}
-
+		if token.Models != "" {
+			c.Set("available_models", token.Models)
+			if modelRequest.Model != "" && !isModelInList(modelRequest.Model, token.Models) {
+				abortWithMessage(c, http.StatusForbidden, fmt.Sprintf("该令牌无权使用模型：%s", modelRequest.Model))
+				return
+			}
+		}
 		ctx := c.Request.Context()
 		c.Set("id", token.UserId)
 		c.Set("token_id", token.Id)
 		c.Set("token_name", token.Name)
-		c.Set("group", token.Group)
+		if token.Group == "" {
+			userId := c.GetInt("id")
+			userGroup, _ := model.GetUserGroup(userId)
+			c.Set("group", userGroup)
+		} else {
+			c.Set("group", token.Group)
+		}
+
 		c.Set("fixed_content", token.FixedContent)
 		c.Set("model", modelRequest.Model)
 		c.Set("original_model", modelRequest.Model)

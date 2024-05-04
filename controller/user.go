@@ -496,7 +496,7 @@ func GetUserModels(c *gin.Context) {
 		})
 		return
 	}
-	models := model.GetGroupModels(user.Group)
+	models, _ := model.GetGroupModels(user.Group)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
