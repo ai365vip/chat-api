@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"log"
 	"one-api/common"
 	"one-api/model"
 	"one-api/relay/channel/openai"
@@ -118,7 +117,6 @@ func ListModels(c *gin.Context) {
 		userGroup := c.GetString("group")
 		availableModels, _ = model.CacheGetGroupModels(ctx, userGroup)
 	}
-	log.Println(availableModels)
 	modelSet := make(map[string]bool)
 	for _, availableModel := range availableModels {
 		modelSet[availableModel] = true
