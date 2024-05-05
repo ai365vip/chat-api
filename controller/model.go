@@ -103,7 +103,12 @@ func init() {
 		openAIModelsMap[model.Id] = model
 	}
 }
-
+func ListChannelModels(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"object": "list",
+		"data":   openAIModels,
+	})
+}
 func ListModels(c *gin.Context) {
 	ctx := c.Request.Context()
 	var availableModels []string
