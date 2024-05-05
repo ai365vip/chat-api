@@ -710,7 +710,7 @@ const EditChannel = (props) => {
                         <Button type='primary' onClick={() => {
                                 handleInputChange('models', basicModels);
                             }}>填入基础模型</Button>
-                            <Button type='primary' onClick={() => {
+                            <Button type='tertiary' onClick={() => {
                                 handleGetModels('models', basicModels);
                             }}>填入支持模型</Button>
                             <Button type='secondary' onClick={() => {

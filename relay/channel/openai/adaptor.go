@@ -45,7 +45,9 @@ func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 		model_ = strings.TrimSuffix(model_, "-0301")
 		model_ = strings.TrimSuffix(model_, "-0314")
 		model_ = strings.TrimSuffix(model_, "-0613")
-		model_ = strings.TrimSuffix(model_, "-2024-04-09")
+		if meta.ActualModelName == "gpt-4-turbo" {
+			model_ = "gpt-4-turbo-2024-04-09"
+		}
 		//https://github.com/songquanpeng/one-api/issues/1191
 		// {your endpoint}/openai/deployments/{your azure_model}/chat/completions?api-version={api_version}
 		requestURL = fmt.Sprintf("/openai/deployments/%s/%s", model_, task)
