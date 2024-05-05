@@ -707,6 +707,9 @@ const EditChannel = (props) => {
                     />
                     <div style={{lineHeight: '40px', marginBottom: '12px'}}>
                         <Space>
+                        <Button type='primary' onClick={() => {
+                                handleInputChange('models', basicModels);
+                            }}>填入基础模型</Button>
                             <Button type='primary' onClick={() => {
                                 handleGetModels('models', basicModels);
                             }}>填入支持模型</Button>
