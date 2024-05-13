@@ -24,6 +24,9 @@ func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
 	if statusCode == http.StatusUnauthorized {
 		return true
 	}
+	if statusCode == http.StatusPreconditionRequired {
+		return true
+	}
 	switch err.Type {
 	case "insufficient_quota":
 		return true
