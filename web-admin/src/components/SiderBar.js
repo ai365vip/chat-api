@@ -29,6 +29,7 @@ const SiderBar = () => {
     const [showSidebar, setShowSidebar] = useState(false);
     const systemName = getSystemName();
     const logo = getLogo();
+    const mobile = isMobile();
     const headerButtons = useMemo(() => [
         {
             text: '首页',
@@ -124,6 +125,10 @@ const SiderBar = () => {
         userDispatch({type: 'logout'});
         localStorage.removeItem('user');
         navigate('/admin/login');
+    }
+    if (!mobile) {
+        // 如果不是移动设备，直接返回 null 或不显示组件
+        return null;
     }
 
     return (

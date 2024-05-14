@@ -254,32 +254,27 @@ const SystemSetting = () => {
         <Spin spinning={loading}>
             <Layout style={{ padding: '24px' }}>
                 <Typography.Title style={{ marginBottom: '10px'}} heading={5}>通用设置</Typography.Title>
-                    <Form >
-                        <div style={{ width: '70%', display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                            <div style={{ width: '40%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
+                <Form>
+                    <div style={{ display: 'flex',width: '40%' , flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                            <div style={{ flex: '1 1 40%', marginRight: '5%' }}>
                                 <Typography.Text strong>服务器地址</Typography.Text>
-                                </div>
                                 <Input
-                                placeholder='例如：https://yourdomain.com'
-                                value={inputs.ServerAddress}
-                                name='ServerAddress'
-                                onChange={(value) => handleInputChange('ServerAddress', value)}
+                                    placeholder='例如：https://yourdomain.com'
+                                    value={inputs.ServerAddress}
+                                    name='ServerAddress'
+                                    onChange={(value) => handleInputChange('ServerAddress', value)}
                                 />
                             </div>
                         </div>
-                        <Button onClick={submitServerAddress} style={{ marginTop: '3px' }}>更新服务器地址</Button>
-                    </Form>
-                    <Divider style={{ marginTop: '20px' , marginBottom: '10px' }}/>
-                    <Form >
-                    <Typography.Title style={{ marginBottom: '10px'}} heading={5}>配置登录注册</Typography.Title>
-                    <div style={{
-                            display: 'flex', 
-                            alignItems: 'center',
-                            marginBottom: '20px',
-                            gap: '10px' // 控制内部元素的空间
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Button onClick={submitServerAddress} style={{ width: '20%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold' }}>更新服务器地址</Button>
+                    </div>
+                </Form>
+<Divider style={{ marginTop: '20px', marginBottom: '10px' }} />
+                    <Form>
+                        <Typography.Title style={{ marginBottom: '10px' }} heading={5}>配置登录注册</Typography.Title>
+                        <div style={{ display: 'flex', width: '50%' , flexWrap: 'wrap', gap: '20px', marginBottom: '20px', padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px'}}>
                                 <Checkbox
                                     checked={inputs.PasswordRegisterEnabled === 'true'}
                                     name='PasswordRegisterEnabled'
@@ -287,7 +282,7 @@ const SystemSetting = () => {
                                 />
                                 <Typography.Text>允许通过密码进行注册</Typography.Text>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px',}}>
                                 <Checkbox
                                     checked={inputs.EmailVerificationEnabled === 'true'}
                                     name='EmailVerificationEnabled'
@@ -295,31 +290,7 @@ const SystemSetting = () => {
                                 />
                                 <Typography.Text>通过密码注册时需要进行邮箱验证</Typography.Text>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                
-                                <Checkbox
-                                    checked={inputs.GitHubOAuthEnabled === 'true'}
-                                    name='GitHubOAuthEnabled'
-                                    onChange={(e) => handleCheckboxChange('GitHubOAuthEnabled', e.target.checked)}
-                                />
-                                <Typography.Text>允许通过 GitHub 账户登录 & 注册</Typography.Text>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                <Checkbox
-                                    checked={inputs.WeChatAuthEnabled === 'true'}
-                                    name='WeChatAuthEnabled'
-                                    onChange={(e) => handleCheckboxChange('WeChatAuthEnabled', e.target.checked)}
-                                />
-                                <Typography.Text>允许通过微信登录 & 注册</Typography.Text>
-                            </div>
-                        </div>
-                        <div style={{
-                            display: 'flex', 
-                            alignItems: 'center',
-                            marginBottom: '20px',
-                            gap: '10px' // 控制内部元素的空间
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexBasis: '100%'}}>
                                 <Checkbox
                                     checked={inputs.RegisterEnabled === 'true'}
                                     name='RegisterEnabled'
@@ -327,7 +298,24 @@ const SystemSetting = () => {
                                 />
                                 <Typography.Text>允许新用户注册（此项为否时，新用户将无法以任何方式进行注册）</Typography.Text>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexBasis: '100%' }}>
+                                <Checkbox
+                                    checked={inputs.GitHubOAuthEnabled === 'true'}
+                                    name='GitHubOAuthEnabled'
+                                    onChange={(e) => handleCheckboxChange('GitHubOAuthEnabled', e.target.checked)}
+                                />
+                                <Typography.Text>允许通过 GitHub 账户登录 & 注册</Typography.Text>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Checkbox
+                                    checked={inputs.WeChatAuthEnabled === 'true'}
+                                    name='WeChatAuthEnabled'
+                                    onChange={(e) => handleCheckboxChange('WeChatAuthEnabled', e.target.checked)}
+                                />
+                                <Typography.Text>允许通过微信登录 & 注册</Typography.Text>
+                            </div>
+                        
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexBasis: '50%' }}>
                                 <Checkbox
                                     checked={inputs.TurnstileCheckEnabled === 'true'}
                                     name='TurnstileCheckEnabled'
@@ -336,138 +324,130 @@ const SystemSetting = () => {
                                 <Typography.Text>启用 Turnstile 用户校验</Typography.Text>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                    <Checkbox
-                                        checked={inputs.GroupEnable === 'true'}
-                                        name='GroupEnable'
-                                        onChange={(e) => handleCheckboxChange('GroupEnable', e.target.checked)}
+                        
+                        <div style={{ display: 'flex',  width: '30%' ,flexDirection: 'column', gap: '20px', marginBottom: '20px', padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                            <div style={{ display: 'flex',alignItems: 'center', }}>
+                                <Checkbox
+                                    checked={inputs.GroupEnable === 'true'}
+                                    name='GroupEnable'
+                                    onChange={(e) => handleCheckboxChange('GroupEnable', e.target.checked)}
+                                />
+                                <Typography.Text>启用默认分组</Typography.Text>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <Typography.Text>新注册用户默认分组 </Typography.Text>
+                                    <Select
+                                        placeholder='请选择分组'
+                                        name='UserGroup'
+                                        fluid
+                                        search
+                                        selection
+                                        allowAdditions
+                                        additionLabel='请在系统设置页面编辑分组倍率以添加新的分组：'
+                                        onChange={async (value) => {
+                                            await updateOption('UserGroup', value);
+                                        }}
+                                        value={inputs.UserGroup}
+                                        autoComplete='new-password'
+                                        optionList={groupOptions}
                                     />
-                                    <Typography.Text>启用默认分组</Typography.Text>
-                            </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                            
-                            <div style={{ flex: 1, marginRight: 5 }}>
-                                
-                                <Typography.Text>新注册用户默认分组 </Typography.Text>
-                                <Select
-                                placeholder={'请选择分组'}
-                                name='UserGroup'
-                                fluid
-                                search
-                                selection
-                                allowAdditions
-                                additionLabel={'请在系统设置页面编辑分组倍率以添加新的分组：'}
-                                onChange={async (value) => {
-                                    await updateOption('UserGroup', value);
-                                }}
-                                value={inputs.UserGroup}
-                                autoComplete='new-password'
-                                optionList={groupOptions}
-                                />
-                            </div>
-                            <div style={{ flex: 5, marginLeft: 5 }}>
-                                <Typography.Text>充值用户默认分组 </Typography.Text>
-                                <Select
-                                placeholder={'请选择分组'}
-                                name='VipUserGroup'
-                                fluid
-                                search
-                                selection
-                                allowAdditions
-                                additionLabel={'请在系统设置页面编辑分组倍率以添加新的分组：'}
-                                onChange={async (value) => {
-                                    // 直接调用 updateOption 函数进行提交
-                                    await updateOption('VipUserGroup', value);
-                                }}
-                                value={inputs.VipUserGroup}
-                                autoComplete='new-password'
-                                optionList={groupOptions}
-                                />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <Typography.Text>充值用户默认分组 </Typography.Text>
+                                    <Select
+                                        placeholder='请选择分组'
+                                        name='VipUserGroup'
+                                        fluid
+                                        search
+                                        selection
+                                        allowAdditions
+                                        additionLabel='请在系统设置页面编辑分组倍率以添加新的分组：'
+                                        onChange={async (value) => {
+                                            await updateOption('VipUserGroup', value);
+                                        }}
+                                        value={inputs.VipUserGroup}
+                                        autoComplete='new-password'
+                                        optionList={groupOptions}
+                                    />
+                                </div>
                             </div>
                         </div>
-                        <Button onClick={submitRegister} style={{ marginTop: '3px' }}>保存注册登录设置</Button>
+                        <Button onClick={submitRegister} style={{ width: '10%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold' }}>保存注册登录设置</Button>
                     </Form>
+
+
                     <Divider style={{ marginTop: '20px' , marginBottom: '10px' }}/>
                     <Typography.Title style={{ marginBottom: '10px'}} heading={5}>配置WxPusher消息推送</Typography.Title>
-                    <Form >
-                        <div style={{ width: '70%', display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                            <div style={{ width: '40%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>应用的AppToken</Typography.Text>
+                    <Form>
+                        <div style={{ display: 'flex',  width: '50%' ,flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                                <div style={{ flex: '1 1 20%', minWidth: '200px' }}>
+                                    <Typography.Text strong>应用的 AppToken</Typography.Text>
+                                    <Input
+                                        placeholder='应用的 AppToken'
+                                        value={inputs.AppToken}
+                                        name='AppToken'
+                                        onChange={(value) => handleInputChange('AppToken', value)}
+                                    />
                                 </div>
-                                <Input
-                                placeholder='应用的AppToken'
-                                value={inputs.AppToken}
-                                name='AppToken'
-                                onChange={(value) => handleInputChange('AppToken', value)}
-                                />
-                            </div>
-                            <div style={{ width: '40%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>用户的 Uid</Typography.Text>
+                                <div style={{ flex: '1 1 20%', minWidth: '200px' }}>
+                                    <Typography.Text strong>用户的 Uid</Typography.Text>
+                                    <Input
+                                        placeholder='用户的 Uid'
+                                        value={inputs.Uids}
+                                        name='Uids'
+                                        onChange={(value) => handleInputChange('Uids', value)}
+                                    />
                                 </div>
-                                <Input
-                                placeholder='用户的 Uid'
-                                value={inputs.Uids}
-                                name='Uids'
-                                onChange={(value) => handleInputChange('Uids', value)}
-                                />
-                            </div>
-                            <div style={{ width: '20%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>通知邮箱</Typography.Text>
+                                <div style={{ flex: '1 1 20%', minWidth: '200px' }}>
+                                    <Typography.Text strong>通知邮箱</Typography.Text>
+                                    <Input
+                                        placeholder='通知邮箱'
+                                        value={inputs.NotificationEmail}
+                                        name='NotificationEmail'
+                                        onChange={(value) => handleInputChange('NotificationEmail', value)}
+                                    />
                                 </div>
-                                <Input
-                                placeholder='通知邮箱'
-                                value={inputs.NotificationEmail}
-                                name='NotificationEmail'
-                                onChange={(value) => handleInputChange('NotificationEmail', value)}
-                                />
                             </div>
-                            
+                            <div style={{ display: 'flex', width: '60%' , alignItems: 'center', gap: '20px', padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <Checkbox
+                                        checked={inputs.EmailNotificationsEnabled === 'true'}
+                                        name='EmailNotificationsEnabled'
+                                        onChange={(e) => handleCheckboxChange('EmailNotificationsEnabled', e.target.checked)}
+                                    />
+                                    <Typography.Text>启用电子邮件通知</Typography.Text>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <Checkbox
+                                        checked={inputs.WxPusherNotificationsEnabled === 'true'}
+                                        name='WxPusherNotificationsEnabled'
+                                        onChange={(e) => handleCheckboxChange('WxPusherNotificationsEnabled', e.target.checked)}
+                                    />
+                                    <Typography.Text>启用 WxPusher 通知</Typography.Text>
+                                </div>
+                            </div>
+                            <Button onClick={wxPusher} style={{ width: '20%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold' }}>保存 WxPusher 设置</Button>
                         </div>
-                        <div style={{
-                            display: 'flex', 
-                            alignItems: 'center',
-                            marginBottom: '20px',
-                            gap: '10px' // 控制内部元素的空间
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                <Typography.Text>启用电子邮件通知</Typography.Text>
-                                <Checkbox
-                                    checked={inputs.EmailNotificationsEnabled === 'true'}
-                                    name='EmailNotificationsEnabled'
-                                    onChange={(e) => handleCheckboxChange('EmailNotificationsEnabled', e.target.checked)}
-                                />
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                <Typography.Text>启用WxPusher通知</Typography.Text>
-                                <Checkbox
-                                    checked={inputs.WxPusherNotificationsEnabled === 'true'}
-                                    name='WxPusherNotificationsEnabled'
-                                    onChange={(e) => handleCheckboxChange('WxPusherNotificationsEnabled', e.target.checked)}
-                                />
-                            </div>
-                        </div>
-                        <Button onClick={wxPusher} style={{ marginTop: '3px' }}>保存 WxPusher 设置</Button>
                     </Form>
+
                     <Divider style={{ marginTop: '20px', marginBottom: '10px' }}/>
-                    <Form >
-                        <Typography.Title style={{ marginBottom: '10px'}} heading={5}>配置邮箱域名白名单</Typography.Title>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <Typography.Text>启用邮箱域名白名单</Typography.Text>
-                            <Checkbox
-                                checked={inputs.EmailDomainRestrictionEnabled === 'true'}
-                                name='EmailDomainRestrictionEnabled'
-                                onChange={(e) => handleCheckboxChange('EmailDomainRestrictionEnabled', e.target.checked)}
-                            />
-                        </div>
-                        <div style={{marginTop: 20}}>
-                            <Typography.Text>允许的邮箱域名（输入回车即可）</Typography.Text>
-                        </div>
-                        <div style={{marginTop: 20}}>
-                        <TagInput 
-                        style={{width: '50%',  marginBottom: '10px'}} heading={5}
+                    <Form>
+                    <Typography.Title style={{ marginBottom: '10px' }} heading={5}>配置邮箱域名白名单</Typography.Title>
+
+                    <div style={{ marginBottom: '20px',width: '50%',  padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                    <div style={{ display: 'flex',width: '30%', alignItems: 'center', gap: '10px', marginBottom: '20px', padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                        <Typography.Text>启用邮箱域名白名单</Typography.Text>
+                        <Checkbox
+                            checked={inputs.EmailDomainRestrictionEnabled === 'true'}
+                            name='EmailDomainRestrictionEnabled'
+                            onChange={(e) => handleCheckboxChange('EmailDomainRestrictionEnabled', e.target.checked)}
+                        />
+                    </div>
+                        <Typography.Text>允许的邮箱域名（输入回车即可）</Typography.Text>
+                        <TagInput
+                            style={{ width: '100%', marginTop: '10px' }}
                             placeholder='允许的邮箱域名'
                             name='EmailDomainWhitelist'
                             value={inputs.EmailDomainWhitelist}
@@ -475,202 +455,164 @@ const SystemSetting = () => {
                             addOnBlur
                             autoComplete='new-password'
                         />
-                        </div>
-                        <Button onClick={submitEmailDomainWhitelist} style={{ marginTop: '3px' }}>保存邮箱域名白名单设置</Button>
-                    </Form>
-                    <Divider style={{ marginTop: '20px', marginBottom: '10px'  }}/>
-                    
-                    <Form widths={3}>
-                    <Typography.Title style={{ marginBottom: '10px'}} heading={5}>配置 SMTP</Typography.Title>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                            <div style={{ width: '30%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>SMTP 服务器地址</Typography.Text>
-                                </div>
-                                <Input
+                    </div>
+                    <Button onClick={submitEmailDomainWhitelist} style={{ width: '10%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold', marginBottom: '20px' }}>保存邮箱域名白名单设置</Button>
+                </Form>
+                <Divider style={{ marginTop: '20px', marginBottom: '10px'}} />
+                <Form widths={3}>
+                    <Typography.Title style={{ marginBottom: '10px' }} heading={5}>配置 SMTP</Typography.Title>
+                    <div style={{ display: 'flex', flexWrap: 'wrap',width: '80%' , gap: '20px', marginBottom: '20px', padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                        <div style={{ flex: '1 1 calc(20% - 20px)' }}>
+                            <Typography.Text strong>SMTP 服务器地址</Typography.Text>
+                            <Input
                                 placeholder='例如：smtp.qq.com'
                                 value={inputs.SMTPServer}
                                 name='SMTPServer'
                                 onChange={(value) => handleInputChange('SMTPServer', value)}
-                                />
-                            </div>
-                            <div style={{ width: '30%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>SMTP 端口</Typography.Text>
-                                </div>
-                                <Input
+                            />
+                        </div>
+                        <div style={{ flex: '1 1 calc(6% - 20px)' }}>
+                            <Typography.Text strong>SMTP 端口</Typography.Text>
+                            <Input
                                 placeholder='默认: 465'
                                 value={inputs.SMTPPort}
                                 name='SMTPPort'
                                 onChange={(value) => handleInputChange('SMTPPort', value)}
-                                />
-                            </div>
-                            <div style={{ width: '30%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>SMTP 账户</Typography.Text>
-                                </div>
-                                <Input
+                            />
+                        </div>
+                        <div style={{ flex: '1 1 calc(20% - 20px)' }}>
+                            <Typography.Text strong>SMTP 账户</Typography.Text>
+                            <Input
                                 placeholder='通常是邮箱地址'
                                 value={inputs.SMTPAccount}
                                 name='SMTPAccount'
                                 onChange={(value) => handleInputChange('SMTPAccount', value)}
-                                />
-                            </div>
-                            <div style={{ width: '30%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>SMTP 发送者邮箱</Typography.Text>
-                                </div>
-                                <Input
+                            />
+                        </div>
+                        <div style={{ flex: '1 1 calc(20% - 20px)' }}>
+                            <Typography.Text strong>SMTP 发送者邮箱</Typography.Text>
+                            <Input
                                 placeholder='通常和邮箱地址保持一致'
                                 value={inputs.SMTPFrom}
                                 name='SMTPFrom'
                                 onChange={(value) => handleInputChange('SMTPFrom', value)}
-                                />
-                            </div>
-                            <div style={{ width: '30%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>SMTP 访问凭证</Typography.Text>
-                                </div>
-                                <Input
+                            />
+                        </div>
+                        <div style={{ flex: '1 1 calc(20% - 20px)' }}>
+                            <Typography.Text strong>SMTP 访问凭证</Typography.Text>
+                            <Input
                                 placeholder='敏感信息不会发送到前端显示'
                                 value={inputs.SMTPToken}
                                 name='SMTPToken'
                                 onChange={(value) => handleInputChange('SMTPToken', value)}
-                                />
-                            </div>  
+                            />
                         </div>
-                        <Button onClick={submitSMTP} style={{ marginTop: '3px' }}>保存 SMTP 设置</Button>
-                    </Form>
+                    </div>
+                    <Button onClick={submitSMTP} style={{ width: '10%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold' }}>保存 SMTP 设置</Button>
+                </Form>
 
-                    <Divider style={{ marginTop: '20px' , marginBottom: '10px' }}/>
+
+                <Divider style={{ marginTop: '20px' , marginBottom: '10px' }}/>
                 <Form widths={3}>
-                    <Typography.Title style={{ marginBottom: '10px'}} heading={5}>配置 GitHub OAuth App</Typography.Title>
-                    <Text style={{ marginBottom: '10px'}} heading={9}>
-                        用以支持通过 GitHub 进行登录注册，
-                            <a href='https://github.com/settings/developers' target='_blank'>
-                                点击此处
-                            </a>
-                            管理你的 GitHub OAuth App</Text>
-                            <Card 
-                            style={{ maxWidth: '60%' }}
-                        >
-                            Homepage URL 填 <code>{inputs.ServerAddress}</code>
-                            ，Authorization callback URL 填{' '}
-                            <code>{`${inputs.ServerAddress}/oauth/github`}</code>        
-                        </Card>
-                        <div style={{width: '60%', display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                            <div style={{ width: '50%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>GitHub Client ID</Typography.Text>
-                                </div>
-                                <Input
+                <Typography.Title style={{ marginBottom: '10px' }} heading={5}>配置 GitHub OAuth App</Typography.Title>
+                <Typography.Text style={{ marginBottom: '10px' }}>
+                    用以支持通过 GitHub 进行登录注册，<a href='https://github.com/settings/developers' target='_blank'>点击此处</a>管理你的 GitHub OAuth App
+                </Typography.Text>
+                <Card style={{ padding: '20px',width: '80%' , marginBottom: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                        Homepage URL 填 <code>{inputs.ServerAddress}</code>，Authorization callback URL 填 <code>{`${inputs.ServerAddress}/oauth/github`}</code>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+                        <div style={{ flex: '1 1 calc(50% - 20px)' }}>
+                            <Typography.Text strong>GitHub Client ID</Typography.Text>
+                            <Input
                                 placeholder='输入你注册的 GitHub OAuth APP 的 ID'
                                 value={inputs.GitHubClientId}
                                 name='GitHubClientId'
                                 onChange={(value) => handleInputChange('GitHubClientId', value)}
-                                />
-                            </div>
-                            <div style={{ width: '50%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>GitHub Client Secret</Typography.Text>
-                                </div>
-                                <Input
+                            />
+                        </div>
+                        <div style={{ flex: '1 1 calc(50% - 20px)' }}>
+                            <Typography.Text strong>GitHub Client Secret</Typography.Text>
+                            <Input
                                 placeholder='敏感信息不会发送到前端显示'
                                 value={inputs.GitHubClientSecret}
                                 name='GitHubClientSecret'
                                 onChange={(value) => handleInputChange('GitHubClientSecret', value)}
-                                />
-                            </div> 
+                            />
                         </div>
-                        <Button onClick={submitGitHubOAuth} style={{ marginTop: '3px' }}>保存 GitHub 设置</Button>
+                    </div>
+                </Card>
+                <Button onClick={submitGitHubOAuth} style={{ width: '10%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold', marginBottom: '20px' }}>保存 GitHub 设置</Button>
+                <Divider style={{ marginTop: '20px', marginBottom: '10px' }} />
 
-                    <Divider style={{ marginTop: '20px' , marginBottom: '10px' }}/>
-                        <Typography.Title style={{ marginBottom: '10px'}} heading={5}>配置 WeChat Server</Typography.Title>
-                        <Text style={{ marginBottom: '10px'}} heading={5}>
-                            用以支持通过微信进行登录注册，
-                                <a
-                                    href='https://github.com/songquanpeng/wechat-server'
-                                    target='_blank'
-                                >
-                                    点击此处
-                                </a>
-                                了解 WeChat Server
-                        </Text>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                            <div style={{ width: '30%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>WeChat Server 服务器地址</Typography.Text>
-                                </div>
-                                <Input
+                <Typography.Title style={{ marginBottom: '10px' }} heading={5}>配置 WeChat Server</Typography.Title>
+                <Typography.Text style={{ marginBottom: '10px' }}>
+                    用以支持通过微信进行登录注册，<a href='https://github.com/songquanpeng/wechat-server' target='_blank'>点击此处</a>了解 WeChat Server
+                </Typography.Text>
+                <Card style={{ padding: '20px',width: '80%' , marginBottom: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+                        <div style={{ flex: '1 1 calc(33% - 20px)' }}>
+                            <Typography.Text strong>WeChat Server 服务器地址</Typography.Text>
+                            <Input
                                 placeholder='例如：https://yourdomain.com'
                                 value={inputs.WeChatServerAddress}
                                 name='WeChatServerAddress'
                                 onChange={(value) => handleInputChange('WeChatServerAddress', value)}
-                                />
-                            </div>
-                            <div style={{ width: '30%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>WeChat Server 访问凭证</Typography.Text>
-                                </div>
-                                <Input
+                            />
+                        </div>
+                        <div style={{ flex: '1 1 calc(33% - 20px)' }}>
+                            <Typography.Text strong>WeChat Server 访问凭证</Typography.Text>
+                            <Input
                                 placeholder='敏感信息不会发送到前端显示'
                                 value={inputs.WeChatServerToken}
                                 name='WeChatServerToken'
                                 onChange={(value) => handleInputChange('WeChatServerToken', value)}
-                                />
-                            </div> 
-                            <div style={{ width: '30%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>微信公众号二维码图片链接</Typography.Text>
-                                </div>
-                                <Input
+                            />
+                        </div>
+                        <div style={{ flex: '1 1 calc(33% - 20px)' }}>
+                            <Typography.Text strong>微信公众号二维码图片链接</Typography.Text>
+                            <Input
                                 placeholder='输入一个图片链接'
                                 value={inputs.WeChatAccountQRCodeImageURL}
                                 name='WeChatAccountQRCodeImageURL'
                                 onChange={(value) => handleInputChange('WeChatAccountQRCodeImageURL', value)}
-                                />
-                            </div> 
+                            />
                         </div>
-                        <Button onClick={submitWeChat} style={{ marginTop: '3px' }}>保存 WeChat Server 设置</Button>
-   
-                    <Divider style={{ marginTop: '20px' , marginBottom: '10px' }}/>
-                    <Typography.Title style={{ marginBottom: '10px'}} heading={5}>配置 Turnstile</Typography.Title>
-                    <Text style={{ marginBottom: '10px'}} heading={5}>
-                            用以支持用户校验，
-                            <a href='https://dash.cloudflare.com/' target='_blank'>
-                                点击此处
-                            </a>
-                            管理你的 Turnstile Sites，推荐选择 Invisible Widget Type
-                            </Text>
+                    </div>
+                </Card>
+                <Button onClick={submitWeChat} style={{ width: '10%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold', marginBottom: '20px' }}>保存 WeChat Server 设置</Button>
+                <Divider style={{ marginTop: '20px', marginBottom: '10px' }} />
 
-                        <div style={{width: '60%', display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                            <div style={{ width: '50%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>Turnstile Site Key</Typography.Text>
-                                </div>
-                                <Input
+                <Typography.Title style={{ marginBottom: '10px' }} heading={5}>配置 Turnstile</Typography.Title>
+                <Typography.Text style={{ marginBottom: '10px' }}>
+                    用以支持用户校验，<a href='https://dash.cloudflare.com/' target='_blank'>点击此处</a>管理你的 Turnstile Sites，推荐选择 Invisible Widget Type
+                </Typography.Text>
+                <Card style={{ padding: '20px',width: '80%' , marginBottom: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+                        <div style={{ flex: '1 1 calc(50% - 20px)' }}>
+                            <Typography.Text strong>Turnstile Site Key</Typography.Text>
+                            <Input
                                 placeholder='输入你注册的 Turnstile Site Key'
                                 value={inputs.TurnstileSiteKey}
                                 name='TurnstileSiteKey'
                                 onChange={(value) => handleInputChange('TurnstileSiteKey', value)}
-                                />
-                            </div>
-                            <div style={{ width: '50%', marginRight: '5%' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                <Typography.Text strong>Turnstile Secret Key</Typography.Text>
-                                </div>
-                                <Input
+                            />
+                        </div>
+                        <div style={{ flex: '1 1 calc(50% - 20px)' }}>
+                            <Typography.Text strong>Turnstile Secret Key</Typography.Text>
+                            <Input
                                 placeholder='敏感信息不会发送到前端显示'
                                 value={inputs.TurnstileSecretKey}
                                 name='TurnstileSecretKey'
                                 onChange={(value) => handleInputChange('TurnstileSecretKey', value)}
-                                />
-                            </div> 
+                            />
                         </div>
-                        <Button onClick={submitTurnstile} style={{ marginTop: '3px' }}>保存 Turnstile 设置</Button>
-
+                    </div>
+                </Card>
+                <Button onClick={submitTurnstile} style={{ width: '10%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold' }}>保存 Turnstile 设置</Button>
                 </Form>
+
 
             </Layout>
       </Spin>

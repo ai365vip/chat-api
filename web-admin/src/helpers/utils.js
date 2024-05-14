@@ -49,7 +49,17 @@ export async function copy(text) {
 }
 
 export function isMobile() {
-  return window.innerWidth <= 600;
+  // 定义移动设备的正则表达式列表
+  const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+  
+  // 检查屏幕宽度是否小于或等于600像素
+  const widthCheck = window.innerWidth <= 600;
+
+  // 使用 navigator.userAgent 检查设备是否匹配移动设备正则表达式
+  const userAgentCheck = mobileRegex.test(navigator.userAgent);
+
+  // 如果任一条件满足，则认为是移动设备
+  return widthCheck || userAgentCheck;
 }
 
 let showErrorOptions = { autoClose: toastConstants.ERROR_TIMEOUT };
