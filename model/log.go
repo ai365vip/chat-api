@@ -232,11 +232,11 @@ func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStat
 	groupSelect := fmt.Sprintf("DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL %d HOUR), '%%Y-%%m-%%d') as day", AdjustHour)
 
 	if common.UsingPostgreSQL {
-		groupSelect = fmt.Sprintf("TO_CHAR(date_trunc('day', to_timestamp(created_at) + INTERVAL '%d hours'), 'YYYY-MM-DD') as day", AdjustHour)
+		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD') as day"
 	}
 
 	if common.UsingSQLite {
-		groupSelect = fmt.Sprintf("strftime('%%Y-%%m-%%d', datetime(created_at, 'unixepoch', '+%d hours')) as day", AdjustHour)
+		groupSelect = "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch')) as day"
 	}
 	err = DB.Raw(`
 		SELECT `+groupSelect+`,
@@ -255,95 +255,6 @@ func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStat
 	//fmt.Println(user_id, startTimestamp, endTimestamp)
 
 	return LogStatistics, err
-}
-
-func GetProLogs(db *gorm.DB, logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (logs []*Logs, total int64, err error) {
-	// 确定当前使用的数据库方言
-	dialect := db.Dialector.Name()
-
-	// 构建 SELECT 子句和 GROUP BY 子句，这里要区分不同的数据库
-	var selectClause, groupByClause string
-	switch dialect {
-	case "postgres":
-		// PostgreSQL 方言的日期格式化
-		selectClause = "TO_CHAR(TO_TIMESTAMP(created_at), 'YYYY-MM-DD') AS created_data, COUNT(id) AS cishu, SUM(prompt_tokens) AS prompt_tokens, SUM(completion_tokens) AS completion_tokens, SUM(quota) AS quota"
-		groupByClause = "TO_CHAR(TO_TIMESTAMP(created_at), 'YYYY-MM-DD')"
-	case "sqlite":
-		// SQLite 方言的日期格式化
-		selectClause = "DATE(datetime(created_at, 'unixepoch')) AS created_data, COUNT(id) AS cishu, SUM(prompt_tokens) AS prompt_tokens, SUM(completion_tokens) AS completion_tokens, SUM(quota) AS quota"
-		groupByClause = "DATE(datetime(created_at, 'unixepoch'))"
-	case "mysql":
-		// MySQL 方言的日期格式化
-		selectClause = "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') AS created_data, COUNT(id) AS cishu, SUM(prompt_tokens) AS prompt_tokens, SUM(completion_tokens) AS completion_tokens, SUM(quota) AS quota"
-		groupByClause = "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d')"
-	default:
-		return nil, 0, fmt.Errorf("不支持的数据库方言: %s", dialect)
-	}
-
-	query := db.Model(&Log{})
-
-	if logType != LogTypeUnknown {
-		query = query.Where("type = ?", logType)
-	}
-	if modelName != "" {
-		query = query.Where("model_name = ?", modelName)
-	}
-	if username != "" {
-		query = query.Where("username = ?", username)
-	}
-	if tokenName != "" {
-		query = query.Where("token_name = ?", tokenName)
-	}
-	if startTimestamp != 0 {
-		query = query.Where("created_at >= ?", startTimestamp)
-	}
-	if endTimestamp != 0 {
-		query = query.Where("created_at <= ?", endTimestamp)
-	}
-	if channel != 0 {
-		query = query.Where("channel_id = ?", channel)
-	}
-
-	// 定义结果结构体，包含了 GROUP BY 和 SELECT 语句中所需字段
-	type groupResult struct {
-		CreatedData      string
-		Cishu            int
-		PromptTokens     int
-		CompletionTokens int
-		Quota            int
-	}
-
-	var results []groupResult
-
-	// 执行 GROUP BY 查询
-	err = query.Select(selectClause).Group(groupByClause).Order("created_data DESC, quota DESC").Scan(&results).Error
-	if err != nil {
-		return nil, 0, fmt.Errorf("查询日志出错: %+v", err)
-	}
-
-	// 转换 results 到 Logs 结构体切片
-	for _, result := range results {
-		log := &Logs{
-			CreatedData:      result.CreatedData,
-			Cishu:            result.Cishu,
-			PromptTokens:     result.PromptTokens,
-			CompletionTokens: result.CompletionTokens,
-			Quota:            result.Quota,
-			// 其他字段根据需要填充
-		}
-		logs = append(logs, log)
-	}
-
-	const secondsInDay = 24 * 60 * 60
-	totalDays := (endTimestamp - startTimestamp) / secondsInDay
-	if (endTimestamp-startTimestamp)%secondsInDay != 0 {
-		totalDays++ // 对于不满一天的部分也计为一天
-	}
-
-	// 将计算出的总天数赋值给 total
-	total = totalDays
-
-	return logs, total, nil
 }
 
 func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int) ([]*Log, int64, error) {

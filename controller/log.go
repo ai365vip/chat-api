@@ -38,37 +38,6 @@ func GetAllLogs(c *gin.Context) {
 	return
 }
 
-func GetProLogs(c *gin.Context) {
-
-	logType, _ := strconv.Atoi(c.Query("type"))
-	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
-	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
-	username := c.Query("username")
-	tokenName := c.Query("token_name")
-	modelName := c.Query("model_name")
-	channel, _ := strconv.Atoi(c.Query("channel"))
-
-	// 调用已经修改过的 model.GetProLogs 函数，它现在返回日志和总行数
-	logs, total, err := model.GetProLogs(model.DB, logType, startTimestamp, endTimestamp, modelName, username, tokenName, channel)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	// 返回日志数据和总行数
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    logs,  // 日志数据
-		"total":   total, // 总行数
-	})
-
-	return
-}
-
 func GetUserLogs(c *gin.Context) {
 	p, _ := strconv.Atoi(c.Query("p"))
 	pageSize, _ := strconv.Atoi(c.Query("pageSize"))
