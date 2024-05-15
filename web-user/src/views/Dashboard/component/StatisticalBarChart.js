@@ -11,21 +11,18 @@ const StatisticalBarChart = ({ isLoading, chartDatas }) => {
       return <Typography variant="body2">无可用数据</Typography>;
     }
   
-    // 防止无限递归调用
     const updatedChartData = {
-      ...chartData,
+      ...defaultChartData,
       options: {
-        ...chartData.options,
-        xaxis: { ...chartData.options.xaxis, categories: [...chartDatas.xaxis] },
+        ...defaultChartData.options,
+        xaxis: { ...defaultChartData.options.xaxis, categories: chartDatas.xaxis },
       },
-      series: [...chartDatas.data],
+      series: chartDatas.data,
     };
   
-  
-    return <Chart {...updatedChartData} />;
+    return <Chart options={updatedChartData.options} series={updatedChartData.series} type={updatedChartData.type} height={updatedChartData.height} />;
   };
   
-
   return (
     <>
       {isLoading ? (
@@ -53,19 +50,19 @@ const StatisticalBarChart = ({ isLoading, chartDatas }) => {
 StatisticalBarChart.propTypes = {
   isLoading: PropTypes.bool,
   chartDatas: PropTypes.shape({
-    xaxis: PropTypes.arrayOf(PropTypes.string),
+    xaxis: PropTypes.arrayOf(PropTypes.string).isRequired,
     data: PropTypes.arrayOf(
       PropTypes.shape({
-        name: PropTypes.string,
-        data: PropTypes.arrayOf(PropTypes.number),
+        name: PropTypes.string.isRequired,
+        data: PropTypes.arrayOf(PropTypes.number).isRequired,
       })
-    ),
-  }),
+    ).isRequired,
+  }).isRequired,
 };
 
 export default StatisticalBarChart;
 
-const chartData = {
+const defaultChartData = {
   height: 480,
   type: 'bar',
   options: {

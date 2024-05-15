@@ -8,6 +8,7 @@ import { API } from 'utils/api';
 import { showError, calculateQuota, renderNumber } from 'utils/common';
 import UserCard from 'ui-component/cards/UserCard';
 import { useSelector } from 'react-redux';
+
 const Dashboard = () => {
   const [isLoading, setLoading] = useState(true);
   const [statisticalData, setStatisticalData] = useState({ data: [], xaxis: [] });
@@ -16,13 +17,14 @@ const Dashboard = () => {
   const [tokenChart, setTokenChart] = useState(null);
   const [users, setUsers] = useState([]);
   const account = useSelector((state) => state.account);
+
   const userDashboard = async () => {
     setLoading(true);
     try {
       const res = await API.get('/api/user/dashboard');
       const { success, message, data } = res.data;
       if (success && Array.isArray(data)) {
-        let lineData = getLineDataGroup(data);
+        const lineData = getLineDataGroup(data);
         setRequestChart(getLineCardOption(lineData, 'RequestCount'));
         setQuotaChart(getLineCardOption(lineData, 'Quota'));
         setTokenChart(getLineCardOption(lineData, 'PromptTokens'));
@@ -36,8 +38,6 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
-  
-  
 
   const loadUser = async () => {
     try {
@@ -52,7 +52,7 @@ const Dashboard = () => {
       showError(`获取用户数据时出错: ${error.message}`);
     }
   };
-  
+
   useEffect(() => {
     if (account.user) {
       userDashboard();
@@ -123,8 +123,8 @@ const Dashboard = () => {
       </Grid>
     </Grid>
   );
-  
 };
+
 export default Dashboard;
 
 const getLineDataGroup = (statisticalData) => {
@@ -145,7 +145,7 @@ const getLineDataGroup = (statisticalData) => {
     return acc;
   }, {});
 
-  let lastSevenDays = getLastSevenDays();
+  const lastSevenDays = getLastSevenDays();
   return lastSevenDays.map((day) => {
     if (!groupedData[day]) {
       return {
@@ -160,7 +160,6 @@ const getLineDataGroup = (statisticalData) => {
     }
   });
 };
-
 
 const getBarDataGroup = (data) => {
   const lastSevenDays = getLastSevenDays();
@@ -194,8 +193,8 @@ const getLineCardOption = (lineDataGroup, field) => {
   let todayValue = 0;
   let chartData = null;
 
-  let lineData = lineDataGroup.map((item) => {
-    let tmp = {
+  const lineData = lineDataGroup.map((item) => {
+    const tmp = {
       date: item.date,
       value: item[field]
     };

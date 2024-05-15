@@ -1,45 +1,45 @@
+# Stage 1: Build React applications
 FROM node:18.19.0-alpine as react-builder
 
-
-# Create app directory
 WORKDIR /app
 COPY ./VERSION .
-# Install dependencies first to leverage Docker cache
-COPY web-user/package.json ./
+COPY web-user/package.json ./web-user/package.json
+COPY web-admin/package.json ./web-admin/package.json
 
-RUN npm install
+# Install dependencies
+RUN npm install --prefix web-user
+RUN npm install --prefix web-admin
 
-# Copy the source code and build the React applications
-COPY . .
+# Copy only necessary files for the build
+COPY web-user ./web-user
+COPY web-admin ./web-admin
 
-# Build web-user application
+# Build web-user and web-admin applications
 RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat VERSION) npm run build --prefix web-user
-
-# Build web-admin application
 RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat VERSION) npm run build --prefix web-admin
 
-FROM golang AS go-builder
-
-ENV GO111MODULE=on \
-    CGO_ENABLED=1 \
-    GOOS=linux
+# Stage 2: Build Go binary
+FROM golang:latest AS go-builder
 
 WORKDIR /build
-ADD go.mod go.sum ./
+COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-# 将 web-user 和 web-admin 的构建结果复制到指定位置
+
+# Copy the React build results
 COPY --from=react-builder /app/web-user/build ./web-user/build
 COPY --from=react-builder /app/web-admin/build ./web-admin/build
+
+# Build the Go binary
 RUN go build -ldflags "-s -w -X 'one-api/common.Version=$(cat VERSION)' -extldflags '-static'" -o chat-api
 
-# Use a minimal alpine image for the final stage
-FROM alpine
+# Stage 3: Create the final image
+FROM alpine:latest
 
-# Install certificates and time zone data
-RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
+# Install certificates and time zone data, then clean up
+RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates && rm -rf /var/cache/apk/*
 
-# Copy the compiled Go binary.
+# Copy the compiled Go binary
 COPY --from=go-builder /build/chat-api /chat-api
 
 EXPOSE 3000
