@@ -1,4 +1,4 @@
-FROM node:18-alpine as react-builder
+FROM node:18.19.0-alpine as react-builder
 
 
 # Create app directory
