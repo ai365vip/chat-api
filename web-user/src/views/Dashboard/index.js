@@ -29,8 +29,6 @@ const Dashboard = () => {
         setQuotaChart(getLineCardOption(lineData, 'Quota'));
         setTokenChart(getLineCardOption(lineData, 'PromptTokens'));
         setStatisticalData(getBarDataGroup(data));
-      } else {
-        showError(message || '无可用数据');
       }
     } catch (error) {
       showError(`获取仪表盘数据时出错: ${error.message}`);
