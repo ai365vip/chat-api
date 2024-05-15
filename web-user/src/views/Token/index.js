@@ -36,7 +36,7 @@ export default function Token() {
   const [searchToken, setSearchToken] = useState('');
 
 
-  const loadTokens = async (startIdx, rowsPerPage = ITEMS_PER_PAGE) => {
+  const loadTokens = async (startIdx = 0, rowsPerPage = ITEMS_PER_PAGE) => {
     setSearching(true);
     try {
       const res = await API.get(`/api/token/?p=${startIdx}&size=${rowsPerPage}`);
@@ -54,9 +54,11 @@ export default function Token() {
       }
     } catch (error) {
       showError(`加载数据时出错: ${error}`);
+    } finally {
+      setSearching(false);
     }
-    setSearching(false);
   };
+  
   
 
   useEffect(() => {
@@ -94,13 +96,13 @@ export default function Token() {
 
   const onPaginationChange = (event, newActivePage) => {
     (async () => {
-      if (newActivePage === Math.ceil(tokens.length / rowsPerPage)) {
-        // In this case we have to load more data and then append them.
+      if (newActivePage >= Math.ceil(tokens.length / rowsPerPage)) {
         await loadTokens(newActivePage);
       }
       setActivePage(newActivePage);
     })();
   };
+  
   
 
   const searchTokens = async (event) => {
@@ -109,7 +111,7 @@ export default function Token() {
     try {
       const query = new URLSearchParams({
         keyword: searchKeyword,
-        token: searchToken // 使用 searchToken 状态值
+        token: searchToken
       }).toString();
       const res = await API.get(`/api/token/search?${query}`);
       const { success, message, data } = res.data;
@@ -121,9 +123,11 @@ export default function Token() {
       }
     } catch (error) {
       showError(`搜索时出错: ${error}`);
+    } finally {
+      setSearching(false);
     }
-    setSearching(false);
   };
+  
   
 
   const handleSearchTokenChange = (event) => {

@@ -1,27 +1,16 @@
 import PropTypes from 'prop-types';
-
-// material-ui
 import { Grid, Typography } from '@mui/material';
-
-// third-party
 import Chart from 'react-apexcharts';
-
-// project imports
 import SkeletonTotalGrowthBarChart from 'ui-component/cards/Skeleton/TotalGrowthBarChart';
 import MainCard from 'ui-component/cards/MainCard';
 import { gridSpacing } from 'store/constant';
 
-// ==============================|| DASHBOARD DEFAULT - TOTAL GROWTH BAR CHART ||============================== //
-
 const StatisticalBarChart = ({ isLoading, chartDatas }) => {
-  chartData.options.xaxis.categories = chartDatas.xaxis;
-  chartData.series = chartDatas.data;
   const renderChart = () => {
     if (!chartDatas || !chartDatas.xaxis || !chartDatas.data) {
       return <Typography variant="body2">无可用数据</Typography>;
     }
-    
-    // 现在可以安全地访问 chartDatas 的属性了
+
     const updatedChartData = {
       ...chartData,
       options: {

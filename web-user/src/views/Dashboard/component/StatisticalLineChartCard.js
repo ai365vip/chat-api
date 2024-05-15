@@ -1,13 +1,7 @@
 import PropTypes from 'prop-types';
-
-// material-ui
 import { useTheme, styled } from '@mui/material/styles';
 import { Box, Grid, Typography } from '@mui/material';
-
-// third-party
 import Chart from 'react-apexcharts';
-
-// project imports
 import MainCard from 'ui-component/cards/MainCard';
 import SkeletonTotalOrderCard from 'ui-component/cards/Skeleton/EarningCard';
 
@@ -53,8 +47,6 @@ const CardWrapper = styled(MainCard)(({ theme }) => ({
   }
 }));
 
-// ==============================|| DASHBOARD - TOTAL ORDER LINE CHART CARD ||============================== //
-
 const StatisticalLineChartCard = ({ isLoading, title, chartData, todayValue }) => {
   const theme = useTheme();
 
@@ -75,7 +67,6 @@ const StatisticalLineChartCard = ({ isLoading, title, chartData, todayValue }) =
                           {todayValue || '0'}
                         </Typography>
                       </Grid>
-                      <Grid item></Grid>
                       <Grid item xs={12}>
                         <Typography
                           sx={{
@@ -116,7 +107,9 @@ const StatisticalLineChartCard = ({ isLoading, title, chartData, todayValue }) =
 
 StatisticalLineChartCard.propTypes = {
   isLoading: PropTypes.bool,
-  title: PropTypes.string
+  title: PropTypes.string,
+  chartData: PropTypes.object,
+  todayValue: PropTypes.string
 };
 
 export default StatisticalLineChartCard;

@@ -17,47 +17,47 @@ const Dashboard = () => {
   const [users, setUsers] = useState([]);
   const account = useSelector((state) => state.account);
   const userDashboard = async () => {
+    setLoading(true);
     try {
       const res = await API.get('/api/user/dashboard');
       const { success, message, data } = res.data;
-      if (success) {
-        // 确保从接口返回的 data 是一个数组
-        if (Array.isArray(data)) {
-          let lineData = getLineDataGroup(data);
-          setRequestChart(getLineCardOption(lineData, 'RequestCount'));
-          setQuotaChart(getLineCardOption(lineData, 'Quota'));
-          setTokenChart(getLineCardOption(lineData, 'PromptTokens'));
-          // 这里直接将 data 传递给 getBarDataGroup
-          setStatisticalData(getBarDataGroup(data));
-        }
+      if (success && Array.isArray(data)) {
+        let lineData = getLineDataGroup(data);
+        setRequestChart(getLineCardOption(lineData, 'RequestCount'));
+        setQuotaChart(getLineCardOption(lineData, 'Quota'));
+        setTokenChart(getLineCardOption(lineData, 'PromptTokens'));
+        setStatisticalData(getBarDataGroup(data));
       } else {
-        showError(message);
+        showError(message || '获取仪表盘数据失败');
       }
     } catch (error) {
-      // 捕获异步请求中的异常
-      showError(error.message);
+      showError(`获取仪表盘数据时出错: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
   
 
   const loadUser = async () => {
-    let res = await API.get(`/api/user/self`);
-    const { success, message, data } = res.data;
-    if (success) {
-      setUsers(data);
-    } else {
-      showError(message);
+    try {
+      const res = await API.get('/api/user/self');
+      const { success, message, data } = res.data;
+      if (success) {
+        setUsers(data);
+      } else {
+        showError(message || '获取用户数据失败');
+      }
+    } catch (error) {
+      showError(`获取用户数据时出错: ${error.message}`);
     }
   };
-
+  
   useEffect(() => {
     if (account.user) {
       userDashboard();
       loadUser();
     }
-    
-  }, []);
+  }, [account.user]);
 
   return (
     <Grid container spacing={gridSpacing}>
@@ -122,10 +122,11 @@ const Dashboard = () => {
       </Grid>
     </Grid>
   );
+  
 };
 export default Dashboard;
 
-function getLineDataGroup(statisticalData) {
+const getLineDataGroup = (statisticalData) => {
   let groupedData = statisticalData.reduce((acc, cur) => {
     if (!acc[cur.Day]) {
       acc[cur.Day] = {
@@ -142,6 +143,7 @@ function getLineDataGroup(statisticalData) {
     acc[cur.Day].CompletionTokens += cur.CompletionTokens;
     return acc;
   }, {});
+  
   let lastSevenDays = getLastSevenDays();
   return lastSevenDays.map((day) => {
     if (!groupedData[day]) {
@@ -156,9 +158,9 @@ function getLineDataGroup(statisticalData) {
       return groupedData[day];
     }
   });
-}
+};
 
-function getBarDataGroup(data) {
+const getBarDataGroup = (data) => {
   const lastSevenDays = getLastSevenDays();
   const result = [];
   const map = new Map();
@@ -172,7 +174,6 @@ function getBarDataGroup(data) {
     const index = lastSevenDays.indexOf(item.Day);
     if (index !== -1) {
       const rawQuotaValue = item.Quota;
-      // 计算配额值，确保返回一个数字类型的结果
       const calculatedQuotaValue = parseFloat(calculateQuota(rawQuotaValue));
 
       if (!isNaN(calculatedQuotaValue)) {
@@ -183,30 +184,25 @@ function getBarDataGroup(data) {
     }
   }
 
-
   return { data: result, xaxis: lastSevenDays };
-}
+};
 
-
-function getLineCardOption(lineDataGroup, field) {
+const getLineCardOption = (lineDataGroup, field) => {
   const today = getTodayDay();
   let todayValue = 0;
   let chartData = null;
+
   let lineData = lineDataGroup.map((item) => {
     let tmp = {
       date: item.date,
       value: item[field]
     };
-    switch (field) {
-      case 'Quota':
-        tmp.value = calculateQuota(item.Quota);
-        break;
-      case 'PromptTokens':
-        tmp.value += item.CompletionTokens;
-        break;
+    if (field === 'Quota') {
+      tmp.value = calculateQuota(item.Quota);
+    } else if (field === 'PromptTokens') {
+      tmp.value += item.CompletionTokens;
     }
-
-    if (item.date == today) {
+    if (item.date === today) {
       todayValue = tmp.value;
     }
     return tmp;
@@ -228,4 +224,4 @@ function getLineCardOption(lineDataGroup, field) {
   }
 
   return { chartData: chartData, todayValue: todayValue };
-}
+};

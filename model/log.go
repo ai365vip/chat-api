@@ -303,8 +303,8 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	// 计算一分钟前的时间戳
 	oneMinuteAgo := currentTime - 60
 
-	// 创建基本查询，用于计算总quota
-	baseQuery := DB.Table("logs")
+	// 创建基本查询，用于计算总Quota
+	baseQuery := DB.Table("quota_data") // 更新表名为quota_data
 	if username != "" {
 		baseQuery = baseQuery.Where("username = ?", username)
 	}
@@ -324,8 +324,23 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	// 计算总Quota
 	baseQuery.Select("COALESCE(sum(quota), 0) as quota").Scan(&stat.Quota)
 
-	baseQuery.Where("created_at >= ?", oneMinuteAgo).Where("created_at <= ?", currentTime).
-		Select("count(*) as rpm, sum(prompt_tokens) + sum(completion_tokens) as tpm").Scan(&stat)
+	rpmTpmQuery := DB.Table("logs").
+		Where("created_at >= ?", oneMinuteAgo).
+		Where("created_at <= ?", currentTime)
+	if username != "" {
+		rpmTpmQuery = rpmTpmQuery.Where("username = ?", username)
+	}
+	if tokenName != "" {
+		rpmTpmQuery = rpmTpmQuery.Where("token_name >= ?", tokenName)
+	}
+	if modelName != "" {
+		rpmTpmQuery = rpmTpmQuery.Where("model_name = ?", modelName)
+	}
+	if channel != 0 {
+		rpmTpmQuery = rpmTpmQuery.Where("channel_id = ?", channel)
+	}
+	rpmTpmQuery = rpmTpmQuery.Where("type = 2")
+	rpmTpmQuery.Select("count(*) as rpm, sum(prompt_tokens) + sum(completion_tokens) as tpm").Scan(&stat)
 
 	return stat
 }
