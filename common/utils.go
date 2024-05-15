@@ -191,17 +191,6 @@ func Max(a int, b int) int {
 	}
 }
 
-func GetAdjustHour(env string, defaultValue int) int {
-	if env == "" || os.Getenv(env) == "" {
-		return defaultValue
-	}
-	num, err := strconv.Atoi(os.Getenv(env))
-	if err != nil {
-		SysError(fmt.Sprintf("failed to adjusthour %s: %s, using default value: %d", env, err.Error(), defaultValue))
-		return defaultValue
-	}
-	return num
-}
 func GetOrDefault(env string, defaultValue int) int {
 	if env == "" || os.Getenv(env) == "" {
 		return defaultValue

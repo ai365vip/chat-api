@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"fmt"
+	"log"
 	"one-api/common"
 	"one-api/common/config"
 	"strings"
@@ -228,15 +229,18 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 }
 
 func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStatistics []*LogStatistic, err error) {
+	AdjustHour := common.AdjustHour
+	log.Println(AdjustHour)
+	groupSelect := fmt.Sprintf("DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL %d HOUR), '%%Y-%%m-%%d') as day", AdjustHour)
 
-	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
 	if common.UsingPostgreSQL {
-		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD') as day"
+		groupSelect = fmt.Sprintf("TO_CHAR(date_trunc('day', to_timestamp(created_at) + INTERVAL '%d hours'), 'YYYY-MM-DD') as day", AdjustHour)
 	}
 
 	if common.UsingSQLite {
-		groupSelect = "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch')) as day"
+		groupSelect = fmt.Sprintf("strftime('%%Y-%%m-%%d', datetime(created_at, 'unixepoch', '+%d hours')) as day", AdjustHour)
 	}
+
 	err = DB.Raw(`
 		SELECT `+groupSelect+`,
 		model_name, count(1) as request_count,
