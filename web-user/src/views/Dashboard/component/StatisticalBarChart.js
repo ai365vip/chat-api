@@ -11,13 +11,16 @@ const StatisticalBarChart = ({ isLoading, chartDatas }) => {
       return <Typography variant="body2">无可用数据</Typography>;
     }
 
+    console.log('chartDatas:', chartDatas); // 调试信息
+
+    // 防止无限递归调用
     const updatedChartData = {
       ...chartData,
       options: {
         ...chartData.options,
-        xaxis: { ...chartData.options.xaxis, categories: chartDatas.xaxis },
+        xaxis: { ...chartData.options.xaxis, categories: [...chartDatas.xaxis] },
       },
-      series: chartDatas.data,
+      series: [...chartDatas.data],
     };
 
     return <Chart {...updatedChartData} />;

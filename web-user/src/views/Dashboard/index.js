@@ -22,7 +22,9 @@ const Dashboard = () => {
       const res = await API.get('/api/user/dashboard');
       const { success, message, data } = res.data;
       if (success && Array.isArray(data)) {
+        console.log('Dashboard Data:', data); // 调试信息
         let lineData = getLineDataGroup(data);
+        console.log('Line Data:', lineData); // 调试信息
         setRequestChart(getLineCardOption(lineData, 'RequestCount'));
         setQuotaChart(getLineCardOption(lineData, 'Quota'));
         setTokenChart(getLineCardOption(lineData, 'PromptTokens'));
@@ -36,6 +38,7 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+  
   
 
   const loadUser = async () => {
@@ -143,7 +146,7 @@ const getLineDataGroup = (statisticalData) => {
     acc[cur.Day].CompletionTokens += cur.CompletionTokens;
     return acc;
   }, {});
-  
+
   let lastSevenDays = getLastSevenDays();
   return lastSevenDays.map((day) => {
     if (!groupedData[day]) {
@@ -159,6 +162,7 @@ const getLineDataGroup = (statisticalData) => {
     }
   });
 };
+
 
 const getBarDataGroup = (data) => {
   const lastSevenDays = getLastSevenDays();
