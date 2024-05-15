@@ -32,27 +32,6 @@ type Log struct {
 	UserQuota        int    `json:"userQuota"`
 }
 
-type Logs struct {
-	Id               int    `json:"id;index:idx_created_at_id,priority:1"`
-	UserId           int    `json:"user_id" gorm:"index"`
-	CreatedAt        int64  `json:"created_at" gorm:"bigint;index:idx_created_at_id,priority:2;index:idx_created_at_type"`
-	Type             int    `json:"type" gorm:"index:idx_created_at_type"`
-	Username         string `json:"username" gorm:"index:index_username_model_name,priority:2;default:''"`
-	TokenName        string `json:"token_name" gorm:"index;default:''"`
-	ModelName        string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
-	ChannelId        int    `json:"channel" gorm:"index"`
-	ChannelName      string `json:"channel_name"`
-	TokenId          int    `json:"token_id" gorm:"default:0;index"`
-	CreatedData      string `json:"created_data"`      // 匹配 DATE(datetime(created_at, 'unixepoch')) AS created_data
-	Cishu            int    `json:"cishu"`             // 匹配 COUNT(id) AS cishu
-	PromptTokens     int    `json:"prompt_tokens"`     // 匹配 SUM(prompt_tokens) AS prompt_tokens
-	CompletionTokens int    `json:"completion_tokens"` // 匹配 SUM(completion_tokens) AS completion_tokens
-	Quota            int    `json:"quota"`             // 匹配 SUM(quota/500000) AS quota
-	UseTime          int    `json:"use_time" gorm:"bigint;default:0"`
-	IsStream         bool   `json:"is_stream" gorm:"default:false"`
-	Multiplier       string `json:"multiplier"`
-	UserQuota        int    `json:"userQuota"`
-}
 type LogStatistic struct {
 	Day              string `gorm:"column:day"`
 	ModelName        string `gorm:"column:model_name"`
@@ -324,8 +303,8 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	// 计算一分钟前的时间戳
 	oneMinuteAgo := currentTime - 60
 
-	// 创建基本查询，用于计算总Quota
-	baseQuery := DB.Table("quota_data") // 更新表名为quota_data
+	// 创建基本查询，用于计算总quota
+	baseQuery := DB.Table("logs")
 	if username != "" {
 		baseQuery = baseQuery.Where("username = ?", username)
 	}
@@ -345,23 +324,8 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	// 计算总Quota
 	baseQuery.Select("COALESCE(sum(quota), 0) as quota").Scan(&stat.Quota)
 
-	rpmTpmQuery := DB.Table("logs").
-		Where("created_at >= ?", oneMinuteAgo).
-		Where("created_at <= ?", currentTime)
-	if username != "" {
-		rpmTpmQuery = rpmTpmQuery.Where("username = ?", username)
-	}
-	if tokenName != "" {
-		rpmTpmQuery = rpmTpmQuery.Where("token_name >= ?", tokenName)
-	}
-	if modelName != "" {
-		rpmTpmQuery = rpmTpmQuery.Where("model_name = ?", modelName)
-	}
-	if channel != 0 {
-		rpmTpmQuery = rpmTpmQuery.Where("channel_id = ?", channel)
-	}
-	rpmTpmQuery = rpmTpmQuery.Where("type = 2")
-	rpmTpmQuery.Select("count(*) as rpm, sum(prompt_tokens) + sum(completion_tokens) as tpm").Scan(&stat)
+	baseQuery.Where("created_at >= ?", oneMinuteAgo).Where("created_at <= ?", currentTime).
+		Select("count(*) as rpm, sum(prompt_tokens) + sum(completion_tokens) as tpm").Scan(&stat)
 
 	return stat
 }
