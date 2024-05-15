@@ -11,8 +11,6 @@ const StatisticalBarChart = ({ isLoading, chartDatas }) => {
       return <Typography variant="body2">无可用数据</Typography>;
     }
   
-    console.log('chartDatas:', chartDatas); // 调试信息
-  
     // 防止无限递归调用
     const updatedChartData = {
       ...chartData,
@@ -23,7 +21,6 @@ const StatisticalBarChart = ({ isLoading, chartDatas }) => {
       series: [...chartDatas.data],
     };
   
-    console.log('updatedChartData:', updatedChartData); // 调试信息
   
     return <Chart {...updatedChartData} />;
   };
