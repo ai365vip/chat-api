@@ -3,14 +3,13 @@ FROM node:18.19.0-alpine as react-builder
 WORKDIR /app
 COPY ./VERSION .
 
-# 复制 web-user 的 package.json 和 package-lock.json
-COPY web-user/package.json web-user/package-lock.json ./web-user/
-# 复制 web-admin 的 package.json 和 package-lock.json
-COPY web-admin/package.json web-admin/package-lock.json ./web-admin/
+# 复制 web-user 和 web-admin 的 package.json 文件
+COPY web-user/package.json ./web-user/
+COPY web-admin/package.json ./web-admin/
 
 # 为 web-user 和 web-admin 安装依赖项
-RUN npm install --prefix web-user
-RUN npm install --prefix web-admin
+RUN cd web-user && npm install && npm ci
+RUN cd web-admin && npm install && npm ci
 
 # 复制源代码
 COPY web-user ./web-user
