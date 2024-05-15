@@ -3,7 +3,6 @@ package model
 import (
 	"context"
 	"fmt"
-	"log"
 	"one-api/common"
 	"one-api/common/config"
 	"strings"
@@ -230,7 +229,6 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 
 func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStatistics []*LogStatistic, err error) {
 	AdjustHour := common.AdjustHour
-	log.Println(AdjustHour)
 	groupSelect := fmt.Sprintf("DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL %d HOUR), '%%Y-%%m-%%d') as day", AdjustHour)
 
 	if common.UsingPostgreSQL {
