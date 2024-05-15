@@ -225,7 +225,9 @@ const getLineCardOption = (lineDataGroup, field) => {
       chartData = generateChartOptions(lineData, '');
       todayValue = renderNumber(todayValue);
       break;
+    default:
+      break;
   }
 
-  return { chartData: chartData, todayValue: todayValue };
+  return { chartData, todayValue };
 };
