@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/common/helper"
@@ -42,7 +43,7 @@ func ConvertRequest(request model.GeneralOpenAIRequest) *ChatRequest {
 			case model.ContentTypeImageURL:
 				imageInfo, ok := part.ImageUrl.(model.MessageImageUrl)
 				if !ok {
-					logger.SysError("ImageUrl 类型断言失败")
+					log.Println("ImageUrl 类型断言失败")
 					return nil
 				}
 				_, data, _ := image.GetImageFromUrl(imageInfo.Url)
@@ -59,21 +60,20 @@ func ConvertRequest(request model.GeneralOpenAIRequest) *ChatRequest {
 }
 
 func responseOllama2OpenAI(response *ChatResponse) *openai.TextResponse {
-	content, _ := json.Marshal(response.Message.Content)
 	choice := openai.TextResponseChoice{
 		Index: 0,
 		Message: model.Message{
 			Role:    response.Message.Role,
-			Content: content,
+			Content: response.Message.Content,
 		},
 	}
 	if response.Done {
 		choice.FinishReason = "stop"
 	}
 	fullTextResponse := openai.TextResponse{
-		Id:      fmt.Sprintf("chatcmpl-%s", helper.GetUUID()),
-		Object:  "chat.completion",
+		Id:      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
 		Model:   response.Model,
+		Object:  "chat.completion",
 		Created: helper.GetTimestamp(),
 		Choices: []openai.TextResponseChoice{choice},
 		Usage: model.Usage{
@@ -93,7 +93,7 @@ func streamResponseOllama2OpenAI(ollamaResponse *ChatResponse) *openai.ChatCompl
 		choice.FinishReason = &constant.StopFinishReason
 	}
 	response := openai.ChatCompletionsStreamResponse{
-		Id:      fmt.Sprintf("chatcmpl-%s", helper.GetUUID()),
+		Id:      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
 		Object:  "chat.completion.chunk",
 		Created: helper.GetTimestamp(),
 		Model:   ollamaResponse.Model,
@@ -160,6 +160,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	}
 	return nil, &usage
 }
+
 func ConvertEmbeddingRequest(request model.GeneralOpenAIRequest) *EmbeddingRequest {
 	return &EmbeddingRequest{
 		Model:  request.Model,
@@ -217,6 +218,7 @@ func embeddingResponseOllama2OpenAI(response *EmbeddingResponse) *openai.Embeddi
 	})
 	return &openAIEmbeddingResponse
 }
+
 func Handler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage) {
 	ctx := context.TODO()
 	var ollamaResponse ChatResponse
