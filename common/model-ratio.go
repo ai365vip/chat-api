@@ -158,6 +158,8 @@ var ModelRatio = map[string]float64{
 	"command-light-nightly":     0.5,
 	"command-r":                 0.5 / 1000 * USD,
 	"command-r-plus	":           3.0 / 1000 * USD,
+	"deepseek-chat":             0.07,
+	"deepseek-coder":            0.07,
 }
 
 var CompletionRatio = map[string]float64{}
