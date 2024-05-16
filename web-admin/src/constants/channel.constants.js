@@ -9,6 +9,7 @@ export const CHANNEL_OPTIONS = [
     {key: 36, text: 'Coze', value: 36, color: 'lime', label: 'Coze'},
     {key: 29, text: 'Groq', value: 29, color: 'lime' , label: 'Groq'},
     {key: 38, text: 'deepseek', value: 38, color: 'teal' , label: 'deepseek'},
+    {key: 39, text: 'togetherai', value: 39, color: 'teal' , label: 'togetherai'},
     {key: 37, text: 'Cohere', value: 37, color: 'teal' , label: 'Cohere'},
     {key: 30, text: '百川大模型', value: 30, color: 'orange' , label: '百川大模型'},
     {key: 31, text: 'MiniMax', value: 31, color: 'red' , label: 'MiniMax'},
