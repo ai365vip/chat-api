@@ -4,6 +4,7 @@ import (
 	"one-api/common"
 	"one-api/relay/channel/ai360"
 	"one-api/relay/channel/baichuan"
+	"one-api/relay/channel/deepseek"
 	"one-api/relay/channel/groq"
 	"one-api/relay/channel/lingyiwanwu"
 	"one-api/relay/channel/minimax"
@@ -20,6 +21,7 @@ var CompatibleChannels = []int{
 	common.ChannelTypeMistral,
 	common.ChannelTypeGroq,
 	common.ChannelTypeLingYiWanWu,
+	common.ChannelTypeDeepSeek,
 }
 
 func GetCompatibleChannelMeta(channelType int) (string, []string) {
@@ -40,6 +42,8 @@ func GetCompatibleChannelMeta(channelType int) (string, []string) {
 		return "groq", groq.ModelList
 	case common.ChannelTypeLingYiWanWu:
 		return "lingyiwanwu", lingyiwanwu.ModelList
+	case common.ChannelTypeDeepSeek:
+		return "deepseek", deepseek.ModelList
 	default:
 		return "openai", ModelList
 	}

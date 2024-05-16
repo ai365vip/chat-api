@@ -128,6 +128,7 @@ const (
 	ChannelTypeAwsClaude      = 35
 	ChannelTypeCoze           = 36
 	ChannelTypeCohere         = 37
+	ChannelTypeDeepSeek       = 38
 )
 
 var ChannelBaseURLs = []string{
@@ -169,6 +170,7 @@ var ChannelBaseURLs = []string{
 	"",                            // 35
 	"https://api.coze.com",        // 36
 	"https://api.cohere.ai",       //37
+	"https://api.deepseek.com",    //38
 }
 
 const (
