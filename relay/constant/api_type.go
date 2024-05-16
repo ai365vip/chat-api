@@ -21,6 +21,7 @@ const (
 	APITypeAwsClaude
 	APITypeCoze
 	APITypeCohere
+	APITypeDeepL
 )
 
 func ChannelType2APIType(channelType int) int {
@@ -54,6 +55,8 @@ func ChannelType2APIType(channelType int) int {
 		apiType = APITypeCoze
 	case common.ChannelTypeCohere:
 		apiType = APITypeCohere
+	case common.ChannelTypeDeepL:
+		apiType = APITypeDeepL
 	}
 	return apiType
 }

@@ -162,14 +162,12 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		return openai.ErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
 
-	if resp != nil {
-		errorHappened := (resp.StatusCode != http.StatusOK) || (meta.IsStream && strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json"))
-		if errorHappened {
-			logger.Errorf(ctx, "errorHappened is not nil: %+v", errorHappened)
-			util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
-			return util.RelayErrorHandler(resp)
-		}
+	if isErrorHappened(meta, resp) {
+		logger.Errorf(ctx, "errorHappened is not nil:")
+		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
+		return util.RelayErrorHandler(resp)
 	}
+
 	// 执行 DoResponse 方法
 	aitext, usage, respErr := adaptor.DoResponse(c, resp, meta)
 	if respErr != nil {

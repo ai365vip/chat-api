@@ -8,6 +8,7 @@ import (
 	"one-api/relay/channel/aws"
 	"one-api/relay/channel/baidu"
 	"one-api/relay/channel/coze"
+	"one-api/relay/channel/deepl"
 	"one-api/relay/channel/gemini"
 	"one-api/relay/channel/ollama"
 	"one-api/relay/channel/openai"
@@ -49,6 +50,8 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &aws.Adaptor{}
 	case constant.APITypeCoze:
 		return &coze.Adaptor{}
+	case constant.APITypeDeepL:
+		return &deepl.Adaptor{}
 	}
 	return nil
 }

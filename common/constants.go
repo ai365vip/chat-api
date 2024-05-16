@@ -130,6 +130,7 @@ const (
 	ChannelTypeCohere         = 37
 	ChannelTypeDeepSeek       = 38
 	ChannelTypeTogetherAI     = 39
+	ChannelTypeDeepL          = 40
 )
 
 var ChannelBaseURLs = []string{
@@ -173,6 +174,7 @@ var ChannelBaseURLs = []string{
 	"https://api.cohere.ai",       //37
 	"https://api.deepseek.com",    //38
 	"https://api.together.xyz",    // 39
+	"https://api-free.deepl.com",  // 39
 }
 
 const (

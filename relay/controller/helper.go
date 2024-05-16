@@ -294,3 +294,19 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 	}
 
 }
+func isErrorHappened(meta *util.RelayMeta, resp *http.Response) bool {
+	if resp == nil {
+		return true
+	}
+	if resp.StatusCode != http.StatusOK {
+		return true
+	}
+	if meta.ChannelType == common.ChannelTypeDeepL {
+		// skip stream check for deepl
+		return false
+	}
+	if meta.IsStream && strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
+		return true
+	}
+	return false
+}
