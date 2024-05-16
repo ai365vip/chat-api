@@ -99,7 +99,13 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		var toolCount int
 		err, responseText, toolCount = StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
 		aitext = responseText
-		usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+		if usage == nil || usage.TotalTokens == 0 {
+			usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+		}
+		if usage.TotalTokens != 0 && usage.PromptTokens == 0 { // some channels don't return prompt tokens & completion tokens
+			usage.PromptTokens = meta.PromptTokens
+			usage.CompletionTokens = usage.TotalTokens - meta.PromptTokens
+		}
 		usage.CompletionTokens += toolCount * 7
 		if usage.CompletionTokens == 0 {
 			if config.BlankReplyRetryEnabled {
