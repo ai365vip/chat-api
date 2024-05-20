@@ -128,19 +128,6 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 			err, _ = ImagesEditsHandler(c, resp)
 		default:
 			err, usage, aitext = Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
-			if usage.CompletionTokens == 0 {
-				if config.BlankReplyRetryEnabled {
-					return "", nil, &model.ErrorWithStatusCode{
-						Error: model.Error{
-							Message: "No completion tokens generated",
-							Type:    "chat_api_error",
-							Param:   "completionTokens",
-							Code:    500,
-						},
-						StatusCode: 500,
-					}
-				}
-			}
 		}
 
 	}
