@@ -12,9 +12,11 @@ import (
 	"one-api/common"
 	"one-api/common/helper"
 	"one-api/common/logger"
+	"one-api/common/random"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
 	"one-api/relay/model"
+	"one-api/relay/util"
 	"strings"
 	"time"
 
@@ -63,7 +65,7 @@ func getToolCalls(response *ChatResponse) []model.Tool {
 		return toolCalls
 	}
 	toolCall := model.Tool{
-		Id:       fmt.Sprintf("call_%s", helper.GetUUID()),
+		Id:       fmt.Sprintf("call_%s", random.GetUUID()),
 		Type:     "function",
 		Function: *item.FunctionCall,
 	}
@@ -79,18 +81,17 @@ func responseXunfei2OpenAI(response *ChatResponse) *openai.TextResponse {
 			},
 		}
 	}
-	content, _ := json.Marshal(response.Payload.Choices.Text[0].Content)
 	choice := openai.TextResponseChoice{
 		Index: 0,
 		Message: model.Message{
 			Role:      "assistant",
-			Content:   content,
+			Content:   response.Payload.Choices.Text[0].Content,
 			ToolCalls: getToolCalls(response),
 		},
 		FinishReason: constant.StopFinishReason,
 	}
 	fullTextResponse := openai.TextResponse{
-		Id:      fmt.Sprintf("chatcmpl-%s", helper.GetUUID()),
+		Id:      fmt.Sprintf("chatcmpl-%s", random.GetUUID()),
 		Object:  "chat.completion",
 		Created: helper.GetTimestamp(),
 		Choices: []openai.TextResponseChoice{choice},
@@ -114,7 +115,7 @@ func streamResponseXunfei2OpenAI(xunfeiResponse *ChatResponse) *openai.ChatCompl
 		choice.FinishReason = &constant.StopFinishReason
 	}
 	response := openai.ChatCompletionsStreamResponse{
-		Id:      fmt.Sprintf("chatcmpl-%s", helper.GetUUID()),
+		Id:      fmt.Sprintf("chatcmpl-%s", random.GetUUID()),
 		Object:  "chat.completion.chunk",
 		Created: helper.GetTimestamp(),
 		Model:   "SparkDesk",
@@ -149,8 +150,8 @@ func buildXunfeiAuthUrl(hostUrl string, apiKey, apiSecret string) string {
 	return callUrl
 }
 
-func StreamHandler(c *gin.Context, textRequest model.GeneralOpenAIRequest, appId string, apiSecret string, apiKey string) (*model.ErrorWithStatusCode, *model.Usage) {
-	domain, authUrl := getXunfeiAuthUrl(c, apiKey, apiSecret, textRequest.Model)
+func StreamHandler(c *gin.Context, meta *util.RelayMeta, textRequest model.GeneralOpenAIRequest, appId string, apiSecret string, apiKey string) (*model.ErrorWithStatusCode, *model.Usage) {
+	domain, authUrl := getXunfeiAuthUrl(meta.APIVersion, apiKey, apiSecret)
 	dataChan, stopChan, err := xunfeiMakeRequest(textRequest, domain, authUrl, appId)
 	if err != nil {
 		return openai.ErrorWrapper(err, "xunfei_request_failed", http.StatusInternalServerError), nil
@@ -179,8 +180,8 @@ func StreamHandler(c *gin.Context, textRequest model.GeneralOpenAIRequest, appId
 	return nil, &usage
 }
 
-func Handler(c *gin.Context, textRequest model.GeneralOpenAIRequest, appId string, apiSecret string, apiKey string) (*model.ErrorWithStatusCode, *model.Usage) {
-	domain, authUrl := getXunfeiAuthUrl(c, apiKey, apiSecret, textRequest.Model)
+func Handler(c *gin.Context, meta *util.RelayMeta, textRequest model.GeneralOpenAIRequest, appId string, apiSecret string, apiKey string) (*model.ErrorWithStatusCode, *model.Usage) {
+	domain, authUrl := getXunfeiAuthUrl(meta.APIVersion, apiKey, apiSecret)
 	dataChan, stopChan, err := xunfeiMakeRequest(textRequest, domain, authUrl, appId)
 	if err != nil {
 		return openai.ErrorWrapper(err, "xunfei_request_failed", http.StatusInternalServerError), nil
@@ -268,25 +269,12 @@ func xunfeiMakeRequest(textRequest model.GeneralOpenAIRequest, domain, authUrl, 
 	return dataChan, stopChan, nil
 }
 
-func getAPIVersion(c *gin.Context, modelName string) string {
-	query := c.Request.URL.Query()
-	apiVersion := query.Get("api-version")
-	if apiVersion != "" {
-		return apiVersion
-	}
+func parseAPIVersionByModelName(modelName string) string {
 	parts := strings.Split(modelName, "-")
 	if len(parts) == 2 {
-		apiVersion = parts[1]
-		return apiVersion
-
+		return parts[1]
 	}
-	apiVersion = c.GetString(common.ConfigKeyAPIVersion)
-	if apiVersion != "" {
-		return apiVersion
-	}
-	apiVersion = "v1.1"
-	logger.SysLog("api_version not found, using default: " + apiVersion)
-	return apiVersion
+	return ""
 }
 
 // https://www.xfyun.cn/doc/spark/Web.html#_1-%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E
@@ -304,8 +292,7 @@ func apiVersion2domain(apiVersion string) string {
 	return "general" + apiVersion
 }
 
-func getXunfeiAuthUrl(c *gin.Context, apiKey string, apiSecret string, modelName string) (string, string) {
-	apiVersion := getAPIVersion(c, modelName)
+func getXunfeiAuthUrl(apiVersion string, apiKey string, apiSecret string) (string, string) {
 	domain := apiVersion2domain(apiVersion)
 	authUrl := buildXunfeiAuthUrl(fmt.Sprintf("wss://spark-api.xf-yun.com/%s/chat", apiVersion), apiKey, apiSecret)
 	return domain, authUrl

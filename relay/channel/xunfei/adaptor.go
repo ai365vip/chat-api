@@ -60,9 +60,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		return "", nil, openai.ErrorWrapper(errors.New("request is nil"), "request_is_nil", http.StatusBadRequest)
 	}
 	if meta.IsStream {
-		err, usage = StreamHandler(c, *a.request, splits[0], splits[1], splits[2])
+		err, usage = StreamHandler(c, meta, *a.request, splits[0], splits[1], splits[2])
 	} else {
-		err, usage = Handler(c, *a.request, splits[0], splits[1], splits[2])
+		err, usage = Handler(c, meta, *a.request, splits[0], splits[1], splits[2])
 	}
 	return
 }
