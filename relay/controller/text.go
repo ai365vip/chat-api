@@ -171,7 +171,6 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	// 执行 DoResponse 方法
 	aitext, usage, respErr := adaptor.DoResponse(c, resp, meta)
 	if respErr != nil {
-		logger.Errorf(ctx, "respErr is not nil: %+v", respErr)
 		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
 		return respErr
 	}
