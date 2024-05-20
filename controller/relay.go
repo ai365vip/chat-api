@@ -61,7 +61,7 @@ func Relay(c *gin.Context) {
 		common.Errorf(ctx, "relay error happen, status code is %d, won't retry in this case", bizErr.StatusCode)
 		retryTimes = 0
 	}
-	failedChannelIds := []int{}
+	failedChannelIds := []int{channelId}
 	for i := retryTimes; i > 0; i-- {
 		value, _ := c.Get("is_tools")
 
@@ -93,6 +93,7 @@ func Relay(c *gin.Context) {
 		}
 		channelId := c.GetInt("channel_id")
 		lastFailedChannelId = channelId
+		failedChannelIds = append(failedChannelIds, channelId) // 更新失败的Channel ID列表
 		channelName := c.GetString("channel_name")
 		processChannelRelayError(c, channelId, channelName, bizErr)
 	}

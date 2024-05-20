@@ -251,7 +251,7 @@ func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPrior
 
 	// 检查缓存
 	if !common.MemoryCacheEnabled {
-		return GetRandomSatisfiedChannel(group, model, ignoreFirstPriority, isTools)
+		return GetRandomSatisfiedChannel(group, model, ignoreFirstPriority, isTools, i)
 	}
 
 	channelSyncLock.RLock()

@@ -234,91 +234,46 @@ func updateRateLimitStatus(channelId int, model string) {
 	channelRateLimitStatus.Store(key, rl)
 }
 
-func GetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool, isTools bool) (*Channel, error) {
+func GetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool, isTools bool, i int) (*Channel, error) {
+	// 当i等于1时，强制使用下一个优先级
+	if i == 1 {
+		return getChannelFromNextPriority(group, model)
+	}
+
 	abilities, err := getAbilitiesByPriority(group, model, ignoreFirstPriority, isTools)
 	if err != nil {
 		return nil, err
 	}
+
 	channel := Channel{}
 	for len(abilities) > 0 {
-		// Randomly choose one based on weight
-		weightSum := uint(0)
-		for _, ability := range abilities {
-			weightSum += ability.Weight
+		selectedIdx, err := getRandomWeightedIndex(abilities)
+		if err != nil {
+			return nil, err
 		}
 
-		// 这里通过随机选择模拟一个加权随机算法
-		selectedIdx := -1
-		if weightSum == 0 {
-			selectedIdx = common.GetRandomInt(len(abilities))
-		} else {
-			randomWeight := common.GetRandomInt(int(weightSum))
-			for i, ability := range abilities {
-				randomWeight -= int(ability.Weight)
-				if randomWeight <= 0 {
-					selectedIdx = i
-					break
-				}
-			}
-		}
-		var rateLimitedAbilities []int
 		selectedAbility := abilities[selectedIdx]
-		// 使用 GetChannelById 函数并对返回的指针进行解引用
 		channelPtr, err := GetChannelById(selectedAbility.ChannelId, true)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				log.Printf("Channel with ID %d not found\n", selectedAbility.ChannelId)
 			} else {
-				// 对于除记录未找到外的其他错误，直接返回错误
 				return nil, err
 			}
-			abilities = append(abilities[:selectedIdx], abilities[selectedIdx+1:]...)
-			if len(abilities) == 0 { // 检查是否还有其他可用渠道
-				return nil, errors.New("no channels available within rate limits")
-			}
+			abilities = removeAbility(abilities, selectedIdx)
 			continue
 		}
+
 		channel = *channelPtr
-
-		// 检查该渠道是否启用了频率限制以及是否达到了频率限制
-		rateLimited := channel.RateLimited != nil && *channel.RateLimited
-		if rateLimited {
-			_, ok := checkRateLimit(selectedAbility.ChannelId, model)
-			if !ok { // 如果达到频率限制
-				rateLimitedAbilities = append(rateLimitedAbilities, selectedIdx)
-
-				abilities = append(abilities[:selectedIdx], abilities[selectedIdx+1:]...)
-				if len(abilities) == 0 {
-					break
-				}
-				continue
-			}
-			updateRateLimitStatus(selectedAbility.ChannelId, model)
+		if isRateLimited(channel, selectedAbility.ChannelId, model) {
+			abilities = removeAbility(abilities, selectedIdx)
+			continue
 		}
 
-		// 返回找到的 Channel，它既没有超过频率限制，也没有禁用频率限制
 		return &channel, nil
 	}
 
-	// 如果所有渠道都超过了频率限制，我们尝试获取下一个优先级的渠道
-	nextPriorityAbilities, err := getNextPriorityAbilities(group, model)
-	if err != nil {
-		return nil, err
-	}
-
-	// 从下一个优先级的渠道中随机选择一个返回
-	if len(nextPriorityAbilities) > 0 {
-		randomIdx := common.GetRandomInt(len(nextPriorityAbilities))
-		selectedAbility := nextPriorityAbilities[randomIdx]
-		channelPtr, err := GetChannelById(selectedAbility.ChannelId, true)
-		if err != nil {
-			return nil, err
-		}
-		return channelPtr, nil
-	}
-
-	// 所有渠道都超过频率限制，返回错误
-	return nil, errors.New("no channels available within rate limits")
+	return getChannelFromNextPriority(group, model)
 }
 
 func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool, isTools bool) ([]Ability, error) {
@@ -330,28 +285,74 @@ func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool
 		trueVal = "true"
 	}
 
-	var err error = nil
-	var channelQuery *gorm.DB
-	if ignoreFirstPriority {
-		channelQuery = DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model)
-	} else {
+	channelQuery := DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model)
+	if !ignoreFirstPriority {
 		maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model)
-		channelQuery = DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal+" and priority = (?)", group, model, maxPrioritySubQuery)
+		channelQuery = channelQuery.Where("priority = (?)", maxPrioritySubQuery)
 	}
-	// 根据isTools筛选
 	if isTools {
 		channelQuery = channelQuery.Where("is_tools = true")
 	}
-	if common.UsingSQLite || common.UsingPostgreSQL {
-		err = channelQuery.Order("weight DESC").Find(&abilities).Error
-	} else {
-		err = channelQuery.Order("weight DESC").Find(&abilities).Error
-	}
 
+	err := channelQuery.Order("weight DESC").Find(&abilities).Error
 	if err != nil {
 		return nil, err
 	}
 	return abilities, nil
+}
+
+func getRandomWeightedIndex(abilities []Ability) (int, error) {
+	weightSum := uint(0)
+	for _, ability := range abilities {
+		weightSum += ability.Weight
+	}
+
+	if weightSum == 0 {
+		return common.GetRandomInt(len(abilities)), nil
+	}
+
+	randomWeight := common.GetRandomInt(int(weightSum))
+	for i, ability := range abilities {
+		randomWeight -= int(ability.Weight)
+		if randomWeight <= 0 {
+			return i, nil
+		}
+	}
+
+	return -1, errors.New("unable to select a random weighted index")
+}
+
+func removeAbility(abilities []Ability, index int) []Ability {
+	return append(abilities[:index], abilities[index+1:]...)
+}
+
+func isRateLimited(channel Channel, channelId int, model string) bool {
+	if channel.RateLimited != nil && *channel.RateLimited {
+		if _, ok := checkRateLimit(channelId, model); !ok {
+			return true
+		}
+		updateRateLimitStatus(channelId, model)
+	}
+	return false
+}
+
+func getChannelFromNextPriority(group string, model string) (*Channel, error) {
+	nextPriorityAbilities, err := getNextPriorityAbilities(group, model)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(nextPriorityAbilities) > 0 {
+		randomIdx := common.GetRandomInt(len(nextPriorityAbilities))
+		selectedAbility := nextPriorityAbilities[randomIdx]
+		channelPtr, err := GetChannelById(selectedAbility.ChannelId, true)
+		if err != nil {
+			return nil, err
+		}
+		return channelPtr, nil
+	}
+
+	return nil, errors.New("no channels available within rate limits")
 }
 
 func getNextPriorityAbilities(group string, model string) ([]Ability, error) {
