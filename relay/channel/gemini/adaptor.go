@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"one-api/common/helper"
 	"one-api/relay/channel"
 	"one-api/relay/channel/openai"
 	"one-api/relay/model"
@@ -21,8 +20,21 @@ func (a *Adaptor) Init(meta *util.RelayMeta) {
 
 }
 
+var modelVersionMap = map[string]string{
+	"gemini-1.5-pro-latest":   "v1beta",
+	"gemini-1.5-flash-latest": "v1beta",
+	"gemini-ultra":            "v1beta",
+}
+
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
-	version := helper.AssignOrDefault(meta.APIVersion, "v1")
+	version, beta := modelVersionMap[meta.ActualModelName]
+	if !beta {
+		if meta.APIVersion != "" {
+			version = meta.APIVersion
+		} else {
+			version = "v1"
+		}
+	}
 	action := "generateContent"
 	if meta.IsStream {
 		action = "streamGenerateContent?alt=sse"
