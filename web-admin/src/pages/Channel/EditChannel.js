@@ -144,6 +144,16 @@ const EditChannel = (props) => {
                 case 37:
                     localModels = ['command','command-nightly','command-light','command-light-nightly','command-r','command-r-plus'];
                     break;
+                case 38:
+                    localModels = ['deepseek-coder','deepseek-chat'];
+                    break;
+                case 40:
+                    localModels = ['deepl-zh','deepl-en','deepl-ja'];
+                    break;
+                case 41:
+                    localModels = ['Doubao-pro-128k','Doubao-pro-32k','Doubao-pro-4k','Doubao-lite-128k','Doubao-lite-32k','Doubao-lite-4k'];
+                    break;
+    
             }
             setInputs((inputs) => ({...inputs, models: localModels}));
         }

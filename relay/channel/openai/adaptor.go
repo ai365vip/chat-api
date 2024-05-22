@@ -54,6 +54,10 @@ func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 		return util.GetFullRequestURL(meta.BaseURL, requestURL, meta.ChannelType), nil
 	case common.ChannelTypeMinimax:
 		return minimax.GetRequestURL(meta)
+	case common.ChannelTypeDouBao:
+		return fmt.Sprintf("%s/api/v3/chat/completions", meta.BaseURL), nil
+	case common.ChannelTypeCustom:
+		return meta.BaseURL, nil
 	default:
 		return util.GetFullRequestURL(meta.BaseURL, meta.RequestURLPath, meta.ChannelType), nil
 	}

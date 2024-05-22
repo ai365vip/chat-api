@@ -131,6 +131,7 @@ const (
 	ChannelTypeDeepSeek       = 38
 	ChannelTypeTogetherAI     = 39
 	ChannelTypeDeepL          = 40
+	ChannelTypeDouBao         = 41
 )
 
 var ChannelBaseURLs = []string{
@@ -159,22 +160,23 @@ var ChannelBaseURLs = []string{
 	"https://fastgpt.run/api/openapi",   // 22
 	"https://hunyuan.cloud.tencent.com", //23
 	"https://generativelanguage.googleapis.com", //24
-	"",                            //25
-	"",                            //26
-	"https://api.moonshot.cn",     //27
-	"https://api.stability.ai",    //28
-	"https://api.groq.com/openai", // 29
-	"https://api.baichuan-ai.com", // 30
-	"https://api.minimax.chat",    // 31
-	"https://api.mistral.ai",      // 32
-	"http://localhost:11434",      // 33
-	"https://api.lingyiwanwu.com", // 34
-	"",                            // 35
-	"https://api.coze.com",        // 36
-	"https://api.cohere.ai",       //37
-	"https://api.deepseek.com",    //38
-	"https://api.together.xyz",    // 39
-	"https://api-free.deepl.com",  // 39
+	"",                                  //25
+	"",                                  //26
+	"https://api.moonshot.cn",           //27
+	"https://api.stability.ai",          //28
+	"https://api.groq.com/openai",       // 29
+	"https://api.baichuan-ai.com",       // 30
+	"https://api.minimax.chat",          // 31
+	"https://api.mistral.ai",            // 32
+	"http://localhost:11434",            // 33
+	"https://api.lingyiwanwu.com",       // 34
+	"",                                  // 35
+	"https://api.coze.com",              // 36
+	"https://api.cohere.ai",             //37
+	"https://api.deepseek.com",          //38
+	"https://api.together.xyz",          // 39
+	"https://api-free.deepl.com",        // 40
+	"https://ark.cn-beijing.volces.com", // 41
 }
 
 const (
