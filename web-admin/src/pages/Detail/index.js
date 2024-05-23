@@ -477,7 +477,7 @@ const Detail = (props) => {
         <>
             <Layout>
                 <Layout.Content>
-                <Form layout='horizontal' style={{marginTop: 10}}>
+                <Form layout='horizontal' style={{marginTop: 60}}>
                         <>
                             <Form.DatePicker field="start_timestamp" label='起始时间' style={{width: 272}}
                                              initValue={start_timestamp}

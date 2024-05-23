@@ -416,7 +416,7 @@ const LogsTable = () => {
         <>
          
             <Layout>
-                <Form layout='horizontal' style={{marginTop: 10}}>
+                <Form layout='horizontal' style={{marginTop: 60}}>
                     <>
                     {isAdminUser && (
                           <Form.Input

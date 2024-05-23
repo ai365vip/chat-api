@@ -32,7 +32,7 @@ root.render(
                             <SiderBar/>
                         </Sider>
                         <Layout>
-                            <Header>
+                        <Header style={{ position: 'fixed', top: 0, width: '100%', zIndex: 1000 }}>
                                 <HeaderBar/>
                             </Header>
                             <Content

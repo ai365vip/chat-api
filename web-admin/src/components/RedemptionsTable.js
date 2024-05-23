@@ -383,7 +383,7 @@ const RedemptionsTable = () => {
         <>
             <EditRedemption refresh={refresh} editingRedemption={editingRedemption} visiable={showEdit}
                             handleClose={closeEdit}></EditRedemption>
-            <Form onSubmit={searchRedemptions}>
+            <Form onSubmit={searchRedemptions} style={{marginTop: 50}}>
                 <Form.Input
                     label='搜索关键字'
                     field='keyword'

@@ -419,6 +419,7 @@ const LogsTable = () => {
                 <h3 style={{
                     color: '#333', 
                     fontSize: '1.2rem', 
+                    marginTop: '50px', 
                     marginBottom: '10px',
                     backgroundColor: '#f8f8f8', 
                     padding: '10px',

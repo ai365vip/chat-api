@@ -41,7 +41,7 @@ const Setting = () => {
 
     return (
         <div>
-            <Layout>
+            <Layout style={{marginTop: 60}}>
                 <Layout.Content>
                     <Tabs type="line" defaultActiveKey="1">
                         {panes.map(pane => (

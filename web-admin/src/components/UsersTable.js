@@ -347,7 +347,9 @@ const UsersTable = () => {
         <>
             <AddUser refresh={refresh} visible={showAddUser} handleClose={closeAddUser}></AddUser>
             <EditUser refresh={refresh} visible={showEditUser} handleClose={closeEditUser} editingUser={editingUser}></EditUser>
-            <Form
+            <Form style={{
+                    marginTop: '50px', 
+                }}
         onSubmit={() => {
           searchUsers(searchKeyword, searchGroup);
         }}

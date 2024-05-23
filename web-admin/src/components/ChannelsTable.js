@@ -158,11 +158,7 @@ const ChannelsTable = () => {
             dataIndex: 'response_time',
             sorter: (a, b) => a.response_time - b.response_time,
             render: (text, record, index) => {
-                return (
-                    <div>
-                        {renderResponseTime(text)}
-                    </div>
-                );
+                return renderResponseTime(text, record);
             },
         },
         {
@@ -446,21 +442,27 @@ const ChannelsTable = () => {
 
     
 
-    const renderResponseTime = (responseTime) => {
+    function renderResponseTime(responseTime, record) {
         let time = responseTime / 1000;
         time = time.toFixed(2) + ' 秒';
-        if (responseTime === 0) {
-            return <Tag size='large' color='grey'>未测试</Tag>;
-        } else if (responseTime <= 1000) {
-            return <Tag size='large' color='green'>{time}</Tag>;
-        } else if (responseTime <= 3000) {
-            return <Tag size='large' color='lime'>{time}</Tag>;
-        } else if (responseTime <= 5000) {
-            return <Tag size='large' color='yellow'>{time}</Tag>;
-        } else {
-            return <Tag size='large' color='red'>{time}</Tag>;
+        let color = 'grey';
+        if (responseTime > 0) {
+            if (responseTime <= 1000) {
+                color = 'green';
+            } else if (responseTime <= 3000) {
+                color = 'lime';
+            } else if (responseTime <= 5000) {
+                color = 'yellow';
+            } else {
+                color = 'red';
+            }
         }
-    };
+        return (
+            <div onClick={() => testChannel(record, '')} style={{ cursor: 'pointer' }}>
+                <Tag size="large" color={color}>{time}</Tag>
+            </div>
+        );
+    }
 
     const searchChannels = async (searchKeyword, searchGroup,searchTypeKey,searchModel) => {
         setSearching(true);
@@ -583,7 +585,7 @@ const ChannelsTable = () => {
         }
 
         try {
-            const newChannel = {...channelToCopy, id: undefined,key: undefined,balance: undefined,used_quota: undefined,used_count: undefined};
+            const newChannel = {...channelToCopy, id: undefined,key: undefined,balance: undefined,used_quota: undefined,used_count: undefined}; // 示例：清除id以创建一个新渠道
             // 发送复制请求到后端API
             const response = await API.post('/api/channel/', newChannel);
             if (response.data.success) {
@@ -696,165 +698,160 @@ const ChannelsTable = () => {
 
     return (
         <>
-            <EditChannel refresh={refresh} visible={showEdit} handleClose={closeEdit} editingChannel={editingChannel}/>
+            <EditChannel refresh={refresh} visible={showEdit} handleClose={closeEdit} editingChannel={editingChannel} />
             <BatchEditChannels
-             refresh={refresh} 
-            visible={showBatchEdit}
-            handleClose={() => setShowBatchEdit(false)}
-            editingChannelIds={Array.from(selectedChannels)}
-
-        />
-            
-            <div style={{position: 'sticky', top: 0, zIndex: 1000}}>
-            
-            <Form labelPosition='left'>
-                <div style={{display: 'flex',marginBottom: 20 }}>
-                    <Space>
-                    
-                        <Input
-                            field='search'
-                            label='关键词'
-                            placeholder='ID，名称和密钥 ...'
-                            value={searchKeyword}
-                            loading={searching}
-                            onChange={(value) => {
-                            setSearchKeyword(value.trim());
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();  // 阻止表单默认行为
-                                    searchChannels(searchKeyword, searchGroup, searchTypeKey, searchModel);
-                                }
-                            }}
-                        />
-                        <Input
-                            field='model' 
-                            label='模型' 
-                            placeholder='输入模型...' 
-                            value={searchModel} 
-                            onChange={(value) => { 
-                                setSearchModel(value.trim()); 
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();  // 阻止表单默认行为
-                                    searchChannels(searchKeyword, searchGroup, searchTypeKey, searchModel);
-                                }
-                            }}
-                        />
-                        <Select placeholder="分组" style={{ width: 300 }}
-                            field="group" 
-                            value={searchGroup} 
-                            optionList={groupOptions} 
-                            onChange={(value) => {
-                                setSearchGroup(value)
-                                searchChannels(searchKeyword, value, searchTypeKey, searchModel);
-                            }}
-                            autoComplete='new-password'
-                        />
-                        <Select
-                            placeholder="类型"
-                            style={{ width: 300 }}
-                            value={searchTypeKey} 
-                            optionList={CHANNEL_OPTIONS.map(option => ({
-                                label: option.text, // 显示给用户的文本
-                                value: option.key   // 实际的选中值
-                            }))}
-                            onChange={(value) => {
-                                setSearchTypeKey(value);
-                                // 直接使用 value 调用 searchChannels
-                                searchChannels(searchKeyword, searchGroup, value, searchModel);
-                            }}
-                            autoComplete='new-password'
-                        />
-
-                        
-                        {/* 查询按钮 */}
-                        <Button
-                            onClick={() => searchChannels(searchKeyword, searchGroup, searchTypeKey, searchModel)}
-                        >
-                            查询
-                        </Button>
-                        <Button style={{marginRight: 28}} 
-                            theme='light'
-                            type='danger'
-                            onClick={resetSearch}
-                        >
-                            清除搜索条件
-                        </Button>
-                        <>
-                            {selectedChannels.size === 0 && (
-                                <Button theme='light' type='primary' style={{marginRight: 8}} onClick={() => {
-                                    setEditingChannel({
-                                        id: undefined,
-                                    });
-                                    setShowEdit(true);
-                                }}>添加渠道</Button>
-                            )}
-                            
-                            {selectedChannels.size === 1 && (
-                                <Button theme='light' type='primary' style={{marginRight: 8}} onClick={copySelectedChannel}>复制渠道</Button>
-                            )}
-
-                            {selectedChannels.size > 1 && (
-                                <Button theme='light' type='danger' style={{marginRight: 8}} onClick={deleteSelectedChannels}>删除选中</Button>
-                            )}
-                            {selectedChannels.size > 1 && (
-                                // 在点击按钮的事件处理器中
-                                <Button theme='light' type='secondary' onClick={() => {
-                                    setShowBatchEdit(true);
-                                }}>批量编辑</Button>
-                            )}
-                        </>
-
-                    </Space>
-                </div>
-            </Form>
-
-            </div>
-            <Table
-                rowSelection={{
-                    onChange: (selectedRowKeys) => {
-                        setSelectedChannels(new Set(selectedRowKeys));
-                    },
-                    selectedRowKeys: Array.from(selectedChannels),
-                }}
-                columns={columns}
-                dataSource={isFiltering ? channels : channels.slice((activePage - 1) * pageSize, activePage * pageSize)}
-                loading={loading}
-                pagination={isFiltering ? false : {
-                    currentPage: activePage,
-                    pageSize: pageSize,
-                    total: channelCount,
-                    pageSizeOpts: [10, 20, 50, 100,200],
-                    showSizeChanger: true,
-                    formatPageText:(page) => '',
-                    onPageSizeChange: (size) => {
-                        handlePageSizeChange(size).then()
-                    },
-                    onPageChange: handlePageChange,
-                    }}
-                onRow={handleRow}
+                refresh={refresh}
+                visible={showBatchEdit}
+                handleClose={() => setShowBatchEdit(false)}
+                editingChannelIds={Array.from(selectedChannels)}
             />
-            {isFiltering && (
-                <div style={{ paddingTop: '10px' }}>
-                    <Typography.Text>
-                        共 {channels.length} 条结果
-                    </Typography.Text>
-                </div>
-            )}
-            <div style={{display: isMobile()?'':'flex', marginTop: isFiltering ? '10px' : (isMobile() ? '0' : '-45px'), zIndex: 999, position: 'relative', pointerEvents: 'none'}}>
-                <Space style={{pointerEvents: 'auto'}}>
-
+    
+            <div style={{ position: 'sticky', top: 0, marginTop: 10,zIndex: 1000, background: '#fff', padding: '10px 0' }}>
+                <Form labelPosition='left' >
+                    <div style={{ display: 'flex', marginBottom: 20 }}>
+                        <Space>
+                            <Input
+                                field='search'
+                                label='关键词'
+                                placeholder='ID，名称和密钥 ...'
+                                value={searchKeyword}
+                                loading={searching}
+                                onChange={(value) => {
+                                    setSearchKeyword(value.trim());
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();  // 阻止表单默认行为
+                                        searchChannels(searchKeyword, searchGroup, searchTypeKey, searchModel);
+                                    }
+                                }}
+                            />
+                            <Input
+                                field='model'
+                                label='模型'
+                                placeholder='输入模型...'
+                                value={searchModel}
+                                onChange={(value) => {
+                                    setSearchModel(value.trim());
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();  // 阻止表单默认行为
+                                        searchChannels(searchKeyword, searchGroup, searchTypeKey, searchModel);
+                                    }
+                                }}
+                            />
+                            <Select placeholder="分组" style={{ width: 300 }}
+                                field="group"
+                                value={searchGroup}
+                                optionList={groupOptions}
+                                onChange={(value) => {
+                                    setSearchGroup(value)
+                                    searchChannels(searchKeyword, value, searchTypeKey, searchModel);
+                                }}
+                                autoComplete='new-password'
+                            />
+                            <Select
+                                placeholder="类型"
+                                style={{ width: 300 }}
+                                value={searchTypeKey}
+                                optionList={CHANNEL_OPTIONS.map(option => ({
+                                    label: option.text, // 显示给用户的文本
+                                    value: option.key   // 实际的选中值
+                                }))}
+                                onChange={(value) => {
+                                    setSearchTypeKey(value);
+                                    // 直接使用 value 调用 searchChannels
+                                    searchChannels(searchKeyword, searchGroup, value, searchModel);
+                                }}
+                                autoComplete='new-password'
+                            />
+    
+                            {/* 查询按钮 */}
+                            <Button
+                                onClick={() => searchChannels(searchKeyword, searchGroup, searchTypeKey, searchModel)}
+                            >
+                                查询
+                            </Button>
+                            <Button style={{ marginRight: 28 }}
+                                theme='light'
+                                type='danger'
+                                onClick={resetSearch}
+                            >
+                                清除搜索条件
+                            </Button>
+                            <>
+                                {selectedChannels.size === 0 && (
+                                    <Button theme='light' type='primary' style={{ marginRight: 8 }} onClick={() => {
+                                        setEditingChannel({
+                                            id: undefined,
+                                        });
+                                        setShowEdit(true);
+                                    }}>添加渠道</Button>
+                                )}
+    
+                                {selectedChannels.size === 1 && (
+                                    <Button theme='light' type='primary' style={{ marginRight: 8 }} onClick={copySelectedChannel}>复制渠道</Button>
+                                )}
+    
+                                {selectedChannels.size > 1 && (
+                                    <Button theme='light' type='danger' style={{ marginRight: 8 }} onClick={deleteSelectedChannels}>删除选中</Button>
+                                )}
+                                {selectedChannels.size > 1 && (
+                                    // 在点击按钮的事件处理器中
+                                    <Button theme='light' type='secondary' onClick={() => {
+                                        setShowBatchEdit(true);
+                                    }}>批量编辑</Button>
+                                )}
+                            </>
+    
+                        </Space>
+                    </div>
+                </Form>
+            </div>
+            <div style={{ height: 'calc(100vh - 160px)', overflowY: 'auto' }}> {/* 固定高度和滚动容器 */}
+                <Table
+                    rowSelection={{
+                        onChange: (selectedRowKeys) => {
+                            setSelectedChannels(new Set(selectedRowKeys));
+                        },
+                        selectedRowKeys: Array.from(selectedChannels),
+                    }}
+                    columns={columns}
+                    dataSource={isFiltering ? channels : channels.slice((activePage - 1) * pageSize, activePage * pageSize)}
+                    loading={loading}
+                    pagination={isFiltering ? false : {
+                        currentPage: activePage,
+                        pageSize: pageSize,
+                        total: channelCount,
+                        pageSizeOpts: [10, 20, 50, 100, 200],
+                        showSizeChanger: true,
+                        formatPageText: (page) => '',
+                        onPageSizeChange: (size) => {
+                            handlePageSizeChange(size).then()
+                        },
+                        onPageChange: handlePageChange,
+                    }}
+                    onRow={handleRow}
+                />
+                {isFiltering && (
+                    <div style={{ paddingTop: '10px' }}>
+                        <Typography.Text>
+                            共 {channels.length} 条结果
+                        </Typography.Text>
+                    </div>
+                )}
+            </div>
+            <div style={{ display: isMobile() ? '' : 'flex', marginTop: isFiltering ? '10px' : (isMobile() ? '0' : '-45px'), zIndex: 999, position: 'relative', pointerEvents: 'none' }}>
+                <Space style={{ pointerEvents: 'auto' }}>
                     <Popconfirm
                         title="确定？"
                         okType={'warning'}
                         onConfirm={testAllChannels}
-                        position={isMobile()?'top':'top'}
+                        position={isMobile() ? 'top' : 'top'}
                     >
-                        <Button theme='light' type='warning' style={{marginRight: 8}}>测试已启用通道</Button>
+                        <Button theme='light' type='warning' style={{ marginRight: 8 }}>测试已启用通道</Button>
                     </Popconfirm>
-
                     <Popconfirm
                         title="确定？"
                         okType={'secondary'}
@@ -868,13 +865,13 @@ const ChannelsTable = () => {
                         okType={'danger'}
                         onConfirm={deleteAllDisabledChannels}
                     >
-                        <Button theme='light' type='danger' style={{marginRight: 8}}>删除禁用通道</Button>
+                        <Button theme='light' type='danger' style={{ marginRight: 8 }}>删除禁用通道</Button>
                     </Popconfirm>
-
                 </Space>
             </div>
         </>
     );
+    
 };
 
 export default ChannelsTable;
