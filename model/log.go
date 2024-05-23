@@ -130,7 +130,7 @@ func RecordLog(userId int, logType int, quota int, multiplier string) {
 		common.SysError("failed to record log: " + err.Error())
 	}
 
-	LogQuotaData(userId, GetUsernameById(userId), LogTypeTopup, 0, "", quota, common.GetTimestamp())
+	LogQuotaData(userId, GetUsernameById(userId), LogTypeTopup, 0, "", 0, 0, quota, common.GetTimestamp())
 
 }
 
@@ -164,7 +164,7 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, channelNam
 		common.LogError(ctx, "failed to record log: "+err.Error())
 	}
 
-	LogQuotaData(userId, username, LogTypeConsume, channelId, modelName, quota, common.GetTimestamp())
+	LogQuotaData(userId, username, LogTypeConsume, channelId, modelName, promptTokens, completionTokens, quota, common.GetTimestamp())
 
 }
 
@@ -220,11 +220,11 @@ func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStat
 
 	err = DB.Raw(`
 		SELECT `+groupSelect+`,
-		model_name, count(1) as request_count,
+		model_name, count as request_count,
 		sum(quota) as quota,
 		sum(prompt_tokens) as prompt_tokens,
 		sum(completion_tokens) as completion_tokens
-		FROM logs
+		FROM quota_data
 		WHERE type=2
 		AND user_id= ?
 		AND created_at BETWEEN ? AND ?

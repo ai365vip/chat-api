@@ -22,7 +22,7 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const res = await API.get('/api/user/dashboard');
-      const { success, message, data } = res.data;
+      const { success, data } = res.data;
       if (success && Array.isArray(data)) {
         const lineData = getLineDataGroup(data);
         setRequestChart(getLineCardOption(lineData, 'RequestCount'));
