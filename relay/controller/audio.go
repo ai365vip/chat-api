@@ -75,33 +75,23 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 
 	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
 	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
-
+	preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	if BillingByRequestEnabled && ModelRatioEnabled {
 		if token.BillingEnabled {
 			if token.BillingEnabled {
 				modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
-				if !ok {
-					preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-				} else {
+				if ok {
 					ratio = modelRatio2 * groupRatio
 					preConsumedQuota = int(ratio * config.QuotaPerUnit)
 				}
-			} else {
-				preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 			}
-		} else {
-			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 		}
 	} else if BillingByRequestEnabled {
 		modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
-		if !ok {
-			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-		} else {
+		if ok {
 			ratio = modelRatio2 * groupRatio
 			preConsumedQuota = int(ratio * config.QuotaPerUnit)
 		}
-	} else {
-		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	}
 
 	userQuota, err := model.CacheGetUserQuota(c, meta.UserId)
@@ -209,35 +199,24 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 				promptTokens = quota
 			}
 			modelRatioString := ""
-
+			quota = int(float64(quota) * ratio)
+			modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 			if BillingByRequestEnabled && ModelRatioEnabled {
 				if token.BillingEnabled {
 					modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
-					if !ok {
-						quota = int(float64(quota) * ratio)
-						modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
-					} else {
+					if ok {
 						ratio = modelRatio2 * groupRatio
 						quota = int(ratio * config.QuotaPerUnit)
 						modelRatioString = "按次计费"
 					}
-				} else {
-					quota = int(float64(quota) * ratio)
-					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 				}
 			} else if BillingByRequestEnabled {
 				modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
-				if !ok {
-					quota = int(float64(quota) * ratio)
-					modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
-				} else {
+				if ok {
 					ratio = modelRatio2 * groupRatio
 					quota = int(ratio * config.QuotaPerUnit)
 					modelRatioString = "按次计费"
 				}
-			} else {
-				quota = int(float64(quota) * ratio)
-				modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
 			}
 
 			if ratio != 0 && quota <= 0 {
