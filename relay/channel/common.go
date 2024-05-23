@@ -25,7 +25,6 @@ func SetupCommonRequestHeader(c *gin.Context, req *http.Request, meta *util.Rela
 
 func DoRequestHelper(a Adaptor, c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
 	fullRequestURL, err := a.GetRequestURL(meta)
-
 	if err != nil {
 		return nil, fmt.Errorf("get request url failed: %w", err)
 	}
