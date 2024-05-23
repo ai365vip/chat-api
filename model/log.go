@@ -220,7 +220,7 @@ func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStat
 
 	err = DB.Raw(`
 		SELECT `+groupSelect+`,
-		model_name, count as request_count,
+		model_name, sum(count) as request_count,
 		sum(quota) as quota,
 		sum(prompt_tokens) as prompt_tokens,
 		sum(completion_tokens) as completion_tokens
