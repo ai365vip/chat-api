@@ -1,138 +1,106 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { TableRow, TableCell,Button,Tooltip,Modal} from '@mui/material';
-import { useState } from 'react';
-
-import {Tag} from '@douyinfe/semi-ui';
+import { TableRow, TableCell, Button, Tooltip, Modal, Chip } from '@mui/material';
 
 function renderType(type) {
   switch (type) {
     case 'IMAGINE':
-      return <Tag color="blue" size='large'>绘图</Tag>;
+      return <Chip label="绘图" color="primary" size="small" />;
     case 'ACTION':
-      return <Tag color="purple" size='large'>按钮变化</Tag>;
     case 'INPAINT':
-      return <Tag color="purple" size='large'>局部重绘</Tag>;
     case 'CUSTOMZOOM':
-      return <Tag color="purple" size='large'>自定义变焦</Tag>;
+      return <Chip label="按钮变化" color="secondary" size="small" />;
     case 'MODAL':
-      return <Tag color="light-blue" size='large'>窗口确认</Tag>;
+      return <Chip label="窗口确认" color="lightblue" size="small" />;
     case 'SHORTEN':
-      return <Tag color="blue" size='large'>prompt分析</Tag>
     case 'SWAPFACE':
-      return <Tag color="blue" size='large'>换脸</Tag>
-    case 'UPSCALE':
-      return <Tag color="orange" size='large'>放大</Tag>;
-    case 'VARIATION':
-      return <Tag color="purple" size='large'>变换</Tag>;
-    case 'DESCRIBE':
-      return <Tag color="yellow" size='large'>图生文</Tag>;
-    case 'REROLL':
-      return <Tag color="lime" size='large'>重绘</Tag>
-    case 'BLEND':
-      return <Tag color="cyan" size='large'>图混合</Tag>;
     case 'UPLOADS':
-      return <Tag color="blue" size='large'>上传文件</Tag>
+      return <Chip label="prompt分析" color="primary" size="small" />;
+    case 'UPSCALE':
+      return <Chip label="放大" color="orange" size="small" />;
+    case 'VARIATION':
+      return <Chip label="变换" color="secondary" size="small" />;
+    case 'DESCRIBE':
+      return <Chip label="图生文" color="warning" size="small" />;
+    case 'REROLL':
+      return <Chip label="重绘" color="lime" size="small" />;
+    case 'BLEND':
+      return <Chip label="图混合" color="info" size="small" />;
     default:
-      return <Tag color="black" size='large'>未知</Tag>;
+      return <Chip label="未知" color="default" size="small" />;
   }
 }
-
 
 function renderCode(code) {
   switch (code) {
     case 1:
-      return <Tag color="green" size='large'>已提交</Tag>;
+      return <Chip label="已提交" color="success" size="small" />;
     case 21:
-      return <Tag color="lime" size='large'>等待中</Tag>;
+      return <Chip label="等待中" color="lime" size="small" />;
     case 22:
-      return <Tag color="orange" size='large'>排队中</Tag>;
+      return <Chip label="排队中" color="warning" size="small" />;
     default:
-      return <Tag color="black" size='large'>未知</Tag>;
+      return <Chip label="未知" color="default" size="small" />;
   }
 }
+
 function renderMode(type) {
-  // Ensure all cases are string literals by adding quotes.
   switch (type) {
     case 'turbo':
-      return <Tag color="blue" size='large'>Turbo</Tag>;
+      return <Chip label="Turbo" color="primary" size="small" />;
     case 'relax':
-      return <Tag color="orange" size='large'>Relax</Tag>;
+      return <Chip label="Relax" color="warning" size="small" />;
     case 'fast':
-      return <Tag color="green" size='large'>Fast</Tag>;
+      return <Chip label="Fast" color="success" size="small" />;
     default:
-      return <Tag color="black" size='large'>未知</Tag>;
+      return <Chip label="未知" color="default" size="small" />;
   }
 }
 
 function renderStatus(type) {
-  // Ensure all cases are string literals by adding quotes.
   switch (type) {
     case 'SUCCESS':
-      return <Tag color="green" size='large'>成功</Tag>;
+      return <Chip label="成功" color="success" size="small" />;
     case 'NOT_START':
-      return <Tag color="grey" size='large'>未启动</Tag>;
+      return <Chip label="未启动" color="default" size="small" />;
     case 'SUBMITTED':
-      return <Tag color="yellow" size='large'>队列中</Tag>;
+      return <Chip label="队列中" color="warning" size="small" />;
     case 'IN_PROGRESS':
-      return <Tag color="blue" size='large'>执行中</Tag>;
+      return <Chip label="执行中" color="primary" size="small" />;
     case 'FAILURE':
-      return <Tag color="red" size='large'>失败</Tag>;
+      return <Chip label="失败" color="error" size="small" />;
     default:
-      return <Tag color="black" size='large'>未知</Tag>;
+      return <Chip label="未知" color="default" size="small" />;
   }
 }
 
-
-
-
-function renderTimestamp(timestampInSeconds) {
-  const date = new Date(timestampInSeconds);
-  const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const seconds = date.getSeconds().toString().padStart(2, '0');
-
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
-
-
 export default function LogTableRow({ item }) {
-  const [modalImageUrl, setModalImageUrl] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = React.useState('');
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+
   const handleImagePreview = (imageUrl) => {
-    setModalImageUrl(imageUrl); // 设置图片URL状态
-    setIsModalOpen(true);       // 打开模态框
+    setModalImageUrl(imageUrl);
+    setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);      // 关闭模态框
+    setIsModalOpen(false);
   };
-  
+
   return (
-    <TableRow tabIndex={-1} key={item.id}>
-      <TableCell>
-        {renderTimestamp(item.submit_time)}
-      </TableCell>
+    <TableRow key={item.id}>
+      <TableCell>{renderTimestamp(item.submit_time)}</TableCell>
       <TableCell>{renderType(item.action)}</TableCell>
       <TableCell>{item.mj_id}</TableCell>
       <TableCell>{renderCode(item.code)}</TableCell>
       <TableCell>{renderMode(item.mode)}</TableCell>
       <TableCell>{renderStatus(item.status)}</TableCell>
       <TableCell>{item.progress}</TableCell>
-  
       <TableCell>
-      <Button
-            variant="outlined"
-            size="small" // 将按钮尺寸设置为小
-            onClick={() => handleImagePreview(item.image_url)} // 设置图片 URL 并打开模态框
-          >
-            查看
-          </Button>
+        <Button variant="outlined" size="small" onClick={() => handleImagePreview(item.image_url)}>
+          查看
+        </Button>
       </TableCell>
-  
       <TableCell>
         <Tooltip title={item.prompt || '无'} placement="top" arrow>
           <div style={{ width: 100, overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -140,7 +108,6 @@ export default function LogTableRow({ item }) {
           </div>
         </Tooltip>
       </TableCell>
-  
       <TableCell>
         <Tooltip title={item.prompt_en || '无'} placement="top" arrow>
           <div style={{ width: 100, overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -148,7 +115,6 @@ export default function LogTableRow({ item }) {
           </div>
         </Tooltip>
       </TableCell>
-  
       <TableCell>
         <Tooltip title={item.fail_reason || '无'} placement="top" arrow>
           <div style={{ width: 100, overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -156,22 +122,15 @@ export default function LogTableRow({ item }) {
           </div>
         </Tooltip>
       </TableCell>
-      <Modal
-        open={isModalOpen}
-        onClose={handleCloseModal}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      >
+      <Modal open={isModalOpen} onClose={handleCloseModal} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ outline: 'none', background: '#fff', padding: 20 }}>
           <img src={modalImageUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '90vh' }} />
         </div>
       </Modal>
     </TableRow>
   );
-  
-  
 }
 
 LogTableRow.propTypes = {
   item: PropTypes.object.isRequired,
 };
-

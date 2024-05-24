@@ -5,7 +5,7 @@ import LogoSection from 'layout/MainLayout/LogoSection';
 import { Link } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-
+import ThemeButton from 'ui-component/ThemeButton';
 // ==============================|| MAIN NAVBAR / HEADER ||============================== //
 
 const Header = () => {
@@ -38,6 +38,7 @@ const Header = () => {
         <Button component={Link} variant="text" to="/about" color={pathname === '/about' ? 'primary' : 'inherit'}>
           教程
         </Button>
+        <ThemeButton />
         {account.user ? (
           <Button component={Link} variant="contained" to="/login" color="primary">
             控制台

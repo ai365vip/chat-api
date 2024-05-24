@@ -158,11 +158,9 @@ export default function Log() {
             alignItems: 'center',
             justifyContent: 'space-between',
             p: (theme) => theme.spacing(0, 2),
-            backgroundColor: '#f8f8f8',
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
             minHeight: '64px',
             '& h3': {
-              color: '#333',
               fontSize: '1.2rem',
               margin: '10px 0', // 在小屏设备上提供一些垂直间距
               flexGrow: 1,

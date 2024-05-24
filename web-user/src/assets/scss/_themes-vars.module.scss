@@ -46,15 +46,20 @@ $grey600: #4b5565;
 $grey700: #364152;
 $grey900: #121926;
 
+$tableBackground: #f4f6f8;
+$tableBorderBottom: #f1f3f4;
 // ==============================|| DARK THEME VARIANTS ||============================== //
 
 // paper & background
-$darkBackground: #1a223f; // level 3
-$darkPaper: #3e3e3f; // level 4
+$darkBackground: #2f333f; // level 3
+$darkPaper: #202525; // level 4
+
+$darkDivider: rgba(227, 232, 239, 0.2);
+$darkSelectedBack : rgba(124, 77, 255, 0.15);
 
 // dark 800 & 900
-$darkLevel1: #29314f; // level 1
-$darkLevel2: #212946; // level 2
+$darkLevel1: #1f262a; // level 1
+$darkLevel2: #202525; // level 2
 
 // primary dark
 $darkPrimaryLight: #eef2f6;
@@ -169,4 +174,9 @@ $darkTextSecondary: #8492c4;
   darkSecondaryDark: $darkSecondaryDark;
   darkSecondary200: $darkSecondary200;
   darkSecondary800: $darkSecondary800;
+
+  darkDivider: $darkDivider;
+  darkSelectedBack: $darkSelectedBack;
+  tableBackground: $tableBackground;
+  tableBorderBottom: $tableBorderBottom;
 }
