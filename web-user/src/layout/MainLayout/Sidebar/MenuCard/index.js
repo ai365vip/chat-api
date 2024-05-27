@@ -102,8 +102,6 @@ const MenuCard = () => {
                   </Box>
                   
                 </Typography>
-
-                
               }
               secondary={
                 <Typography
