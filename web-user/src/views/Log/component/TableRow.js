@@ -1,19 +1,22 @@
 import PropTypes from 'prop-types';
-import { TableRow, TableCell, Chip } from '@mui/material';
+import { TableRow, TableCell } from '@mui/material';
 import { timestamp2string, renderQuota, showSuccess, showError } from 'utils/common';
-
+import Label from 'ui-component/Label';
+import { amber, blue, grey, indigo, lightBlue, lime, orange, pink, purple, red, deepOrange, deepPurple, green, lightGreen, blueGrey, teal, yellow, brown, cyan } from '@mui/material/colors';
 function renderIsStream(bool) {
   return bool ? (
-    <Chip label="流" color="primary" size="small" variant="outlined" />
+    <Label style={{ color: blue[500], borderColor: blue[500] }} size="small" variant="outlined">流</Label>
   ) : (
-    <Chip label="非流" color="secondary" size="small" variant="outlined" />
+    <Label style={{ color: grey[500], borderColor: grey[500] }} size="small" variant="outlined">非流</Label>
   );
 }
 
 const colors = [
-  'amber', 'blue', 'cyan', 'green', 'grey', 'indigo',
-  'light-blue', 'lime', 'orange', 'pink', 'purple', 
-  'red', 'teal', 'violet', 'yellow'
+  amber[500], blue[500], grey[500], indigo[500],
+  lightBlue[500], lime[500], orange[500], pink[500], purple[500],
+  red[500], cyan[500], teal[500], yellow[500], 
+  brown[500], deepOrange[500], deepPurple[500], green[500], 
+  lightGreen[500], blueGrey[500]
 ];
 
 function stringToColor(str) {
@@ -28,26 +31,26 @@ function stringToColor(str) {
 function renderType(type) {
   switch (type) {
     case 1:
-      return <Chip label="充值" color="info" size="small" variant="outlined" />;
+      return <Label style={{ color: blue[500], borderColor: blue[500] }} size="small" variant="outlined" >充值</Label>;
     case 2:
-      return <Chip label="消费" color="success"  size="small" variant="outlined" />;
+      return <Label style={{ color: green[500], borderColor: green[500] }} size="small" variant="outlined" >消费</Label>;
     case 3:
-      return <Chip label="管理" color="warning" size="small" variant="outlined" />;
+      return <Label style={{ color: orange[500], borderColor: orange[500] }} size="small" variant="outlined" >管理</Label>;
     case 4:
-      return <Chip label="系统" color="error" size="small" variant="outlined" />;
+      return <Label style={{ color: red[500], borderColor: red[500] }} size="small" variant="outlined" >系统</Label>;
     default:
-      return <Chip label="未知" size="small" variant="outlined" />;
+      return <Label style={{ color: grey[500], borderColor: grey[500] }} size="small" variant="outlined" >未知</Label>;
   }
 }
 
 function renderUseTime(time) {
   const parsedTime = parseInt(time);
   if (parsedTime < 101) {
-    return <Chip label={`${time} s`} color="success" size="small"  variant="outlined" />;
+    return <Label style={{ color: green[500], borderColor: green[500] }} size="small" variant="outlined">{`${time} s`}</Label>;
   } else if (parsedTime < 300) {
-    return <Chip label={`${time} s`} color="warning" size="small"  variant="outlined" />;
+    return <Label style={{ color: orange[500], borderColor: orange[500] }} size="small" variant="outlined">{`${time} s`}</Label>;
   } else {
-    return <Chip label={`${time} s`} color="error" size="small"  variant="outlined" />;
+    return <Label style={{ color: red[500], borderColor: red[500] }} size="small" variant="outlined">{`${time} s`}</Label>;
   }
 }
 
@@ -66,11 +69,15 @@ export default function LogTableRow({ item }) {
     <TableRow tabIndex={item.id}>
       <TableCell>{timestamp2string(item.created_at)}</TableCell>
       <TableCell onClick={() => handleCopyToClipboard(item.token_name)} style={{ cursor: 'pointer' }}>
-        <Chip label={item.token_name} color="default" variant="outlined" />
+        <Label color="default" variant="outlined" >
+        {item.token_name}
+        </Label>
       </TableCell>
       <TableCell>{renderType(item.type)}</TableCell>
       <TableCell onClick={() => handleCopyToClipboard(item.model_name)} >
-        <Chip label={item.model_name} style={{ borderColor: stringToColor(item.model_name) }} variant="outlined" />
+        <Label style={{ color: stringToColor(item.model_name) }} variant="outlined" >
+        {item.model_name} 
+        </Label>
       </TableCell>
       <TableCell>
         {renderUseTime(item.use_time)}

@@ -113,7 +113,6 @@ const MenuCard = () => {
                   <Chip
                     icon={<MonetizationOnIcon />} // 在Chip内部使用图标
                     label={calculateQuota(inputs.quota)}
-                    color="secondary" // 设置颜色
                     size="small"
                     variant="outlined" // 设置变体，使其看起来更像按钮
                     sx={{ cursor: 'pointer' }} // 进一步强调可点击的视觉效果
