@@ -5,21 +5,32 @@ import (
 	"net/http"
 
 	"one-api/common/ctxkey"
+	"one-api/relay/channel"
 	"one-api/relay/channel/anthropic"
 	"one-api/relay/model"
 	"one-api/relay/util"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 )
 
+var _ channel.Adaptor = new(Adaptor)
+
 type Adaptor struct {
+	meta      *util.RelayMeta
+	awsClient *bedrockruntime.Client
 }
 
 func (a *Adaptor) Init(meta *util.RelayMeta) {
-
+	a.meta = meta
+	a.awsClient = bedrockruntime.New(bedrockruntime.Options{
+		Region:      meta.Config.Region,
+		Credentials: aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(meta.Config.AK, meta.Config.SK, "")),
+	})
 }
-
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 	return "", nil
 }
@@ -53,11 +64,11 @@ func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (aitext string, usage *model.Usage, err *model.ErrorWithStatusCode) {
 	if meta.IsStream {
 		var responseText string
-		err, usage, responseText = StreamHandler(c, resp)
+		err, usage, responseText = StreamHandler(c, a.awsClient)
 
 		aitext = responseText
 	} else {
-		err, usage, aitext = Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
+		err, usage, aitext = Handler(c, a.awsClient, meta.ActualModelName)
 	}
 	return
 }

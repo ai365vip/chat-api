@@ -125,23 +125,33 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("original_model", modelName) // for retry
 	c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", channel.Key))
 	c.Set("base_url", channel.GetBaseURL())
+	cfg, _ := channel.LoadConfig()
 	// this is for backward compatibility
 	switch channel.Type {
 	case common.ChannelTypeAzure:
-		c.Set(common.ConfigKeyAPIVersion, channel.Other)
+		if cfg.APIVersion == "" {
+			cfg.APIVersion = channel.Other
+		}
 	case common.ChannelTypeStability:
-		c.Set(common.ConfigKeyAPIVersion, channel.Other)
+		if cfg.APIVersion == "" {
+			cfg.APIVersion = channel.Other
+		}
 	case common.ChannelTypeXunfei:
-		c.Set(common.ConfigKeyAPIVersion, channel.Other)
+		if cfg.APIVersion == "" {
+			cfg.APIVersion = channel.Other
+		}
 	case common.ChannelTypeGemini:
-		c.Set(common.ConfigKeyAPIVersion, channel.Other)
+		if cfg.APIVersion == "" {
+			cfg.APIVersion = channel.Other
+		}
 	case common.ChannelTypeAIProxyLibrary:
-		c.Set(common.ConfigKeyLibraryID, channel.Other)
+		if cfg.APIVersion == "" {
+			cfg.APIVersion = channel.Other
+		}
 	case common.ChannelTypeAli:
-		c.Set(common.ConfigKeyPlugin, channel.Other)
+		if cfg.APIVersion == "" {
+			cfg.APIVersion = channel.Other
+		}
 	}
-	cfg, _ := channel.LoadConfig()
-	for k, v := range cfg {
-		c.Set(common.ConfigKeyPrefix+k, v)
-	}
+	c.Set(ctxkey.Config, cfg)
 }

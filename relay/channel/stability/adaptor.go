@@ -32,7 +32,7 @@ func (a *Adaptor) ConvertImageRequest(request *model.ImageRequest) (any, error) 
 	return request, nil
 }
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
-	requestURL := fmt.Sprintf("/v1/generation/%s/text-to-image", meta.APIVersion)
+	requestURL := fmt.Sprintf("/v1/generation/%s/text-to-image", meta.Config.APIVersion)
 	return util.GetFullRequestURL(meta.BaseURL, requestURL, meta.ChannelType), nil
 }
 

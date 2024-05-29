@@ -296,6 +296,9 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 }
 func isErrorHappened(meta *util.RelayMeta, resp *http.Response) bool {
 	if resp == nil {
+		if meta.ChannelType == common.ChannelTypeAwsClaude {
+			return false
+		}
 		return true
 	}
 	if resp.StatusCode != http.StatusOK {

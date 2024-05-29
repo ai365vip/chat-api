@@ -30,7 +30,7 @@ func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 	version, beta := modelVersionMap[meta.ActualModelName]
 	if !beta {
 		if meta.APIVersion != "" {
-			version = meta.APIVersion
+			version = meta.Config.APIVersion
 		} else {
 			version = "v1"
 		}

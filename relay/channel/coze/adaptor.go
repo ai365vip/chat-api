@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"one-api/common"
 	"one-api/relay/channel"
 	"one-api/relay/channel/openai"
 	"one-api/relay/model"
@@ -15,10 +14,11 @@ import (
 )
 
 type Adaptor struct {
+	meta *util.RelayMeta
 }
 
 func (a *Adaptor) Init(meta *util.RelayMeta) {
-
+	a.meta = meta
 }
 
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
@@ -35,7 +35,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	request.User = c.GetString(common.ConfigUserID)
+	request.User = a.meta.Config.UserID
 	return ConvertRequest(*request), nil
 }
 

@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"one-api/common"
 	"one-api/common/config"
+	"one-api/common/ctxkey"
 	"one-api/middleware"
 	"one-api/model"
 	"one-api/relay/constant"
@@ -76,14 +77,13 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 
 	c.Set("channel", channel.Type)
 	c.Set("base_url", channel.GetBaseURL())
+	cfg, _ := channel.LoadConfig()
+	c.Set(ctxkey.Config, cfg)
 	middleware.SetupContextForSelectedChannel(c, channel, "")
 	meta := util.GetRelayMeta(c)
 
 	apiType := constant.ChannelType2APIType(channel.Type)
-	if meta.ChannelType == common.ChannelTypeAzure {
 
-		meta.APIVersion = channel.Other
-	}
 	adaptor := helper.GetAdaptor(apiType)
 	if adaptor == nil {
 		return fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), nil

@@ -151,7 +151,7 @@ func buildXunfeiAuthUrl(hostUrl string, apiKey, apiSecret string) string {
 }
 
 func StreamHandler(c *gin.Context, meta *util.RelayMeta, textRequest model.GeneralOpenAIRequest, appId string, apiSecret string, apiKey string) (*model.ErrorWithStatusCode, *model.Usage) {
-	domain, authUrl := getXunfeiAuthUrl(meta.APIVersion, apiKey, apiSecret)
+	domain, authUrl := getXunfeiAuthUrl(meta.Config.APIVersion, apiKey, apiSecret)
 	dataChan, stopChan, err := xunfeiMakeRequest(textRequest, domain, authUrl, appId)
 	if err != nil {
 		return openai.ErrorWrapper(err, "xunfei_request_failed", http.StatusInternalServerError), nil
@@ -181,7 +181,7 @@ func StreamHandler(c *gin.Context, meta *util.RelayMeta, textRequest model.Gener
 }
 
 func Handler(c *gin.Context, meta *util.RelayMeta, textRequest model.GeneralOpenAIRequest, appId string, apiSecret string, apiKey string) (*model.ErrorWithStatusCode, *model.Usage) {
-	domain, authUrl := getXunfeiAuthUrl(meta.APIVersion, apiKey, apiSecret)
+	domain, authUrl := getXunfeiAuthUrl(meta.Config.APIVersion, apiKey, apiSecret)
 	dataChan, stopChan, err := xunfeiMakeRequest(textRequest, domain, authUrl, appId)
 	if err != nil {
 		return openai.ErrorWrapper(err, "xunfei_request_failed", http.StatusInternalServerError), nil

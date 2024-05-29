@@ -16,25 +16,12 @@ import (
 	relaymodel "one-api/relay/model"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 )
-
-func newAwsClient(c *gin.Context) (*bedrockruntime.Client, error) {
-	ak := c.GetString(common.ConfigAK)
-	sk := c.GetString(common.ConfigSK)
-	region := c.GetString(common.ConfigRegion)
-	client := bedrockruntime.New(bedrockruntime.Options{
-		Region:      region,
-		Credentials: aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(ak, sk, "")),
-	})
-
-	return client, nil
-}
 
 func wrapErr(err error) *relaymodel.ErrorWithStatusCode {
 	return &relaymodel.ErrorWithStatusCode{
@@ -63,14 +50,9 @@ func awsModelID(requestModel string) (string, error) {
 	return "", errors.Errorf("model %s not found", requestModel)
 }
 
-func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
-	awsCli, err := newAwsClient(c)
-	responseText := ""
-	if err != nil {
-		return wrapErr(errors.Wrap(err, "newAwsClient")), nil, ""
-	}
-
+func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
 	awsModelId, err := awsModelID(c.GetString(ctxkey.RequestModel))
+	responseText := ""
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "awsModelID")), nil, ""
 	}
@@ -123,15 +105,11 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	return nil, &usage, responseText
 }
 
-func StreamHandler(c *gin.Context, resp *http.Response) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
+func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
 	createdTime := helper.GetTimestamp()
-	awsCli, err := newAwsClient(c)
 	responseText := ""
-	if err != nil {
-		return wrapErr(errors.Wrap(err, "newAwsClient")), nil, ""
-	}
-
 	awsModelId, err := awsModelID(c.GetString(ctxkey.RequestModel))
+
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "awsModelID")), nil, ""
 	}
@@ -214,6 +192,5 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*relaymodel.ErrorWithSt
 			return false
 		}
 	})
-
 	return nil, &usage, responseText
 }

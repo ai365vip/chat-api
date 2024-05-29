@@ -138,7 +138,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 	}
 	fullRequestURL := util.GetFullRequestURL(baseURL, requestURL, meta.ChannelType)
 	if meta.ChannelType == common.ChannelTypeAzure {
-		apiVersion := meta.APIVersion
+		apiVersion := meta.Config.APIVersion
 		if relayMode == constant.RelayModeAudioTranscription {
 			// https://learn.microsoft.com/en-us/azure/ai-services/openai/whisper-quickstart?tabs=command-line#rest-api
 			fullRequestURL = fmt.Sprintf("%s/openai/deployments/%s/audio/transcriptions?api-version=%s", baseURL, audioRequest.Model, apiVersion)
