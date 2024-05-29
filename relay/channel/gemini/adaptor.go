@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"one-api/relay/channel"
 	"one-api/relay/channel/openai"
+	"one-api/relay/constant"
 	"one-api/relay/model"
 	"one-api/relay/util"
 
@@ -28,14 +29,21 @@ var modelVersionMap = map[string]string{
 
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 	version, beta := modelVersionMap[meta.ActualModelName]
+	action := ""
 	if !beta {
-		if meta.APIVersion != "" {
+		if meta.Config.APIVersion != "" {
 			version = meta.Config.APIVersion
 		} else {
 			version = "v1"
 		}
 	}
-	action := "generateContent"
+
+	switch meta.Mode {
+	case constant.RelayModeEmbeddings:
+		action = "batchEmbedContents"
+	default:
+		action = "generateContent"
+	}
 	if meta.IsStream {
 		action = "streamGenerateContent?alt=sse"
 	}
@@ -52,7 +60,14 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.G
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	return ConvertRequest(*request), nil
+	switch relayMode {
+	case constant.RelayModeEmbeddings:
+		geminiEmbeddingRequest := ConvertEmbeddingRequest(*request)
+		return geminiEmbeddingRequest, nil
+	default:
+		geminiRequest := ConvertRequest(*request)
+		return geminiRequest, nil
+	}
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io.Reader) (*http.Response, error) {
@@ -72,7 +87,13 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		aitext = responseText
 		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 	} else {
-		err, usage, aitext = Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
+
+		switch meta.Mode {
+		case constant.RelayModeEmbeddings:
+			err, usage = EmbeddingHandler(c, resp)
+		default:
+			err, usage, aitext = Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
+		}
 	}
 	return
 }

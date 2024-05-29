@@ -16,7 +16,28 @@ type FunctionCall struct {
 	FunctionName string `json:"name"`
 	Arguments    any    `json:"args"`
 }
-
+type EmbeddingRequest struct {
+	Model                string      `json:"model"`
+	Content              ChatContent `json:"content"`
+	TaskType             string      `json:"taskType,omitempty"`
+	Title                string      `json:"title,omitempty"`
+	OutputDimensionality int         `json:"outputDimensionality,omitempty"`
+}
+type BatchEmbeddingRequest struct {
+	Requests []EmbeddingRequest `json:"requests"`
+}
+type EmbeddingResponse struct {
+	Embeddings []EmbeddingData `json:"embeddings"`
+	Error      *Error          `json:"error,omitempty"`
+}
+type EmbeddingData struct {
+	Values []float64 `json:"values"`
+}
+type Error struct {
+	Code    int    `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
+	Status  string `json:"status,omitempty"`
+}
 type Part struct {
 	Text         string        `json:"text,omitempty"`
 	InlineData   *InlineData   `json:"inlineData,omitempty"`
