@@ -45,7 +45,7 @@ func main() {
 	if os.Getenv("GIN_MODE") != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	if common.DebugEnabled {
+	if config.DebugEnabled {
 		common.SysLog("running in debug mode")
 	}
 	// Initialize SQL Database

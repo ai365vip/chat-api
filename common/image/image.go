@@ -8,7 +8,8 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-	"net/http"
+	"one-api/common/client"
+	"one-api/common/config"
 	"regexp"
 	"strings"
 	"sync"
@@ -20,7 +21,8 @@ import (
 var dataURLPattern = regexp.MustCompile(`data:image/([^;]+);base64,(.*)`)
 
 func IsImageUrl(url string) (bool, error) {
-	resp, err := http.Head(url)
+	resp, err := client.ProxiedHttpHead(url, config.OutProxyUrl)
+
 	if err != nil {
 		return false, err
 	}
@@ -35,7 +37,7 @@ func GetImageSizeFromUrl(url string) (width int, height int, err error) {
 	if !isImage {
 		return
 	}
-	resp, err := http.Get(url)
+	resp, err := client.ProxiedHttpGet(url, config.OutProxyUrl)
 	if err != nil {
 		return
 	}
@@ -61,7 +63,7 @@ func GetImageFromUrl(url string) (mimeType string, data string, err error) {
 	if !isImage {
 		return
 	}
-	resp, err := http.Get(url)
+	resp, err := client.ProxiedHttpGet(url, config.OutProxyUrl)
 	if err != nil {
 		return
 	}
@@ -99,7 +101,7 @@ func GetImageClaudeUrl(url string) (mimeType string, data string, err error) {
 		}
 		return
 	}
-	resp, err := http.Get(url)
+	resp, err := client.ProxiedHttpHead(url, config.OutProxyUrl)
 	if err != nil {
 		return
 	}

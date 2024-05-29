@@ -110,7 +110,7 @@ func InitOptionMap() {
 	config.OptionMap["MiniQuota"] = strconv.FormatFloat(config.MiniQuota, 'f', -1, 64)
 	config.OptionMap["ProporTions"] = strconv.Itoa(config.ProporTions)
 	config.OptionMap["RedempTionCount"] = strconv.Itoa(config.RedempTionCount)
-
+	config.OptionMap["OutProxyUrl"] = ""
 	config.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
 }
@@ -226,6 +226,7 @@ func updateOptionMap(key string, value string) (err error) {
 			config.TopupAmountEnabled = boolValue
 		case "BlankReplyRetryEnabled":
 			config.BlankReplyRetryEnabled = boolValue
+
 		}
 	}
 	switch key {
@@ -324,7 +325,10 @@ func updateOptionMap(key string, value string) (err error) {
 		config.UserGroup = value
 	case "VipUserGroup":
 		config.VipUserGroup = value
+	case "OutProxyUrl":
+		config.OutProxyUrl = value
 	}
+
 	return err
 }
 

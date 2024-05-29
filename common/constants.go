@@ -8,7 +8,7 @@ import (
 
 var StartTime = time.Now().Unix() // unit: second
 var Version = "v0.0.0"
-var DebugEnabled = os.Getenv("DEBUG") == "true"
+
 var MemoryCacheEnabled = os.Getenv("MEMORY_CACHE_ENABLED") == "true"
 
 var AdjustHour = GetOrDefault("ADJUSTHOUR", 0)

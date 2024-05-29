@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/common/client"
 	"one-api/common/config"
 	"one-api/common/logger"
 	"one-api/model"
@@ -34,7 +35,8 @@ func RelayMidjourneyImage(c *gin.Context) {
 		})
 		return
 	}
-	resp, err := http.Get(midjourneyTask.ImageUrl)
+	resp, err := client.ProxiedHttpGet(midjourneyTask.ImageUrl, config.OutProxyUrl)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "http_get_image_failed",

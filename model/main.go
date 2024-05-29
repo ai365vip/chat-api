@@ -2,6 +2,7 @@ package model
 
 import (
 	"one-api/common"
+	"one-api/common/config"
 	"os"
 	"strings"
 	"time"
@@ -76,7 +77,7 @@ func chooseDB() (*gorm.DB, error) {
 func InitDB() (err error) {
 	db, err := chooseDB()
 	if err == nil {
-		if common.DebugEnabled {
+		if config.DebugEnabled {
 			db = db.Debug()
 		}
 		DB = db

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"sync"
 
 	"github.com/google/uuid"
@@ -10,6 +11,7 @@ import (
 var SystemName = "Chat API"
 var SystemText = ""
 var ServerAddress = "http://localhost:3000"
+var OutProxyUrl = ""
 var PayAddress = ""
 var EpayId = ""
 var EpayKey = ""
@@ -39,7 +41,7 @@ var MiniQuota = 1.0
 var ProporTions = 10
 var UserGroup = "default"
 var VipUserGroup = "default"
-
+var DebugEnabled = os.Getenv("DEBUG") == "true"
 var SessionSecret = uuid.New().String()
 
 var OptionMap map[string]string

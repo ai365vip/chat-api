@@ -19,6 +19,7 @@ const SystemSetting = () => {
         SMTPFrom: '',
         SMTPToken: '',
         ServerAddress: '',
+        OutProxyUrl: '',
         Footer: '',
         WeChatAuthEnabled: '',
         WeChatServerAddress: '',
@@ -111,6 +112,11 @@ const SystemSetting = () => {
     const submitServerAddress = async () => {
         let ServerAddress = removeTrailingSlash(inputs.ServerAddress);
         await updateOption('ServerAddress', ServerAddress);
+        setOriginInputs(inputs);
+    };
+    const submitOutProxyUrl = async () => {
+        let OutProxyUrl = removeTrailingSlash(inputs.OutProxyUrl);
+        await updateOption('OutProxyUrl', OutProxyUrl);
         setOriginInputs(inputs);
     };
 
@@ -268,6 +274,23 @@ const SystemSetting = () => {
                             </div>
                         </div>
                         <Button onClick={submitServerAddress} style={{ width: '20%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold' }}>更新服务器地址</Button>
+                    </div>
+                </Form>
+<Divider style={{ marginTop: '20px', marginBottom: '10px' }} />
+                <Form>
+                    <div style={{ display: 'flex',width: '40%' , flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                            <div style={{ flex: '1 1 40%', marginRight: '5%' }}>
+                                <Typography.Text strong>代理地址</Typography.Text>
+                                <Input
+                                    placeholder='例如：https://yourdomain.com'
+                                    value={inputs.OutProxyUrl}
+                                    name='OutProxyUrl'
+                                    onChange={(value) => handleInputChange('OutProxyUrl', value)}
+                                />
+                            </div>
+                        </div>
+                        <Button onClick={submitOutProxyUrl} style={{ width: '20%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold' }}>更新代理地址</Button>
                     </div>
                 </Form>
 <Divider style={{ marginTop: '20px', marginBottom: '10px' }} />

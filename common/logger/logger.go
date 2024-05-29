@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"one-api/common"
+	"one-api/common/config"
 	"os"
 	"path/filepath"
 	"sync"
@@ -53,7 +53,7 @@ func SysLog(s string) {
 	_, _ = fmt.Fprintf(gin.DefaultWriter, "[SYS] %v | %s \n", t.Format("2006/01/02 - 15:04:05"), s)
 }
 func Debug(ctx context.Context, msg string) {
-	if common.DebugEnabled {
+	if config.DebugEnabled {
 		logHelper(ctx, loggerDEBUG, msg)
 	}
 }
