@@ -40,9 +40,8 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	}
 	meta.IsClaude = false
 	meta.IsStream = textRequest.Stream
-	var isModelMapped bool
 	meta.OriginModelName = textRequest.Model
-	textRequest.Model, isModelMapped = util.GetMappedModelName(textRequest.Model, meta.ModelMapping)
+	textRequest.Model, _ = util.GetMappedModelName(textRequest.Model, meta.ModelMapping)
 	meta.ActualModelName = textRequest.Model
 	// get model ratio & group ratio
 	modelRatio := common.GetModelRatio(textRequest.Model)
@@ -142,31 +141,19 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		}
 		requestBody = bytes.NewBuffer(jsonData)
 	} else {
-		if meta.ChannelType == common.ChannelTypeOpenAI {
-			// no need to convert request for openai
-			shouldResetRequestBody := isModelMapped || meta.ChannelType == common.ChannelTypeBaichuan // frequency_penalty 0 is not acceptable for baichuan
-			if shouldResetRequestBody {
-				jsonStr, err := json.Marshal(textRequest)
-				if err != nil {
-					return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
-				}
-				requestBody = bytes.NewBuffer(jsonStr)
-			} else {
-				requestBody = c.Request.Body
-			}
-		} else {
-			convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, textRequest)
-			if err != nil {
-				return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
-			}
-			jsonData, err := json.Marshal(convertedRequest)
-			if err != nil {
-				return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
-			}
-			logger.Debugf(ctx, "converted request: \n%s", string(jsonData))
-			requestBody = bytes.NewBuffer(jsonData)
+		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, textRequest)
+		if err != nil {
+			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
 		}
+		jsonData, err := json.Marshal(convertedRequest)
+		if err != nil {
+			return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
+		}
+		logger.Debugf(ctx, "converted request: \n%s", string(jsonData))
+		requestBody = bytes.NewBuffer(jsonData)
+
 	}
+
 	// do response
 	startTime := time.Now()
 	// do request
