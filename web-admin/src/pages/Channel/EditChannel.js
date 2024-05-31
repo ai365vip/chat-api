@@ -11,7 +11,7 @@ const MODEL_MAPPING_EXAMPLE = {
     'gpt-4-32k-0314': 'gpt-4-32k'
 };
 const STATUS_CODE_MAPPING_EXAMPLE = {
-    400: '500',
+    '400': '500',
   };
 
 function type2secretPrompt(type) {

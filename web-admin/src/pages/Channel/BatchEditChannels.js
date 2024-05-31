@@ -12,8 +12,9 @@ const MODEL_MAPPING_EXAMPLE = {
 };
 
 const STATUS_CODE_MAPPING_EXAMPLE = {
-    400: '500',
+    '400': '500',
   };
+
 
 const BatchEditChannels = (props) => {
     
