@@ -11,7 +11,9 @@ const MODEL_MAPPING_EXAMPLE = {
     'gpt-4-32k-0314': 'gpt-4-32k'
 };
 
-
+const STATUS_CODE_MAPPING_EXAMPLE = {
+    400: '500',
+  };
 
 const BatchEditChannels = (props) => {
     
@@ -28,6 +30,7 @@ const BatchEditChannels = (props) => {
     const originInputs = {
         openai_organization: '',
         model_mapping: '',
+        status_code_mapping: '',
         headers: '',
         models: [],
         auto_ban: 1,
@@ -130,6 +133,9 @@ const BatchEditChannels = (props) => {
                 if (data.model_mapping !== undefined) {
                     newData.model_mapping = data.model_mapping === '' ? '' : JSON.stringify(JSON.parse(data.model_mapping), null, 2);
                 }
+                if (data.status_code_mapping !== undefined) {
+                    newData.status_code_mapping = data.status_code_mapping === '' ? '' : JSON.stringify(JSON.parse(data.status_code_mapping), null, 2);
+                }
                 if (data.headers !== undefined) {
                     newData.headers = data.headers === '' ? '' : JSON.stringify(JSON.parse(data.headers), null, 2);
                 }
@@ -190,8 +196,12 @@ const BatchEditChannels = (props) => {
             showInfo('模型映射必须是合法的 JSON 格式！');
             return;
         }
+        if (inputs.status_code_mapping !== '' && !verifyJSON(inputs.status_code_mapping)) {
+            showInfo('状态码复写必须是合法的 JSON 格式！');
+            return;
+        }
         if (inputs.headers !== '' && !verifyJSON(inputs.headers)) {
-            showInfo('模型映射必须是合法的 JSON 格式！');
+            showInfo('请求头必须是合法的 JSON 格式！');
             return;
         }
         let localInputs = {...inputs};
@@ -473,7 +483,36 @@ const BatchEditChannels = (props) => {
                     }>
                         填入模板
                     </Typography.Text>
-
+                    <div style={{ marginTop: 10 }}>
+                        <Typography.Text strong>
+                        状态码复写（仅影响本地判断，不修改返回到上游的状态码）：
+                        </Typography.Text>
+                    </div>
+                    <TextArea
+                        placeholder={`此项可选，用于复写返回的状态码，比如将claude渠道的400错误复写为500（用于重试），请勿滥用该功能，例如：\n${JSON.stringify(STATUS_CODE_MAPPING_EXAMPLE, null, 2)}`}
+                        name='status_code_mapping'
+                        onChange={(value) => {
+                        handleInputChange('status_code_mapping', value);
+                        }}
+                        autosize
+                        value={inputs.status_code_mapping}
+                        autoComplete='new-password'
+                    />
+                    <Typography.Text
+                        style={{
+                        color: 'rgba(var(--semi-blue-5), 1)',
+                        userSelect: 'none',
+                        cursor: 'pointer',
+                        }}
+                        onClick={() => {
+                        handleInputChange(
+                            'status_code_mapping',
+                            JSON.stringify(STATUS_CODE_MAPPING_EXAMPLE, null, 2),
+                        );
+                        }}
+                    >
+                        填入模板
+                    </Typography.Text>
                     <div style={{marginTop: 10, display: 'flex'}}>
                         <Space>
                             <Checkbox

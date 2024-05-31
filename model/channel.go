@@ -38,6 +38,7 @@ type Channel struct {
 	ModelTest          string  `json:"model_test"`
 	RateLimited        *bool   `json:"rate_limited" gorm:"default:false"`
 	IsImageURLEnabled  *int    `json:"is_image_url_enabled" gorm:"default:0"`
+	StatusCodeMapping  *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
 	Config             string  `json:"config"`
 }
 type ChannelConfig struct {
@@ -223,6 +224,13 @@ func (channel *Channel) GetModelHeaders() map[string]string {
 		return nil
 	}
 	return headers
+}
+
+func (channel *Channel) GetStatusCodeMapping() string {
+	if channel.StatusCodeMapping == nil {
+		return ""
+	}
+	return *channel.StatusCodeMapping
 }
 
 func (channel *Channel) Insert() error {

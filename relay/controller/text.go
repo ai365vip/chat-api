@@ -164,16 +164,21 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		return openai.ErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
 
+	statusCodeMappingStr := c.GetString("status_code_mapping")
+
 	if isErrorHappened(meta, resp) {
-		logger.Errorf(ctx, "errorHappened is not nil:")
 		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
-		return util.RelayErrorHandler(resp)
+		openaiErr := util.RelayErrorHandler(resp)
+		// reset status code 重置状态码
+		util.ResetStatusCode(openaiErr, statusCodeMappingStr)
+		return openaiErr
 	}
 
 	// 执行 DoResponse 方法
 	aitext, usage, respErr := adaptor.DoResponse(c, resp, meta)
 	if respErr != nil {
 		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
+		util.ResetStatusCode(respErr, statusCodeMappingStr)
 		return respErr
 	}
 	// 记录结束时间

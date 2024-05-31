@@ -191,3 +191,23 @@ func GetAzureAPIVersion(c *gin.Context) string {
 	}
 	return apiVersion
 }
+
+func ResetStatusCode(openaiErr *relaymodel.ErrorWithStatusCode, statusCodeMappingStr string) {
+	if statusCodeMappingStr == "" || statusCodeMappingStr == "{}" {
+		return
+	}
+	statusCodeMapping := make(map[string]string)
+	err := json.Unmarshal([]byte(statusCodeMappingStr), &statusCodeMapping)
+	if err != nil {
+		return
+	}
+	if openaiErr.StatusCode == http.StatusOK {
+		return
+	}
+
+	codeStr := strconv.Itoa(openaiErr.StatusCode)
+	if _, ok := statusCodeMapping[codeStr]; ok {
+		intCode, _ := strconv.Atoi(statusCodeMapping[codeStr])
+		openaiErr.StatusCode = intCode
+	}
+}
