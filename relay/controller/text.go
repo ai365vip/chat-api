@@ -165,7 +165,6 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	}
 
 	statusCodeMappingStr := c.GetString("status_code_mapping")
-
 	if isErrorHappened(meta, resp) {
 		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
 		openaiErr := util.RelayErrorHandler(resp)
