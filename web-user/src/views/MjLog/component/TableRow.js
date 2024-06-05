@@ -17,15 +17,19 @@ function renderType(type) {
     case 'IMAGINE':
       return <Label style={{ color: colors[0], borderColor: colors[0] }} size="small" variant="outlined">绘图</Label>;
     case 'ACTION':
-    case 'INPAINT':
-    case 'CUSTOMZOOM':
       return <Label style={{ color: colors[1], borderColor: colors[1] }} size="small" variant="outlined">按钮变化</Label>;
+    case 'INPAINT':
+      return <Label style={{ color: colors[1], borderColor: colors[1] }} size="small" variant="outlined">局部重绘</Label>;
+    case 'CUSTOMZOOM':
+      return <Label style={{ color: colors[1], borderColor: colors[1] }} size="small" variant="outlined">自定义变焦</Label>;
     case 'MODAL':
       return <Label style={{ color: colors[2], borderColor: colors[2] }} size="small" variant="outlined">窗口确认</Label>;
     case 'SHORTEN':
-    case 'SWAPFACE':
-    case 'UPLOADS':
       return <Label style={{ color: colors[3], borderColor: colors[3] }} size="small" variant="outlined">prompt分析</Label>;
+    case 'SWAPFACE':
+      return <Label style={{ color: colors[3], borderColor: colors[3] }} size="small" variant="outlined">换脸</Label>;
+    case 'UPLOADS':
+      return <Label style={{ color: colors[3], borderColor: colors[3] }} size="small" variant="outlined">上传文件</Label>;
     case 'UPSCALE':
       return <Label style={{ color: colors[4], borderColor: colors[4] }} size="small" variant="outlined">放大</Label>;
     case 'VARIATION':
