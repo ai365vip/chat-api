@@ -764,3 +764,14 @@ func UpdateUserQuotaData() {
 		}
 	}
 }
+
+func GetRole(id int) int {
+	var role int
+	// 查询用户的角色
+	err := DB.Table("users").Select("role").Where("id = ?", id).Scan(&role).Error
+	if err != nil {
+		log.Printf("Error retrieving role for user %d: %v", id, err)
+		return 0 // 默认角色
+	}
+	return role
+}

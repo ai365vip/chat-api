@@ -96,14 +96,13 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.POST("/batch", controller.DeleteChannelBatch)
 		}
 		tokenRoute := apiRouter.Group("/token")
-		tokenRoute.POST("/", middleware.AdminAuth(), controller.AddToken)
 		tokenRoute.Use(middleware.UserAuth())
 		{
 			tokenRoute.GET("/", controller.GetAllTokens)
 			tokenRoute.GET("/search", controller.SearchTokens)
 			tokenRoute.GET("/:id", controller.GetToken)
 			tokenRoute.PUT("/", controller.UpdateToken)
-			tokenRoute.POST("/self", controller.SelfAddToken)
+			tokenRoute.POST("/", controller.AddToken)
 			tokenRoute.PUT("/:id/billing_strategy", controller.UpdateTokenBillingStrategy)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
 		}

@@ -113,6 +113,7 @@ func GetTokenStatus(c *gin.Context) {
 
 func AddToken(c *gin.Context) {
 	token := model.Token{}
+	userId := c.GetInt("id")
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -127,6 +128,10 @@ func AddToken(c *gin.Context) {
 			"message": "令牌名称过长",
 		})
 		return
+	}
+	role := model.GetRole(userId)
+	if role < 10 {
+		token.Group = ""
 	}
 	cleanToken := model.Token{
 		UserId:         c.GetInt("id"),
@@ -138,51 +143,6 @@ func AddToken(c *gin.Context) {
 		RemainQuota:    token.RemainQuota,
 		UnlimitedQuota: token.UnlimitedQuota,
 		Group:          token.Group,
-		BillingEnabled: token.BillingEnabled,
-		Models:         token.Models,
-		FixedContent:   token.FixedContent,
-	}
-	err = cleanToken.Insert()
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-	})
-	return
-}
-
-func SelfAddToken(c *gin.Context) {
-	token := model.Token{}
-	err := c.ShouldBindJSON(&token)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	if len(token.Name) > 30 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "令牌名称过长",
-		})
-		return
-	}
-	cleanToken := model.Token{
-		UserId:         c.GetInt("id"),
-		Name:           token.Name,
-		Key:            common.GenerateKey(),
-		CreatedTime:    common.GetTimestamp(),
-		AccessedTime:   common.GetTimestamp(),
-		ExpiredTime:    token.ExpiredTime,
-		RemainQuota:    token.RemainQuota,
-		UnlimitedQuota: token.UnlimitedQuota,
 		BillingEnabled: token.BillingEnabled,
 		Models:         token.Models,
 		FixedContent:   token.FixedContent,
@@ -241,6 +201,10 @@ func UpdateToken(c *gin.Context) {
 		return
 	}
 	cleanToken, err := model.GetTokenByIds(token.Id, userId)
+	role := model.GetRole(userId)
+	if role < 10 {
+		token.Group = ""
+	}
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
