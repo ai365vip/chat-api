@@ -40,6 +40,23 @@ type LogStatistic struct {
 	PromptTokens     int    `gorm:"column:prompt_tokens"`
 	CompletionTokens int    `gorm:"column:completion_tokens"`
 }
+type LogUser struct {
+	Id               int    `json:"id" gorm:"index:idx_created_at_id,priority:1"`
+	UserId           int    `json:"user_id" gorm:"index"`
+	CreatedAt        int64  `json:"created_at" gorm:"bigint;index:idx_created_at_id,priority:2;index:idx_created_at_type"`
+	Type             int    `json:"type" gorm:"index:idx_created_at_type"`
+	Username         string `json:"username" gorm:"index:index_username_model_name,priority:2;default:''"`
+	TokenName        string `json:"token_name" gorm:"index;default:''"`
+	ModelName        string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
+	Quota            int    `json:"quota" gorm:"default:0"`
+	PromptTokens     int    `json:"prompt_tokens" gorm:"default:0"`
+	CompletionTokens int    `json:"completion_tokens" gorm:"default:0"`
+	TokenId          int    `json:"token_id" gorm:"default:0;index"`
+	UseTime          int    `json:"use_time" gorm:"bigint;default:0"`
+	IsStream         bool   `json:"is_stream" gorm:"default:false"`
+	Multiplier       string `json:"multiplier"`
+	UserQuota        int    `json:"userQuota"`
+}
 
 const (
 	LogTypeUnknown = iota
@@ -237,8 +254,8 @@ func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStat
 	return LogStatistics, err
 }
 
-func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int) ([]*Log, int64, error) {
-	var logs []*Log
+func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int) ([]*LogUser, int64, error) {
+	var logs []*LogUser
 	var count int64
 
 	// 假设 Log 是你的日志记录结构体

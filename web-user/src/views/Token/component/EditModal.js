@@ -98,7 +98,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
         if (adjustedValues.is_edit) {
           res = await API.put(`/api/token/`, { ...adjustedValues, id: parseInt(tokenId) });
         } else {
-          res = await API.post(`/api/token/`, adjustedValues);
+          res = await API.post(`/api/token/self`, adjustedValues);
         }
 
         submissions.push(res.data);

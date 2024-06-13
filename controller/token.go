@@ -157,6 +157,51 @@ func AddToken(c *gin.Context) {
 	return
 }
 
+func SelfAddToken(c *gin.Context) {
+	token := model.Token{}
+	err := c.ShouldBindJSON(&token)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	if len(token.Name) > 30 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "令牌名称过长",
+		})
+		return
+	}
+	cleanToken := model.Token{
+		UserId:         c.GetInt("id"),
+		Name:           token.Name,
+		Key:            common.GenerateKey(),
+		CreatedTime:    common.GetTimestamp(),
+		AccessedTime:   common.GetTimestamp(),
+		ExpiredTime:    token.ExpiredTime,
+		RemainQuota:    token.RemainQuota,
+		UnlimitedQuota: token.UnlimitedQuota,
+		BillingEnabled: token.BillingEnabled,
+		Models:         token.Models,
+		FixedContent:   token.FixedContent,
+	}
+	err = cleanToken.Insert()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+	return
+}
+
 func DeleteToken(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	userId := c.GetInt("id")
