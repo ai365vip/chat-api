@@ -47,7 +47,6 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 			Model: "whisper-1",
 		}
 	}
-	//err := common.UnmarshalBodyReusable(c, &audioRequest)
 
 	// request validation
 	if audioRequest.Model == "" {
@@ -239,7 +238,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 				tokenName := c.GetString("token_name")
 				multiplier := fmt.Sprintf("%s，分组倍率 %.2f", modelRatioString, groupRatio)
 				logContent := " "
-				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, meta.ChannelName, promptTokens, 0, audioRequest.Model, tokenName, quota, logContent, meta.TokenId, multiplier, userQuota, int(useTimeSeconds), false)
+				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, meta.ChannelName, promptTokens, 0, audioRequest.Model, tokenName, quota, logContent, meta.TokenId, multiplier, userQuota, int(useTimeSeconds), false, meta.AttemptsLog)
 				model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
 				model.UpdateChannelUsedQuota(meta.ChannelId, quota)
 			}

@@ -104,17 +104,18 @@ func Distribute() func(c *gin.Context) {
 				return
 			}
 		}
-		SetupContextForSelectedChannel(c, channel, Model.(string))
+		SetupContextForSelectedChannel(c, channel, Model.(string), "")
 		c.Next()
 	}
 }
-func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, modelName string) {
+func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, modelName string, attemptsLog string) {
 	c.Set("channel", channel.Type)
 	c.Set("channel_id", channel.Id)
 	c.Set("channel_name", channel.Name)
 	c.Set(ctxkey.ContentType, c.Request.Header.Get("Content-Type"))
 	c.Set("headers", channel.GetModelHeaders())
 	c.Set(ctxkey.OriginalModel, modelName)
+	c.Set("attemptsLog", attemptsLog)
 	ban := true
 	// parse *int to bool
 	if channel.AutoBan != nil && *channel.AutoBan == 0 {

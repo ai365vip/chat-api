@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"one-api/common"
 	"strings"
 
@@ -15,6 +16,7 @@ func abortWithMessage(c *gin.Context, statusCode int, message string) {
 		},
 	})
 	c.Abort()
+	message = fmt.Sprintf("用户ID「%d」, 请求失败：%s", c.GetInt("id"), message)
 	common.LogError(c.Request.Context(), message)
 }
 func isModelInList(modelName string, models string) bool {

@@ -79,7 +79,7 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	c.Set("base_url", channel.GetBaseURL())
 	cfg, _ := channel.LoadConfig()
 	c.Set(ctxkey.Config, cfg)
-	middleware.SetupContextForSelectedChannel(c, channel, "")
+	middleware.SetupContextForSelectedChannel(c, channel, "", "")
 	meta := util.GetRelayMeta(c)
 
 	apiType := constant.ChannelType2APIType(channel.Type)

@@ -237,6 +237,23 @@ const LogsTable = () => {
                 );
             },
         },
+        {
+            title: '重试',
+            dataIndex: 'attempts_log',
+            render: (text, record, index) => {
+                if (!text) {
+                    return '无';
+                }
+                const formattedText = text.replace(/\n/g, '<br/>');
+                return (
+                    <Tooltip content={<span dangerouslySetInnerHTML={{ __html: formattedText }} />} position="top">
+                        <span style={{ cursor: 'pointer' }}>过程</span>
+                    </Tooltip>
+                );
+            },
+        },
+        
+              
         ...(LogContentEnabled === 'true' ? [{
             title: '详情',
             dataIndex: 'content',

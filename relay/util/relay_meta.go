@@ -26,6 +26,7 @@ type RelayMeta struct {
 	APIType         int
 	Config          model.ChannelConfig
 	IsStream        bool
+	AttemptsLog     string
 	OriginModelName string
 	ActualModelName string
 	RequestURLPath  string
@@ -50,6 +51,7 @@ func GetRelayMeta(c *gin.Context) *RelayMeta {
 		APIKey:         strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
 		RequestURLPath: c.Request.URL.String(),
 		FixedContent:   c.GetString("fixed_content"),
+		AttemptsLog:    c.GetString("attemptsLog"),
 	}
 
 	if meta.BaseURL == "" {

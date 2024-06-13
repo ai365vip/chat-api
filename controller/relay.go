@@ -16,6 +16,7 @@ import (
 	dbmodel "one-api/relay/model"
 	"one-api/relay/util"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -61,6 +62,7 @@ func Relay(c *gin.Context) {
 		common.Errorf(ctx, "relay error happen, status code is %d, won't retry in this case", bizErr.StatusCode)
 		retryTimes = 0
 	}
+	var attemptsLog []string
 	failedChannelIds := []int{channelId}
 	for i := retryTimes; i > 0; i-- {
 		value, _ := c.Get("is_tools")
@@ -79,11 +81,13 @@ func Relay(c *gin.Context) {
 			break
 		}
 
-		common.Infof(ctx, "使用渠道 #%d 重试 (剩余重试 %d次)", channel.Id, i)
+		attemptsLog = append(attemptsLog, fmt.Sprintf("重试次数 #%d: 上次使用渠道「%d」, 错误信息: %v, 重试id:「%d」\n", retryTimes-i+1, lastFailedChannelId, bizErr, channel.Id))
+		common.Infof(ctx, "%s", attemptsLog)
 		if channel.Id == lastFailedChannelId {
 			continue
 		}
-		middleware.SetupContextForSelectedChannel(c, channel, originalModel)
+
+		middleware.SetupContextForSelectedChannel(c, channel, originalModel, strings.Join(attemptsLog, "\n"))
 		requestBody, _ := common.GetRequestBody(c)
 
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))

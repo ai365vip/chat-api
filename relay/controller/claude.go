@@ -35,7 +35,7 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 	}
 
 	meta.IsStream = textRequest.Stream
-
+	meta.AttemptsLog = c.GetString("attemptsLog")
 	// map model name
 	var isModelMapped bool
 	meta.OriginModelName = textRequest.Model

@@ -234,13 +234,13 @@ func updateRateLimitStatus(channelId int, model string) {
 	channelRateLimitStatus.Store(key, rl)
 }
 
-func GetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool, isTools bool, i int) (*Channel, error) {
+func GetRandomSatisfiedChannel(group string, model string, excluded map[int]struct{}, ignoreFirstPriority bool, isTools bool, i int) (*Channel, error) {
 	// 当i等于1时，强制使用下一个优先级
 	if i == 1 {
 		return getChannelFromNextPriority(group, model)
 	}
 
-	abilities, err := getAbilitiesByPriority(group, model, ignoreFirstPriority, isTools)
+	abilities, err := getAbilitiesByPriority(group, model, ignoreFirstPriority, isTools, excluded)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +276,7 @@ func GetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority b
 	return getChannelFromNextPriority(group, model)
 }
 
-func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool, isTools bool) ([]Ability, error) {
+func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool, isTools bool, excluded map[int]struct{}) ([]Ability, error) {
 	var abilities []Ability
 	groupCol := "`group`"
 	trueVal := "1"
@@ -294,6 +294,15 @@ func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool
 		channelQuery = channelQuery.Where("is_tools = true")
 	}
 
+	// 将 excluded 映射到一个切片
+	excludedIds := make([]int, 0, len(excluded))
+	for id := range excluded {
+		excludedIds = append(excludedIds, id)
+	}
+
+	if len(excludedIds) > 0 {
+		channelQuery = channelQuery.Where("channel_id NOT IN (?)", excludedIds)
+	}
 	err := channelQuery.Order("weight DESC").Find(&abilities).Error
 	if err != nil {
 		return nil, err
