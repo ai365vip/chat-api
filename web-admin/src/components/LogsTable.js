@@ -507,6 +507,7 @@ const LogsTable = () => {
                     <Select.Option value="2">消费</Select.Option>
                     <Select.Option value="3">管理</Select.Option>
                     <Select.Option value="4">系统</Select.Option>
+                    <Select.Option value="5">重试</Select.Option>
                 </Select>
                 <Modal
                     visible={isModalOpen}

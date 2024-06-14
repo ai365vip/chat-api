@@ -192,7 +192,9 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	var count int64
 
 	tx := DB.Model(&Log{})
-	if logType != LogTypeUnknown {
+	if logType == 5 {
+		tx = tx.Where("attempts_log !=''")
+	} else if logType != LogTypeUnknown {
 		tx = tx.Where("type = ?", logType)
 	}
 	if modelName != "" {
