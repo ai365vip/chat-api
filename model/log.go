@@ -263,7 +263,7 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	var count int64
 
 	// 假设 Log 是你的日志记录结构体
-	tx := DB.Model(&Log{}).Where("user_id = ?", userId)
+	tx := DB.Model(&LogUser{}).Where("user_id = ?", userId)
 
 	if logType != LogTypeUnknown {
 		tx = tx.Where("type = ?", logType)
