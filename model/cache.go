@@ -254,10 +254,11 @@ func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPrior
 		return GetRandomSatisfiedChannel(group, model, excludedMap, ignoreFirstPriority, isTools, i)
 	}
 
+	// 使用更细粒度的锁
 	channelSyncLock.RLock()
-	defer channelSyncLock.RUnlock()
-
 	allChannels := group2model2channels[group][model]
+	channelSyncLock.RUnlock()
+
 	if len(allChannels) == 0 {
 		return nil, errors.New("no channels found for group and model")
 	}
@@ -387,6 +388,7 @@ func CacheGetChannel(id int) (*Channel, error) {
 	if !common.MemoryCacheEnabled {
 		return GetChannelById(id, true)
 	}
+
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
 

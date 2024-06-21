@@ -33,6 +33,8 @@ type RelayMeta struct {
 	PromptTokens    int // only for DoResponse
 	FixedContent    string
 	IsClaude        bool
+	BillingEnabled  bool
+	UnlimitedQuota  bool
 }
 
 func GetRelayMeta(c *gin.Context) *RelayMeta {
@@ -52,6 +54,8 @@ func GetRelayMeta(c *gin.Context) *RelayMeta {
 		RequestURLPath: c.Request.URL.String(),
 		FixedContent:   c.GetString("fixed_content"),
 		AttemptsLog:    c.GetString("attemptsLog"),
+		BillingEnabled: c.GetBool("billing_enabled"),
+		UnlimitedQuota: c.GetBool("token_unlimited_quota"),
 	}
 
 	if meta.BaseURL == "" {

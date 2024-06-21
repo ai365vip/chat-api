@@ -170,11 +170,13 @@ func preConsumeQuota(ctx context.Context, preConsumedQuota int, meta *util.Relay
 	}
 	if preConsumedQuota > 0 {
 		logger.Info(ctx, fmt.Sprintf("用户%d 额度 %d，预扣费 %d", meta.UserId, userQuota, preConsumedQuota))
-
-		err := model.PreConsumeTokenQuota(meta.TokenId, preConsumedQuota)
-		if err != nil {
-			return preConsumedQuota, openai.ErrorWrapper(err, "pre_consume_token_quota_failed", http.StatusForbidden)
+		if !meta.UnlimitedQuota {
+			err := model.PreConsumeTokenQuota(meta.TokenId, preConsumedQuota)
+			if err != nil {
+				return preConsumedQuota, openai.ErrorWrapper(err, "pre_consume_token_quota_failed", http.StatusForbidden)
+			}
 		}
+
 	}
 	return preConsumedQuota, nil
 }
@@ -197,10 +199,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 	if err != nil {
 		openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
 	}
-	token, err := model.GetTokenById(meta.TokenId)
-	if err != nil {
-		log.Println("获取token出错:", err)
-	}
+
 	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
 	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
 	modelRatioString := ""
@@ -211,7 +210,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 	quota = promptTokens + int(float64(completionTokens)*completionRatio)
 
 	if BillingByRequestEnabled && ModelRatioEnabled {
-		if token.BillingEnabled {
+		if meta.BillingEnabled {
 			modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
 			if !ok {
 				quota = int(float64(quota) * ratio)

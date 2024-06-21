@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/common/config"
 	"one-api/common/logger"
-	dbmodel "one-api/model"
 	"one-api/relay/channel/openai"
 	"one-api/relay/helper"
 	"one-api/relay/model"
@@ -54,14 +52,11 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	if textRequest.MaxTokens != 0 {
 		preConsumedTokens = promptTokens + textRequest.MaxTokens
 	}
-	token, err := dbmodel.GetTokenById(meta.TokenId)
-	if err != nil {
-		log.Println("获取token出错:", err)
-	}
+
 	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
 	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
 	if BillingByRequestEnabled && ModelRatioEnabled {
-		if token.BillingEnabled {
+		if meta.BillingEnabled {
 			modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
 			if !ok {
 				preConsumedQuota = int(float64(preConsumedTokens) * ratio)
