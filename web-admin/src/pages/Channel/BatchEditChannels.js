@@ -71,16 +71,28 @@ const BatchEditChannels = (props) => {
 
     const fetchModels = async () => {
         try {
-            let res = await API.get(`/api/channel/models`);
-            let localModelOptions = res.data.data.map((model) => ({
-                label: model.id,
-                value: model.id
+            let res = await API.get(`/api/channel/models`);    
+            const groupedModels = res.data.data.reduce((acc, model) => {
+                if (!acc[model.owned_by]) {
+                    acc[model.owned_by] = [];
+                }
+                acc[model.owned_by].push({ label: model.id, value: model.id });
+                return acc;
+            }, {});
+    
+            const localModelOptions = Object.entries(groupedModels).map(([owner, models]) => ({
+                label: owner,
+                options: models,
             }));
+    
             setOriginModelOptions(localModelOptions);
+    
             setFullModels(res.data.data.map((model) => model.id));
-            setBasicModels(res.data.data.filter((model) => {
-                return model.id.startsWith('gpt-3') || model.id.startsWith('gpt-4') || model.id.startsWith('text-');
-            }).map((model) => model.id));
+    
+            setBasicModels(res.data.data
+                .filter((model) => model.id.startsWith('gpt-3') || model.id.startsWith('gpt-4') || model.id.startsWith('text-'))
+                .map((model) => model.id)
+            );
         } catch (error) {
             showError(error.message);
         }
@@ -425,41 +437,54 @@ const BatchEditChannels = (props) => {
                         <Typography.Text strong>模型：</Typography.Text>
                     </div>
                     <Select
-                        placeholder={'请选择该渠道所支持的模型'}
-                        name='models'
-                        required
-                        multiple
-                        selection
-                        onChange={value => {
-                            handleInputChange('models', value)
+                    placeholder={'请选择该渠道所支持的模型'}
+                    name='models'
+                    required
+                    multiple
+                    selection
+                    onChange={value => {
+                        handleInputChange('models', value)
+                    }}
+                    value={inputs.models}
+                    autoComplete='new-password'
+                    style={{ width: '100%' }}
+                >
+                    {modelOptions.map(group => (
+                        <Select.OptGroup key={group.label} label={group.label}>
+                            {group.options.map(model => (
+                                <Select.Option key={model.value} value={model.value}>
+                                    {model.label}
+                                </Select.Option>
+                            ))}
+                        </Select.OptGroup>
+                    ))}
+                </Select>
+                <div style={{lineHeight: '40px', marginBottom: '12px'}}>
+                    <Space>
+                        <Button type='primary' onClick={() => {
+                            handleInputChange('models', basicModels);
+                        }}>填入基础模型</Button>
+                        <Button type='tertiary' onClick={() => {
+                            handleGetModels('models', basicModels);
+                        }}>填入支持模型</Button>
+                        <Button type='secondary' onClick={() => {
+                            handleInputChange('models', fullModels);
+                        }}>填入所有模型</Button>
+                        <Button type='warning' onClick={() => {
+                            handleInputChange('models', []);
+                        }}>清除所有模型</Button>
+                    </Space>
+                    <Input
+                        addonAfter={
+                            <Button type='primary' onClick={addCustomModel}>填入</Button>
+                        }
+                        placeholder='输入自定义模型名称'
+                        value={customModel}
+                        onChange={(value) => {
+                            setCustomModel(value);
                         }}
-                        value={inputs.models}
-                        autoComplete='new-password'
-                        optionList={modelOptions}
                     />
-                    <div style={{lineHeight: '40px', marginBottom: '12px'}}>
-                        <Space>
-                            <Button type='primary' onClick={() => {
-                                handleInputChange('models', basicModels);
-                            }}>填入基础模型</Button>
-                            <Button type='secondary' onClick={() => {
-                                handleInputChange('models', fullModels);
-                            }}>填入所有模型</Button>
-                            <Button type='warning' onClick={() => {
-                                handleInputChange('models', []);
-                            }}>清除所有模型</Button>
-                        </Space>
-                        <Input
-                            addonAfter={
-                                <Button type='primary' onClick={addCustomModel}>填入</Button>
-                            }
-                            placeholder='输入自定义模型名称'
-                            value={customModel}
-                            onChange={(value) => {
-                                setCustomModel(value);
-                            }}
-                        />
-                    </div>
+                </div>
                     <div style={{marginTop: 10}}>
                         <Typography.Text strong>模型重定向：</Typography.Text>
                     </div>
