@@ -464,9 +464,6 @@ const BatchEditChannels = (props) => {
                         <Button type='primary' onClick={() => {
                             handleInputChange('models', basicModels);
                         }}>填入基础模型</Button>
-                        <Button type='tertiary' onClick={() => {
-                            handleGetModels('models', basicModels);
-                        }}>填入支持模型</Button>
                         <Button type='secondary' onClick={() => {
                             handleInputChange('models', fullModels);
                         }}>填入所有模型</Button>
