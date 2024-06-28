@@ -48,6 +48,9 @@ func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
 		if meta.ActualModelName == "gpt-4-turbo" {
 			model_ = "gpt-4-turbo-2024-04-09"
 		}
+		if meta.ActualModelName == "gpt-4o-2024-05-13" {
+			model_ = "gpt-4o"
+		}
 		//https://github.com/songquanpeng/one-api/issues/1191
 		// {your endpoint}/openai/deployments/{your azure_model}/chat/completions?api-version={api_version}
 		requestURL = fmt.Sprintf("/openai/deployments/%s/%s", model_, task)
