@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"one-api/common/client"
 	"one-api/common/ctxkey"
 	"one-api/relay/util"
 
@@ -38,15 +39,19 @@ func DoRequestHelper(a Adaptor, c *gin.Context, meta *util.RelayMeta, requestBod
 	if err != nil {
 		return nil, fmt.Errorf("setup request header failed: %w", err)
 	}
-	resp, err := DoRequest(c, req)
+	client, err := client.GetProxiedHttpClient(meta.ProxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("get proxied http client failed: %w", err)
+	}
+	resp, err := DoRequest(c, req, client)
 	if err != nil {
 		return nil, fmt.Errorf("do request failed: %w", err)
 	}
 	return resp, nil
 }
 
-func DoRequest(c *gin.Context, req *http.Request) (*http.Response, error) {
-	resp, err := util.GetHttpClient().Do(req)
+func DoRequest(c *gin.Context, req *http.Request, client *http.Client) (*http.Response, error) {
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

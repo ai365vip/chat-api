@@ -40,6 +40,7 @@ type Channel struct {
 	IsImageURLEnabled  *int    `json:"is_image_url_enabled" gorm:"default:0"`
 	StatusCodeMapping  *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
 	Config             string  `json:"config"`
+	ProxyURL           *string `json:"proxy_url"`
 }
 type ChannelConfig struct {
 	Region     string `json:"region,omitempty"`

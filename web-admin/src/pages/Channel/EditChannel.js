@@ -56,6 +56,7 @@ const EditChannel = (props) => {
         priority:'',
         weight:'',
         groups: ['default'],
+        proxy_url :'',
         region: '',
         sk: '',
         ak: ''
@@ -377,6 +378,7 @@ const EditChannel = (props) => {
                 weight: parseInt(weight, 10) || 0, 
                 rate_limited: rateLimited,
                 is_tools: istools,
+                proxy_url: inputs.proxy_url,
             };
             });
     
@@ -1050,6 +1052,18 @@ const EditChannel = (props) => {
                             </>
                         )
                     }
+                     <div style={{marginTop: 10}}>
+                        <Typography.Text strong>HTTP 代理或 SOCKS5 </Typography.Text>
+                    </div>
+                    <Input
+                        name='proxy_url'
+                        placeholder={'http://127.0.0.1:8080 或者 socks5://127.0.0.1:8080'}
+                        onChange={value => {
+                            handleInputChange('proxy_url', value)
+                        }}
+                        value={inputs.proxy_url}
+                        autoComplete='new-password'
+                    />
 
                 </Spin>
             </SideSheet>
