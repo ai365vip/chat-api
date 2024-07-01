@@ -153,17 +153,30 @@ func GetRandomChannel() (*Channel, error) {
 }
 
 func BatchInsertChannels(channels []Channel) error {
-	var err error
-	err = DB.Create(&channels).Error
+	// 批量插入所有通道
+	err := DB.Create(&channels).Error
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to batch insert channels: %v", err)
 	}
+
+	// 为 Type 40 的通道调用 checkAndGetAccessToken
+	for i := range channels {
+		if channels[i].Type == 42 {
+			err = channels[i].checkAndGetAccessToken()
+			if err != nil {
+				return fmt.Errorf("failed to check and get access token for channel (Type 40, ID: %d): %v", channels[i].Id, err)
+			}
+		}
+	}
+
+	// 为所有通道添加能力（保持不变）
 	for _, channel_ := range channels {
 		err = channel_.AddAbilities()
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 

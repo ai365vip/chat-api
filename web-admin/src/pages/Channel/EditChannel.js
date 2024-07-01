@@ -902,18 +902,7 @@ const EditChannel = (props) => {
                     {
                         inputs.type === 42 && (
                             <div> {/* 新增的包裹元素 */}
-                                <div style={{marginTop: 10}}>
-                                    <Typography.Text strong>project_id：</Typography.Text>
-                                </div>
-                                <Input
-                                    label='ProjectId'
-                                    name='project_id'
-                                    placeholder={'project_id'}
-                                    onChange={(value) => handleConfigChange({ name: 'project_id', value })}
-                                    value={config.project_id}
-                                    autoComplete='new-password'
-                                />
-
+                            
                                 <div style={{marginTop: 10}}>
                                     <Typography.Text strong>client_id：</Typography.Text>
                                 </div>
@@ -934,6 +923,17 @@ const EditChannel = (props) => {
                                     placeholder={'client_secret'}
                                     onChange={(value) => handleConfigChange({ name: 'client_secret', value })}
                                     value={config.client_secret}
+                                    autoComplete='new-password'
+                                />
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>project_id：</Typography.Text>
+                                </div>
+                                <Input
+                                    label='ProjectId'
+                                    name='project_id'
+                                    placeholder={'project_id'}
+                                    onChange={(value) => handleConfigChange({ name: 'project_id', value })}
+                                    value={config.project_id}
                                     autoComplete='new-password'
                                 />
                                  <div style={{marginTop: 10}}>
