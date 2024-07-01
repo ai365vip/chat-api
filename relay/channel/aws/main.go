@@ -94,7 +94,10 @@ func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*
 
 	openaiResp := anthropic.ResponseClaude2OpenAI(claudeResponse)
 	openaiResp.Model = modelName
-	responseText = claudeResponse.Content[0].Text
+	if len(claudeResponse.Content[0].Text) > 0 {
+		responseText = claudeResponse.Content[0].Text
+	}
+
 	usage := relaymodel.Usage{
 		PromptTokens:     claudeResponse.Usage.InputTokens,
 		CompletionTokens: claudeResponse.Usage.OutputTokens,

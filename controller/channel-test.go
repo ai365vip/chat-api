@@ -139,7 +139,7 @@ func randomID() string {
 
 func buildTestRequest(modelTest string) *relaymodel.GeneralOpenAIRequest {
 	testRequest := &relaymodel.GeneralOpenAIRequest{
-		MaxTokens: 1,
+		MaxTokens: 3,
 		Stream:    false,
 		Model:     modelTest,
 	}
