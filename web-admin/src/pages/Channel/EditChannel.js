@@ -59,7 +59,11 @@ const EditChannel = (props) => {
         proxy_url :'',
         region: '',
         sk: '',
-        ak: ''
+        ak: '',
+        project_id:'',
+        client_id:'',
+        client_secret:'',
+        refresh_token:'',
     };
     const [batch, setBatch] = useState(false);
     const [autoBan, setAutoBan] = useState(true);
@@ -84,7 +88,11 @@ const EditChannel = (props) => {
         region: '',
         sk: '',
         ak: '',
-        user_id: ''
+        user_id: '',
+        project_id:'',
+        client_id:'',
+        client_secret:'',
+        refresh_token:'',
       });
     const handleInputChange = (name, value) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
@@ -93,7 +101,10 @@ const EditChannel = (props) => {
             // eslint-disable-next-line default-case
             switch (value) {
                 case 14:
-                    localModels = ['claude-instant-1.2', 'claude-2.0', 'claude-2.1', 'claude-3-haiku-20240307','claude-3-5-sonnet-20240620','claude-3-opus-20240229', 'claude-3-opus','claude-3-sonnet-20240229'];
+                    localModels = ['claude-instant-1.2', 'claude-2.0', 'claude-2.1', 'claude-3-haiku-20240307','claude-3-5-sonnet-20240620','claude-3-opus-20240229','claude-3-sonnet-20240229'];
+                    break;
+                case 42:
+                    localModels = ['claude-3-haiku-20240307','claude-3-5-sonnet-20240620','claude-3-opus-20240229','claude-3-sonnet-20240229'];
                     break;
                 case 35:
                     localModels = ['claude-instant-1.2', 'claude-2.0', 'claude-2.1', 'claude-3-haiku-20240307','claude-3-5-sonnet-20240620','claude-3-sonnet-20240229','claude-3-opus-20240229'];
@@ -553,7 +564,7 @@ const EditChannel = (props) => {
                         autoComplete='new-password'
                     />
                     {
-                        inputs.type !== 3 && inputs.type !== 35 && inputs.type !== 8 && inputs.type !== 22 && (
+                        inputs.type !== 3 && inputs.type !== 35 && inputs.type !== 8 && inputs.type !== 22 && inputs.type !== 42 && (
                             <>
                                 <div style={{marginTop: 10}}>
                                     <Typography.Text strong>代理：</Typography.Text>
@@ -572,7 +583,7 @@ const EditChannel = (props) => {
                         )
                     }
                     {
-                        inputs.type !== 35 && (
+                        inputs.type !== 35 && inputs.type !== 42 && (
                             <div>
                                 <div style={{marginTop: 10}}>
                                     <Typography.Text strong>密钥：</Typography.Text>
@@ -609,7 +620,7 @@ const EditChannel = (props) => {
                     
 
                     {
-                       inputs.type !== 35 &&  !isEdit && (
+                       inputs.type !== 35 && inputs.type !== 42 &&  !isEdit && (
                             <div style={{marginTop: 10, display: 'flex'}}>
                                 <Space>
                                     <Checkbox
@@ -888,9 +899,59 @@ const EditChannel = (props) => {
                         </div>
                         )
                     }
-                    
                     {
-                        inputs.type !== 35 && (
+                        inputs.type === 42 && (
+                            <div> {/* 新增的包裹元素 */}
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>project_id：</Typography.Text>
+                                </div>
+                                <Input
+                                    label='ProjectId'
+                                    name='project_id'
+                                    placeholder={'project_id'}
+                                    onChange={(value) => handleConfigChange({ name: 'project_id', value })}
+                                    value={config.project_id}
+                                    autoComplete='new-password'
+                                />
+
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>client_id：</Typography.Text>
+                                </div>
+                                <Input
+                                    label='ClientId'
+                                    name='client_id'
+                                    placeholder={'client_id：'}
+                                    onChange={(value) => handleConfigChange({ name: 'client_id', value })}
+                                    value={config.client_id}
+                                    autoComplete='new-password'
+                                />
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>client_secret：</Typography.Text>
+                                </div>
+                                <Input
+                                    label='ClientSecret'
+                                    name='client_secret'
+                                    placeholder={'client_secret'}
+                                    onChange={(value) => handleConfigChange({ name: 'client_secret', value })}
+                                    value={config.client_secret}
+                                    autoComplete='new-password'
+                                />
+                                 <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>refresh_token：</Typography.Text>
+                                </div>
+                                <Input
+                                    label='RefreshToken'
+                                    name='refresh_token'
+                                    placeholder={'refresh_token'}
+                                    onChange={(value) => handleConfigChange({ name: 'refresh_token', value })}
+                                    value={config.refresh_token}
+                                    autoComplete='new-password'
+                                />
+                            </div> // 新增的包裹元素的结束标签
+                        )
+                    }
+                    {
+                        inputs.type !== 35 && inputs.type !== 42 && (
                             <div> 
                             <div style={{marginTop: 10}}>
                                 <Typography.Text strong>组织：</Typography.Text>

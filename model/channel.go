@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"one-api/common"
+	"one-api/common/client"
 	"one-api/common/config"
 	"strings"
+	"sync"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -43,13 +46,17 @@ type Channel struct {
 	ProxyURL           *string `json:"proxy_url"`
 }
 type ChannelConfig struct {
-	Region     string `json:"region,omitempty"`
-	SK         string `json:"sk,omitempty"`
-	AK         string `json:"ak,omitempty"`
-	UserID     string `json:"user_id,omitempty"`
-	APIVersion string `json:"api_version,omitempty"`
-	LibraryID  string `json:"library_id,omitempty"`
-	Plugin     string `json:"plugin,omitempty"`
+	Region       string `json:"region,omitempty"`
+	SK           string `json:"sk,omitempty"`
+	AK           string `json:"ak,omitempty"`
+	UserID       string `json:"user_id,omitempty"`
+	APIVersion   string `json:"api_version,omitempty"`
+	LibraryID    string `json:"library_id,omitempty"`
+	Plugin       string `json:"plugin,omitempty"`
+	ProjectId    string `json:"project_id,omitempty"`
+	ClientId     string `json:"client_id,omitempty"`
+	ClientSecret string `json:"client_secret,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
 func GetAllChannels(startIdx int, num int, selectAll bool, idSort bool) ([]*Channel, error) {
@@ -241,7 +248,10 @@ func (channel *Channel) Insert() error {
 		return err
 	}
 	err = channel.AddAbilities()
-	return err
+	if err != nil {
+		return err
+	}
+	return channel.checkAndGetAccessToken()
 }
 
 func (channel *Channel) Update() error {
@@ -252,7 +262,35 @@ func (channel *Channel) Update() error {
 	}
 	DB.Model(channel).First(channel, "id = ?", channel.Id)
 	err = channel.UpdateAbilities()
-	return err
+	if err != nil {
+		return err
+	}
+	return channel.checkAndGetAccessToken()
+}
+
+func (channel *Channel) checkAndGetAccessToken() error {
+	if channel.Type == 42 {
+		var config ChannelConfig
+		err := json.Unmarshal([]byte(channel.Config), &config)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal config: %v", err)
+		}
+
+		accessToken, err := client.GetAccessToken(config.ClientId, config.ClientSecret, config.RefreshToken, channel.ProxyURL)
+		if err != nil {
+			return fmt.Errorf("failed to get access token: %v", err)
+		}
+
+		// 将获取到的 AccessToken 插入到 key 值里
+		channel.Key = accessToken
+
+		// 更新数据库中的 key 字段
+		err = DB.Model(channel).Update("key", accessToken).Error
+		if err != nil {
+			return fmt.Errorf("failed to update channel key with new access token: %v", err)
+		}
+	}
+	return nil
 }
 
 func (channel *Channel) UpdateResponseTime(responseTime int64) {
@@ -335,4 +373,93 @@ func (channel *Channel) LoadConfig() (ChannelConfig, error) {
 		return cfg, err
 	}
 	return cfg, nil
+}
+
+func StartScheduledRefreshAccessTokens() {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			go func() {
+				err := ScheduledRefreshAccessTokens()
+				if err != nil {
+					common.SysError(fmt.Sprintf("定时刷新访问令牌时发生错误：%v", err))
+				}
+			}()
+		}
+	}
+}
+
+func ScheduledRefreshAccessTokens() error {
+	common.SysLog("开始定时刷新访问令牌")
+
+	var channels []Channel
+
+	// 查询所有 type = 40 的通道
+	err := DB.Where("type = ?", 42).Find(&channels).Error
+	if err != nil {
+		return fmt.Errorf("没有GCP通道：%v", err)
+	}
+
+	var wg sync.WaitGroup
+	semaphore := make(chan struct{}, 10) // 限制并发数为10
+
+	for _, channel := range channels {
+		wg.Add(1)
+		semaphore <- struct{}{} // 获取信号量
+		go func(ch Channel) {
+			defer wg.Done()
+			defer func() { <-semaphore }() // 释放信号量
+
+			var config ChannelConfig
+			err := json.Unmarshal([]byte(ch.Config), &config)
+			if err != nil {
+				common.SysError(fmt.Sprintf("解析通道 %d 的配置失败：%v", ch.Id, err.Error()))
+				return
+			}
+
+			accessToken, err := client.GetAccessToken(config.ClientId, config.ClientSecret, config.RefreshToken, ch.ProxyURL)
+			if err != nil {
+				// 如果获取失败且状态为1，则更新状态为3
+				if ch.Status == 1 {
+					updateErr := DB.Model(&ch).Updates(map[string]interface{}{
+						"status": 3,
+					}).Error
+					if updateErr != nil {
+						common.SysError(fmt.Sprintf("更新通道 %d 状态为3失败：%v", ch.Id, updateErr.Error()))
+					} else {
+						common.SysError(fmt.Sprintf("由于获取令牌失败，通道 %d 的状态已更新为3", ch.Id))
+					}
+				}
+				common.SysError(fmt.Sprintf("获取通道 %d 的访问令牌失败：%v", ch.Id, err.Error()))
+				return
+			}
+
+			// 更新数据库中的 key 字段，如果状态为3则更新为1
+			updates := map[string]interface{}{
+				"key": accessToken,
+			}
+			if ch.Status == 3 {
+				updates["status"] = 1
+			}
+
+			err = DB.Model(&ch).Updates(updates).Error
+			if err != nil {
+				common.SysError(fmt.Sprintf("更新通道 %d 失败：%v", ch.Id, err.Error()))
+				return
+			}
+
+			if ch.Status == 3 {
+				common.SysLog(fmt.Sprintf("成功更新通道 %d 的访问令牌并将状态更新为1", ch.Id))
+			} else {
+				common.SysLog(fmt.Sprintf("成功更新通道 %d 的访问令牌", ch.Id))
+			}
+		}(channel)
+	}
+
+	wg.Wait() // 等待所有goroutine完成
+
+	return nil
 }

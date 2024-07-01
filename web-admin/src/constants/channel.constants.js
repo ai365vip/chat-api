@@ -3,6 +3,7 @@ export const CHANNEL_OPTIONS = [
     {key: 2, text: 'Midjourney Proxy', value: 2, color: 'light-blue', label: 'Midjourney Proxy'},
     {key: 14, text: 'Anthropic Claude', value: 14, color: 'green', label: 'Anthropic Claude'},
     {key: 35, text: 'Aws Claude', value: 35, color: 'blue', label: 'Aws Claude'},
+    {key: 42, text: 'GCP Claude', value: 42, color: 'lime', label: 'GCP Claude'},
     {key: 3, text: 'Azure OpenAI', value: 3, color: 'blue', label: 'Azure OpenAI'},
     {key: 24, text: 'Google Gemini', value: 24, color: 'orange', label: 'Google Gemini'},
     {key: 16, text: '智谱 ChatGLM', value: 16, color: 'violet', label: '智谱 ChatGLM'},

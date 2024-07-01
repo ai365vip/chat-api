@@ -32,6 +32,7 @@ type GeneralOpenAIRequest struct {
 	TopLogProbs      int             `json:"top_logprobs,omitempty"`
 	EncodingFormat   string          `json:"encoding_format,omitempty"`
 	Dimensions       int             `json:"dimensions,omitempty"`
+	AnthropicVersion string          `json:"anthropic_version,omitempty"`
 }
 
 func (r GeneralOpenAIRequest) ParseInput() []string {

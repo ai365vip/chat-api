@@ -84,6 +84,8 @@ func main() {
 	go model.UpdateQuotaData()
 	// 额度有效期
 	go model.UpdateUserQuotaData()
+	//定时更新GCP AccessTokens
+	go model.StartScheduledRefreshAccessTokens()
 
 	if os.Getenv("CHANNEL_UPDATE_FREQUENCY") != "" {
 		frequency, err := strconv.Atoi(os.Getenv("CHANNEL_UPDATE_FREQUENCY"))
