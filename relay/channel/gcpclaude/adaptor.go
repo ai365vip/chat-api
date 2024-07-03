@@ -8,6 +8,7 @@ import (
 
 	"one-api/relay/channel"
 	"one-api/relay/channel/anthropic"
+	"one-api/relay/channel/openai"
 	"one-api/relay/model"
 	"one-api/relay/util"
 
@@ -100,7 +101,8 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		if meta.IsStream {
 
 			var responseText string
-			err, usage, responseText = anthropic.StreamHandler(c, resp)
+			err, _, responseText = anthropic.StreamHandler(c, resp)
+			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 
 			aitext = responseText
 		} else {
@@ -110,7 +112,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		if meta.IsStream {
 
 			var responseText string
-			err, usage, responseText = anthropic.ClaudeStreamHandler(c, resp)
+			err, _, responseText = anthropic.ClaudeStreamHandler(c, resp)
+			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+
 			aitext = responseText
 		} else {
 			err, usage, aitext = anthropic.ClaudeHandler(c, resp, meta.PromptTokens, meta.ActualModelName)

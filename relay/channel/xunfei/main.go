@@ -150,11 +150,12 @@ func buildXunfeiAuthUrl(hostUrl string, apiKey, apiSecret string) string {
 	return callUrl
 }
 
-func StreamHandler(c *gin.Context, meta *util.RelayMeta, textRequest model.GeneralOpenAIRequest, appId string, apiSecret string, apiKey string) (*model.ErrorWithStatusCode, *model.Usage) {
+func StreamHandler(c *gin.Context, meta *util.RelayMeta, textRequest model.GeneralOpenAIRequest, appId string, apiSecret string, apiKey string) (*model.ErrorWithStatusCode, *model.Usage, string) {
+	var responseText string
 	domain, authUrl := getXunfeiAuthUrl(meta.Config.APIVersion, apiKey, apiSecret)
 	dataChan, stopChan, err := xunfeiMakeRequest(textRequest, domain, authUrl, appId)
 	if err != nil {
-		return openai.ErrorWrapper(err, "xunfei_request_failed", http.StatusInternalServerError), nil
+		return openai.ErrorWrapper(err, "xunfei_request_failed", http.StatusInternalServerError), nil, ""
 	}
 	common.SetEventStreamHeaders(c)
 	var usage model.Usage
@@ -165,6 +166,7 @@ func StreamHandler(c *gin.Context, meta *util.RelayMeta, textRequest model.Gener
 			usage.CompletionTokens += xunfeiResponse.Payload.Usage.Text.CompletionTokens
 			usage.TotalTokens += xunfeiResponse.Payload.Usage.Text.TotalTokens
 			response := streamResponseXunfei2OpenAI(&xunfeiResponse)
+			responseText += xunfeiResponse.Payload.Choices.Text[0].Content
 			jsonResponse, err := json.Marshal(response)
 			if err != nil {
 				logger.SysError("error marshalling stream response: " + err.Error())
@@ -177,7 +179,7 @@ func StreamHandler(c *gin.Context, meta *util.RelayMeta, textRequest model.Gener
 			return false
 		}
 	})
-	return nil, &usage
+	return nil, &usage, responseText
 }
 
 func Handler(c *gin.Context, meta *util.RelayMeta, textRequest model.GeneralOpenAIRequest, appId string, apiSecret string, apiKey string) (*model.ErrorWithStatusCode, *model.Usage) {

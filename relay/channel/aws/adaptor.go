@@ -7,6 +7,7 @@ import (
 	"one-api/common/ctxkey"
 	"one-api/relay/channel"
 	"one-api/relay/channel/anthropic"
+	"one-api/relay/channel/openai"
 	"one-api/relay/model"
 	"one-api/relay/util"
 
@@ -64,7 +65,8 @@ func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (aitext string, usage *model.Usage, err *model.ErrorWithStatusCode) {
 	if meta.IsStream {
 		var responseText string
-		err, usage, responseText = StreamHandler(c, a.awsClient)
+		err, _, responseText = StreamHandler(c, a.awsClient)
+		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 
 		aitext = responseText
 	} else {

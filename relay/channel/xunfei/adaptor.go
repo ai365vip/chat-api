@@ -53,6 +53,7 @@ func (a *Adaptor) ConvertImageRequest(request *model.ImageRequest) (any, error) 
 }
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (aitext string, usage *model.Usage, err *model.ErrorWithStatusCode) {
 	splits := strings.Split(meta.APIKey, "|")
+	var responseText string
 	if len(splits) != 3 {
 		return "", nil, openai.ErrorWrapper(errors.New("invalid auth"), "invalid_auth", http.StatusBadRequest)
 	}
@@ -60,7 +61,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		return "", nil, openai.ErrorWrapper(errors.New("request is nil"), "request_is_nil", http.StatusBadRequest)
 	}
 	if meta.IsStream {
-		err, usage = StreamHandler(c, meta, *a.request, splits[0], splits[1], splits[2])
+		err, _, responseText = StreamHandler(c, meta, *a.request, splits[0], splits[1], splits[2])
+		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+
 	} else {
 		err, usage = Handler(c, meta, *a.request, splits[0], splits[1], splits[2])
 	}

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"one-api/relay/channel"
+	"one-api/relay/channel/openai"
 	"one-api/relay/model"
 	"one-api/relay/util"
 
@@ -57,7 +58,8 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 	if !meta.IsClaude {
 		if meta.IsStream {
 			var responseText string
-			err, usage, responseText = StreamHandler(c, resp)
+			err, _, responseText = StreamHandler(c, resp)
+			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 
 			aitext = responseText
 		} else {
@@ -66,7 +68,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 	} else {
 		if meta.IsStream {
 			var responseText string
-			err, usage, responseText = ClaudeStreamHandler(c, resp)
+			err, _, responseText = ClaudeStreamHandler(c, resp)
+			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+
 			aitext = responseText
 		} else {
 			err, usage, aitext = ClaudeHandler(c, resp, meta.PromptTokens, meta.ActualModelName)
