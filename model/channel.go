@@ -44,7 +44,7 @@ type Channel struct {
 	StatusCodeMapping  *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
 	Config             string  `json:"config"`
 	ProxyURL           *string `json:"proxy_url"`
-	GcpAccount         *string `json:"gcp_account" gorm:"default:''"`
+	GcpAccount         *string `json:"gcp_account" gorm:"type:varchar(4096);default:''"`
 }
 type ChannelConfig struct {
 	Region       string `json:"region,omitempty"`
