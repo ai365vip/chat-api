@@ -44,6 +44,7 @@ type Channel struct {
 	StatusCodeMapping  *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
 	Config             string  `json:"config"`
 	ProxyURL           *string `json:"proxy_url"`
+	GcpAccount         *string `json:"gcp_account" gorm:"default:''"`
 }
 type ChannelConfig struct {
 	Region       string `json:"region,omitempty"`
@@ -289,12 +290,27 @@ func (channel *Channel) checkAndGetAccessToken() error {
 			return fmt.Errorf("failed to unmarshal config: %v", err)
 		}
 
-		accessToken, err := client.GetAccessToken(config.ClientId, config.ClientSecret, config.RefreshToken, channel.ProxyURL)
-		if err != nil {
-			return fmt.Errorf("failed to get access token: %v", err)
+		var accessToken string
+		if channel.GcpAccount != nil && *channel.GcpAccount != "" {
+			accessToken, err = client.GetGCPAccessToken(channel.GcpAccount, channel.ProxyURL)
+			if err != nil {
+				return fmt.Errorf("failed to get GCP access token for channel %d: %w", channel.Id, err)
+			}
+		} else {
+			if config.ClientId == "" || config.ClientSecret == "" || config.RefreshToken == "" {
+				return fmt.Errorf("missing required OAuth2 config fields for channel %d", channel.Id)
+			}
+			accessToken, err = client.GetAccessToken(config.ClientId, config.ClientSecret, config.RefreshToken, channel.ProxyURL)
+			if err != nil {
+				return fmt.Errorf("failed to get OAuth2 access token for channel %d: %w", channel.Id, err)
+			}
 		}
 
-		// 将获取到的 AccessToken 插入到 key 值里
+		if accessToken == "" {
+			return fmt.Errorf("received empty access token for channel %d", channel.Id)
+		}
+
+		// 使用 accessToken 进行后续操作
 		channel.Key = accessToken
 
 		// 更新数据库中的 key 字段
@@ -389,7 +405,7 @@ func (channel *Channel) LoadConfig() (ChannelConfig, error) {
 }
 
 func StartScheduledRefreshAccessTokens() {
-	ticker := time.NewTicker(3 * time.Minute)
+	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
 
 	for {
@@ -432,21 +448,15 @@ func ScheduledRefreshAccessTokens() error {
 				common.SysError(fmt.Sprintf("解析通道 %d 的配置失败：%v", ch.Id, err.Error()))
 				return
 			}
+			var accessToken string
+			if ch.GcpAccount != nil && *ch.GcpAccount != "" {
+				accessToken, err = client.GetGCPAccessToken(ch.GcpAccount, ch.ProxyURL)
+			} else {
+				accessToken, err = client.GetAccessToken(config.ClientId, config.ClientSecret, config.RefreshToken, ch.ProxyURL)
+			}
 
-			accessToken, err := client.GetAccessToken(config.ClientId, config.ClientSecret, config.RefreshToken, ch.ProxyURL)
 			if err != nil {
-				// 如果获取失败且状态为1，则更新状态为3
-				if ch.Status == 1 {
-					updateErr := DB.Model(&ch).Updates(map[string]interface{}{
-						"status": 3,
-					}).Error
-					if updateErr != nil {
-						common.SysError(fmt.Sprintf("更新通道 %d 状态为3失败：%v", ch.Id, updateErr.Error()))
-					} else {
-						common.SysError(fmt.Sprintf("由于获取令牌失败，通道 %d 的状态已更新为3", ch.Id))
-					}
-				}
-				common.SysError(fmt.Sprintf("获取通道 %d 的访问令牌失败：%v", ch.Id, err.Error()))
+				handleTokenError(ch, err)
 				return
 			}
 
@@ -475,4 +485,17 @@ func ScheduledRefreshAccessTokens() error {
 	wg.Wait() // 等待所有goroutine完成
 
 	return nil
+}
+func handleTokenError(ch Channel, err error) {
+	if ch.Status == 1 {
+		updateErr := DB.Model(&ch).Updates(map[string]interface{}{
+			"status": 3,
+		}).Error
+		if updateErr != nil {
+			common.SysError(fmt.Sprintf("更新通道 %d 状态为3失败：%v", ch.Id, updateErr))
+		} else {
+			common.SysError(fmt.Sprintf("由于获取令牌失败，通道 %d 的状态已更新为3", ch.Id))
+		}
+	}
+	common.SysError(fmt.Sprintf("获取通道 %d 的访问令牌失败：%v", ch.Id, err))
 }

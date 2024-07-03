@@ -64,6 +64,7 @@ const EditChannel = (props) => {
         client_id:'',
         client_secret:'',
         refresh_token:'',
+        gcp_account:'',
     };
     const [batch, setBatch] = useState(false);
     const [autoBan, setAutoBan] = useState(true);
@@ -232,6 +233,9 @@ const EditChannel = (props) => {
             if (data.headers !== '') {
                 data.headers = JSON.stringify(JSON.parse(data.headers), null, 2);
             }
+            if (data.gcp_account !== '') {
+                data.gcp_account = JSON.stringify(JSON.parse(data.gcp_account), null, 2);
+            }
             setInputs(data);
             if (data.config !== '') {
                 setConfig(JSON.parse(data.config));
@@ -338,6 +342,10 @@ const EditChannel = (props) => {
         }
         if (inputs.headers !== '' && !verifyJSON(inputs.headers)) {
             showInfo('自定义请求头必须是合法的 JSON 格式！');
+            return;
+        }
+        if (inputs.gcp_account !== '' && !verifyJSON(inputs.gcp_account)) {
+            showInfo('密钥文件必须是合法的 JSON 格式！');
             return;
         }
         if (config.ak !== '' && config.sk !== '' && config.region !== '') {
@@ -945,6 +953,19 @@ const EditChannel = (props) => {
                                     placeholder={'refresh_token'}
                                     onChange={(value) => handleConfigChange({ name: 'refresh_token', value })}
                                     value={config.refresh_token}
+                                    autoComplete='new-password'
+                                />
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>JSON密钥文件:</Typography.Text>
+                                </div>
+                                <TextArea
+                                    placeholder={`填入JSON密钥文件内容`}
+                                    name='gcp_account'
+                                    onChange={value => {
+                                        handleInputChange('gcp_account', value)
+                                    }}
+                                    autosize
+                                    value={inputs.gcp_account}
                                     autoComplete='new-password'
                                 />
                             </div> // 新增的包裹元素的结束标签
