@@ -11,6 +11,7 @@ import (
 	"one-api/common/helper"
 	"one-api/common/image"
 	"one-api/common/logger"
+	"one-api/common/random"
 	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
 	"one-api/relay/model"
@@ -226,8 +227,10 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatCompletionsStreamResponse {
 	var choice openai.ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = geminiResponse.GetResponseText()
-	choice.FinishReason = &constant.StopFinishReason
+	//choice.FinishReason = &constant.StopFinishReason
 	var response openai.ChatCompletionsStreamResponse
+	response.Id = fmt.Sprintf("chatcmpl-%s", random.GetUUID())
+	response.Created = helper.GetTimestamp()
 	response.Object = "chat.completion.chunk"
 	response.Model = "gemini"
 	response.Choices = []openai.ChatCompletionsStreamResponseChoice{choice}
