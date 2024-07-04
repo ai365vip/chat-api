@@ -199,7 +199,6 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 	if err != nil {
 		openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
 	}
-
 	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
 	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
 	modelRatioString := ""
@@ -209,36 +208,18 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 	completionTokens := usage.CompletionTokens
 	quota = promptTokens + int(float64(completionTokens)*completionRatio)
 
-	if BillingByRequestEnabled && ModelRatioEnabled {
-		if meta.BillingEnabled {
-			modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
-			if !ok {
-				quota = int(float64(quota) * ratio)
-				modelRatioString = fmt.Sprintf("模型倍率 %.2f，补全倍率%.2f", modelRatio, completionRatio)
-			} else {
-				groupRatio := common.GetGroupRatio(meta.Group)
+	modelRatioString = fmt.Sprintf("模型倍率 %.2f，补全倍率%.2f", modelRatio, completionRatio)
+
+	if BillingByRequestEnabled {
+		shouldUseModelRatio2 := !ModelRatioEnabled || (ModelRatioEnabled && meta.BillingEnabled)
+		if shouldUseModelRatio2 {
+			modelRatio2, ok := common.GetModelRatio2(meta.OriginModelName)
+			if ok {
 				ratio = modelRatio2 * groupRatio
 				quota = int(ratio * config.QuotaPerUnit)
 				modelRatioString = "按次计费"
 			}
-		} else {
-			quota = int(float64(quota) * ratio)
-			modelRatioString = fmt.Sprintf("模型倍率 %.2f，补全倍率%.2f", modelRatio, completionRatio)
 		}
-	} else if BillingByRequestEnabled {
-		modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
-		if !ok {
-			quota = int(float64(quota) * ratio)
-			modelRatioString = fmt.Sprintf("模型倍率 %.2f，补全倍率%.2f", modelRatio, completionRatio)
-		} else {
-			groupRatio := common.GetGroupRatio(meta.Group)
-			ratio = modelRatio2 * groupRatio
-			quota = int(ratio * config.QuotaPerUnit)
-			modelRatioString = "按次计费"
-		}
-	} else {
-		quota = int(float64(quota) * ratio)
-		modelRatioString = fmt.Sprintf("模型倍率 %.2f，补全倍率%.2f", modelRatio, completionRatio)
 	}
 	if ratio != 0 && quota <= 0 {
 		quota = 1

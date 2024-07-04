@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/common/config"
@@ -67,29 +66,18 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 	groupRatio := common.GetGroupRatio(meta.Group)
 	ratio := modelRatio * groupRatio
 	preConsumedQuota := 0
-	token, err := model.GetTokenById(meta.TokenId)
-	if err != nil {
-		log.Println("获取token出错:", err)
-	}
 
 	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
 	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
 	preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-	if BillingByRequestEnabled && ModelRatioEnabled {
-		if token.BillingEnabled {
-			if token.BillingEnabled {
-				modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
-				if ok {
-					ratio = modelRatio2 * groupRatio
-					preConsumedQuota = int(ratio * config.QuotaPerUnit)
-				}
+	if BillingByRequestEnabled {
+		shouldUseModelRatio2 := !ModelRatioEnabled || (ModelRatioEnabled && meta.BillingEnabled)
+		if shouldUseModelRatio2 {
+			modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
+			if ok {
+				ratio = modelRatio2 * groupRatio
+				preConsumedQuota = int(ratio * config.QuotaPerUnit)
 			}
-		}
-	} else if BillingByRequestEnabled {
-		modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
-		if ok {
-			ratio = modelRatio2 * groupRatio
-			preConsumedQuota = int(ratio * config.QuotaPerUnit)
 		}
 	}
 
@@ -200,21 +188,16 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 			modelRatioString := ""
 			quota = int(float64(quota) * ratio)
 			modelRatioString = fmt.Sprintf("模型倍率 %.2f", modelRatio)
-			if BillingByRequestEnabled && ModelRatioEnabled {
-				if token.BillingEnabled {
-					modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
+			if BillingByRequestEnabled {
+				shouldUseModelRatio2 := !ModelRatioEnabled || (ModelRatioEnabled && meta.BillingEnabled)
+				if shouldUseModelRatio2 {
+					modelRatio2, ok := common.GetModelRatio2(meta.OriginModelName)
 					if ok {
 						ratio = modelRatio2 * groupRatio
 						quota = int(ratio * config.QuotaPerUnit)
 						modelRatioString = "按次计费"
+
 					}
-				}
-			} else if BillingByRequestEnabled {
-				modelRatio2, ok := common.GetModelRatio2(audioRequest.Model)
-				if ok {
-					ratio = modelRatio2 * groupRatio
-					quota = int(ratio * config.QuotaPerUnit)
-					modelRatioString = "按次计费"
 				}
 			}
 

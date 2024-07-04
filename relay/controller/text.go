@@ -55,28 +55,16 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 
 	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
 	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
-	if BillingByRequestEnabled && ModelRatioEnabled {
-		if meta.BillingEnabled {
-			modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
-			if !ok {
-				preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-			} else {
+	preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+	if BillingByRequestEnabled {
+		shouldUseModelRatio2 := !ModelRatioEnabled || (ModelRatioEnabled && meta.BillingEnabled)
+		if shouldUseModelRatio2 {
+			modelRatio2, ok := common.GetModelRatio2(meta.OriginModelName)
+			if ok {
 				ratio = modelRatio2 * groupRatio
 				preConsumedQuota = int(ratio * config.QuotaPerUnit)
 			}
-		} else {
-			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 		}
-	} else if BillingByRequestEnabled {
-		modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
-		if !ok {
-			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-		} else {
-			ratio = modelRatio2 * groupRatio
-			preConsumedQuota = int(ratio * config.QuotaPerUnit)
-		}
-	} else {
-		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	}
 
 	preConsumedQuota, bizErr := preConsumeQuota(ctx, preConsumedQuota, meta)
