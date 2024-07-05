@@ -198,9 +198,9 @@ export default function Log() {
             <Table sx={{ minWidth: 800 }}>
               <LogTableHead userIsAdmin={userIsAdmin} />
               <TableBody>
-                {logs.slice(activePage * rowsPerPage, (activePage + 1) * rowsPerPage).map((row, index) => (
-                    <LogTableRow item={row} key={`${row.id}_${index}`} userIsAdmin={userIsAdmin} />
-                ))}
+              {logs && logs.length > 0 && logs.slice(activePage * rowsPerPage, (activePage + 1) * rowsPerPage).map((row, index) => (
+                <LogTableRow item={row} key={`${row.id}_${index}`} userIsAdmin={userIsAdmin} />
+              ))}
             </TableBody>
 
             </Table>
