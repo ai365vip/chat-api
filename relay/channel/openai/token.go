@@ -26,6 +26,10 @@ func InitTokenEncoders() {
 		logger.FatalLog(fmt.Sprintf("failed to get gpt-3.5-turbo token encoder: %s", err.Error()))
 	}
 	defaultTokenEncoder = gpt35TokenEncoder
+	gpt4oTokenEncoder, err := tiktoken.EncodingForModel("gpt-4o")
+	if err != nil {
+		logger.FatalLog(fmt.Sprintf("failed to get gpt-4o token encoder: %s", err.Error()))
+	}
 	gpt4TokenEncoder, err := tiktoken.EncodingForModel("gpt-4")
 	if err != nil {
 		logger.FatalLog(fmt.Sprintf("failed to get gpt-4 token encoder: %s", err.Error()))
@@ -33,6 +37,8 @@ func InitTokenEncoders() {
 	for model := range common.ModelRatio {
 		if strings.HasPrefix(model, "gpt-3.5") {
 			tokenEncoderMap[model] = gpt35TokenEncoder
+		} else if strings.HasPrefix(model, "gpt-4o") {
+			tokenEncoderMap[model] = gpt4oTokenEncoder
 		} else if strings.HasPrefix(model, "gpt-4") {
 			tokenEncoderMap[model] = gpt4TokenEncoder
 		} else {
@@ -74,18 +80,17 @@ func CountAudioToken(text string, model string) int {
 	}
 }
 
-func CountTokenChatRequest(messages []model.Message, model string) int {
+func CountTokenChatRequest(message *model.GeneralOpenAIRequest, model string) int {
 	tkm := 0
-	msgTokens := CountTokenMessages(messages, model)
+	msgTokens := CountTokenMessages(message.Messages, model)
 	tkm += msgTokens
-	for _, message := range messages {
-		if message.ToolCalls != nil {
-			toolTokens := processToolCalls(message.ToolCalls, model)
-			if toolTokens == -1 {
-				return 0
-			}
-			tkm += 8 + toolTokens
+
+	if message.Tools != nil {
+		toolTokens := processToolCalls(message.Tools, model)
+		if toolTokens == -1 {
+			return 0
 		}
+		tkm += 8 + toolTokens
 	}
 	return tkm
 }
@@ -93,7 +98,7 @@ func CountTokenChatRequest(messages []model.Message, model string) int {
 func processToolCalls(toolCalls []model.Tool, model string) int {
 	countStr := ""
 	for _, tool := range toolCalls {
-		countStr += tool.Function.Name
+		countStr = tool.Function.Name
 		if tool.Function.Description != "" {
 			countStr += tool.Function.Description
 		}

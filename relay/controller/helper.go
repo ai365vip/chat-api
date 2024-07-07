@@ -141,7 +141,7 @@ func getPromptTokens(textRequest *relaymodel.GeneralOpenAIRequest, relayMode int
 			}
 
 		}
-		return openai.CountTokenChatRequest(textRequest.Messages, textRequest.Model)
+		return openai.CountTokenChatRequest(textRequest, textRequest.Model)
 	case constant.RelayModeCompletions:
 		return openai.CountTokenInput(textRequest.Prompt, textRequest.Model)
 	case constant.RelayModeModerations:
