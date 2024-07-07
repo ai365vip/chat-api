@@ -209,7 +209,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 	quota = promptTokens + int(float64(completionTokens)*completionRatio)
 
 	modelRatioString = fmt.Sprintf("模型倍率 %.2f，补全倍率%.2f", modelRatio, completionRatio)
-
+	quota = int(float64(quota) * ratio)
 	if BillingByRequestEnabled {
 		shouldUseModelRatio2 := !ModelRatioEnabled || (ModelRatioEnabled && meta.BillingEnabled)
 		if shouldUseModelRatio2 {
