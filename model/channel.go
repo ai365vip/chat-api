@@ -405,7 +405,7 @@ func (channel *Channel) LoadConfig() (ChannelConfig, error) {
 }
 
 func StartScheduledRefreshAccessTokens() {
-	ticker := time.NewTicker(30 * time.Minute)
+	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
 	for {
