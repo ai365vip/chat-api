@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/common/config"
 	"one-api/common/logger"
-	dbmodel "one-api/model"
 	"one-api/relay/channel/openai"
+	"one-api/relay/constant"
 	"one-api/relay/helper"
 	"one-api/relay/model"
 	"one-api/relay/util"
@@ -52,34 +51,19 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 	if textRequest.MaxTokens != 0 {
 		preConsumedTokens = promptTokens + textRequest.MaxTokens
 	}
-	token, err := dbmodel.GetTokenById(meta.TokenId)
-	if err != nil {
-		log.Println("获取token出错:", err)
-	}
+
 	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
 	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
-	if BillingByRequestEnabled && ModelRatioEnabled {
-		if token.BillingEnabled {
-			modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
-			if !ok {
-				preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-			} else {
+	preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+	if BillingByRequestEnabled {
+		shouldUseModelRatio2 := !ModelRatioEnabled || (ModelRatioEnabled && meta.BillingEnabled)
+		if shouldUseModelRatio2 {
+			modelRatio2, ok := common.GetModelRatio2(meta.OriginModelName)
+			if ok {
 				ratio = modelRatio2 * groupRatio
 				preConsumedQuota = int(ratio * config.QuotaPerUnit)
 			}
-		} else {
-			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 		}
-	} else if BillingByRequestEnabled {
-		modelRatio2, ok := common.GetModelRatio2(textRequest.Model)
-		if !ok {
-			preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-		} else {
-			ratio = modelRatio2 * groupRatio
-			preConsumedQuota = int(ratio * config.QuotaPerUnit)
-		}
-	} else {
-		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	}
 
 	preConsumedQuota, bizErr := preConsumeQuota(ctx, preConsumedQuota, meta)
@@ -103,6 +87,18 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 		requestBody = bytes.NewBuffer(jsonStr)
 	} else {
 		requestBody = c.Request.Body
+	}
+	if meta.APIType == constant.APITypeGCP {
+		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, textRequest)
+		if err != nil {
+			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
+		}
+		jsonData, err := json.Marshal(convertedRequest)
+		if err != nil {
+			return openai.ErrorWrapper(err, "json_marshal_failed", http.StatusInternalServerError)
+		}
+		logger.Debugf(ctx, "converted request: \n%s", string(jsonData))
+		requestBody = bytes.NewBuffer(jsonData)
 	}
 	// do responses
 	startTime := time.Now()
