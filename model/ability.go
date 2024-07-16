@@ -16,13 +16,14 @@ import (
 )
 
 type Ability struct {
-	Group     string `json:"group" gorm:"type:varchar(64);primaryKey;autoIncrement:false"`
-	Model     string `json:"model" gorm:"type:varchar(64);primaryKey;autoIncrement:false"`
-	ChannelId int    `json:"channel_id" gorm:"primaryKey;autoIncrement:false;index"`
-	Enabled   bool   `json:"enabled"`
-	Priority  *int64 `json:"priority" gorm:"bigint;default:0;index"`
-	Weight    uint   `json:"weight" gorm:"default:0;index"`
-	IsTools   *bool  `json:"is_tools" gorm:"default:true"`
+	Group                 string `json:"group" gorm:"type:varchar(64);primaryKey;autoIncrement:false"`
+	Model                 string `json:"model" gorm:"type:varchar(64);primaryKey;autoIncrement:false"`
+	ChannelId             int    `json:"channel_id" gorm:"primaryKey;autoIncrement:false;index"`
+	Enabled               bool   `json:"enabled"`
+	Priority              *int64 `json:"priority" gorm:"bigint;default:0;index"`
+	Weight                uint   `json:"weight" gorm:"default:0;index"`
+	IsTools               *bool  `json:"is_tools" gorm:"default:true"`
+	ClaudeOriginalRequest *bool  `json:"claude_original_request" gorm:"default:false"`
 }
 
 type ModelBillingInfo struct {
@@ -234,13 +235,13 @@ func updateRateLimitStatus(channelId int, model string) {
 	channelRateLimitStatus.Store(key, rl)
 }
 
-func GetRandomSatisfiedChannel(group string, model string, excluded map[int]struct{}, ignoreFirstPriority bool, isTools bool, i int) (*Channel, error) {
+func GetRandomSatisfiedChannel(group string, model string, excluded map[int]struct{}, ignoreFirstPriority bool, isTools bool, claudeoriginalrequest bool, i int) (*Channel, error) {
 	// 当i等于1时，强制使用下一个优先级
 	if i == 1 {
 		return getChannelFromNextPriority(group, model)
 	}
 
-	abilities, err := getAbilitiesByPriority(group, model, ignoreFirstPriority, isTools, excluded)
+	abilities, err := getAbilitiesByPriority(group, model, ignoreFirstPriority, isTools, claudeoriginalrequest, excluded)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +277,7 @@ func GetRandomSatisfiedChannel(group string, model string, excluded map[int]stru
 	return getChannelFromNextPriority(group, model)
 }
 
-func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool, isTools bool, excluded map[int]struct{}) ([]Ability, error) {
+func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool, isTools bool, claudeoriginalrequest bool, excluded map[int]struct{}) ([]Ability, error) {
 	var abilities []Ability
 	groupCol := "`group`"
 	trueVal := "1"
@@ -290,10 +291,17 @@ func getAbilitiesByPriority(group string, model string, ignoreFirstPriority bool
 		maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model)
 		channelQuery = channelQuery.Where("priority = (?)", maxPrioritySubQuery)
 	}
+	conditions := []string{}
 	if isTools {
-		channelQuery = channelQuery.Where("is_tools = true")
+		conditions = append(conditions, "is_tools = true")
 	}
-
+	if claudeoriginalrequest {
+		conditions = append(conditions, "claude_original_request = true")
+	}
+	if len(conditions) > 0 {
+		combinedCondition := "(" + strings.Join(conditions, " OR ") + ")"
+		channelQuery = channelQuery.Where(combinedCondition)
+	}
 	// 将 excluded 映射到一个切片
 	excludedIds := make([]int, 0, len(excluded))
 	for id := range excluded {
@@ -407,13 +415,14 @@ func (channel *Channel) AddAbilities() error {
 	for _, model := range models_ {
 		for _, group := range groups_ {
 			ability := Ability{
-				Group:     group,
-				Model:     model,
-				ChannelId: channel.Id,
-				Enabled:   channel.Status == common.ChannelStatusEnabled,
-				Priority:  channel.Priority,
-				Weight:    uint(channel.GetWeight()),
-				IsTools:   channel.IsTools,
+				Group:                 group,
+				Model:                 model,
+				ChannelId:             channel.Id,
+				Enabled:               channel.Status == common.ChannelStatusEnabled,
+				Priority:              channel.Priority,
+				Weight:                uint(channel.GetWeight()),
+				IsTools:               channel.IsTools,
+				ClaudeOriginalRequest: channel.ClaudeOriginalRequest,
 			}
 			abilities = append(abilities, ability)
 		}

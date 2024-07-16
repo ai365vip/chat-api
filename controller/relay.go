@@ -74,8 +74,13 @@ func Relay(c *gin.Context) {
 			fmt.Println("is_tools value is not of type bool")
 			return
 		}
-
-		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i != retryTimes, isTools, failedChannelIds, i)
+		valueclaudeoriginalrequest, _ := c.Get("claude_original_request")
+		isclaudeoriginalrequest, ok := valueclaudeoriginalrequest.(bool)
+		if !ok {
+			fmt.Println("claude_original_request value is not of type bool")
+			return
+		}
+		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i != retryTimes, isTools, isclaudeoriginalrequest, failedChannelIds, i)
 		if err != nil {
 			common.Errorf(ctx, "CacheGetRandomSatisfiedChannel failed: %w", err)
 			break

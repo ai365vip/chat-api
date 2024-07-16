@@ -84,7 +84,7 @@ const EditChannel = (props) => {
     const [rateLimited, setRateLimited] = useState(false);
     const [istools, setIstools] = useState(true);
     const [isimageurenabled, setIsImageURLEnabled] = useState(false);
-    
+    const [claudeoriginalrequest, setClaudeOriginalRequest] = useState(false);
     const [config, setConfig] = useState({
         region: '',
         sk: '',
@@ -255,6 +255,7 @@ const EditChannel = (props) => {
             setWeight(data.weight || 0);
             setRateLimited(data.rate_limited || false);
             setIstools(data.is_tools || false);
+            setClaudeOriginalRequest(data.claude_original_request || false);
             // console.log(data);
         } else {
             showError(message);
@@ -360,7 +361,7 @@ const EditChannel = (props) => {
         localInputs.rate_limited = rateLimited;
         localInputs.is_tools = istools;
         localInputs.is_image_url_enabled = isimageurenabled ? 1 : 0;
-        
+        localInputs.claude_original_request = claudeoriginalrequest;
         if (localInputs.base_url && localInputs.base_url.endsWith('/')) {
             localInputs.base_url = localInputs.base_url.slice(0, localInputs.base_url.length - 1);
         }
@@ -398,6 +399,7 @@ const EditChannel = (props) => {
                 rate_limited: rateLimited,
                 is_tools: istools,
                 proxy_url: inputs.proxy_url,
+                claude_original_request: claudeoriginalrequest,
             };
             });
     
@@ -1032,7 +1034,19 @@ const EditChannel = (props) => {
                             </div>
                         )
                     }
-
+                     {
+                        ((inputs.type === 42) || (inputs.type === 14)) && (
+                            <div style={{marginTop: 10, display: 'flex'}}>
+                                <Space>
+                                    <Checkbox
+                                        checked={claudeoriginalrequest}
+                                        onChange={() => setClaudeOriginalRequest(!claudeoriginalrequest)}
+                                    />
+                                    <Typography.Text strong>支持原始Claude请求</Typography.Text>
+                                </Space>
+                            </div>
+                        )
+                    }
                     <div style={{marginTop: 20, display: 'flex', alignItems: 'center'}}>
                         <div style={{flex: 1}}>
                                 <Typography.Text>优先级：</Typography.Text>

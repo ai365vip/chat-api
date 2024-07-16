@@ -59,6 +59,7 @@ const BatchEditChannels = (props) => {
     const [rateLimited, setRateLimited] = useState(false);
     const [priority, setPriority] = useState(0);
     const [modelTest, setModelTest] = useState('gpt-3.5-turbo');
+    const [claudeoriginalrequest, setClaudeOriginalRequest] = useState(false);
     const handleInputChange = (name, value) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
         if (name === 'type' && inputs.models.length === 0) {
@@ -180,6 +181,10 @@ const BatchEditChannels = (props) => {
                     newData.is_tools = data.is_tools;
                     setIstools(data.is_tools);
                 }
+                if (data.claude_original_request !== undefined) {
+                    newData.claude_original_request = data.claude_original_request;
+                    setClaudeOriginalRequest(data.claude_original_request);
+                }
                 if (data.model_test !== undefined) {
                     newData.model_test = data.model_test;
                     setModelTest(data.model_test);
@@ -226,7 +231,7 @@ const BatchEditChannels = (props) => {
         localInputs.rate_limited = rateLimited;
         localInputs.is_tools = istools;
         localInputs.is_image_url_enabled = isimageurenabled ? 1 : 0;
-        
+        localInputs.claude_original_request = claudeoriginalrequest;
         if (localInputs.base_url && localInputs.base_url.endsWith('/')) {
             localInputs.base_url = localInputs.base_url.slice(0, localInputs.base_url.length - 1);
         }
@@ -567,6 +572,19 @@ const BatchEditChannels = (props) => {
                         </Space>
                     </div>
                     {
+                        ((inputs.type === 42) || (inputs.type === 14)) && (
+                            <div style={{marginTop: 10, display: 'flex'}}>
+                                <Space>
+                                    <Checkbox
+                                        checked={claudeoriginalrequest}
+                                        onChange={() => setClaudeOriginalRequest(!claudeoriginalrequest)}
+                                    />
+                                    <Typography.Text strong>支持原始Claude请求</Typography.Text>
+                                </Space>
+                            </div>
+                        )
+                    }
+                    {
                         inputs.type === 2 && (
                             <div style={{marginTop: 10, display: 'flex'}}>
                                 <Space>
@@ -579,6 +597,7 @@ const BatchEditChannels = (props) => {
                             </div>
                         )
                     }
+
 
                     <div style={{marginTop: 20, display: 'flex', alignItems: 'center'}}>
                         <div style={{flex: 1}}>

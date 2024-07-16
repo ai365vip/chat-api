@@ -78,9 +78,9 @@ func selectChannelForUser(c *gin.Context, tokenGroup string, modelName string) (
 	if !ok {
 		return nil, fmt.Errorf("is_tools value is not of type bool")
 	}
-
+	claudeoriginalrequest := c.GetBool("claude_original_request")
 	failedChannelIds := []int{}
-	channel, err := model.CacheGetRandomSatisfiedChannel(tokenGroup, modelName, false, isTools, failedChannelIds, 0)
+	channel, err := model.CacheGetRandomSatisfiedChannel(tokenGroup, modelName, false, isTools, claudeoriginalrequest, failedChannelIds, 0)
 	if err != nil {
 		message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", tokenGroup, modelName)
 		if channel != nil {

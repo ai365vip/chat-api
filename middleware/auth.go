@@ -139,7 +139,10 @@ func TokenAuth() func(c *gin.Context) {
 		} else if key == "midjourney-proxy" {
 			key, parts = processAuthHeader(c.Request.Header.Get("mj-api-secret"))
 		}
-
+		c.Set("claude_original_request", false)
+		if c.Request.URL.Path == "/v1/messages" {
+			c.Set("claude_original_request", true)
+		}
 		modelRequest := ModelRequest{Model: getModelForPath(c.Request.URL.Path)}
 		if !strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") && c.Request.Method != http.MethodGet {
 			err = common.UnmarshalBodyReusable(c, &modelRequest)

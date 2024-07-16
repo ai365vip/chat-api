@@ -221,10 +221,10 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func filterByTools(channels []*Channel) []*Channel {
+func filterByTools(channels []*Channel, claudeoriginalrequest bool) []*Channel {
 	var filteredChannels []*Channel
 	for _, ch := range channels {
-		if ch.IsTools != nil && *ch.IsTools {
+		if (ch.IsTools != nil && *ch.IsTools) || (claudeoriginalrequest && *ch.ClaudeOriginalRequest) {
 			filteredChannels = append(filteredChannels, ch)
 		}
 	}
@@ -238,7 +238,7 @@ func contains(excluded map[int]struct{}, id int) bool {
 }
 
 // 优化后的CacheGetRandomSatisfiedChannel函数
-func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool, isTools bool, excludedChannelIds []int, i int) (*Channel, error) {
+func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool, isTools bool, claudeoriginalrequest bool, excludedChannelIds []int, i int) (*Channel, error) {
 	// 构建快速查找map
 	excludedMap := make(map[int]struct{})
 	for _, id := range excludedChannelIds {
@@ -251,7 +251,7 @@ func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPrior
 
 	// 检查缓存
 	if !common.MemoryCacheEnabled {
-		return GetRandomSatisfiedChannel(group, model, excludedMap, ignoreFirstPriority, isTools, i)
+		return GetRandomSatisfiedChannel(group, model, excludedMap, ignoreFirstPriority, isTools, claudeoriginalrequest, i)
 	}
 
 	// 使用更细粒度的锁
@@ -265,8 +265,8 @@ func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPrior
 
 	sortChannels(allChannels) // 封装排序逻辑到一个函数
 
-	if isTools {
-		allChannels = filterByTools(allChannels)
+	if isTools || claudeoriginalrequest {
+		allChannels = filterByTools(allChannels, claudeoriginalrequest)
 	}
 
 	return selectChannel(allChannels, excludedMap, ignoreFirstPriority, i, model)

@@ -14,37 +14,38 @@ import (
 )
 
 type Channel struct {
-	Id                 int     `json:"id"`
-	Type               int     `json:"type" gorm:"default:0"`
-	Key                string  `json:"key" gorm:"type:text"`
-	OpenAIOrganization *string `json:"openai_organization"`
-	Status             int     `json:"status" gorm:"default:1"`
-	Name               string  `json:"name" gorm:"index"`
-	Weight             *uint   `json:"weight" gorm:"default:0"`
-	CreatedTime        int64   `json:"created_time" gorm:"bigint"`
-	TestTime           int64   `json:"test_time" gorm:"bigint"`
-	ResponseTime       int     `json:"response_time"` // in milliseconds
-	BaseURL            *string `json:"base_url" gorm:"column:base_url;default:''"`
-	Other              string  `json:"other"`
-	Balance            float64 `json:"balance"` // in USD
-	BalanceUpdatedTime int64   `json:"balance_updated_time" gorm:"bigint"`
-	Models             string  `json:"models"`
-	Group              string  `json:"group" gorm:"type:varchar(255);default:'default'"`
-	UsedQuota          int64   `json:"used_quota" gorm:"bigint;default:0"`
-	UsedCount          int     `json:"used_count" gorm:"default:0"`
-	ModelMapping       *string `json:"model_mapping" gorm:"type:varchar(1024);default:''"`
-	Headers            *string `json:"headers" gorm:"type:varchar(1024);default:''"`
-	Priority           *int64  `json:"priority" gorm:"bigint;default:0"`
-	AutoBan            *int    `json:"auto_ban" gorm:"default:1"`
-	IsTools            *bool   `json:"is_tools" gorm:"default:true"`
-	TestedTime         *int    `json:"tested_time" gorm:"bigint"`
-	ModelTest          string  `json:"model_test"`
-	RateLimited        *bool   `json:"rate_limited" gorm:"default:false"`
-	IsImageURLEnabled  *int    `json:"is_image_url_enabled" gorm:"default:0"`
-	StatusCodeMapping  *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
-	Config             string  `json:"config"`
-	ProxyURL           *string `json:"proxy_url"`
-	GcpAccount         *string `json:"gcp_account" gorm:"type:varchar(4096);default:''"`
+	Id                    int     `json:"id"`
+	Type                  int     `json:"type" gorm:"default:0"`
+	Key                   string  `json:"key" gorm:"type:text"`
+	OpenAIOrganization    *string `json:"openai_organization"`
+	Status                int     `json:"status" gorm:"default:1"`
+	Name                  string  `json:"name" gorm:"index"`
+	Weight                *uint   `json:"weight" gorm:"default:0"`
+	CreatedTime           int64   `json:"created_time" gorm:"bigint"`
+	TestTime              int64   `json:"test_time" gorm:"bigint"`
+	ResponseTime          int     `json:"response_time"` // in milliseconds
+	BaseURL               *string `json:"base_url" gorm:"column:base_url;default:''"`
+	Other                 string  `json:"other"`
+	Balance               float64 `json:"balance"` // in USD
+	BalanceUpdatedTime    int64   `json:"balance_updated_time" gorm:"bigint"`
+	Models                string  `json:"models"`
+	Group                 string  `json:"group" gorm:"type:varchar(255);default:'default'"`
+	UsedQuota             int64   `json:"used_quota" gorm:"bigint;default:0"`
+	UsedCount             int     `json:"used_count" gorm:"default:0"`
+	ModelMapping          *string `json:"model_mapping" gorm:"type:varchar(1024);default:''"`
+	Headers               *string `json:"headers" gorm:"type:varchar(1024);default:''"`
+	Priority              *int64  `json:"priority" gorm:"bigint;default:0"`
+	AutoBan               *int    `json:"auto_ban" gorm:"default:1"`
+	IsTools               *bool   `json:"is_tools" gorm:"default:true"`
+	ClaudeOriginalRequest *bool   `json:"claude_original_request" gorm:"default:false"`
+	TestedTime            *int    `json:"tested_time" gorm:"bigint"`
+	ModelTest             string  `json:"model_test"`
+	RateLimited           *bool   `json:"rate_limited" gorm:"default:false"`
+	IsImageURLEnabled     *int    `json:"is_image_url_enabled" gorm:"default:0"`
+	StatusCodeMapping     *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
+	Config                string  `json:"config"`
+	ProxyURL              *string `json:"proxy_url"`
+	GcpAccount            *string `json:"gcp_account" gorm:"type:varchar(4096);default:''"`
 }
 type ChannelConfig struct {
 	Region       string `json:"region,omitempty"`
