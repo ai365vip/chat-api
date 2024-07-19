@@ -149,6 +149,9 @@ func CountTokenMessages(messages []model.Message, model string) int {
 						if err != nil {
 							logger.SysError("error counting image tokens: " + err.Error())
 						} else {
+							if strings.HasPrefix(model, "gpt-4o-mini") {
+								imageTokens *= 32 // 对于 gpt-4o-mini 模型，图像token数乘以32
+							}
 							tokenNum += imageTokens
 						}
 					}
