@@ -151,6 +151,7 @@ func CountTokenMessages(messages []model.Message, model string) int {
 						} else {
 							if strings.HasPrefix(model, "gpt-4o-mini") {
 								imageTokens *= 32 // 对于 gpt-4o-mini 模型，图像token数乘以32
+								tokenNum *= 40
 							}
 							tokenNum += imageTokens
 						}
