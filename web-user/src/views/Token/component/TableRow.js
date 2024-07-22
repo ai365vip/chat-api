@@ -1,6 +1,5 @@
 import PropTypes from 'prop-types';
 import { useState,useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import { API } from 'utils/api';
 
 import {
@@ -22,23 +21,7 @@ import {
 import TableSwitch from 'ui-component/Switch';
 import { renderQuota, showSuccess,showError, timestamp2string } from 'utils/common';
 import CircularProgress from '@mui/material/CircularProgress';
-import { IconDotsVertical, IconEdit, IconTrash, IconCaretDownFilled,IconEye  } from '@tabler/icons-react';
-
-const COPY_OPTIONS = [
-  {
-    key: 'next',
-    text: 'ChatGPT Next',
-    url: '',
-    encode: false
-  },
-  { key: 'next-mj', text: 'ChatGPT-Midjourney', url: '', encode: true },
-  { key: 'ama', text: 'BotGem', url: 'ama://set-api-key?server={serverAddress}&key=sk-{key}', encode: true },
-  { key: 'opencat', text: 'OpenCat', url: 'opencat://team/join?domain={serverAddress}&token=sk-{key}', encode: true }
-];
-
-function replacePlaceholders(text, key, serverAddress) {
-  return text.replace('{key}', key).replace('{serverAddress}', serverAddress);
-}
+import { IconDotsVertical, IconEdit, IconTrash,IconEye  } from '@tabler/icons-react';
 
 function createMenu(menuItems) {
   return (
@@ -59,10 +42,10 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
   const [menuItems, setMenuItems] = useState(null);
   const [openDelete, setOpenDelete] = useState(false);
   const [statusSwitch, setStatusSwitch] = useState(item.status);
-  const siteInfo = useSelector((state) => state.siteInfo);
   const [loading, setLoading] = useState(false);
   const [billingEnabled, setBillingEnabled] = useState(item.billing_enabled ? 1 : 0);
   const [modelRatioEnabled, setModelRatioEnabled] = useState('');
+  const [userGroupEnabled, setUserGroupEnabled] = useState('');
   const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
   const [options, setOptions] = useState({});
   
@@ -117,18 +100,12 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
     if (options.BillingByRequestEnabled) { 
       setBillingByRequestEnabled(options.BillingByRequestEnabled === 'true');
     }
+    if (options.UserGroupEnabled) { 
+      setUserGroupEnabled(options.UserGroupEnabled === 'true');
+    }
   }, [options]);
 
-  const handleChatClick = () => {
-    if (!siteInfo?.chat_link) {
-      showSuccess('管理员未设置聊天界面');
-    } else {
-      const chatOption = COPY_OPTIONS.find(option => option.key === 'next');
-      if (chatOption) {
-        handleCopy(chatOption, 'link');
-      }
-    }
-  };
+
   
   
 
@@ -191,63 +168,9 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
     }
   ]);
 
-  const handleCopy = (option, type) => {
-    let serverAddress = '';
-    if (siteInfo?.server_address) {
-      serverAddress = siteInfo.server_address;
-    } else {
-      serverAddress = window.location.host;
-    }
-
-    if (option.encode) {
-      serverAddress = encodeURIComponent(serverAddress);
-    }
-
-    let url = option.url;
-
-    if (!siteInfo?.chat_link && (option.key === 'next' || option.key === 'next-mj')) {
-      showSuccess('管理员未设置聊天界面');
-      return;
-    }
-    if (option.encode) {
-      serverAddress = encodeURIComponent(serverAddress);
-    }
-
-    if (option.key === 'next' || option.key === 'next-mj') {
-      url = siteInfo.chat_link + `/#/?settings={"key":"sk-{key}","url":"{serverAddress}"}`;
-    } 
-
-
-    const key = item.key;
-    const text = replacePlaceholders(url, key, serverAddress);
-    if (type === 'link') {
-      window.open(text);
-    } else {
-      navigator.clipboard.writeText(text);
-      showSuccess('已复制到剪贴板！');
-    }
-    handleCloseMenu();
-  };
 
 
 
-  const copyItems = createMenu(
-    COPY_OPTIONS.map((option) => ({
-      text: option.text,
-      icon: undefined,
-      onClick: () => handleCopy(option, 'copy'),
-      color: undefined
-    }))
-  );
-
-  const linkItems = createMenu(
-    COPY_OPTIONS.map((option) => ({
-      text: option.text,
-      icon: undefined,
-      onClick: () => handleCopy(option, 'link'),
-      color: undefined
-    }))
-  );
 
   return (
     <>
@@ -295,9 +218,12 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
             />
           </Tooltip>
         </TableCell>
+        {userGroupEnabled && (
+          <TableCell>{item.group ? item.group : '默认'}</TableCell>
+        )}
 
         <TableCell>{renderQuota(item.used_quota)}</TableCell>
-
+        
         <TableCell>{item.unlimited_quota ? '无限制' : renderQuota(item.remain_quota, 2)}</TableCell>
 
         <TableCell>{timestamp2string(item.created_time)}</TableCell>
@@ -351,12 +277,6 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
               复制
             </Button>
 
-            </ButtonGroup>
-            <ButtonGroup size="small" aria-label="split button">
-              <Button color="primary" onClick={handleChatClick} >聊天</Button>
-              <Button size="small" onClick={(e) => handleOpenMenu(e, 'link')}>
-                <IconCaretDownFilled size={'16px'} />
-              </Button>
             </ButtonGroup>
             <IconButton onClick={(e) => handleOpenMenu(e, 'action')} sx={{ color: 'rgb(99, 115, 129)' }}>
               <IconDotsVertical />

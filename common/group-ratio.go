@@ -7,6 +7,11 @@ var GroupRatio = map[string]float64{
 	"vip":     1,
 	"svip":    1,
 }
+var GroupUserRatio = map[string]string{
+	"default": "默认分组",
+	"vip":     "vip分组",
+	"svip":    "svip分组",
+}
 
 func GroupRatio2JSONString() string {
 	jsonBytes, err := json.Marshal(GroupRatio)
@@ -28,4 +33,16 @@ func GetGroupRatio(name string) float64 {
 		return 1
 	}
 	return ratio
+}
+func GroupUserRatioJSONString() string {
+	jsonBytes, err := json.Marshal(GroupUserRatio)
+	if err != nil {
+		SysError("error marshalling GroupUserRatio ratio: " + err.Error())
+	}
+	return string(jsonBytes)
+}
+
+func UpdateGroupUserRatioByJSONString(jsonStr string) error {
+	GroupUserRatio = make(map[string]string)
+	return json.Unmarshal([]byte(jsonStr), &GroupUserRatio)
 }

@@ -37,7 +37,8 @@ func GetUserOptions(c *gin.Context) {
 	config.OptionMapRWMutex.RLock() // 使用读锁
 	keys := []string{"TopUpLink", "YzfZfb", "YzfWx", "BillingByRequestEnabled", "ModelRatioEnabled",
 		"MiniQuota", "ProporTions", "TopupRatio",
-		"LogContentEnabled", "TopupAmount", "TopupRatioEnabled", "TopupAmountEnabled", "BlankReplyRetryEnabled"}
+		"LogContentEnabled", "TopupAmount", "TopupRatioEnabled", "TopupAmountEnabled", "BlankReplyRetryEnabled",
+		"UserGroupEnabled"}
 
 	for _, key := range keys {
 		if value, exists := config.OptionMap[key]; exists {

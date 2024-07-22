@@ -39,6 +39,7 @@ const validationSchema = Yup.object().shape({
   unlimited_quota: Yup.boolean(),
   billing_enabled: Yup.boolean(),
   models: Yup.array().of(Yup.string()),
+  group: Yup.string(),
 });
 
 const originInputs = {
@@ -49,7 +50,8 @@ const originInputs = {
   remain_quota: 1,
   expired_time: -1,
   unlimited_quota: false,
-  billing_enabled:false
+  billing_enabled:false,
+  group: '',
 };
 
 const EditModal = ({ open, tokenId, onCancel, onOk }) => {
@@ -57,8 +59,10 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
   const [inputs, setInputs] = useState(originInputs);
   const [modelRatioEnabled, setModelRatioEnabled] = useState('');
   const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
+  const [userGroupEnabled, setUserGroupEnabled] = useState('');
   const [options, setOptions] = useState({});
   const [models, setModels] = useState([]);
+  const [groups, setGroups] = useState([]);
   let quotaPerUnit = localStorage.getItem('quota_per_unit');
   const generateRandomSuffix = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -136,6 +140,20 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
     }
   };
 
+  const loadGroups = async () => {
+    try {
+        let res = await API.get('/api/user/group');
+        const { success, message, data } = res.data;
+        if (success) {
+            setGroups(data);
+        } else {
+            showError(message);
+        }
+    } catch (err) {
+        showError(err.message);
+    }
+  };
+
   const [batchAddCount, setBatchAddCount] = useState(1);
 
   const handleBatchAddChange = (event) => {
@@ -153,7 +171,8 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
       setInputs({
         ...data,
         remain_quota: parseFloat(data.remain_quota)/quotaPerUnit, 
-        models: data.models ? data.models.split(',') : [] 
+        models: data.models ? data.models.split(',') : [] ,
+        group: data.group || '' 
       });
     } else {
       showError(message);
@@ -171,6 +190,7 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
     }
     loadModels();
     getOptions();
+    loadGroups();
   }, [tokenId]);
 
   useEffect(() => {
@@ -200,6 +220,9 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
     }
     if (options.BillingByRequestEnabled) { 
       setBillingByRequestEnabled(options.BillingByRequestEnabled === 'true');
+    }
+    if (options.UserGroupEnabled) { 
+      setUserGroupEnabled(options.UserGroupEnabled === 'true');
     }
   }, [options]);
 
@@ -352,6 +375,27 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
                   </FormHelperText>
                 )}
               </FormControl>
+              {userGroupEnabled && (
+                <FormControl fullWidth sx={{ ...theme.typography.otherInput, mt: 2 }}>
+                  <InputLabel id="group-select-label">分组</InputLabel>
+                  <Select
+                    labelId="group-select-label"
+                    id="group-select"
+                    value={values.group}
+                    onChange={(event) => {
+                      setFieldValue('group', event.target.value);
+                    }}
+                  >
+                    {groups.map((group) => (
+                      <MenuItem key={group.key} value={group.key}>
+                        {group.value}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>特殊渠道专用，正常使用不需要选择</FormHelperText>
+                </FormControl>
+              )}
+
 
               {/* 新增的计费方式选择框 */}
               {tokenId ? null : (

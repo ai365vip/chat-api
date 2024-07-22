@@ -19,7 +19,7 @@ import { ITEMS_PER_PAGE } from 'constants';
 import { IconRefresh, IconPlus,IconTrash } from '@tabler/icons-react';
 import EditeModal from './component/EditModal';
 import { useSelector } from 'react-redux';
-
+import { styled } from '@mui/system';
 export default function Token() {
   const [tokens, setTokens] = useState([]);
   const [activePage, setActivePage] = useState(0);
@@ -30,6 +30,7 @@ export default function Token() {
   const siteInfo = useSelector((state) => state.siteInfo);
   const [modelRatioEnabled, setModelRatioEnabled] = useState('');
   const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
+  const [userGroupEnabled, setUserGroupEnabled] = useState('');
   const [options, setOptions] = useState({});
   const [selected, setSelected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(ITEMS_PER_PAGE);
@@ -91,6 +92,9 @@ export default function Token() {
     }
     if (options.BillingByRequestEnabled) { 
       setBillingByRequestEnabled(options.BillingByRequestEnabled === 'true');
+    }
+    if (options.UserGroupEnabled) { 
+      setUserGroupEnabled(options.UserGroupEnabled === 'true');
     }
   }, [options]);
 
@@ -255,14 +259,16 @@ export default function Token() {
       });
   };
   
-  
-  
+  const BoldText = styled('b')({
+    fontSize: '1.2em', // 放大字体
+    color: '#d32f2f', // 设置为红色
+  });
 
   return (
     <>
       <Stack mb={5}>
         <Alert severity="info">
-          将OpenAI API基础地址https://api.openai.com替换为<b>{siteInfo.server_address}</b>，复制下面的密钥即可使用。
+        将OpenAI API基础地址https://api.openai.com替换为<BoldText>https://api.openai.rest</BoldText>或者<BoldText>{siteInfo.server_address}</BoldText>，复制下面的密钥即可使用。
         </Alert>
       </Stack>
       <Card>
@@ -355,6 +361,7 @@ export default function Token() {
               onSelectAllClick={handleSelectAllClick}
               modelRatioEnabled={modelRatioEnabled}
               billingByRequestEnabled={billingByRequestEnabled}
+              userGroupEnabled={userGroupEnabled}
               />
               <TableBody>
               {tokens.slice(activePage * rowsPerPage, (activePage + 1) * rowsPerPage).map((row) => (
@@ -366,6 +373,7 @@ export default function Token() {
                   setModalTokenId={setEditTokenId}
                   modelRatioEnabled={modelRatioEnabled}
                   billingByRequestEnabled={billingByRequestEnabled}
+                  userGroupEnabled={userGroupEnabled}
                   selected={selected}
                   handleSelectOne={handleSelectOne} // 这里传递 handleSelectOne
                 />

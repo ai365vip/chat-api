@@ -57,7 +57,7 @@ var WeChatAuthEnabled = false
 var TurnstileCheckEnabled = false
 var RegisterEnabled = true
 var ApproximateTokenEnabled = false
-
+var UserGroupEnabled = false
 var EmailDomainRestrictionEnabled = false
 var EmailDomainWhitelist = []string{
 	"gmail.com",

@@ -53,6 +53,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/aff_withdrawal", controller.AffQuota)
 				selfRoute.GET("/option", controller.GetUserOptions)
 				selfRoute.GET("/userwithdrawals", controller.GetWithdrawalOrdersEndpoint) // 获取用户自己的提现订单列表
+				selfRoute.GET("/group", controller.GetUserGroups)
 			}
 
 			adminRoute := userRoute.Group("/")

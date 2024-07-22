@@ -71,6 +71,8 @@ func InitOptionMap() {
 	config.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
 	config.OptionMap["TopupRatio"] = common.TopupRatioJSONString()
 	config.OptionMap["TopupAmount"] = common.TopupAmountJSONString()
+	config.OptionMap["GroupUserRatio"] = common.GroupUserRatioJSONString()
+	config.OptionMap["UserGroupEnabled"] = strconv.FormatBool(config.UserGroupEnabled)
 	config.OptionMap["GitHubClientId"] = ""
 	config.OptionMap["GitHubClientSecret"] = ""
 	config.OptionMap["WeChatServerAddress"] = ""
@@ -226,6 +228,8 @@ func updateOptionMap(key string, value string) (err error) {
 			config.TopupAmountEnabled = boolValue
 		case "BlankReplyRetryEnabled":
 			config.BlankReplyRetryEnabled = boolValue
+		case "UserGroupEnabled":
+			config.UserGroupEnabled = boolValue
 
 		}
 	}
@@ -309,6 +313,8 @@ func updateOptionMap(key string, value string) (err error) {
 		err = common.UpdateGroupRatioByJSONString(value)
 	case "CompletionRatio":
 		err = common.UpdateCompletionRatioByJSONString(value)
+	case "GroupUserRatio":
+		err = common.UpdateGroupUserRatioByJSONString(value)
 	case "TopUpLink":
 		config.TopUpLink = value
 	case "ChatLink":

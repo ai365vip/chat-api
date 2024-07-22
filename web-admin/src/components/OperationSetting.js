@@ -34,6 +34,8 @@ const OperationSetting = () => {
         MiniQuota: 10,
         ProporTions: 10,
         LogContentEnabled :'',
+        GroupUserRatio :'',
+        UserGroupEnabled:'',
         historyTimestamp: timestamp2string(now.getTime() / 1000 - 30 * 24 * 3600),
     }); 
     const [originInputs, setOriginInputs] = useState({});
@@ -168,7 +170,16 @@ const OperationSetting = () => {
         await updateOption('BillingByRequestEnabled', inputs.BillingByRequestEnabled);
     };
 
-
+    const submitUserGroups = async () => {
+        if (originInputs['UserGGroupUserRatiooups'] !== inputs.GroupUserRatio) {
+            if (!verifyJSON(inputs.GroupUserRatio)) {
+                showError('用户分组限制不是合法的 JSON 字符串');
+                return;
+            }
+            await updateOption('GroupUserRatio', inputs.GroupUserRatio);
+        }
+        await updateOption('UserGroupEnabled', inputs.UserGroupEnabled);
+    };
     
 
     const deleteHistoryLogs = async () => {
@@ -485,7 +496,31 @@ const OperationSetting = () => {
                                 </div>
                             </div>
                             <Button onClick={submitGroupRatio} style={{ width: '15%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold' }}>保存倍率设置</Button>
-                           
+                            <Divider style={{ marginTop: '20px', marginBottom: '10px' }} />
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', gap: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <Typography.Text>用户令牌分组</Typography.Text>
+                                    <Checkbox
+                                        checked={inputs.UserGroupEnabled === 'true'}
+                                        name='UserGroupEnabled'
+                                        onChange={(e) => handleCheckboxChange('UserGroupEnabled', e.target.checked)}
+                                    />
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                                <div style={{ flex: '1 1 calc(50% - 20px)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <Typography.Text strong>可用分组</Typography.Text>
+                                    <TextArea
+                                        placeholder='为一个 JSON 文本，键为分组名称，值为模型'
+                                        value={inputs.GroupUserRatio}
+                                        onChange={(value) => handleInputChange('GroupUserRatio', value)}
+                                        autosize={{ minRows: 6 }}
+                                        style={{ maxHeight: '200px', overflowY: 'auto' }}
+                                    />
+                                </div>
+                            </div>
+                            <Button onClick={submitUserGroups} style={{ width: '15%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold' }}>保存用户可用令牌分组</Button>
+
                         </div>
                     </Form>
             </Layout>
