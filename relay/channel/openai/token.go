@@ -145,14 +145,11 @@ func CountTokenMessages(messages []model.Message, model string) int {
 						if imageUrl["detail"] != nil {
 							detail = imageUrl["detail"].(string)
 						}
-						imageTokens, err := countImageTokens(url, detail)
+						imageTokens, err := countImageTokens(url, detail, model)
 						if err != nil {
 							logger.SysError("error counting image tokens: " + err.Error())
 						} else {
-							if strings.HasPrefix(model, "gpt-4o-mini") {
-								imageTokens *= 33 // 对于 gpt-4o-mini 模型，图像token数乘以32
-								tokenNum *= 33
-							}
+
 							tokenNum += imageTokens
 						}
 					}
@@ -181,7 +178,7 @@ func CountTokenMessages(messages []model.Message, model string) int {
 	return tokenNum
 }
 
-func countImageTokens(url string, detail string) (_ int, err error) {
+func countImageTokens(url string, detail string, model string) (_ int, err error) {
 	var fetchSize = true
 	var width, height int
 
@@ -191,6 +188,9 @@ func countImageTokens(url string, detail string) (_ int, err error) {
 	}
 	switch detail {
 	case "low":
+		if strings.HasPrefix(model, "gpt-4o-mini") {
+			return gpt4oMiniLowDetailCost, nil
+		}
 		return lowDetailCost, nil
 	case "high":
 		if fetchSize {
@@ -210,6 +210,9 @@ func countImageTokens(url string, detail string) (_ int, err error) {
 			height = int(float64(height) * ratio)
 		}
 		numSquares := int(math.Ceil(float64(width)/512) * math.Ceil(float64(height)/512))
+		if strings.HasPrefix(model, "gpt-4o-mini") {
+			return numSquares*gpt4oMiniHighDetailCost + gpt4oMiniAdditionalCost, nil
+		}
 		result := numSquares*highDetailCostPerTile + additionalCost
 		return result, nil
 	default:
@@ -244,6 +247,10 @@ const (
 	lowDetailCost         = 85
 	highDetailCostPerTile = 170
 	additionalCost        = 85
+	// gpt-4o-mini cost higher than other model
+	gpt4oMiniLowDetailCost  = 2833
+	gpt4oMiniHighDetailCost = 5667
+	gpt4oMiniAdditionalCost = 2833
 )
 
 func CountTokenInput(input any, model string) int {
