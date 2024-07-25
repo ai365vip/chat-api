@@ -17,7 +17,17 @@ export function getTodayDay() {
   let today = new Date();
   return today.toISOString().slice(0, 10);
 }
+export const getDaysBetween = (startDate, endDate) => {
+  const days = [];
+  let currentDate = new Date(startDate);
 
+  while (currentDate <= endDate) {
+    days.push(currentDate.toISOString().split('T')[0]);
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return days;
+};
 export function generateChartOptions(data, unit) {
   const dates = data.map((item) => item.date);
   const values = data.map((item) => item.value);

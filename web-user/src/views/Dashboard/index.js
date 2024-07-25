@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Grid, Typography } from '@mui/material';
 import { gridSpacing } from 'store/constant';
 import StatisticalLineChartCard from './component/StatisticalLineChartCard';
 import StatisticalBarChart from './component/StatisticalBarChart';
-import { generateChartOptions, getLastSevenDays, getTodayDay } from 'utils/chart';
+import { generateChartOptions, getDaysBetween, getTodayDay } from 'utils/chart';
 import { API } from 'utils/api';
 import { showError, calculateQuota, renderNumber } from 'utils/common';
 import UserCard from 'ui-component/cards/UserCard';
@@ -11,31 +11,36 @@ import { useSelector } from 'react-redux';
 
 const Dashboard = () => {
   const [isLoading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [statisticalData, setStatisticalData] = useState({ data: [], xaxis: [] });
   const [requestChart, setRequestChart] = useState(null);
   const [quotaChart, setQuotaChart] = useState(null);
   const [tokenChart, setTokenChart] = useState(null);
   const [users, setUsers] = useState([]);
   const account = useSelector((state) => state.account);
+  const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7)));
+  const [endDate, setEndDate] = useState(new Date());
 
-  const userDashboard = async () => {
-    setLoading(true);
+  const fetchDashboardData = useCallback(async () => {
+    setIsRefreshing(true);
     try {
-      const res = await API.get('/api/user/dashboard');
+      const startTimestamp = Math.floor(startDate.getTime() / 1000);
+      const endTimestamp = Math.floor(endDate.getTime() / 1000);
+      const res = await API.get(`/api/user/dashboard?start=${startTimestamp}&end=${endTimestamp}`);
       const { success, data } = res.data;
       if (success && Array.isArray(data)) {
-        const lineData = getLineDataGroup(data);
+        const lineData = getLineDataGroup(data, startDate, endDate);
         setRequestChart(getLineCardOption(lineData, 'RequestCount'));
         setQuotaChart(getLineCardOption(lineData, 'Quota'));
         setTokenChart(getLineCardOption(lineData, 'PromptTokens'));
-        setStatisticalData(getBarDataGroup(data));
+        setStatisticalData(getBarDataGroup(data, startDate, endDate));
       }
     } catch (error) {
       showError(`获取仪表盘数据时出错: ${error.message}`);
     } finally {
-      setLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, [startDate, endDate]);
 
   const loadUser = async () => {
     try {
@@ -53,10 +58,18 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (account.user) {
-      userDashboard();
-      loadUser();
+      setLoading(true);
+      Promise.all([fetchDashboardData(), loadUser()]).finally(() => {
+        setLoading(false);
+      });
     }
-  }, [account.user]);
+  }, [account.user, fetchDashboardData]);
+
+  const handleDateChange = (newStartDate, newEndDate) => {
+    setStartDate(newStartDate);
+    setEndDate(newEndDate);
+    fetchDashboardData();
+  };
 
   return (
     <Grid container spacing={gridSpacing}>
@@ -65,6 +78,7 @@ const Dashboard = () => {
           <Grid item lg={4} xs={12}>
             <StatisticalLineChartCard
               isLoading={isLoading}
+              isRefreshing={isRefreshing}
               title="今日请求量"
               chartData={requestChart?.chartData}
               todayValue={requestChart?.todayValue}
@@ -73,6 +87,7 @@ const Dashboard = () => {
           <Grid item lg={4} xs={12}>
             <StatisticalLineChartCard
               isLoading={isLoading}
+              isRefreshing={isRefreshing}
               title="今日消费"
               chartData={quotaChart?.chartData}
               todayValue={quotaChart?.todayValue}
@@ -81,6 +96,7 @@ const Dashboard = () => {
           <Grid item lg={4} xs={12}>
             <StatisticalLineChartCard
               isLoading={isLoading}
+              isRefreshing={isRefreshing}
               title="今日Token"
               chartData={tokenChart?.chartData}
               todayValue={tokenChart?.todayValue}
@@ -91,7 +107,14 @@ const Dashboard = () => {
       <Grid item xs={12}>
         <Grid container spacing={gridSpacing}>
           <Grid item lg={8} xs={12}>
-            <StatisticalBarChart isLoading={isLoading} chartDatas={statisticalData} />
+            <StatisticalBarChart 
+              isLoading={isLoading}
+              isRefreshing={isRefreshing}
+              chartDatas={statisticalData} 
+              startDate={startDate}
+              endDate={endDate}
+              onDateChange={handleDateChange}
+            />
           </Grid>
           <Grid item lg={4} xs={12}>
             <UserCard>
@@ -125,7 +148,8 @@ const Dashboard = () => {
 
 export default Dashboard;
 
-const getLineDataGroup = (statisticalData) => {
+
+const getLineDataGroup = (statisticalData, startDate, endDate) => {
   let groupedData = statisticalData.reduce((acc, cur) => {
     if (!acc[cur.Day]) {
       acc[cur.Day] = {
@@ -143,8 +167,8 @@ const getLineDataGroup = (statisticalData) => {
     return acc;
   }, {});
 
-  const lastSevenDays = getLastSevenDays();
-  return lastSevenDays.map((day) => {
+  const days = getDaysBetween(startDate, endDate);
+  return days.map((day) => {
     if (!groupedData[day]) {
       return {
         date: day,
@@ -159,18 +183,20 @@ const getLineDataGroup = (statisticalData) => {
   });
 };
 
-const getBarDataGroup = (data) => {
-  const lastSevenDays = getLastSevenDays();
+// Dashboard.js (continued)
+
+const getBarDataGroup = (data, startDate, endDate) => {
+  const days = getDaysBetween(startDate, endDate);
   const result = [];
   const map = new Map();
 
   for (const item of data) {
     if (!map.has(item.ModelName)) {
-      const newData = { name: item.ModelName, data: new Array(7).fill(0) };
+      const newData = { name: item.ModelName, data: new Array(days.length).fill(0) };
       map.set(item.ModelName, newData);
       result.push(newData);
     }
-    const index = lastSevenDays.indexOf(item.Day);
+    const index = days.indexOf(item.Day);
     if (index !== -1) {
       const rawQuotaValue = item.Quota;
       const calculatedQuotaValue = parseFloat(calculateQuota(rawQuotaValue));
@@ -183,7 +209,7 @@ const getBarDataGroup = (data) => {
     }
   }
 
-  return { data: result, xaxis: lastSevenDays };
+  return { data: result, xaxis: days };
 };
 
 const getLineCardOption = (lineDataGroup, field) => {

@@ -329,13 +329,10 @@ func GenerateAccessToken(c *gin.Context) {
 
 func GetUserDashboard(c *gin.Context) {
 	id := c.GetInt("id")
-	// 获取7天前 00:00:00 和 今天23:59:59  的秒时间戳
-	now := time.Now()
-	toDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	endOfDay := toDay.Add(time.Hour * 24).Add(-time.Second).Unix()
-	startOfDay := toDay.AddDate(0, 0, -7).Unix()
+	startTimestamp, _ := strconv.ParseInt(c.Query("start"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end"), 10, 64)
 
-	dashboards, err := model.SearchLogsByDayAndModel(id, int(startOfDay), int(endOfDay))
+	dashboards, err := model.SearchLogsByDayAndModel(id, startTimestamp, endTimestamp)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,

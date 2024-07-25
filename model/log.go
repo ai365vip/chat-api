@@ -228,7 +228,7 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	return logs, count, err
 }
 
-func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStatistics []*LogStatistic, err error) {
+func SearchLogsByDayAndModel(user_id int, startTimestamp, endTimestamp int64) (LogStatistics []*LogStatistic, err error) {
 	AdjustHour := common.AdjustHour
 	groupSelect := fmt.Sprintf("DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL %d HOUR), '%%Y-%%m-%%d') as day", AdjustHour)
 
@@ -241,18 +241,18 @@ func SearchLogsByDayAndModel(user_id, startTimestamp, endTimestamp int) (LogStat
 	}
 
 	err = DB.Raw(`
-		SELECT `+groupSelect+`,
-		model_name, sum(count) as request_count,
-		sum(quota) as quota,
-		sum(prompt_tokens) as prompt_tokens,
-		sum(completion_tokens) as completion_tokens
-		FROM quota_data
-		WHERE type=2
-		AND user_id= ?
-		AND created_at BETWEEN ? AND ?
-		GROUP BY day, model_name
-		ORDER BY day, model_name
-	`, user_id, startTimestamp, endTimestamp).Scan(&LogStatistics).Error
+        SELECT `+groupSelect+`,
+        model_name, sum(count) as request_count,
+        sum(quota) as quota,
+        sum(prompt_tokens) as prompt_tokens,
+        sum(completion_tokens) as completion_tokens
+        FROM quota_data
+        WHERE type=2
+        AND user_id= ?
+        AND created_at BETWEEN ? AND ?
+        GROUP BY day, model_name
+        ORDER BY day, model_name
+    `, user_id, startTimestamp, endTimestamp).Scan(&LogStatistics).Error
 
 	//fmt.Println(user_id, startTimestamp, endTimestamp)
 
