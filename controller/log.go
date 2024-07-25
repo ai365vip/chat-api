@@ -271,3 +271,26 @@ func DeleteHistoryLogs(c *gin.Context) {
 	})
 	return
 }
+
+func SearchHourlylogs(c *gin.Context) {
+	userID := c.GetInt("id")
+	tokenName := c.Query("token_name")
+	modelName := c.Query("model_name")
+	startTimestamp := c.Query("start_timestamp")
+	endTimestamp := c.Query("end_timestamp")
+
+	hourlyStats, modelStats, err := model.SearchHourlyAndModelStats(userID, tokenName, modelName, startTimestamp, endTimestamp)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success":     true,
+		"message":     "",
+		"hourly_data": hourlyStats,
+		"model_data":  modelStats,
+	})
+}

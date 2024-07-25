@@ -133,7 +133,7 @@ func SetApiRouter(router *gin.Engine) {
 		logRoute.GET("/self/stat", middleware.UserAuth(), controller.GetLogsSelfStat)
 		logRoute.GET("/search", middleware.AdminAuth(), controller.SearchAllLogs)
 		logRoute.GET("/self", middleware.UserAuth(), controller.GetUserLogs)
-
+		logRoute.GET("/hourly-stats", middleware.UserAuth(), controller.SearchHourlylogs)
 		logproRoute := apiRouter.Group("/logall")
 		logproRoute.GET("/stat", middleware.AdminAuth(), controller.GetLogsProStat)
 		logproRoute.GET("/search", middleware.AdminAuth(), controller.SearchProLogs)

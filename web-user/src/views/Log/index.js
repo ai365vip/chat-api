@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { showError,renderQuota } from 'utils/common';
-
+import { showError, renderQuota, isAdmin } from 'utils/common';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableContainer from '@mui/material/TableContainer';
@@ -10,20 +9,21 @@ import LinearProgress from '@mui/material/LinearProgress';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Toolbar from '@mui/material/Toolbar';
 import { useNavigate } from 'react-router';
-import { Button, Card, Box } from '@mui/material';
+import { Button, Card, Box, Grid } from '@mui/material';
 import LogTableRow from './component/TableRow';
 import LogTableHead from './component/TableHead';
 import TableToolBar from './component/TableToolBar';
 import { API } from 'utils/api';
-import { isAdmin } from 'utils/common';
 import { ITEMS_PER_PAGE } from 'constants';
-import { IconRefresh, IconSearch,IconPhoto } from '@tabler/icons-react';
+import { IconRefresh, IconSearch, IconPhoto, IconChartBar } from '@tabler/icons-react';
+import HourlyConsumptionChart from './component/HourlyConsumptionChart';
+import ModelUsageChart from './component/ModelUsageChart';
 
 export default function Log() {
   const now = new Date();
-  now.setHours(0, 0, 0, 0); 
-  const startOfTodayTimestamp = now.getTime() / 1000; 
-  const endTimestamp = new Date().getTime() / 1000 + 600; 
+  now.setHours(0, 0, 0, 0);
+  const startOfTodayTimestamp = now.getTime() / 1000;
+  const endTimestamp = new Date().getTime() / 1000 + 600;
   const originalKeyword = {
     p: 0,
     username: '',
@@ -34,6 +34,7 @@ export default function Log() {
     type: 0,
     channel: ''
   };
+
   const [logs, setLogs] = useState([]);
   const [activePage, setActivePage] = useState(0);
   const [searching, setSearching] = useState(false);
@@ -47,88 +48,119 @@ export default function Log() {
     quota: 0,
     tpm: 0,
     rpm: 0
-});
+  });
+  const [showChart, setShowChart] = useState(true);
+  const [hourlyData, setHourlyData] = useState([]);
+  const [modelData, setModelData] = useState([]);
+
+  const toggleChart = async () => {
+    if (!showChart) {
+      await fetchChartData();
+    }
+    setShowChart(!showChart);
+  };
+
+  const fetchChartData = async () => {
+    try {
+      const res = await API.get('/api/log/hourly-stats', { params: searchKeyword });
+      const { success, hourly_data, model_data } = res.data;
+      if (success) {
+        setHourlyData(hourly_data);
+        setModelData(model_data);
+      } else {
+        showError('获取统计数据失败');
+      }
+    } catch (error) {
+      showError('获取统计数据时发生错误');
+    }
+  };
+
   const loadLogs = async (startIdx) => {
     setSearching(true);
     const url = userIsAdmin ? '/api/log/' : '/api/log/self/';
-    const query = searchKeyword;
-
-    query.p = startIdx;
-    query.pageSize = rowsPerPage;
+    const query = { ...searchKeyword, p: startIdx, pageSize: rowsPerPage };
     if (!userIsAdmin) {
       delete query.username;
       delete query.channel;
     }
-    const res = await API.get(url, { params: query });
-    const { success, message, data,total } = res.data;
-    if (success) {
-      if (startIdx === 0) {
-        setLogs(data);
-        setLogCount(total);
+    try {
+      const res = await API.get(url, { params: query });
+      const { success, message, data, total } = res.data;
+      if (success) {
+        if (startIdx === 0) {
+          setLogs(data);
+          setLogCount(total);
+        } else {
+          let newLogs = [...logs];
+          newLogs.splice(startIdx * rowsPerPage, data.length, ...data);
+          setLogs(newLogs);
+          setLogCount(total);
+        }
       } else {
-        let newLogs = [...logs];
-        newLogs.splice(startIdx * rowsPerPage, data.length, ...data);
-        setLogs(newLogs);
-        setLogCount(total);
+        showError(message);
       }
-    } else {
-      showError(message);
+    } catch (error) {
+      showError('加载日志时发生错误');
+    } finally {
+      setSearching(false);
     }
-    setSearching(false);
   };
 
   const getLogSelfStat = async () => {
-    const query = searchKeyword;
+    const query = { ...searchKeyword };
     const url = 'api/log/self/stat';
-
     if (!userIsAdmin) {
       delete query.username;
       delete query.channel;
     }
-    const res = await API.get(url, { params: query });
-    const {success, message, data} = res.data;
-    if (success) {
+    try {
+      const res = await API.get(url, { params: query });
+      const { success, message, data } = res.data;
+      if (success) {
         setStat(data);
-    } else {
+      } else {
         showError(message);
+      }
+    } catch (error) {
+      showError('获取统计数据时发生错误');
     }
-};
+  };
 
   const onPaginationChange = (event, newPage) => {
-    (async () => {
-      if (newPage === Math.ceil(logs.length / rowsPerPage)) {
-        // 需要加载更多数据
-        await loadLogs(newPage);
-      }
-      setActivePage(newPage);
-    })();
+    if (newPage === Math.ceil(logs.length / rowsPerPage)) {
+      loadLogs(newPage);
+    }
+    setActivePage(newPage);
   };
-  
+
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setActivePage(0);
     loadLogs(0);
   };
 
-  
-
   const searchLogs = async (event) => {
     event.preventDefault();
     await loadLogs(0);
     setActivePage(0);
-    getLogSelfStat()
-    return;
+    getLogSelfStat();
+    if (showChart) {
+      await fetchChartData();
+    }
   };
 
   const handleSearchKeyword = (event) => {
     setSearchKeyword({ ...searchKeyword, [event.target.name]: event.target.value });
   };
 
-  // 处理刷新
   const handleRefresh = () => {
     setInitPage(true);
-    getLogSelfStat()
+    getLogSelfStat();
+    if (showChart) {
+      fetchChartData();
+    }
   };
+
   const goToLogPage = () => {
     navigate('/mjlog');
   };
@@ -136,14 +168,13 @@ export default function Log() {
   useEffect(() => {
     setSearchKeyword(originalKeyword);
     setActivePage(0);
-    loadLogs(0)
-      .then()
-      .catch((reason) => {
-        showError(reason);
-      });
+    loadLogs(0).catch((reason) => {
+      showError(reason);
+    });
     setInitPage(false);
-    getLogSelfStat()
-  }, [initPage,rowsPerPage]);
+    getLogSelfStat();
+    fetchChartData(); 
+  }, [initPage, rowsPerPage]);
 
   return (
     <>
@@ -154,7 +185,7 @@ export default function Log() {
         <Toolbar
           sx={{
             display: 'flex',
-            flexDirection: ['column', 'row'], // 在小屏设备上使用列布局，在大屏设备上使用行布局
+            flexDirection: ['column', 'row'],
             alignItems: 'center',
             justifyContent: 'space-between',
             p: (theme) => theme.spacing(0, 2),
@@ -162,14 +193,14 @@ export default function Log() {
             minHeight: '64px',
             '& h3': {
               fontSize: '1.2rem',
-              margin: '10px 0', // 在小屏设备上提供一些垂直间距
+              margin: '10px 0',
               flexGrow: 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-start'
             },
             '& .MuiButtonGroup-root': {
-              margin: (theme) => theme.spacing(1, 0), // 在小屏设备上提供一些垂直间距
+              margin: (theme) => theme.spacing(1, 0),
             }
           }}
         >
@@ -179,6 +210,9 @@ export default function Log() {
             TPM: <span style={{ color: '#2196f3' }}>{stat.tpm}</span>
           </h3>
           <ButtonGroup variant="outlined" aria-label="outlined primary button group">
+            <Button onClick={toggleChart} startIcon={<IconChartBar width={'18px'} />}>
+              {showChart ? '隐藏图表' : '显示图表'}
+            </Button>
             <Button onClick={handleRefresh} startIcon={<IconRefresh width={'18px'} />}>
               重置
             </Button>
@@ -191,6 +225,16 @@ export default function Log() {
           </ButtonGroup>
         </Toolbar>
 
+        {showChart && (
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <ModelUsageChart data={modelData} />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <HourlyConsumptionChart data={hourlyData} />
+            </Grid>
+          </Grid>
+        )}
 
         {searching && <LinearProgress />}
         <PerfectScrollbar component="div">
@@ -198,11 +242,10 @@ export default function Log() {
             <Table sx={{ minWidth: 800 }}>
               <LogTableHead userIsAdmin={userIsAdmin} />
               <TableBody>
-              {logs && logs.length > 0 && logs.slice(activePage * rowsPerPage, (activePage + 1) * rowsPerPage).map((row, index) => (
-                <LogTableRow item={row} key={`${row.id}_${index}`} userIsAdmin={userIsAdmin} />
-              ))}
-            </TableBody>
-
+                {logs && logs.length > 0 && logs.slice(activePage * rowsPerPage, (activePage + 1) * rowsPerPage).map((row, index) => (
+                  <LogTableRow item={row} key={`${row.id}_${index}`} userIsAdmin={userIsAdmin} />
+                ))}
+              </TableBody>
             </Table>
           </TableContainer>
         </PerfectScrollbar>
@@ -213,11 +256,8 @@ export default function Log() {
           rowsPerPage={rowsPerPage}
           onPageChange={onPaginationChange}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[10, 25, 50, 100]}  // 确保这里的选项包含了默认的每页行数
+          rowsPerPageOptions={[10, 25, 50, 100]}
         />
-
-
-
       </Card>
     </>
   );

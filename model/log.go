@@ -68,6 +68,18 @@ const (
 	LogTypeSystem
 )
 
+type HourlyStats struct {
+	Hour   string  `json:"hour"`
+	Count  int     `json:"count"`
+	Amount float64 `json:"amount"`
+}
+
+type ModelStats struct {
+	ModelName string  `json:"model_name"`
+	Count     int     `json:"count"`
+	Amount    float64 `json:"amount"`
+}
+
 func GetLogByKey(key string) (logs []*Log, err error) {
 	err = DB.Joins("left join tokens on tokens.id = logs.token_id").
 		Where("tokens.key = ?", strings.Split(key, "-")[1]).
@@ -414,4 +426,60 @@ func SumUsedToken(logType int, startTimestamp int64, endTimestamp int64, modelNa
 func DeleteOldLog(targetTimestamp int64) (int64, error) {
 	result := DB.Where("created_at < ?", targetTimestamp).Delete(&Log{})
 	return result.RowsAffected, result.Error
+}
+func SearchHourlyAndModelStats(userID int, tokenName, modelName, startTimestamp, endTimestamp string) (hourlyStats []HourlyStats, modelStats []ModelStats, err error) {
+	var hourlySelect, groupSelect string
+	AdjustHour := common.AdjustHour
+	switch {
+	case common.UsingPostgreSQL:
+		hourlySelect = "TO_CHAR(to_timestamp(created_at) + INTERVAL '%d hours', 'HH24:00') as hour"
+		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at) + INTERVAL '%d hours'), 'YYYY-MM-DD') as day"
+	case common.UsingSQLite:
+		hourlySelect = "strftime('%H:00', datetime(created_at, 'unixepoch', '+%d hours')) as hour"
+		groupSelect = "strftime('%%Y-%%m-%%d', datetime(created_at, 'unixepoch', '+%d hours')) as day"
+	default: // MySQL/MariaDB
+		hourlySelect = "DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL %d HOUR), '%%H:00') as hour"
+		groupSelect = "DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL %d HOUR), '%%Y-%%m-%%d') as day"
+	}
+
+	hourlySelect = fmt.Sprintf(hourlySelect, AdjustHour)
+	groupSelect = fmt.Sprintf(groupSelect, AdjustHour)
+
+	hourlyQuery := DB.Table("quota_data").
+		Select(hourlySelect + ", SUM(count) as count, SUM(quota)/500000 as amount")
+
+	modelQuery := DB.Table("quota_data").
+		Select("model_name, SUM(count) as count, SUM(quota)/500000 as amount")
+
+	// 添加条件
+	conditions := make([]string, 0)
+	values := make([]interface{}, 0)
+
+	conditions = append(conditions, "created_at BETWEEN ? AND ?")
+	values = append(values, startTimestamp, endTimestamp)
+
+	conditions = append(conditions, "user_id = ?")
+	values = append(values, userID)
+
+	if tokenName != "" {
+		conditions = append(conditions, "token_name LIKE ?")
+		values = append(values, tokenName+"%")
+	}
+	if modelName != "" {
+		conditions = append(conditions, "model_name LIKE ?")
+		values = append(values, modelName+"%")
+	}
+
+	whereClause := strings.Join(conditions, " AND ")
+
+	hourlyQuery = hourlyQuery.Where(whereClause, values...).Group("hour").Order("hour")
+	modelQuery = modelQuery.Where(whereClause, values...).Group("model_name").Order("count DESC")
+
+	err = hourlyQuery.Find(&hourlyStats).Error
+	if err != nil {
+		return
+	}
+
+	err = modelQuery.Find(&modelStats).Error
+	return
 }
