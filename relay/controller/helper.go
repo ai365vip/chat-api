@@ -269,7 +269,6 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 		logModel = "gpt-4-gizmo-*"
 		logContent += fmt.Sprintf("，模型 %s", textRequest.Model)
 	}
-	log.Println(meta.RelayIp)
 	if quota != 0 {
 		model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, meta.ChannelName, promptTokens, completionTokens, textRequest.Model, meta.TokenName, quota, logContent, meta.TokenId, multiplier, userQuota, int(duration), meta.IsStream, meta.AttemptsLog, meta.RelayIp)
 		model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
