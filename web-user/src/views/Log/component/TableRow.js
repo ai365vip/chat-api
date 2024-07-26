@@ -126,6 +126,7 @@ export default function LogTableRow({ item }) {
             {item.model_name}
           </Label>
         </TableCell>
+      <TableCell>{item.ip}</TableCell>  
       <TableCell>
         {renderUseTime(item.use_time)}
         {renderIsStream(item.is_stream)}

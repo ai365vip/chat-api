@@ -171,6 +171,7 @@ func TokenAuth() func(c *gin.Context) {
 			abortWithMessage(c, http.StatusForbidden, "用户已被封禁")
 			return
 		}
+		c.Set("relayIp", c.ClientIP())
 		c.Set("is_tools", false)
 		if strings.HasPrefix(c.Request.URL.Path, "/v1/chat/completions") || strings.HasPrefix(c.Request.URL.Path, "/v1/completions") {
 			var reqBody relaymodel.GeneralOpenAIRequest

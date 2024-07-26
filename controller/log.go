@@ -79,6 +79,7 @@ func GetUserLogs(c *gin.Context) {
 			IsStream:         log.IsStream,
 			Multiplier:       log.Multiplier,
 			UserQuota:        log.UserQuota,
+			Ip:               log.Ip,
 		}
 		responseLogs = append(responseLogs, responseLog)
 	}

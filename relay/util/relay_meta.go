@@ -36,6 +36,7 @@ type RelayMeta struct {
 	BillingEnabled  bool
 	UnlimitedQuota  bool
 	ProxyURL        string
+	RelayIp         string
 }
 
 func GetRelayMeta(c *gin.Context) *RelayMeta {
@@ -58,6 +59,7 @@ func GetRelayMeta(c *gin.Context) *RelayMeta {
 		BillingEnabled: c.GetBool("billing_enabled"),
 		UnlimitedQuota: c.GetBool("token_unlimited_quota"),
 		ProxyURL:       c.GetString("proxy_url"),
+		RelayIp:        c.GetString("relayIp"),
 	}
 
 	if meta.BaseURL == "" {

@@ -9,6 +9,7 @@ const LogTableHead = () => {
         <TableCell>令牌</TableCell>
         <TableCell>类型</TableCell>
         <TableCell>模型</TableCell>
+        <TableCell>IP</TableCell>
         <TableCell>用时</TableCell>
         <TableCell>提示</TableCell>
         <TableCell>补全</TableCell>

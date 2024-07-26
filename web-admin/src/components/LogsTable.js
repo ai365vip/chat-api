@@ -171,6 +171,22 @@ const LogsTable = () => {
             },
         },
         {
+            title: 'IP',
+            dataIndex: 'ip',
+            render: (text, record, index) => {
+                return (
+                    record.type === 0 || record.type === 2 ?
+                        <div>
+                            <Tag color={stringToColor(text)} size='large' onClick={() => {
+                                copyText(text)
+                            }}> {text} </Tag>
+                        </div>
+                        :
+                        <></>
+                );
+            },
+        },
+        {
             title: '用时',
             dataIndex: 'use_time',
             render: (text, record, index) => {

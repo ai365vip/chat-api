@@ -31,6 +31,7 @@ type Log struct {
 	Multiplier       string `json:"multiplier"`
 	UserQuota        int    `json:"userQuota"`
 	AttemptsLog      string `json:"attempts_log"`
+	Ip               string `json:"ip"`
 }
 
 type LogStatistic struct {
@@ -58,6 +59,7 @@ type UserLogResponse struct {
 	IsStream         bool   `json:"is_stream" gorm:"default:false"`
 	Multiplier       string `json:"multiplier"`
 	UserQuota        int    `json:"userQuota"`
+	Ip               string `json:"ip"`
 }
 
 const (
@@ -165,7 +167,7 @@ func RecordLog(userId int, logType int, quota int, multiplier string) {
 
 }
 
-func RecordConsumeLog(ctx context.Context, userId int, channelId int, channelName string, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int, multiplier string, userQuota int, useTimeSeconds int, isStream bool, AttemptsLog string) {
+func RecordConsumeLog(ctx context.Context, userId int, channelId int, channelName string, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string, tokenId int, multiplier string, userQuota int, useTimeSeconds int, isStream bool, AttemptsLog string, Ip string) {
 	common.LogInfo(ctx, fmt.Sprintf("record consume log: userId=%d, 用户调用前余额=%d, channelId=%d, promptTokens=%d, completionTokens=%d, modelName=%s, tokenName=%s, quota=%d,multiplier=%s", userId, userQuota, channelId, promptTokens, completionTokens, modelName, tokenName, quota, multiplier))
 	if !config.LogConsumeEnabled {
 		return
@@ -190,6 +192,7 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, channelNam
 		UseTime:          useTimeSeconds,
 		IsStream:         isStream,
 		AttemptsLog:      AttemptsLog,
+		Ip:               Ip,
 	}
 	err := DB.Create(log).Error
 	if err != nil {
