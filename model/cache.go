@@ -127,19 +127,22 @@ func CacheDecreaseUserQuota(ctx context.Context, id int, quota int) error {
 	key := fmt.Sprintf("user_quota:%d", id)
 
 	err := common.RedisDecrease(key, int64(quota))
-	if err != nil {
-		if err.Error() == "Key does not exist" {
-			// 如果键不存在，从数据库获取并重试
-			if _, err := fetchAndUpdateUserQuota(ctx, id); err != nil {
-				return err
-			}
-			// 重试减少操作
-			return CacheDecreaseUserQuota(ctx, id, quota)
-		}
-		return err
+	if err == nil {
+		return nil // 操作成功
 	}
 
-	return nil
+	if err.Error() == "Key does not exist" {
+		// 如果键不存在，从数据库获取并更新缓存
+		_, fetchErr := fetchAndUpdateUserQuota(ctx, id)
+		if fetchErr != nil {
+			return fetchErr // 如果获取失败，直接返回错误
+		}
+		// 再次尝试减少配额
+		return common.RedisDecrease(key, int64(quota))
+	}
+
+	// 如果是其他错误，直接返回
+	return err
 }
 
 func CacheIsUserEnabled(userId int) (bool, error) {
