@@ -40,6 +40,7 @@ type User struct {
 	CreatedAt        int64          `json:"created_at" gorm:"index"`
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
 	LastLoginAt      int64          `json:"last_login_at"`
+	Version          int64          `json:"version" gorm:"type:bigint;default:0"`
 }
 
 type RechargeRecord struct {
@@ -50,6 +51,7 @@ type RechargeRecord struct {
 	EndDate   int64 `json:"end_date"`             // 充值的结束时间
 	CreatedAt int64 `json:"created_at"`           // 创建时间戳
 	UpdatedAt int64 `json:"updated_at"`           // 更新时间戳
+	Version   int64 `json:"version" gorm:"type:bigint;default:0"`
 }
 
 // CheckUserExistOrDeleted check if user exist or deleted, if not exist, return false, nil, if deleted or exist, return true, nil
@@ -623,38 +625,100 @@ func DecreaseUserQuota(id int, quota int) (err error) {
 }
 
 func decreaseUserQuota(userID int, quotaToDecrease int) (err error) {
-	// 启动事务处理配额减少和辅助表记录更新
-	err = DB.Transaction(func(tx *gorm.DB) error {
-		var records []RechargeRecord
-		err := tx.Where("user_id = ?", userID).Order("end_date ASC").Find(&records).Error
-		if err != nil {
-			return err
-		}
-		// 更新用户主表中的配额，减去所有记录中减去的总额
-		if err := tx.Model(&User{}).Where("id = ?", userID).Update("quota", gorm.Expr("quota - ?", quotaToDecrease)).Error; err != nil {
-			return err
-		}
+	maxRetries := 2
+	for retries := 0; retries < maxRetries; retries++ {
+		err = DB.Transaction(func(tx *gorm.DB) error {
+			// 1. 获取用户信息，包括当前配额和版本
+			var user User
+			if err := tx.Where("id = ?", userID).First(&user).Error; err != nil {
+				return err
+			}
 
-		// 逐条减去每个记录的配额
-		for _, record := range records {
-			// 只处理剩余额度大于0的记录
-			if record.Amount > 0 {
-				if record.Amount <= quotaToDecrease {
-					record.Amount = 0
+			// 2. 检查用户总配额是否足够
+			if user.Quota < quotaToDecrease {
+				return fmt.Errorf("insufficient user quota: available %d, required %d", user.Quota, quotaToDecrease)
+			}
+
+			// 3. 使用乐观锁更新用户配额
+			newVersion := time.Now().UnixNano()
+			result := tx.Model(&User{}).
+				Where("id = ? AND version = ?", userID, user.Version).
+				Updates(map[string]interface{}{
+					"quota":   gorm.Expr("quota - ?", quotaToDecrease),
+					"version": newVersion,
+				})
+
+			if result.RowsAffected == 0 {
+				return errors.New("version mismatch")
+			}
+
+			// 4. 获取充值记录
+			var records []RechargeRecord
+			if err := tx.Where("user_id = ? AND amount > 0", userID).
+				Order("end_date ASC").
+				Find(&records).Error; err != nil {
+				return err
+			}
+
+			// 如果没有充值记录，直接返回，不进行后续操作
+			if len(records) == 0 {
+				log.Printf("No recharge records found for user %d, quota decreased without updating records", userID)
+				return nil
+			}
+
+			// 5. 更新充值记录（使用乐观锁）
+			remainingDecrease := quotaToDecrease
+			for i := range records {
+				var newAmount int
+				if records[i].Amount <= remainingDecrease {
+					newAmount = 0
+					remainingDecrease -= records[i].Amount
 				} else {
-					record.Amount -= quotaToDecrease
+					newAmount = records[i].Amount - remainingDecrease
+					remainingDecrease = 0
 				}
 
-				// 更新辅助表中的记录，反映新的剩余额度
-				if err := tx.Save(&record).Error; err != nil {
-					return err
+				newRecordVersion := time.Now().UnixNano()
+				result := tx.Model(&RechargeRecord{}).
+					Where("id = ? AND version = ?", records[i].ID, records[i].Version).
+					Updates(map[string]interface{}{
+						"amount":  newAmount,
+						"version": newRecordVersion,
+					})
+
+				if result.RowsAffected == 0 {
+					return errors.New("recharge record version mismatch")
+				}
+
+				if remainingDecrease == 0 {
+					break
 				}
 			}
+
+			// 6. 检查是否所有配额都已正确扣除
+			if remainingDecrease > 0 {
+				// 记录不一致情况，但不返回错误
+				log.Printf("Quota inconsistency detected for user %d: remaining decrease %d", userID, remainingDecrease)
+			}
+
+			return nil
+		})
+
+		if err == nil {
+			// 事务成功，退出循环
+			return nil
 		}
 
-		return nil
-	})
-	return err
+		if err.Error() != "version mismatch" && err.Error() != "recharge record version mismatch" {
+			// 如果错误不是由版本不匹配引起的，直接返回错误
+			return err
+		}
+
+		// 版本不匹配，等待一段时间后重试
+		time.Sleep(time.Millisecond * time.Duration(10*(retries+1)))
+	}
+
+	return errors.New("failed to update user quota after max retries")
 }
 
 func GetRootUserEmail() (email string) {
