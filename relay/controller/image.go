@@ -148,7 +148,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 		if err != nil {
 			common.SysError("error consuming token remain quota: " + err.Error())
 		}
-		err = model.CacheDecreaseUserQuota(meta.UserId, quota)
+		err = model.CacheDecreaseUserQuota(ctx, meta.UserId, quota)
 		if err != nil {
 			logger.Error(ctx, "decrease_user_quota_failed"+err.Error())
 		}

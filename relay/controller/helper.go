@@ -160,7 +160,7 @@ func preConsumeQuota(ctx context.Context, preConsumedQuota int, meta *util.Relay
 	if userQuota-preConsumedQuota < 0 {
 		return preConsumedQuota, openai.ErrorWrapper(errors.New("user quota is not enough"), "insufficient_user_quota", http.StatusForbidden)
 	}
-	err = model.CacheDecreaseUserQuota(meta.UserId, preConsumedQuota)
+	err = model.CacheDecreaseUserQuota(ctx, meta.UserId, preConsumedQuota)
 	if err != nil {
 		return preConsumedQuota, openai.ErrorWrapper(err, "decrease_user_quota_failed", http.StatusInternalServerError)
 	}
@@ -256,7 +256,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 	if err != nil {
 		logger.Error(ctx, "error consuming token remain quota: "+err.Error())
 	}
-	err = model.CacheDecreaseUserQuota(meta.UserId, quotaDelta)
+	err = model.CacheDecreaseUserQuota(ctx, meta.UserId, quotaDelta)
 	if err != nil {
 		logger.Error(ctx, "decrease_user_quota_failed"+err.Error())
 	}
