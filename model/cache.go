@@ -75,59 +75,35 @@ func CacheGetUserGroup(id int) (group string, err error) {
 	return group, err
 }
 
-const (
-	quotaKeyFormat = "user_quota:%d"
-	lockKeyFormat  = "user_quota_lock:%d"
-	lockTimeout    = 5 * time.Second
-)
-
 func fetchAndUpdateUserQuota(ctx context.Context, id int) (quota int, err error) {
-	lockKey := fmt.Sprintf(lockKeyFormat, id)
-	quotaKey := fmt.Sprintf(quotaKeyFormat, id)
-
-	// 尝试获取分布式锁
-	err = common.RedisSet(lockKey, "1", lockTimeout)
-	if err != nil {
-		// 如果无法获取锁，等待一段时间后重试获取缓存
-		time.Sleep(100 * time.Millisecond)
-		return CacheGetUserQuota(ctx, id)
-	}
-	defer common.RedisDel(lockKey)
-
 	quota, err = GetUserQuota(id)
 	if err != nil {
 		return 0, err
 	}
-
-	err = common.RedisSet(quotaKey, fmt.Sprintf("%d", quota), time.Duration(UserId2QuotaCacheSeconds)*time.Second)
+	err = common.RedisSet(fmt.Sprintf("user_quota:%d", id), fmt.Sprintf("%d", quota), time.Duration(UserId2QuotaCacheSeconds)*time.Second)
 	if err != nil {
 		common.SysError("Redis set user quota error: " + err.Error())
 		common.Error(ctx, "Redis set user quota error: "+err.Error())
 	}
-	return quota, nil
+	return
 }
 
 func CacheGetUserQuota(ctx context.Context, id int) (quota int, err error) {
 	if !common.RedisEnabled {
 		return GetUserQuota(id)
 	}
-
-	quotaKey := fmt.Sprintf(quotaKeyFormat, id)
-	quotaString, err := common.RedisGet(quotaKey)
+	quotaString, err := common.RedisGet(fmt.Sprintf("user_quota:%d", id))
 	if err != nil {
 		return fetchAndUpdateUserQuota(ctx, id)
 	}
-
 	quota, err = strconv.Atoi(quotaString)
 	if err != nil {
-		return 0, err
+		return 0, nil
 	}
-
-	if quota <= config.PreConsumedQuota {
-		common.Infof(ctx, "user %d's cached quota is too low: %d, refreshing from db", id, quota)
+	if quota <= config.PreConsumedQuota { // when user's quota is less than pre-consumed quota, we need to fetch from db
+		common.Infof(ctx, "user %d's cached quota is too low: %d, refreshing from db", quota, id)
 		return fetchAndUpdateUserQuota(ctx, id)
 	}
-
 	return quota, nil
 }
 
@@ -135,54 +111,37 @@ func CacheUpdateUserQuota(ctx context.Context, id int) error {
 	if !common.RedisEnabled {
 		return nil
 	}
-	_, err := fetchAndUpdateUserQuota(ctx, id)
+	quota, err := CacheGetUserQuota(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = common.RedisSet(fmt.Sprintf("user_quota:%d", id), fmt.Sprintf("%d", quota), time.Duration(UserId2QuotaCacheSeconds)*time.Second)
 	return err
 }
 
-func CacheDecreaseUserQuota(ctx context.Context, id int, decreaseAmount int) error {
+func CacheDecreaseUserQuota(ctx context.Context, id int, quota int) error {
 	if !common.RedisEnabled {
 		return nil
 	}
 
-	quotaKey := fmt.Sprintf(quotaKeyFormat, id)
-	lockKey := fmt.Sprintf(lockKeyFormat, id)
+	key := fmt.Sprintf("user_quota:%d", id)
 
-	// 尝试获取分布式锁
-	err := common.RedisSet(lockKey, "1", lockTimeout)
+	err := common.RedisDecrease(key, int64(quota))
 	if err != nil {
-		return fmt.Errorf("failed to acquire lock for user %d", id)
-	}
-	defer common.RedisDel(lockKey)
-
-	// 获取当前配额
-	quotaString, err := common.RedisGet(quotaKey)
-	if err != nil {
-		// 缓存中没有配额信息，需要从数据库获取
-		_, err := fetchAndUpdateUserQuota(ctx, id)
-		if err != nil {
-			return err
+		if err.Error() == "Key does not exist" {
+			// 如果键不存在，从数据库获取并重试
+			if _, err := fetchAndUpdateUserQuota(ctx, id); err != nil {
+				return err
+			}
+			// 重试减少操作
+			return CacheDecreaseUserQuota(ctx, id, quota)
 		}
-		// 重新尝试减少配额
-		return CacheDecreaseUserQuota(ctx, id, decreaseAmount)
-	}
-
-	quota, err := strconv.Atoi(quotaString)
-	if err != nil {
-		return err
-	}
-
-	if quota < decreaseAmount {
-		return fmt.Errorf("insufficient quota for user %d", id)
-	}
-
-	// 减少配额
-	err = common.RedisDecrease(quotaKey, int64(decreaseAmount))
-	if err != nil {
 		return err
 	}
 
 	return nil
 }
+
 func CacheIsUserEnabled(userId int) (bool, error) {
 	if !common.RedisEnabled {
 		return IsUserEnabled(userId)
