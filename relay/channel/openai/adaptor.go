@@ -121,10 +121,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		}
 		usage.CompletionTokens += toolCount * 7
 		if usage.CompletionTokens == 0 {
-			if config.BlankReplyRetryEnabled &&
-				!strings.HasPrefix(meta.OriginModelName, "tts") &&
-				!strings.HasPrefix(meta.OriginModelName, "whisper-1") &&
-				!strings.HasPrefix(meta.OriginModelName, "text") {
+			if config.BlankReplyRetryEnabled {
 				return "", nil, &model.ErrorWithStatusCode{
 					Error: model.Error{
 						Message: "No completion tokens generated",
