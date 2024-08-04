@@ -111,7 +111,6 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		} else {
 			err, responseText, toolCount = StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
 		}
-
 		aitext = responseText
 		if usage == nil || usage.TotalTokens == 0 {
 			usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
