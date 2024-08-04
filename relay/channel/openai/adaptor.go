@@ -106,7 +106,12 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 
 		var responseText string
 		var toolCount int
-		err, responseText, toolCount = StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
+		if meta.FixedContent != "" {
+			err, responseText, toolCount = StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
+		} else {
+			err, responseText, toolCount = StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
+		}
+
 		aitext = responseText
 		if usage == nil || usage.TotalTokens == 0 {
 			usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
@@ -117,7 +122,10 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		}
 		usage.CompletionTokens += toolCount * 7
 		if usage.CompletionTokens == 0 {
-			if config.BlankReplyRetryEnabled {
+			if config.BlankReplyRetryEnabled &&
+				!strings.HasPrefix(meta.OriginModelName, "tts") &&
+				!strings.HasPrefix(meta.OriginModelName, "whisper-1") &&
+				!strings.HasPrefix(meta.OriginModelName, "text") {
 				return "", nil, &model.ErrorWithStatusCode{
 					Error: model.Error{
 						Message: "No completion tokens generated",
@@ -129,6 +137,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 				}
 			}
 		}
+
 	} else {
 		switch meta.Mode {
 		case constant.RelayModeImagesGenerations:
