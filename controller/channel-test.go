@@ -81,9 +81,7 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	c.Set(ctxkey.Config, cfg)
 	middleware.SetupContextForSelectedChannel(c, channel, "", "")
 	meta := util.GetRelayMeta(c)
-
 	apiType := constant.ChannelType2APIType(channel.Type)
-
 	adaptor := helper.GetAdaptor(apiType)
 	if adaptor == nil {
 		return fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), nil
