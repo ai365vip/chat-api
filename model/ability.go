@@ -28,6 +28,7 @@ type Ability struct {
 
 type ModelBillingInfo struct {
 	Model                string  `json:"model"`
+	ModelType            string  `json:"model_type"`
 	ModelRatio           float64 `json:"model_ratio"` // ModelRatio中的值
 	ModeCompletionlRatio float64 `json:"model_completion_ratio"`
 	ModelPrice           float64 `json:"model_ratio_2"` // ModelPrice中的值（如果有的话）
