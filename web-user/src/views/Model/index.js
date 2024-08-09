@@ -9,17 +9,53 @@ import {
   TableCell,
   TableContainer,
   TableRow,
-  Paper
+  Paper,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import ModelTableHead from './component/TableHead';
 import { API } from 'utils/api';
 
+function formatNumber(num) {
+  if (num % 1 !== 0) {
+      const decimalPart = num.toString().split('.')[1];
+      if (decimalPart.length > 5) {
+          return num.toFixed(5);
+      } else {
+          return num;
+      }
+  } else {
+      return num;
+  }
+}
+
 export default function Log() {
   const [models, setModels] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState('');
 
-  const loadModels = async () => {
+  const loadGroups = async () => {
     try {
-      let res = await API.get('/api/user/modelbilling');
+      let res = await API.get('/api/user/group');
+      const { success, message, data } = res.data;
+      if (success) {
+        setGroups(data);
+        if (data.length > 0) {
+          setSelectedGroup(data[0].key);
+        }
+      } else {
+        showError(message);
+      }
+    } catch (err) {
+      showError(err.message);
+    }
+  };
+
+  const loadModels = async (group) => {
+    try {
+      let res = await API.get(`/api/user/modelbilling?group=${group}`);
       const { success, message, data } = res.data;
       if (success && Array.isArray(data)) {
         setModels(data);
@@ -34,13 +70,45 @@ export default function Log() {
   };
 
   useEffect(() => {
-    loadModels();
+    loadGroups();
   }, []);
+
+  useEffect(() => {
+    if (selectedGroup) {
+      loadModels(selectedGroup);
+    }
+  }, [selectedGroup]);
+
+  const handleGroupChange = (event) => {
+    setSelectedGroup(event.target.value);
+  };
 
   return (
     <>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
-        <Typography variant="h4">Model Billing</Typography>
+      <Stack direction="row" alignItems="center" mb={5}>
+        <Typography variant="h4" sx={{ marginRight: 2 }}>可用模型</Typography>
+        <FormControl size="small" sx={{ minWidth: 80 }}> {/* 设置最小宽度 */}
+          <InputLabel id="group-select-label">分组</InputLabel>
+          <Select
+            labelId="group-select-label"
+            value={selectedGroup}
+            label="分组"
+            onChange={handleGroupChange}
+            autoWidth // 添加自动宽度
+            sx={{
+              fontSize: '0.875rem', // 减小字体大小
+              '& .MuiSelect-select': {
+                paddingRight: '24px', // 为下拉箭头留出空间
+              }
+            }}
+          >
+            {groups.map((group) => (
+              <MenuItem key={group.key} value={group.key}>
+                {group.value}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Stack>
       <Card>
         <TableContainer component={Paper}>
@@ -54,17 +122,17 @@ export default function Log() {
                     
                     <TableCell align="right">
                       {modelInfo.model_ratio_2 !== undefined && modelInfo.model_ratio_2 !== 0 ?
-                        modelInfo.model_ratio_2.toFixed(4) : '无'}
+                        modelInfo.model_ratio_2.toFixed(3) : '无'}
                     </TableCell>
 
                     <TableCell align="right">
                       {modelInfo.model_ratio !== undefined && modelInfo.model_ratio !== 0 ?
-                        (modelInfo.model_ratio * 0.002).toFixed(4) : '无'}
+                      formatNumber(modelInfo.model_ratio * 0.002) : '无'}
                     </TableCell>
 
                     <TableCell align="right">
                       {modelInfo.model_ratio !== undefined && modelInfo.model_ratio !== 0 ?
-                        (modelInfo.model_ratio * 0.002 * 2).toFixed(4) : '无'}
+                        formatNumber(modelInfo.model_completion_ratio * 0.002) : '无'}
                     </TableCell>
                   </TableRow>
                 ))
