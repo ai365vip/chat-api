@@ -505,14 +505,11 @@ func GetUserModels(c *gin.Context) {
 func GetUserModelsBilling(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		// 如果无法将参数转换为整数，则尝试从上下文中获取整数类型的ID
 		id = c.GetInt("id")
 	}
 
-	// 假设 model.GetUserById 函数会根据提供的ID获取用户信息
 	user, err := model.GetUserById(id, true)
 	if err != nil {
-		// 如果发生错误，返回错误信息
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": err.Error(),
@@ -523,9 +520,9 @@ func GetUserModelsBilling(c *gin.Context) {
 	if group == "" {
 		group = user.Group
 	}
+	search := c.Query("search")
 
-	// 获取指定组的模型及其计费信息
-	models, err := model.GetGroupModelsBilling(group)
+	models, err := model.GetGroupModelsBilling(group, search)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -534,7 +531,6 @@ func GetUserModelsBilling(c *gin.Context) {
 		return
 	}
 
-	// 成功获取数据后，返回JSON响应
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

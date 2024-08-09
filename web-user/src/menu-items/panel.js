@@ -64,11 +64,11 @@ const panel = {
       breadcrumbs: false
     },
     {
-      id: 'about',
-      title: '使用教程',
+      id: 'model',
+      title: '模型计费',
       type: 'item',
-      url: '/about',
-      icon: icons.IconInfoCircle,
+      url: '/model',
+      icon: icons.IconSitemap,
       breadcrumbs: false
     },
     {
@@ -78,6 +78,14 @@ const panel = {
       url: '/profile',
       icon: icons.IconUserScan,
       breadcrumbs: false,
+    },
+    {
+      id: 'about',
+      title: '使用教程',
+      type: 'item',
+      url: '/about',
+      icon: icons.IconInfoCircle,
+      breadcrumbs: false
     }
   ]
 };

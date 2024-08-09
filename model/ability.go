@@ -51,14 +51,18 @@ func GetGroupModels(group string) ([]string, error) {
 	return models, err
 }
 
-func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
+func GetGroupModelsBilling(group string, search string) ([]ModelBillingInfo, error) {
 	var models []string
 	groupCol := "`group`"
 	if common.UsingPostgreSQL {
 		groupCol = `"group"`
 	}
 
-	err := DB.Table("abilities").Where(groupCol+" = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models).Error
+	query := DB.Table("abilities").Where(groupCol+" = ? and enabled = ?", group, true)
+	if search != "" {
+		query = query.Where("model LIKE ?", "%"+search+"%")
+	}
+	err := query.Distinct("model").Pluck("model", &models).Error
 	if err != nil {
 		return nil, err
 	}
@@ -160,6 +164,7 @@ func GetGroupModelsBilling(group string) ([]ModelBillingInfo, error) {
 		}
 
 		modelInfo.Model = model
+		modelInfo.ModelType = common.GetModelType(model)
 		modelsBillingInfos = append(modelsBillingInfos, modelInfo)
 	}
 

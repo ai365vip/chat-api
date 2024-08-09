@@ -233,6 +233,80 @@ var ModelPrice = map[string]float64{
 	"midjourney":         0.1,
 }
 
+func GetModelType(modelName string) string {
+	if strings.HasPrefix(modelName, "360") {
+		return "360"
+	}
+	if strings.HasPrefix(modelName, "openai") ||
+		strings.HasPrefix(modelName, "gpt-") ||
+		modelName == "dall-e-2" || modelName == "dall-e-3" ||
+		modelName == "whisper-1" ||
+		strings.HasPrefix(modelName, "tts-") || strings.HasPrefix(modelName, "text-") {
+		return "OpenAI"
+	}
+	if strings.HasPrefix(modelName, "midjourney") || modelName == "mj-chat" {
+		return "Midjourney"
+	}
+	if strings.HasPrefix(modelName, "claude") {
+		return "Anthropic"
+	}
+	if strings.HasPrefix(modelName, "PaLM") {
+		return "Google PaLM"
+	}
+	if strings.HasPrefix(modelName, "ERNIE") ||
+		strings.HasPrefix(modelName, "BLOOMZ") ||
+		strings.HasPrefix(modelName, "bge-") ||
+		strings.HasPrefix(modelName, "tao-") {
+		return "Baidu"
+	}
+	if strings.HasPrefix(modelName, "chatglm") || strings.HasPrefix(modelName, "glm-") {
+		return "Zhipu"
+	}
+	if modelName == "text-embedding-v1" || strings.HasPrefix(modelName, "qwen-") || strings.HasPrefix(modelName, "ali-") {
+		return "Alibaba"
+	}
+	if strings.HasPrefix(modelName, "SparkDesk") {
+		return "Xunfei"
+	}
+	if modelName == "ChatPro" || modelName == "ChatStd" || modelName == "hunyuan" {
+		return "Tencent"
+	}
+	if modelName == "text-embedding-004" || strings.HasPrefix(modelName, "gemini") {
+		return "Google Gemini"
+	}
+	if strings.HasPrefix(modelName, "moonshot") {
+		return "Moonshot AI"
+	}
+	if strings.HasPrefix(modelName, "Baichuan") {
+		return "Baichuan"
+	}
+	if strings.HasPrefix(modelName, "abab") {
+		return "MiniMax"
+	}
+	if strings.HasPrefix(modelName, "open-") || strings.HasPrefix(modelName, "mistral-") {
+		return "Mistral AI"
+	}
+	if strings.HasPrefix(modelName, "groq") {
+		return "Groq"
+	}
+	if strings.HasPrefix(modelName, "llama") || strings.HasPrefix(modelName, "qwen:") {
+		return "Llama"
+	}
+	if strings.HasPrefix(modelName, "yi-") {
+		return "Yi"
+	}
+
+	// 处理 text-embedding 的情况
+	if strings.HasPrefix(modelName, "text-embedding") {
+		if strings.Contains(modelName, "ada") {
+			return "OpenAI"
+		}
+		// 对于其他 text-embedding，我们可能需要更多信息来确定它们的提供商
+		return "Other Embedding"
+	}
+
+	return "Other"
+}
 func ModelRatioJSONString() string {
 	jsonBytes, err := json.Marshal(ModelRatio)
 	if err != nil {
