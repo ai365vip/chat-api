@@ -37,25 +37,29 @@ export default function Log() {
   const [selectedGroup, setSelectedGroup] = useState('');
 
   const loadGroups = async () => {
-    try {
-      let res = await API.get('/api/user/group');
-      const { success, message, data } = res.data;
-      if (success) {
-        setGroups(data);
-        if (data.length > 0) {
-          setSelectedGroup(data[0].key);
-        }
-      } else {
-        showError(message);
+      try {
+          let res = await API.get('/api/user/group');
+          const { success, message, data } = res.data;
+          if (success) {
+              const groupsWithDefault = [
+                  { key: '', name: '默认分组' },
+                  ...data
+              ];
+              setGroups(groupsWithDefault);
+              
+              // 默认选择"默认分组"
+              setSelectedGroup('');
+          } else {
+              showError(message);
+          }
+      } catch (err) {
+          showError(err.message);
       }
-    } catch (err) {
-      showError(err.message);
-    }
   };
 
   const loadModels = async (group) => {
     try {
-      let res = await API.get(`/api/user/modelbilling?group=${group}`);
+      let res = await API.get(`/api/user/modelbilling${group ? `?group=${group}` : ''}`);
       const { success, message, data } = res.data;
       if (success && Array.isArray(data)) {
         setModels(data);
@@ -71,12 +75,11 @@ export default function Log() {
 
   useEffect(() => {
     loadGroups();
+    loadModels('');
   }, []);
-
+  
   useEffect(() => {
-    if (selectedGroup) {
-      loadModels(selectedGroup);
-    }
+    loadModels(selectedGroup);
   }, [selectedGroup]);
 
   const handleGroupChange = (event) => {

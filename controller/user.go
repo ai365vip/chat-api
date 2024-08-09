@@ -503,13 +503,25 @@ func GetUserModels(c *gin.Context) {
 }
 
 func GetUserModelsBilling(c *gin.Context) {
-	group := c.Query("group")
-	if group == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		// 如果无法将参数转换为整数，则尝试从上下文中获取整数类型的ID
+		id = c.GetInt("id")
+	}
+
+	// 假设 model.GetUserById 函数会根据提供的ID获取用户信息
+	user, err := model.GetUserById(id, true)
+	if err != nil {
+		// 如果发生错误，返回错误信息
+		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "Group parameter is required",
+			"message": err.Error(),
 		})
 		return
+	}
+	group := c.Query("group")
+	if group == "" {
+		group = user.Group
 	}
 
 	// 获取指定组的模型及其计费信息
