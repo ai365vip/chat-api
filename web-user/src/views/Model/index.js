@@ -19,7 +19,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Box
+  Box,
+  Alert
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SearchIcon from '@mui/icons-material/Search';
@@ -132,6 +133,9 @@ export default function Log() {
   const hasModels = Object.keys(groupedModels).length > 0;
   return (
     <Box sx={{ maxWidth: 1200, margin: 'auto', padding: 3 }}>
+      <Alert severity="info">
+        按次计费与按token计费同时存在 按次计费优先。
+        </Alert>
       <Stack direction="row" alignItems="center" mb={5} spacing={2}>
         <Typography variant="h4" sx={{ flexGrow: 1 }}>可用模型</Typography>
         <TextField 
