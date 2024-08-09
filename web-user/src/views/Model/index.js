@@ -107,7 +107,7 @@ export default function Log() {
           >
             {groups.map((group) => (
               <MenuItem key={group.key} value={group.key}>
-                {group.value}
+                {group.key === '' ? '默认分组' : group.value}
               </MenuItem>
             ))}
           </Select>
