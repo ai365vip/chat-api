@@ -48,8 +48,12 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	meta.PromptTokens = promptTokens
 	ratio := modelRatio * groupRatio
 	preConsumedQuota := 0
-	preConsumedTokens := config.PreConsumedQuota + promptTokens
-
+	preConsumedTokens := promptTokens
+	if config.PreConsumedQuota > 0 && preConsumedTokens <= 0 {
+		preConsumedTokens = config.PreConsumedQuota
+	} else {
+		preConsumedTokens = 500
+	}
 	BillingByRequestEnabled, _ := strconv.ParseBool(config.OptionMap["BillingByRequestEnabled"])
 	ModelRatioEnabled, _ := strconv.ParseBool(config.OptionMap["ModelRatioEnabled"])
 	preConsumedQuota = int(float64(preConsumedTokens) * ratio)
