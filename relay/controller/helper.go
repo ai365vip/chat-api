@@ -172,13 +172,10 @@ func preConsumeQuota(ctx context.Context, preConsumedQuota int, meta *util.Relay
 	}
 	if preConsumedQuota > 0 {
 		logger.Info(ctx, fmt.Sprintf("用户%d 额度 %d，预扣费 %d", meta.UserId, userQuota, preConsumedQuota))
-		if !meta.UnlimitedQuota {
-			err := model.PreConsumeTokenQuota(meta.TokenId, preConsumedQuota)
-			if err != nil {
-				return preConsumedQuota, openai.ErrorWrapper(err, "pre_consume_token_quota_failed", http.StatusForbidden)
-			}
+		err := model.PreConsumeTokenQuota(meta.TokenId, preConsumedQuota)
+		if err != nil {
+			return preConsumedQuota, openai.ErrorWrapper(err, "pre_consume_token_quota_failed", http.StatusForbidden)
 		}
-
 	}
 	return preConsumedQuota, nil
 }

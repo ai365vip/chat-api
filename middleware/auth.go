@@ -210,8 +210,11 @@ func TokenAuth() func(c *gin.Context) {
 		c.Set("token_name", token.Name)
 		c.Set("billing_enabled", token.BillingEnabled)
 		if token.Group == "" {
-			userId := c.GetInt("id")
-			userGroup, _ := model.GetUserGroup(userId)
+			userGroup, err := model.GetUserGroup(token.UserId)
+			if err != nil {
+				abortWithMessage(c, http.StatusForbidden, "未能获取用户分组信息")
+				return
+			}
 			c.Set("group", userGroup)
 		} else {
 			c.Set("group", token.Group)
