@@ -123,6 +123,8 @@ export default function Log() {
 
   const sortModelTypes = (groupedModels) => {
     const sortedEntries = Object.entries(groupedModels).sort(([a], [b]) => {
+      if (a === 'other') return 1;
+      if (b === 'other') return -1;
       if (a === 'OpenAI') return -1;
       if (b === 'OpenAI') return 1;
       return a.localeCompare(b);

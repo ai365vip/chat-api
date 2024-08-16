@@ -531,6 +531,11 @@ func GetUserModelsBilling(c *gin.Context) {
 		return
 	}
 
+	// 在这里获取模型类型
+	for i := range models {
+		models[i].ModelType = getModelType(models[i].Model)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

@@ -31,7 +31,7 @@ var CompatibleChannels = []int{
 func GetCompatibleChannelMeta(channelType int) (string, []string) {
 	switch channelType {
 	case common.ChannelTypeAzure:
-		return "azure", ModelList
+		return "Azure OpenAI", ModelList
 	case common.ChannelType360:
 		return "360", ai360.ModelList
 	case common.ChannelTypeMoonshot:
@@ -53,6 +53,6 @@ func GetCompatibleChannelMeta(channelType int) (string, []string) {
 	case common.ChannelTypeDouBao:
 		return "doubao", doubao.ModelList
 	default:
-		return "openai", ModelList
+		return "OpenAI", ModelList
 	}
 }

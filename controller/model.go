@@ -167,3 +167,24 @@ func RetrieveModel(c *gin.Context) {
 		})
 	}
 }
+
+func getModelType(model string) string {
+	if openAIModel, exists := openAIModelsMap[model]; exists {
+		// 特别处理 Midjourney 相关模型
+		if openAIModel.OwnedBy == "midjourney" || model == "midjourney" || model == "mj-chat" {
+			return "Midjourney"
+		}
+		return openAIModel.OwnedBy // 使用 OwnedBy 作为其他模型类型
+	}
+	// 检查模型名称的前缀
+	switch {
+	case strings.HasPrefix(model, "gpt-"):
+		return "OpenAI"
+	case strings.HasPrefix(model, "claude-"):
+		return "Anthropic Claude"
+	case strings.HasPrefix(model, "glm-"):
+		return "zhipu"
+	default:
+		return "other"
+	}
+}

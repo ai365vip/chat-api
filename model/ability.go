@@ -137,7 +137,6 @@ func GetGroupModelsBilling(group string, search string) ([]ModelBillingInfo, err
 	var modelsBillingInfos []ModelBillingInfo
 
 	for _, model := range models {
-
 		// 计算模型完成率
 		modelCompletionRatio := common.GetCompletionRatio(model)
 
@@ -145,11 +144,9 @@ func GetGroupModelsBilling(group string, search string) ([]ModelBillingInfo, err
 
 		if model != "midjourney" {
 			if ratio, exists := modelRatio[model]; exists {
-				// 根据模型和组系数计算模型系数, 并乘以完成率
 				modelInfo.ModelRatio = ratio * groupRatioValue
 				modelInfo.ModeCompletionlRatio = modelInfo.ModelRatio * modelCompletionRatio
 			} else {
-				// 如果模型系数不存在，使用默认值15，并乘以完成率
 				modelInfo.ModelRatio = 15 * groupRatioValue
 				modelInfo.ModeCompletionlRatio = modelInfo.ModelRatio * modelCompletionRatio
 			}
@@ -158,14 +155,13 @@ func GetGroupModelsBilling(group string, search string) ([]ModelBillingInfo, err
 		if ratio, exists := ModelPrice[model]; exists {
 			modelInfo.ModelPrice = ratio * groupRatioValue
 		} else if hasDefault {
-			// 如果模型价格不存在但有默认值，则使用此默认值，并应用完成率
 			modelInfo.ModelPrice = defaultModelPrice * groupRatioValue
 		} else {
 			modelInfo.ModelPrice = 0
 		}
 
 		modelInfo.Model = model
-		modelInfo.ModelType = common.GetModelType(model)
+		// 不在这里设置 ModelType
 		modelsBillingInfos = append(modelsBillingInfos, modelInfo)
 	}
 
