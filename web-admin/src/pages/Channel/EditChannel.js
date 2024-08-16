@@ -491,13 +491,20 @@ const EditChannel = (props) => {
     };
     
     const addCustomModel = () => {
-        if (customModel.trim() === '') return;                // 确保自定义模型非空
-        if (inputs.models.includes(customModel)) return;      // 确保未重复添加
+        if (customModel.trim() === '') return;
     
-        // 更新输入模型数组（无需修改选项，除非确实需要显示新模型）
-        handleInputChange('models', [...inputs.models, customModel]);
+        // 将输入按逗号分割，并去除每个模型名称的前后空格
+        const newModels = customModel.split(',').map(model => model.trim()).filter(model => model !== '');
+    
+        // 过滤掉已存在的模型
+        const uniqueNewModels = newModels.filter(model => !inputs.models.includes(model));
+    
+        if (uniqueNewModels.length === 0) return; // 如果没有新的唯一模型，直接返回
+    
+        // 更新输入模型数组
+        handleInputChange('models', [...inputs.models, ...uniqueNewModels]);
         
-        // 清空自定义模型输入（重置自定义模型输入字段）
+        // 清空自定义模型输入
         setCustomModel('');
     };
 
@@ -826,11 +833,9 @@ const EditChannel = (props) => {
                         addonAfter={
                             <Button type='primary' onClick={addCustomModel}>填入</Button>
                         }
-                        placeholder='输入自定义模型名称'
+                        placeholder='输入自定义模型名称，多个用逗号分隔'
                         value={customModel}
-                        onChange={(value) => {
-                            setCustomModel(value);
-                        }}
+                        onChange={setCustomModel}
                     />
                 </div>
                     <div style={{marginTop: 10}}>
