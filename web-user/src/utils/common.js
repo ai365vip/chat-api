@@ -1,7 +1,9 @@
-import { enqueueSnackbar } from 'notistack';
+import { enqueueSnackbar,closeSnackbar } from 'notistack';
 import { snackbarConstants } from 'constants/SnackbarConstants';
 import { API } from './api';
 
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
 export function getSystemName() {
   let system_name = localStorage.getItem('system_name');
   if (!system_name) return 'Chat API';
@@ -65,10 +67,26 @@ export function showError(error) {
 }
 
 export function showNotice(message, isHTML = false) {
+  const action = (snackbarId) => (
+    <IconButton
+      size="small"
+      aria-label="close"
+      color="inherit"
+      onClick={() => closeSnackbar(snackbarId)}
+    >
+      <CloseIcon fontSize="small" />
+    </IconButton>
+  );
+
+  const options = {
+    ...getSnackbarOptions('INFO'),
+    action,
+  };
+
   if (isHTML) {
-    enqueueSnackbar(<SnackbarHTMLContent htmlContent={message} />, getSnackbarOptions('INFO'));
+    enqueueSnackbar(<SnackbarHTMLContent htmlContent={message} />, options);
   } else {
-    enqueueSnackbar(message, getSnackbarOptions('INFO'));
+    enqueueSnackbar(message, options);
   }
 }
 

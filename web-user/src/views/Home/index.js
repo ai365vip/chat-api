@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { showError, showNotice } from 'utils/common';
 import { API } from 'utils/api';
 import { marked } from 'marked';
@@ -10,6 +11,11 @@ import { Box, Container } from '@mui/material';
 const Home = () => {
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
   const [homePageContent, setHomePageContent] = useState('');
+  const account = useSelector((state) => state.account);
+  const isUserLoggedIn = () => {
+    // 使用 Redux 中的 account 状态来判断用户是否登录
+    return !!account.user; // 假设 token 存在即表示用户已登录
+  };
   const displayNotice = async () => {
     try {
       const res = await API.get('/api/notice');
@@ -44,8 +50,15 @@ const Home = () => {
     setHomePageContentLoaded(true);
   };
 
+  const checkAndDisplayNotice = () => {
+    if (!isUserLoggedIn()) {
+      // 只有未登录用户才显示公告
+      displayNotice();
+    }
+  };
+
   useEffect(() => {
-    displayNotice();
+    checkAndDisplayNotice();
     displayHomePageContent().then();
   }, []);
 
