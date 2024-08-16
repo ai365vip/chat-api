@@ -95,6 +95,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.DELETE("/disabled", controller.DeleteDisabledChannel)
 			channelRoute.DELETE("/:id", controller.DeleteChannel)
 			channelRoute.POST("/batch", controller.DeleteChannelBatch)
+			channelRoute.GET("/fetch_models/:id", controller.FetchUpstreamModels)
 		}
 		tokenRoute := apiRouter.Group("/token")
 		tokenRoute.Use(middleware.UserAuth())
