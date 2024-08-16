@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"one-api/common"
 	"one-api/common/config"
@@ -242,7 +243,14 @@ func FetchUpstreamModels(c *gin.Context) {
 	} else {
 		baseURL = "https://api.openai.com"
 	}
-	body, err := GetResponseBody("GET", baseURL, channel, GetAuthHeader(channel.Key))
+
+	// 移除末尾的 '/'（如果存在）
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	// 添加 "/v1/models" 到 URL
+	url := fmt.Sprintf("%s/v1/models", baseURL)
+
+	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
