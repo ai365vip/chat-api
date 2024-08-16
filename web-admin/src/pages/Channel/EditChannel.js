@@ -178,30 +178,65 @@ const EditChannel = (props) => {
     };
     const handleGetModels = async () => {
         try {
-            const baseUrl = inputs.base_url.endsWith('/') ? inputs.base_url.slice(0, -1) : inputs.base_url;
-            const url = `${baseUrl}/v1/models`;
-    
-            // 发起 GET 请求获取模型数据，动态设置 Authorization 头部
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${inputs.key}`
-                }
-            });
-    
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+            if (inputs["type"] !== 1) {
+                showError("仅支持 OpenAI 接口格式");
+                return;
             }
     
-            // 将响应数据转为 JSON
-            const data = await response.json();
+            let url;
+            let headers = {};
+            let modelIds;
     
-            // 提取所有模型的 id
-            const modelIds = data.data.map(model => model.id);
+            if (isEdit) {
+                url = `/api/channel/fetch_models/${channelId}`;
+                const response = await fetch(url, { headers });
     
-            // 更新状态，只存储模型的 id
-            setInputs(inputs => ({...inputs, models: modelIds}));
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+    
+                const responseData = await response.json();
+    
+                // 检查编辑模式下的响应数据结构
+                if (!responseData.data || !responseData.data.data || !Array.isArray(responseData.data.data)) {
+                    throw new Error('Invalid data format');
+                }
+    
+                modelIds = responseData.data.data.map(model => model.id);
+            } else {
+                if (!inputs.key) {
+                    showError("请填写密钥");
+                    return;
+                }
+                const baseUrl = inputs.base_url.endsWith('/') ? inputs.base_url.slice(0, -1) : inputs.base_url;
+                url = `${baseUrl}/v1/models`;
+                headers = {
+                    'Authorization': `Bearer ${inputs.key}`
+                };
+    
+                const response = await fetch(url, { headers });
+    
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+    
+                const data = await response.json();
+    
+                if (!data.data || !Array.isArray(data.data)) {
+                    throw new Error('Invalid data format');
+                }
+    
+                modelIds = data.data.map(model => model.id);
+            }
+    
+            setInputs(prevInputs => ({
+                ...prevInputs, 
+                models: Array.from(new Set([...prevInputs.models, ...modelIds]))
+            }));
+    
+            showSuccess("获取模型列表成功");
         } catch (error) {
-            showError(error)
+            showError(`获取模型列表失败: ${error.message}`);
         }
     };
     
