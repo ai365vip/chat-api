@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"one-api/common"
 	"one-api/common/config"
@@ -237,8 +236,13 @@ func FetchUpstreamModels(c *gin.Context) {
 		})
 		return
 	}
-	url := fmt.Sprintf("%s/v1/models", *channel.BaseURL)
-	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
+	var baseURL string
+	if channel.BaseURL != nil && *channel.BaseURL != "" {
+		baseURL = *channel.BaseURL
+	} else {
+		baseURL = "https://api.openai.com"
+	}
+	body, err := GetResponseBody("GET", baseURL, channel, GetAuthHeader(channel.Key))
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,

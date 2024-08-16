@@ -208,7 +208,9 @@ const EditChannel = (props) => {
                     showError("请填写密钥");
                     return;
                 }
-                const baseUrl = inputs.base_url.endsWith('/') ? inputs.base_url.slice(0, -1) : inputs.base_url;
+                const baseUrl = inputs.base_url
+                    ? (inputs.base_url.endsWith('/') ? inputs.base_url.slice(0, -1) : inputs.base_url)
+                    : 'https://api.openai.com';
                 url = `${baseUrl}/v1/models`;
                 headers = {
                     'Authorization': `Bearer ${inputs.key}`
