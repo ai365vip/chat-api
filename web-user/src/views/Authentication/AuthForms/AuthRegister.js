@@ -31,7 +31,7 @@ import { strengthColor, strengthIndicator } from 'utils/password-strength';
 // assets
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import { showError, showInfo } from 'utils/common';
+import { showError, showInfo,showSuccess } from 'utils/common';
 
 // ===========================|| FIREBASE - REGISTER ||=========================== //
 
@@ -51,6 +51,8 @@ const RegisterForm = ({ ...others }) => {
   const [level, setLevel] = useState();
   const [affCode, setAffCode] = useState('');
 
+  const [countdown, setCountdown] = useState(0);
+  const [isSending, setIsSending] = useState(false);
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
@@ -75,13 +77,36 @@ const RegisterForm = ({ ...others }) => {
       showError('请稍后几秒重试，Turnstile 正在检查用户环境！');
       return;
     }
-
-    const { success, message } = await sendVerificationCode(email, turnstileToken);
-    if (!success) {
-      showError(message);
-      return;
+  
+    setIsSending(true);
+    try {
+      const { success, message } = await sendVerificationCode(email, turnstileToken);
+      if (success) {
+        setCountdown(30);
+        showSuccess('验证码发送成功，请检查你的邮箱！');
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      showError('发送验证码时出现错误，请稍后重试');
+    } finally {
+      setIsSending(false);
     }
   };
+  
+  
+
+  useEffect(() => {
+    let timer;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prevCountdown) => prevCountdown - 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [countdown]);
 
   useEffect(() => {
       let affCodeParam = searchParams.get('aff');
@@ -247,8 +272,13 @@ const RegisterForm = ({ ...others }) => {
                     onChange={handleChange}
                     endAdornment={
                       <InputAdornment position="end">
-                        <Button variant="contained" color="primary" onClick={() => handleSendCode(values.email)}>
-                          发送验证码
+                        <Button 
+                          variant="contained" 
+                          color="primary" 
+                          onClick={() => handleSendCode(values.email)}
+                          disabled={countdown > 0 || isSending}
+                        >
+                          {isSending ? '发送中...' : countdown > 0 ? `${countdown}s后重试` : '发送验证码'}
                         </Button>
                       </InputAdornment>
                     }
