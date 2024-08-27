@@ -1077,7 +1077,7 @@ const EditChannel = (props) => {
                         )
                     }
                      {
-                        ((inputs.type === 42) || (inputs.type === 14)) && (
+                        ((inputs.type === 42) || (inputs.type === 14) || (inputs.type === 35))  && (
                             <div style={{marginTop: 10, display: 'flex'}}>
                                 <Space>
                                     <Checkbox

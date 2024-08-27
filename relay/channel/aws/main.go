@@ -13,6 +13,7 @@ import (
 	"one-api/common/helper"
 	"one-api/common/logger"
 	"one-api/relay/channel/anthropic"
+	"one-api/relay/channel/openai"
 	relaymodel "one-api/relay/model"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -151,6 +152,8 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	var usage relaymodel.Usage
 	var id string
+	var lastToolCallChoice openai.ChatCompletionsStreamResponseChoice
+
 	c.Stream(func(w io.Writer) bool {
 		event, ok := <-stream.Events()
 		if !ok {
@@ -171,8 +174,19 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 			if meta != nil {
 				usage.PromptTokens += meta.Usage.InputTokens
 				usage.CompletionTokens += meta.Usage.OutputTokens
-				id = fmt.Sprintf("chatcmpl-%s", meta.Id)
-				return true
+				if len(meta.Id) > 0 { // only message_start has an id, otherwise it's a finish_reason event.
+					id = fmt.Sprintf("chatcmpl-%s", meta.Id)
+					return true
+				} else { // finish_reason case
+					if len(lastToolCallChoice.Delta.ToolCalls) > 0 {
+						lastArgs := &lastToolCallChoice.Delta.ToolCalls[len(lastToolCallChoice.Delta.ToolCalls)-1].Function
+						if len(lastArgs.Arguments.(string)) == 0 { // compatible with OpenAI sending an empty object `{}` when no arguments.
+							lastArgs.Arguments = "{}"
+							response.Choices[len(response.Choices)-1].Delta.Content = nil
+							response.Choices[len(response.Choices)-1].Delta.ToolCalls = lastToolCallChoice.Delta.ToolCalls
+						}
+					}
+				}
 			}
 			if response == nil {
 				return true
@@ -181,6 +195,12 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 			response.Id = id
 			response.Model = c.GetString(ctxkey.OriginalModel)
 			response.Created = createdTime
+
+			for _, choice := range response.Choices {
+				if len(choice.Delta.ToolCalls) > 0 {
+					lastToolCallChoice = choice
+				}
+			}
 			jsonStr, err := json.Marshal(response)
 			if err != nil {
 				logger.SysError("error marshalling stream response: " + err.Error())
@@ -193,6 +213,169 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 			return false
 		default:
 			fmt.Println("union is nil or unknown type")
+			return false
+		}
+	})
+	return nil, &usage, responseText
+}
+
+func ClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
+	awsModelId, err := awsModelID(c.GetString(ctxkey.RequestModel))
+	responseText := ""
+	if err != nil {
+		return wrapErr(errors.Wrap(err, "awsModelID")), nil, ""
+	}
+
+	awsReq := &bedrockruntime.InvokeModelInput{
+		ModelId:     aws.String(awsModelId),
+		Accept:      aws.String("application/json"),
+		ContentType: aws.String("application/json"),
+	}
+
+	claudeReq_, ok := c.Get(ctxkey.ConvertedRequest)
+	if !ok {
+		return wrapErr(errors.New("request not found")), nil, ""
+	}
+	claudeReq := claudeReq_.(*anthropic.Request)
+	awsClaudeReq := &Request{
+		AnthropicVersion: "bedrock-2023-05-31",
+	}
+	if err = copier.Copy(awsClaudeReq, claudeReq); err != nil {
+		return wrapErr(errors.Wrap(err, "copy request")), nil, ""
+	}
+
+	awsReq.Body, err = json.Marshal(awsClaudeReq)
+	if err != nil {
+		return wrapErr(errors.Wrap(err, "marshal request")), nil, ""
+	}
+
+	awsResp, err := awsCli.InvokeModel(c.Request.Context(), awsReq)
+	if err != nil {
+		return wrapErr(errors.Wrap(err, "InvokeModel")), nil, ""
+	}
+
+	claudeResponse := new(anthropic.Response)
+	err = json.Unmarshal(awsResp.Body, claudeResponse)
+	if err != nil {
+		return wrapErr(errors.Wrap(err, "unmarshal response")), nil, ""
+	}
+
+	responseText = claudeResponse.Content[0].Text
+	usage := relaymodel.Usage{
+		PromptTokens:     claudeResponse.Usage.InputTokens,
+		CompletionTokens: claudeResponse.Usage.OutputTokens,
+		TotalTokens:      claudeResponse.Usage.InputTokens + claudeResponse.Usage.OutputTokens,
+	}
+
+	c.JSON(http.StatusOK, claudeResponse)
+	return nil, &usage, responseText
+}
+
+func StreamClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
+	responseText := ""
+	awsModelId, err := awsModelID(c.GetString(ctxkey.RequestModel))
+	if err != nil {
+		return wrapErr(errors.Wrap(err, "awsModelID")), nil, ""
+	}
+
+	awsReq := &bedrockruntime.InvokeModelWithResponseStreamInput{
+		ModelId:     aws.String(awsModelId),
+		Accept:      aws.String("application/json"),
+		ContentType: aws.String("application/json"),
+	}
+
+	claudeReq_, ok := c.Get(ctxkey.ConvertedRequest)
+	if !ok {
+		return wrapErr(errors.New("request not found")), nil, ""
+	}
+	claudeReq := claudeReq_.(*anthropic.Request)
+
+	awsClaudeReq := &Request{
+		AnthropicVersion: "bedrock-2023-05-31",
+	}
+	if err = copier.Copy(awsClaudeReq, claudeReq); err != nil {
+		return wrapErr(errors.Wrap(err, "copy request")), nil, ""
+	}
+	awsReq.Body, err = json.Marshal(awsClaudeReq)
+	if err != nil {
+		return wrapErr(errors.Wrap(err, "marshal request")), nil, ""
+	}
+
+	awsResp, err := awsCli.InvokeModelWithResponseStream(c.Request.Context(), awsReq)
+	if err != nil {
+		return wrapErr(errors.Wrap(err, "InvokeModelWithResponseStream")), nil, ""
+	}
+	stream := awsResp.GetStream()
+	defer stream.Close()
+
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	var usage relaymodel.Usage
+	c.Stream(func(w io.Writer) bool {
+		event, ok := <-stream.Events()
+		if !ok {
+			return false
+		}
+
+		switch v := event.(type) {
+		case *types.ResponseStreamMemberChunk:
+			var data map[string]interface{}
+			if err := json.Unmarshal(v.Value.Bytes, &data); err != nil {
+				logger.SysError("error unmarshalling stream response: " + err.Error())
+				return false
+			}
+			eventType, ok := data["type"].(string)
+			if !ok {
+				logger.SysError("error getting event type")
+				return false
+			}
+
+			// 处理不同类型的事件
+			switch eventType {
+			case "message_start":
+				if message, ok := data["message"].(map[string]interface{}); ok {
+					if usageData, ok := message["usage"].(map[string]interface{}); ok {
+						usage.PromptTokens = int(usageData["input_tokens"].(float64))
+					}
+				}
+			case "content_block_delta":
+				if delta, ok := data["delta"].(map[string]interface{}); ok {
+					if textDelta, ok := delta["text"].(string); ok {
+						responseText += textDelta
+					}
+				}
+			case "message_delta":
+				if usageData, ok := data["usage"].(map[string]interface{}); ok {
+					usage.CompletionTokens += int(usageData["output_tokens"].(float64))
+				}
+			case "message_stop":
+				usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+			}
+
+			// 构建新的响应格式
+			response := fmt.Sprintf("event: %s\ndata: %s\n\n", eventType, string(v.Value.Bytes))
+
+			_, err := w.Write([]byte(response))
+			if err != nil {
+				logger.SysError("error writing stream response: " + err.Error())
+				return false
+			}
+
+			// 如果是 message_stop 事件，发送一个额外的 ping 事件
+			if eventType == "message_stop" {
+				pingEvent := "event: ping\ndata: {\"type\": \"ping\"}\n\n"
+				_, err := w.Write([]byte(pingEvent))
+				if err != nil {
+					logger.SysError("error writing ping event: " + err.Error())
+					return false
+				}
+			}
+
+			return true
+		case *types.UnknownUnionMember:
+			logger.SysError("unknown tag: " + v.Tag)
+			return false
+		default:
+			logger.SysError("union is nil or unknown type")
 			return false
 		}
 	})

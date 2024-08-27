@@ -75,10 +75,11 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 	}
 
 	adaptor := helper.GetAdaptor(meta.APIType)
+
 	if adaptor == nil {
 		return openai.ErrorWrapper(fmt.Errorf("invalid api type: %d", meta.APIType), "invalid_api_type", http.StatusBadRequest)
 	}
-
+	adaptor.Init(meta)
 	// get request body
 	var requestBody io.Reader
 	if isModelMapped {
@@ -90,8 +91,8 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 	} else {
 		requestBody = c.Request.Body
 	}
-	if meta.APIType == constant.APITypeGCP {
-		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, textRequest)
+	if meta.APIType == constant.APITypeGCP || meta.APIType == constant.APITypeAwsClaude {
+		convertedRequest, err := adaptor.ConvertRequest(c, meta, textRequest)
 		if err != nil {
 			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
 		}

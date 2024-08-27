@@ -40,7 +40,7 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *ut
 	return nil
 }
 
-func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.GeneralOpenAIRequest) (any, error) {
+func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *model.GeneralOpenAIRequest) (any, error) {
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
@@ -63,14 +63,26 @@ func (a *Adaptor) DoRequest(c *gin.Context, meta *util.RelayMeta, requestBody io
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (aitext string, usage *model.Usage, err *model.ErrorWithStatusCode) {
-	if meta.IsStream {
-		var responseText string
-		err, _, responseText = StreamHandler(c, a.awsClient)
-		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+	if !meta.IsClaude {
+		if meta.IsStream {
+			var responseText string
+			err, _, responseText = StreamHandler(c, a.awsClient)
+			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 
-		aitext = responseText
+			aitext = responseText
+		} else {
+			err, usage, aitext = Handler(c, a.awsClient, meta.ActualModelName)
+		}
 	} else {
-		err, usage, aitext = Handler(c, a.awsClient, meta.ActualModelName)
+		if meta.IsStream {
+			var responseText string
+			err, usage, responseText = StreamClaudeHandler(c, a.awsClient)
+			if err != nil && (usage == nil || usage.CompletionTokens == 0) {
+				usage = openai.ResponseText2Usage(responseText, meta.OriginModelName, meta.PromptTokens)
+			}
+		} else {
+			err, usage, aitext = ClaudeHandler(c, a.awsClient, meta.OriginModelName)
+		}
 	}
 	return
 }

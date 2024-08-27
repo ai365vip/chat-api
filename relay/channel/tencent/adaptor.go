@@ -40,7 +40,7 @@ func (a *Adaptor) ConvertImageRequest(request *model.ImageRequest) (any, error) 
 	}
 	return request, nil
 }
-func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.GeneralOpenAIRequest) (any, error) {
+func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *model.GeneralOpenAIRequest) (any, error) {
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}

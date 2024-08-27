@@ -45,18 +45,6 @@ type BotUsage struct {
 	TotalTokens      int `json:"total_tokens"`
 }
 
-func calculatePromptTokens(str string) int {
-	return len([]rune(str))
-}
-
-func calculateCompletionTokens(messagesMap []map[string]string) int {
-	// adjust the calculation according to your requirements
-	return len(messagesMap)
-}
-
-func calculateTotalTokens(promptTokens int, completionTokens int) int {
-	return promptTokens + completionTokens
-}
 func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr *relaymodel.Error) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -90,7 +78,7 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	request := buildTestRequest(modelTest)
 	request.Model = modelTest
 	meta.OriginModelName, meta.ActualModelName = modelTest, modelTest
-	convertedRequest, err := adaptor.ConvertRequest(c, constant.RelayModeChatCompletions, request)
+	convertedRequest, err := adaptor.ConvertRequest(c, meta, request)
 	if err != nil {
 		return err, nil
 	}

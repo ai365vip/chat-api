@@ -115,7 +115,7 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 			}
 			textRequest.Messages[i].Content = json.RawMessage(newContentBytes)
 		}
-		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, &textRequest)
+		convertedRequest, err := adaptor.ConvertRequest(c, meta, &textRequest)
 		if err != nil {
 			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
 		}
@@ -125,7 +125,7 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		}
 		requestBody = bytes.NewBuffer(jsonData)
 	} else {
-		convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, textRequest)
+		convertedRequest, err := adaptor.ConvertRequest(c, meta, textRequest)
 		if err != nil {
 			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
 		}
