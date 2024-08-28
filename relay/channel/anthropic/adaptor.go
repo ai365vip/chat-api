@@ -58,8 +58,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		if meta.IsStream {
 			var responseText string
 			err, _, responseText = StreamHandler(c, resp)
-			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
-
+			if usage == nil {
+				usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			}
 			aitext = responseText
 		} else {
 			err, usage, aitext = Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
@@ -67,9 +68,10 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 	} else {
 		if meta.IsStream {
 			var responseText string
-			err, _, responseText = ClaudeStreamHandler(c, resp)
-			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
-
+			err, usage, responseText = ClaudeStreamHandler(c, resp)
+			if usage == nil {
+				usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			}
 			aitext = responseText
 		} else {
 			err, usage, aitext = ClaudeHandler(c, resp, meta.PromptTokens, meta.ActualModelName)

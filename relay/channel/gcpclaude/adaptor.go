@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 
+	"one-api/common/config"
 	"one-api/relay/channel"
 	"one-api/relay/channel/anthropic"
 	"one-api/relay/channel/openai"
@@ -101,8 +102,23 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		if meta.IsStream {
 
 			var responseText string
-			err, _, responseText = anthropic.StreamHandler(c, resp)
-			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			err, usage, responseText = anthropic.StreamHandler(c, resp)
+			if usage == nil {
+				usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			}
+			if usage.CompletionTokens == 0 {
+				if config.BlankReplyRetryEnabled {
+					return "", nil, &model.ErrorWithStatusCode{
+						Error: model.Error{
+							Message: "No completion tokens generated",
+							Type:    "chat_api_error",
+							Param:   "completionTokens",
+							Code:    500,
+						},
+						StatusCode: 500,
+					}
+				}
+			}
 
 			aitext = responseText
 		} else {
@@ -112,9 +128,23 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		if meta.IsStream {
 
 			var responseText string
-			err, _, responseText = anthropic.ClaudeStreamHandler(c, resp)
-			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
-
+			err, usage, responseText = anthropic.ClaudeStreamHandler(c, resp)
+			if usage == nil {
+				usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			}
+			if usage.CompletionTokens == 0 {
+				if config.BlankReplyRetryEnabled {
+					return "", nil, &model.ErrorWithStatusCode{
+						Error: model.Error{
+							Message: "No completion tokens generated",
+							Type:    "chat_api_error",
+							Param:   "completionTokens",
+							Code:    500,
+						},
+						StatusCode: 500,
+					}
+				}
+			}
 			aitext = responseText
 		} else {
 			err, usage, aitext = anthropic.ClaudeHandler(c, resp, meta.PromptTokens, meta.ActualModelName)

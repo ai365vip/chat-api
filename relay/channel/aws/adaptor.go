@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 
+	"one-api/common/config"
 	"one-api/common/ctxkey"
 	"one-api/relay/channel"
 	"one-api/relay/channel/anthropic"
@@ -66,9 +67,23 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 	if !meta.IsClaude {
 		if meta.IsStream {
 			var responseText string
-			err, _, responseText = StreamHandler(c, a.awsClient)
-			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
-
+			err, usage, responseText = StreamHandler(c, a.awsClient)
+			if usage == nil {
+				usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			}
+			if usage.CompletionTokens == 0 {
+				if config.BlankReplyRetryEnabled {
+					return "", nil, &model.ErrorWithStatusCode{
+						Error: model.Error{
+							Message: "No completion tokens generated",
+							Type:    "chat_api_error",
+							Param:   "completionTokens",
+							Code:    500,
+						},
+						StatusCode: 500,
+					}
+				}
+			}
 			aitext = responseText
 		} else {
 			err, usage, aitext = Handler(c, a.awsClient, meta.ActualModelName)
@@ -77,8 +92,21 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 		if meta.IsStream {
 			var responseText string
 			err, usage, responseText = StreamClaudeHandler(c, a.awsClient)
-			if err != nil && (usage == nil || usage.CompletionTokens == 0) {
-				usage = openai.ResponseText2Usage(responseText, meta.OriginModelName, meta.PromptTokens)
+			if usage == nil {
+				usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			}
+			if usage.CompletionTokens == 0 {
+				if config.BlankReplyRetryEnabled {
+					return "", nil, &model.ErrorWithStatusCode{
+						Error: model.Error{
+							Message: "No completion tokens generated",
+							Type:    "chat_api_error",
+							Param:   "completionTokens",
+							Code:    500,
+						},
+						StatusCode: 500,
+					}
+				}
 			}
 		} else {
 			err, usage, aitext = ClaudeHandler(c, a.awsClient, meta.OriginModelName)
