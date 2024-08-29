@@ -22,10 +22,12 @@ func (a *Adaptor) Init(meta *util.RelayMeta) {
 }
 
 var modelVersionMap = map[string]string{
-	"gemini-1.5-pro-latest":   "v1beta",
-	"gemini-1.5-flash-latest": "v1beta",
-	"gemini-ultra":            "v1beta",
-	"gemini-1.5-pro-exp-0801": "v1beta",
+	"gemini-1.5-pro-latest":     "v1beta",
+	"gemini-1.5-flash-latest":   "v1beta",
+	"gemini-ultra":              "v1beta",
+	"gemini-1.5-pro-exp-0801":   "v1beta",
+	"gemini-1.5-pro-exp-0827":   "v1beta",
+	"gemini-1.5-flash-exp-0827": "v1beta",
 }
 
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
