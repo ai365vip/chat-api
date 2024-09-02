@@ -58,10 +58,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 	if !meta.IsClaude {
 		if meta.IsStream {
 			var responseText string
-			err, usage, responseText = StreamHandler(c, resp)
-			if usage == nil {
-				usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
-			}
+			err, _, responseText = StreamHandler(c, resp)
+			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+
 			if usage.CompletionTokens == 0 {
 				if config.BlankReplyRetryEnabled {
 					return "", nil, &model.ErrorWithStatusCode{
