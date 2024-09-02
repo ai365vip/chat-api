@@ -245,9 +245,51 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	})
 	dataChan := make(chan string)
 	stopChan := make(chan bool)
+	errorChan := make(chan *model.ErrorWithStatusCode)
 	go func() {
 		for scanner.Scan() {
 			data := scanner.Text()
+			if strings.HasPrefix(data, "event: error") {
+				// 读取下一行，这应该是错误数据
+				if scanner.Scan() {
+					errorData := scanner.Text()
+					if strings.HasPrefix(errorData, "data: ") {
+						errorData = strings.TrimPrefix(errorData, "data: ")
+						var errorResponse struct {
+							Type  string `json:"type"`
+							Error struct {
+								Type    string `json:"type"`
+								Message string `json:"message"`
+							} `json:"error"`
+						}
+						if err := json.Unmarshal([]byte(errorData), &errorResponse); err == nil {
+							statusCode := http.StatusInternalServerError
+							if errorResponse.Error.Type == "overloaded_error" {
+								statusCode = 529
+							}
+							errorChan <- &model.ErrorWithStatusCode{
+								Error: model.Error{
+									Message: errorResponse.Error.Message,
+									Type:    errorResponse.Error.Type,
+									Code:    statusCode,
+								},
+								StatusCode: statusCode,
+							}
+							return
+						}
+					}
+				}
+				// 如果无法解析错误数据，发送一个通用错误
+				errorChan <- &model.ErrorWithStatusCode{
+					Error: model.Error{
+						Message: "An error occurred",
+						Type:    "unknown_error",
+						Code:    http.StatusInternalServerError,
+					},
+					StatusCode: http.StatusInternalServerError,
+				}
+				return
+			}
 			if len(data) < 6 {
 				continue
 			}
