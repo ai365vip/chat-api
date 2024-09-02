@@ -305,6 +305,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	var usage model.Usage
 	var modelName string
 	var id string
+	var streamError *model.ErrorWithStatusCode
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case data := <-dataChan:
@@ -342,10 +343,14 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 		case <-stopChan:
 			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 			return false
+		case err := <-errorChan:
+			streamError = err
+			// 直接渲染错误响应
+			return false
 		}
 	})
 	_ = resp.Body.Close()
-	return nil, &usage, responseText
+	return streamError, &usage, responseText
 }
 
 func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
