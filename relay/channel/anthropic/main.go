@@ -3,11 +3,9 @@ package anthropic
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"one-api/common"
 	"one-api/common/helper"
@@ -15,7 +13,6 @@ import (
 	"one-api/common/logger"
 	"one-api/relay/channel/openai"
 	"one-api/relay/model"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -279,7 +276,7 @@ func responseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
 func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage, string) {
 	createdTime := helper.GetTimestamp()
 	scanner := bufio.NewScanner(resp.Body)
-	responseText := ""
+	var responseTextBuilder strings.Builder
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
 			return 0, nil, nil
@@ -340,7 +337,8 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			if response == nil {
 				return true
 			}
-			responseText += response.Choices[0].Delta.Content.(string)
+			responsePart := response.Choices[0].Delta.Content.(string)
+			responseTextBuilder.WriteString(responsePart)
 			response.Id = id
 			response.Model = modelName
 			response.Created = createdTime
@@ -362,7 +360,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 		}
 	})
 	_ = resp.Body.Close()
-	return streamError, &usage, responseText
+	return streamError, &usage, responseTextBuilder.String()
 }
 
 func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
@@ -414,149 +412,104 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 }
 
 func ClaudeStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage, string) {
+	scanner := bufio.NewScanner(resp.Body)
 	defer resp.Body.Close()
-
+	// 设置适合流式传输的响应头
 	common.SetEventStreamHeaders(c)
-
-	flusher, ok := c.Writer.(http.Flusher)
-	if !ok {
-		return createErrorWithStatusCode(errors.New("streaming unsupported"), http.StatusInternalServerError), nil, ""
-	}
-
-	var usage model.Usage
 	var responseTextBuilder strings.Builder
+	var usage model.Usage
+	responseText := ""
 	sendStopMessage := false
 
-	reader := bufio.NewReaderSize(resp.Body, 32*1024)
-
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				logger.SysError("Error reading from response body: " + err.Error())
-				sendStopMessage = true
-			}
-			break
-		}
+	for scanner.Scan() {
+		line := scanner.Text() + "\n"
 
 		if strings.HasPrefix(line, "event: error") {
-			errorResp, err := handleErrorEvent(reader)
-			if err != nil {
-				logger.SysError("Error handling error event: " + err.Error())
+			// 读取下一行,应该包含错误数据
+			if scanner.Scan() {
+				errorData := scanner.Text()
+				if strings.HasPrefix(errorData, "data: ") {
+					errorData = strings.TrimPrefix(errorData, "data: ")
+					var errorResponse struct {
+						Type  string `json:"type"`
+						Error struct {
+							Type    string `json:"type"`
+							Message string `json:"message"`
+						} `json:"error"`
+					}
+					if err := json.Unmarshal([]byte(errorData), &errorResponse); err == nil {
+						// 根据错误类型返回相应的错误
+						switch errorResponse.Error.Type {
+						case "overloaded_error":
+							return &model.ErrorWithStatusCode{
+								Error: model.Error{
+									Message: errorResponse.Error.Message,
+									Type:    errorResponse.Error.Type,
+									Code:    529,
+								},
+								StatusCode: 529,
+							}, &usage, responseText
+						// 可以在这里添加其他错误类型的处理
+						default:
+							return &model.ErrorWithStatusCode{
+								Error: model.Error{
+									Message: errorResponse.Error.Message,
+									Type:    errorResponse.Error.Type,
+									Code:    http.StatusInternalServerError,
+								},
+								StatusCode: http.StatusInternalServerError,
+							}, &usage, responseText
+						}
+					}
+				}
 			}
-			return errorResp, &usage, responseTextBuilder.String()
 		}
 
-		if err := writeLine(c, line, flusher); err != nil {
-			if isBrokenPipeError(err) {
-				logger.SysLog("Client disconnected: " + err.Error())
-				return nil, &usage, responseTextBuilder.String()
-			}
-			logger.SysError("Error writing to stream: " + err.Error())
-			sendStopMessage = true
+		// 直接将原始行写入到响应流中
+		if _, writeErr := c.Writer.Write([]byte(line)); writeErr != nil {
+			// 记录错误，并考虑是否中断处理
+			logger.SysError("Error writing to stream: " + writeErr.Error())
+			sendStopMessage = true // 发生错误时发送停止消息
 			break
 		}
+		// 确保响应是即时发送的
+		c.Writer.Flush()
 
+		// 对data行进行额外的解析和处理
 		if strings.HasPrefix(line, "data: ") {
 			data := strings.TrimPrefix(line, "data: ")
-			handleStreamData(data, &usage, &responseTextBuilder)
+			// 处理data
+			var claudeResponse StreamResponse
+			if err := json.Unmarshal([]byte(data), &claudeResponse); err != nil {
+				logger.SysError("Error unmarshalling stream response: " + err.Error())
+				continue // 或者处理错误
+			}
+
+			response, meta := StreamResponseClaude2OpenAI(&claudeResponse)
+			if meta != nil {
+				usage.PromptTokens += meta.Usage.InputTokens
+				usage.CompletionTokens += meta.Usage.OutputTokens
+			}
+			if response != nil {
+				responsePart := response.Choices[0].Delta.Content.(string)
+				responseTextBuilder.WriteString(responsePart)
+			}
 		}
 	}
 
+	// 发生错误时，发送结束消息
 	if sendStopMessage {
-		sendStreamStopMessage(c, flusher)
+		sendStreamStopMessage(c)
 	}
 
 	return nil, &usage, responseTextBuilder.String()
 }
-func handleStreamData(data string, usage *model.Usage, responseTextBuilder *strings.Builder) {
-	var claudeResponse StreamResponse
-	if err := json.Unmarshal([]byte(data), &claudeResponse); err != nil {
-		logger.SysError("Error unmarshalling stream response: " + err.Error())
-		return
-	}
-
-	response, meta := StreamResponseClaude2OpenAI(&claudeResponse)
-	if meta != nil {
-		usage.PromptTokens += meta.Usage.InputTokens
-		usage.CompletionTokens += meta.Usage.OutputTokens
-	}
-	if response != nil {
-		responsePart := response.Choices[0].Delta.Content.(string)
-		responseTextBuilder.WriteString(responsePart)
-	}
-}
-
-func handleErrorEvent(reader *bufio.Reader) (*model.ErrorWithStatusCode, error) {
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		return createGenericError(), err
-	}
-
-	if !strings.HasPrefix(line, "data: ") {
-		return createGenericError(), nil
-	}
-
-	errorData := strings.TrimPrefix(line, "data: ")
-	var errorResponse struct {
-		Error struct {
-			Type    string `json:"type"`
-			Message string `json:"message"`
-		} `json:"error"`
-	}
-
-	if err := json.Unmarshal([]byte(errorData), &errorResponse); err != nil {
-		return createGenericError(), err
-	}
-
-	statusCode := http.StatusInternalServerError
-	if errorResponse.Error.Type == "overloaded_error" {
-		statusCode = 529
-	}
-
-	return &model.ErrorWithStatusCode{
-		Error: model.Error{
-			Message: errorResponse.Error.Message,
-			Type:    errorResponse.Error.Type,
-			Code:    statusCode,
-		},
-		StatusCode: statusCode,
-	}, nil
-}
-
-func createErrorWithStatusCode(err error, statusCode int) *model.ErrorWithStatusCode {
-	return &model.ErrorWithStatusCode{
-		Error: model.Error{
-			Message: err.Error(),
-			Type:    "internal_error",
-			Code:    statusCode,
-		},
-		StatusCode: statusCode,
-	}
-}
-func writeLine(c *gin.Context, line string, flusher http.Flusher) error {
-	_, err := c.Writer.WriteString(line)
-	if err != nil {
-		return err
-	}
-	flusher.Flush()
-	return nil
-}
-
-func isBrokenPipeError(err error) bool {
-	if netErr, ok := err.(*net.OpError); ok {
-		if sysErr, ok := netErr.Err.(*os.SyscallError); ok {
-			return strings.Contains(sysErr.Error(), "broken pipe")
-		}
-	}
-	return false
-}
 
 // 修改 sendStreamStopMessage 函数
-func sendStreamStopMessage(c *gin.Context, flusher http.Flusher) {
+func sendStreamStopMessage(c *gin.Context) {
 	messageStop := "event: message_stop\ndata: {\"type\": \"message_stop\"}\n\n"
-	c.Writer.WriteString(messageStop)
-	flusher.Flush()
+	c.Writer.Write([]byte(messageStop))
+	c.Writer.Flush()
 }
 func ClaudeHandler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
 	responseBody, err := io.ReadAll(resp.Body)
