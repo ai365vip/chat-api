@@ -3,9 +3,11 @@ package anthropic
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"one-api/common"
 	"one-api/common/helper"
@@ -13,6 +15,7 @@ import (
 	"one-api/common/logger"
 	"one-api/relay/channel/openai"
 	"one-api/relay/model"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -406,15 +409,19 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
-	_, err = c.Writer.Write(jsonResponse)
+	_, _ = c.Writer.Write(jsonResponse)
 	return nil, &usage, aitext
 }
 
 func ClaudeStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage, string) {
 	defer resp.Body.Close()
 
-	// 设置适合流式传输的响应头
 	common.SetEventStreamHeaders(c)
+
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		return createErrorWithStatusCode(errors.New("streaming unsupported"), http.StatusInternalServerError), nil, ""
+	}
 
 	var usage model.Usage
 	var responseTextBuilder strings.Builder
@@ -440,12 +447,15 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithS
 			return errorResp, &usage, responseTextBuilder.String()
 		}
 
-		if _, writeErr := c.Writer.WriteString(line); writeErr != nil {
-			logger.SysError("Error writing to stream: " + writeErr.Error())
+		if err := writeLine(c, line, flusher); err != nil {
+			if isBrokenPipeError(err) {
+				logger.SysLog("Client disconnected: " + err.Error())
+				return nil, &usage, responseTextBuilder.String()
+			}
+			logger.SysError("Error writing to stream: " + err.Error())
 			sendStopMessage = true
 			break
 		}
-		c.Writer.Flush()
 
 		if strings.HasPrefix(line, "data: ") {
 			data := strings.TrimPrefix(line, "data: ")
@@ -454,12 +464,11 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithS
 	}
 
 	if sendStopMessage {
-		sendStreamStopMessage(c)
+		sendStreamStopMessage(c, flusher)
 	}
 
 	return nil, &usage, responseTextBuilder.String()
 }
-
 func handleStreamData(data string, usage *model.Usage, responseTextBuilder *strings.Builder) {
 	var claudeResponse StreamResponse
 	if err := json.Unmarshal([]byte(data), &claudeResponse); err != nil {
@@ -515,13 +524,40 @@ func handleErrorEvent(reader *bufio.Reader) (*model.ErrorWithStatusCode, error) 
 	}, nil
 }
 
-// 发送流结束消息
-func sendStreamStopMessage(c *gin.Context) {
-	messageStop := "event: message_stop\ndata: {\"type\": \"message_stop\"}\n\n"
-	c.Writer.Write([]byte(messageStop))
-	c.Writer.Flush()
+func createErrorWithStatusCode(err error, statusCode int) *model.ErrorWithStatusCode {
+	return &model.ErrorWithStatusCode{
+		Error: model.Error{
+			Message: err.Error(),
+			Type:    "internal_error",
+			Code:    statusCode,
+		},
+		StatusCode: statusCode,
+	}
+}
+func writeLine(c *gin.Context, line string, flusher http.Flusher) error {
+	_, err := c.Writer.WriteString(line)
+	if err != nil {
+		return err
+	}
+	flusher.Flush()
+	return nil
 }
 
+func isBrokenPipeError(err error) bool {
+	if netErr, ok := err.(*net.OpError); ok {
+		if sysErr, ok := netErr.Err.(*os.SyscallError); ok {
+			return strings.Contains(sysErr.Error(), "broken pipe")
+		}
+	}
+	return false
+}
+
+// 修改 sendStreamStopMessage 函数
+func sendStreamStopMessage(c *gin.Context, flusher http.Flusher) {
+	messageStop := "event: message_stop\ndata: {\"type\": \"message_stop\"}\n\n"
+	c.Writer.WriteString(messageStop)
+	flusher.Flush()
+}
 func ClaudeHandler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
 	responseBody, err := io.ReadAll(resp.Body)
 	aitext := ""
