@@ -411,56 +411,108 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 }
 
 func ClaudeStreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage, string) {
-	scanner := bufio.NewScanner(resp.Body)
 	defer resp.Body.Close()
 
 	// 设置适合流式传输的响应头
 	common.SetEventStreamHeaders(c)
 
 	var usage model.Usage
-	responseText := ""
+	var responseTextBuilder strings.Builder
 	sendStopMessage := false
 
-	for scanner.Scan() {
-		line := scanner.Text() + "\n"
-		// 直接将原始行写入到响应流中
-		if _, writeErr := c.Writer.Write([]byte(line)); writeErr != nil {
-			// 记录错误，并考虑是否中断处理
-			logger.SysError("Error writing to stream: " + writeErr.Error())
-			sendStopMessage = true // 发生错误时发送停止消息
+	reader := bufio.NewReaderSize(resp.Body, 32*1024)
+
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				logger.SysError("Error reading from response body: " + err.Error())
+				sendStopMessage = true
+			}
 			break
 		}
-		// 确保响应是即时发送的
+
+		if strings.HasPrefix(line, "event: error") {
+			errorResp, err := handleErrorEvent(reader)
+			if err != nil {
+				logger.SysError("Error handling error event: " + err.Error())
+			}
+			return errorResp, &usage, responseTextBuilder.String()
+		}
+
+		if _, writeErr := c.Writer.WriteString(line); writeErr != nil {
+			logger.SysError("Error writing to stream: " + writeErr.Error())
+			sendStopMessage = true
+			break
+		}
 		c.Writer.Flush()
 
-		// 对data行进行额外的解析和处理
 		if strings.HasPrefix(line, "data: ") {
 			data := strings.TrimPrefix(line, "data: ")
-			// 处理data
-			var claudeResponse StreamResponse
-			if err := json.Unmarshal([]byte(data), &claudeResponse); err != nil {
-				logger.SysError("Error unmarshalling stream response: " + err.Error())
-				continue // 或者处理错误
-			}
-
-			response, meta := StreamResponseClaude2OpenAI(&claudeResponse)
-			if meta != nil {
-				usage.PromptTokens += meta.Usage.InputTokens
-				usage.CompletionTokens += meta.Usage.OutputTokens
-			}
-			if response != nil {
-				responsePart := response.Choices[0].Delta.Content.(string)
-				responseText += responsePart
-			}
+			handleStreamData(data, &usage, &responseTextBuilder)
 		}
 	}
 
-	// 发生错误时，发送结束消息
 	if sendStopMessage {
 		sendStreamStopMessage(c)
 	}
 
-	return nil, &usage, responseText
+	return nil, &usage, responseTextBuilder.String()
+}
+
+func handleStreamData(data string, usage *model.Usage, responseTextBuilder *strings.Builder) {
+	var claudeResponse StreamResponse
+	if err := json.Unmarshal([]byte(data), &claudeResponse); err != nil {
+		logger.SysError("Error unmarshalling stream response: " + err.Error())
+		return
+	}
+
+	response, meta := StreamResponseClaude2OpenAI(&claudeResponse)
+	if meta != nil {
+		usage.PromptTokens += meta.Usage.InputTokens
+		usage.CompletionTokens += meta.Usage.OutputTokens
+	}
+	if response != nil {
+		responsePart := response.Choices[0].Delta.Content.(string)
+		responseTextBuilder.WriteString(responsePart)
+	}
+}
+
+func handleErrorEvent(reader *bufio.Reader) (*model.ErrorWithStatusCode, error) {
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return createGenericError(), err
+	}
+
+	if !strings.HasPrefix(line, "data: ") {
+		return createGenericError(), nil
+	}
+
+	errorData := strings.TrimPrefix(line, "data: ")
+	var errorResponse struct {
+		Error struct {
+			Type    string `json:"type"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+
+	if err := json.Unmarshal([]byte(errorData), &errorResponse); err != nil {
+		return createGenericError(), err
+	}
+
+	statusCode := http.StatusInternalServerError
+	if errorResponse.Error.Type == "overloaded_error" {
+		statusCode = 529
+	}
+
+	return &model.ErrorWithStatusCode{
+		Error: model.Error{
+			Message: errorResponse.Error.Message,
+			Type:    errorResponse.Error.Type,
+			Code:    statusCode,
+		},
+		StatusCode: statusCode,
+	}, nil
 }
 
 // 发送流结束消息
