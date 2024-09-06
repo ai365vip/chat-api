@@ -116,65 +116,88 @@ func CountTokenMessages(messages []model.Message, model string) int {
 	// https://github.com/pkoukk/tiktoken-go/issues/6
 	//
 	// Every message follows <|start|>{role/name}\n{content}<|end|>\n
-	var tokensPerMessage int
-	var tokensPerName int
-	if model == "gpt-3.5-turbo-0301" {
-		tokensPerMessage = 4
-		tokensPerName = -1 // If there's a name, the role is omitted
-	} else {
-		tokensPerMessage = 3
-		tokensPerName = 1
-	}
+	tokensPerMessage := 3
+	tokensPerName := 1
 	tokenNum := 0
+
 	for _, message := range messages {
 		tokenNum += tokensPerMessage
-		switch v := message.Content.(type) {
-		case string:
-			tokenNum += getTokenNum(tokenEncoder, v)
-		case []any:
-			for _, it := range v {
-				m := it.(map[string]any)
-				switch m["type"] {
-				case "text":
-					tokenNum += getTokenNum(tokenEncoder, m["text"].(string))
-				case "image_url":
-					imageUrl, ok := m["image_url"].(map[string]any)
-					if ok {
-						url := imageUrl["url"].(string)
-						detail := ""
-						if imageUrl["detail"] != nil {
-							detail = imageUrl["detail"].(string)
-						}
-						imageTokens, err := countImageTokens(url, detail, model)
-						if err != nil {
-							logger.SysError("error counting image tokens: " + err.Error())
-						} else {
 
-							tokenNum += imageTokens
-						}
-					}
-				case "image":
-					source, ok := m["source"].(map[string]any)
-					if ok {
-						data := source["data"].(string)
-						imageTokens, err := claudeImageTokens(data)
-						if err != nil {
-							logger.SysError("计算图像Token时出错: " + err.Error())
-						} else {
-							tokenNum += imageTokens
-						}
-					}
+		if message.Content == nil {
+			continue
+		}
+
+		switch content := message.Content.(type) {
+		case string:
+			tokenNum += getTokenNum(tokenEncoder, content)
+		case []interface{}:
+			for _, item := range content {
+				m, ok := item.(map[string]interface{})
+				if !ok {
+					continue
 				}
 
+				switch m["type"] {
+				case "text":
+					if text, ok := m["text"].(string); ok {
+						tokenNum += getTokenNum(tokenEncoder, text)
+					}
+				case "image_url":
+					imageUrl, ok := m["image_url"].(map[string]interface{})
+					if !ok {
+						continue
+					}
+					url, ok := imageUrl["url"].(string)
+					if !ok {
+						continue
+					}
+					detail := ""
+					if detailVal, ok := imageUrl["detail"]; ok {
+						detail, _ = detailVal.(string)
+					}
+					imageTokens, err := countImageTokens(url, detail, model)
+					if err != nil {
+						logger.SysError("计算图像Token时出错: " + err.Error())
+					} else {
+						tokenNum += imageTokens
+					}
+				case "image":
+					source, ok := m["source"].(map[string]interface{})
+					if !ok {
+						continue
+					}
+					data, ok := source["data"].(string)
+					if !ok {
+						continue
+					}
+					mediaType, ok := source["media_type"].(string)
+					if !ok {
+						mediaType = "image/jpeg" // 默认值
+					}
+
+					// 组合成完整的 Data URL
+					dataURL := fmt.Sprintf("data:%s;base64,%s", mediaType, data)
+					imageTokens, err := claudeImageTokens(dataURL)
+					if err != nil {
+						logger.SysError("计算图像Token时出错: " + err.Error())
+					} else {
+						tokenNum += imageTokens
+					}
+				}
 			}
+		default:
+			logger.SysError("未知的消息内容类型")
 		}
+
 		tokenNum += getTokenNum(tokenEncoder, message.Role)
 		if message.Name != nil {
 			tokenNum += tokensPerName
 			tokenNum += getTokenNum(tokenEncoder, *message.Name)
 		}
 	}
-	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>s
+
+	tokenNum += 3 // Every reply is primed with <|start|>assistant<|message|>
+
 	return tokenNum
 }
 

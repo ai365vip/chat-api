@@ -88,7 +88,13 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	return ConvertRequest(*request), nil
+	valueclaudeoriginalrequest, _ := c.Get("claude_original_request")
+	isclaudeoriginalrequest, _ := valueclaudeoriginalrequest.(bool)
+	if !isclaudeoriginalrequest {
+		return ConvertRequest(*request), nil
+	} else {
+		return ConverClaudeRequest(*request), nil
+	}
 
 }
 

@@ -45,8 +45,15 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
+	var claudeReq any
+	valueclaudeoriginalrequest, _ := c.Get("claude_original_request")
+	isclaudeoriginalrequest, _ := valueclaudeoriginalrequest.(bool)
+	if isclaudeoriginalrequest {
+		claudeReq = anthropic.ConverClaudeRequest(*request)
+	} else {
+		claudeReq = anthropic.ConvertRequest(*request)
+	}
 
-	claudeReq := anthropic.ConvertRequest(*request)
 	c.Set(ctxkey.RequestModel, request.Model)
 	c.Set(ctxkey.ConvertedRequest, claudeReq)
 	return claudeReq, nil
