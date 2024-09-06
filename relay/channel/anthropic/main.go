@@ -82,7 +82,10 @@ func createGenericError() *model.ErrorWithStatusCode {
 
 func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 	claudeRequest := createBaseRequest(textRequest)
-	claudeRequest.Tools = convertToolsLegacy(textRequest.Tools)
+	if len(textRequest.Tools) > 0 {
+		claudeRequest.Tools = convertToolsLegacy(textRequest.Tools)
+		claudeRequest.ToolChoice = convertToolChoice(textRequest.ToolChoice)
+	}
 	claudeRequest.ToolChoice = convertToolChoice(textRequest.ToolChoice)
 	claudeRequest = applyLegacyModelMapping(claudeRequest)
 	claudeRequest.Messages = convertMessagesLegacy(textRequest.Messages, &claudeRequest.System)
@@ -96,7 +99,14 @@ func ConverClaudeRequest(request model.GeneralOpenAIRequest) *Request {
 	if err != nil {
 		return nil
 	}
-	claudeRequest.Tools, err = convertTools(request.Tools)
+	if len(request.Tools) > 0 {
+		claudeRequest.Tools, err = convertTools(request.Tools)
+		if err != nil {
+			return nil
+		}
+		claudeRequest.ToolChoice = convertToolChoice(request.ToolChoice)
+	}
+
 	if err != nil {
 		return nil
 	}
