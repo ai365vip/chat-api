@@ -81,27 +81,124 @@ func createGenericError() *model.ErrorWithStatusCode {
 }
 
 func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
-	claudeRequest := Request{
-		Model:       textRequest.Model,
-		MaxTokens:   textRequest.MaxTokens,
-		Stream:      textRequest.Stream,
-		Temperature: textRequest.Temperature,
-		TopP:        textRequest.TopP,
-		TopK:        textRequest.TopK,
-		System:      textRequest.System,
+	claudeRequest := createBaseRequest(textRequest)
+	claudeRequest.Tools = convertToolsLegacy(textRequest.Tools)
+	claudeRequest.ToolChoice = convertToolChoice(textRequest.ToolChoice)
+	claudeRequest = applyLegacyModelMapping(claudeRequest)
+	claudeRequest.Messages = convertMessagesLegacy(textRequest.Messages, &claudeRequest.System)
+	return claudeRequest
+}
+
+func ConverClaudeRequest(request model.GeneralOpenAIRequest) *Request {
+	claudeRequest := createBaseRequest(request)
+	var err error
+	claudeRequest.Messages, err = convertMessages(request.Messages)
+	if err != nil {
+		return nil
+	}
+	claudeRequest.Tools, err = convertTools(request.Tools)
+	if err != nil {
+		return nil
+	}
+	return claudeRequest
+}
+
+// 共享的辅助函数
+
+func createBaseRequest(request model.GeneralOpenAIRequest) *Request {
+	claudeRequest := &Request{
+		Model:       request.Model,
+		MaxTokens:   request.MaxTokens,
+		Stream:      request.Stream,
+		Temperature: request.Temperature,
+		TopP:        request.TopP,
+		TopK:        request.TopK,
+		System:      request.System,
 	}
 	if claudeRequest.MaxTokens == 0 {
 		claudeRequest.MaxTokens = 4096
 	}
-	// legacy model name mapping
-	if claudeRequest.Model == "claude-instant-1" {
-		claudeRequest.Model = "claude-instant-1.1"
-	} else if claudeRequest.Model == "claude-2" {
-		claudeRequest.Model = "claude-2.1"
+	return claudeRequest
+}
+
+func convertToolsLegacy(tools []model.Tool) []Tool {
+	claudeTools := make([]Tool, 0, len(tools))
+	for _, tool := range tools {
+		if params, ok := tool.Function.Parameters.(map[string]any); ok {
+			claudeTools = append(claudeTools, Tool{
+				Name:        tool.Function.Name,
+				Description: tool.Function.Description,
+				InputSchema: InputSchema{
+					Type:       params["type"].(string),
+					Properties: params["properties"],
+					Required:   params["required"],
+				},
+			})
+		}
 	}
+	return claudeTools
+}
+
+func convertTools(tools []model.Tool) ([]Tool, error) {
+	claudeTools := make([]Tool, 0, len(tools))
+	for _, tool := range tools {
+		params, ok := tool.Function.Parameters.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("invalid parameters format in function")
+		}
+		toolType, ok := params["type"].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid tool type")
+		}
+		claudeTools = append(claudeTools, Tool{
+			Name:        tool.Function.Name,
+			Description: tool.Function.Description,
+			InputSchema: InputSchema{
+				Type:       toolType,
+				Properties: params["properties"],
+				Required:   params["required"],
+			},
+		})
+	}
+	return claudeTools, nil
+}
+
+func convertToolChoice(toolChoice any) struct {
+	Type string `json:"type"`
+	Name string `json:"name,omitempty"`
+} {
+	claudeToolChoice := struct {
+		Type string `json:"type"`
+		Name string `json:"name,omitempty"`
+	}{Type: "auto"}
+
+	if choice, ok := toolChoice.(map[string]any); ok {
+		if function, ok := choice["function"].(map[string]any); ok {
+			claudeToolChoice.Type = "tool"
+			claudeToolChoice.Name = function["name"].(string)
+		}
+	} else if toolChoiceType, ok := toolChoice.(string); ok && toolChoiceType == "any" {
+		claudeToolChoice.Type = toolChoiceType
+	}
+
+	return claudeToolChoice
+}
+
+func applyLegacyModelMapping(request *Request) *Request {
+	switch request.Model {
+	case "claude-instant-1":
+		request.Model = "claude-instant-1.1"
+	case "claude-2":
+		request.Model = "claude-2.1"
+	}
+	return request
+}
+
+// 原有的 ConvertRequest 中的消息转换逻辑
+func convertMessagesLegacy(messages []model.Message, system *string) []Message {
 	formatMessages := make([]model.Message, 0)
 	var lastMessage *model.Message
-	for i, message := range textRequest.Messages {
+	for i, message := range messages {
 		if message.Role == "system" {
 			if i != 0 {
 				message.Role = "user"
@@ -111,37 +208,33 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 			message.Role = "user"
 		}
 
-		// 创建新的消息结构
 		fmtMessage := model.Message{
 			Role:    message.Role,
 			Content: message.Content,
 		}
 
-		// 检查是否应该合并消息
 		if lastMessage != nil && (lastMessage.Role == message.Role) &&
 			lastMessage.IsStringContent() && message.IsStringContent() {
 			content := strings.Trim(fmt.Sprintf("%s %s", lastMessage.StringContent(), message.StringContent()), "\"")
 			fmtMessage.Content = content
 
-			// 删除上一条消息
 			formatMessages = formatMessages[:len(formatMessages)-1]
 		}
 
-		// 处理 Content 为 nil 的情况
 		if fmtMessage.Content == nil {
 			content, _ := json.Marshal("...")
 			fmtMessage.Content = content
 		}
 
-		// 添加新的或修改后的消息到列表
 		formatMessages = append(formatMessages, fmtMessage)
 
-		lastMessage = &fmtMessage // 更新 lastMessage 为当前处理的消息
+		lastMessage = &fmtMessage
 	}
-	for _, message := range formatMessages {
 
-		if message.Role == "system" && claudeRequest.System == "" {
-			claudeRequest.System = message.StringContent()
+	var claudeMessages []Message
+	for _, message := range formatMessages {
+		if message.Role == "system" && *system == "" {
+			*system = message.StringContent()
 			continue
 		}
 		claudeMessage := Message{
@@ -151,8 +244,25 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		if message.IsStringContent() {
 			content.Type = "text"
 			content.Text = message.StringContent()
+			if message.Role == "tool" {
+				claudeMessage.Role = "user"
+				content.Type = "tool_result"
+				content.Content = content.Text
+				content.Text = ""
+				content.ToolUseId = message.ToolCallId
+			}
 			claudeMessage.Content = append(claudeMessage.Content, content)
-			claudeRequest.Messages = append(claudeRequest.Messages, claudeMessage)
+			for i := range message.ToolCalls {
+				inputParam := make(map[string]any)
+				_ = json.Unmarshal([]byte(message.ToolCalls[i].Function.Arguments.(string)), &inputParam)
+				claudeMessage.Content = append(claudeMessage.Content, Content{
+					Type:  "tool_use",
+					Id:    message.ToolCalls[i].Id,
+					Name:  message.ToolCalls[i].Function.Name,
+					Input: inputParam,
+				})
+			}
+			claudeMessages = append(claudeMessages, claudeMessage)
 			continue
 		}
 		var contents []Content
@@ -165,7 +275,6 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 				content.Text = part.Text
 			} else if part.Type == model.ContentTypeImageURL {
 				content.Type = "image"
-
 				content.Source = &ImageSource{
 					Type: "base64",
 				}
@@ -181,9 +290,105 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 			contents = append(contents, content)
 		}
 		claudeMessage.Content = contents
-		claudeRequest.Messages = append(claudeRequest.Messages, claudeMessage)
+		claudeMessages = append(claudeMessages, claudeMessage)
 	}
-	return &claudeRequest
+	return claudeMessages
+}
+
+// 新的 ConverClaudeRequest 中的消息转换逻辑
+func convertMessages(messages []model.Message) ([]Message, error) {
+	var formatMessages []Message
+	var lastMessage *Message
+
+	for i, message := range messages {
+		// 处理角色
+		if message.Role == "system" {
+			if i != 0 {
+				message.Role = "user"
+			}
+		}
+		if message.Role == "" {
+			message.Role = "user"
+		}
+
+		// 转换内容
+		claudeContent, err := convertContent(message.Content)
+		if err != nil {
+			return nil, fmt.Errorf("convert content error for message %d: %v", i, err)
+		}
+
+		fmtMessage := Message{
+			Role:    message.Role,
+			Content: claudeContent,
+		}
+
+		// 检查是否应该合并消息
+		if lastMessage != nil && (lastMessage.Role == fmtMessage.Role) &&
+			isStringContent(lastMessage.Content) && isStringContent(fmtMessage.Content) {
+			content := strings.Trim(fmt.Sprintf("%s %s", getStringContent(lastMessage.Content), getStringContent(fmtMessage.Content)), "\"")
+			fmtMessage.Content = []Content{{Type: "text", Text: content}}
+
+			// 删除上一条消息
+			formatMessages = formatMessages[:len(formatMessages)-1]
+		}
+
+		// 处理 Content 为空的情况
+		if len(fmtMessage.Content) == 0 {
+			fmtMessage.Content = []Content{{Type: "text", Text: "..."}}
+		}
+
+		// 添加新的或修改后的消息到列表
+		formatMessages = append(formatMessages, fmtMessage)
+
+		lastMessage = &fmtMessage // 更新 lastMessage 为当前处理的消息
+	}
+
+	return formatMessages, nil
+}
+
+func convertContent(content interface{}) ([]Content, error) {
+	switch c := content.(type) {
+	case string:
+		return []Content{{Type: "text", Text: c}}, nil
+	case []interface{}:
+		var claudeContents []Content
+		for _, item := range c {
+			if contentMap, ok := item.(map[string]interface{}); ok {
+				claudeContent := Content{
+					Type: contentMap["type"].(string),
+				}
+				if text, ok := contentMap["text"].(string); ok {
+					claudeContent.Text = text
+				}
+				if source, ok := contentMap["source"].(map[string]interface{}); ok {
+					claudeContent.Source = &ImageSource{
+						Type:      source["type"].(string),
+						MediaType: source["media_type"].(string),
+						Data:      source["data"].(string),
+					}
+				}
+				claudeContents = append(claudeContents, claudeContent)
+			} else {
+				return nil, fmt.Errorf("invalid content item type")
+			}
+		}
+		return claudeContents, nil
+	default:
+		return nil, fmt.Errorf("unsupported content type")
+	}
+}
+
+// 辅助函数：检查内容是否为字符串
+func isStringContent(content []Content) bool {
+	return len(content) == 1 && content[0].Type == "text"
+}
+
+// 辅助函数：获取字符串内容
+func getStringContent(content []Content) string {
+	if isStringContent(content) {
+		return content[0].Text
+	}
+	return ""
 }
 
 func ResponseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
