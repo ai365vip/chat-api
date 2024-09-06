@@ -12,8 +12,12 @@ import (
 
 func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 	claudeRequest := createBaseRequest(textRequest)
-	claudeRequest.Tools = convertToolsLegacy(textRequest.Tools)
-	claudeRequest.ToolChoice = convertToolChoice(textRequest.ToolChoice)
+
+	if len(textRequest.Tools) > 0 {
+		claudeRequest.Tools = convertToolsLegacy(textRequest.Tools)
+		claudeRequest.ToolChoice = convertToolChoice(textRequest.ToolChoice)
+	}
+
 	claudeRequest.Messages = convertMessagesLegacy(textRequest.Messages, &claudeRequest.System)
 	return claudeRequest
 }
@@ -25,10 +29,15 @@ func ConverClaudeRequest(request model.GeneralOpenAIRequest) *Request {
 	if err != nil {
 		return nil
 	}
-	claudeRequest.Tools, err = convertTools(request.Tools)
-	if err != nil {
-		return nil
+
+	if len(request.Tools) > 0 {
+		claudeRequest.Tools, err = convertTools(request.Tools)
+		if err != nil {
+			return nil
+		}
+		claudeRequest.ToolChoice = convertToolChoice(request.ToolChoice)
 	}
+
 	return claudeRequest
 }
 
@@ -94,11 +103,15 @@ func convertTools(tools []model.Tool) ([]anthropic.Tool, error) {
 	return claudeTools, nil
 }
 
-func convertToolChoice(toolChoice any) struct {
+func convertToolChoice(toolChoice any) *struct {
 	Type string `json:"type"`
 	Name string `json:"name,omitempty"`
 } {
-	claudeToolChoice := struct {
+	if toolChoice == nil {
+		return nil
+	}
+
+	claudeToolChoice := &struct {
 		Type string `json:"type"`
 		Name string `json:"name,omitempty"`
 	}{Type: "auto"}
