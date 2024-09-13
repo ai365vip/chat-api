@@ -51,6 +51,7 @@ type ChannelConfig struct {
 	Region       string `json:"region,omitempty"`
 	SK           string `json:"sk,omitempty"`
 	AK           string `json:"ak,omitempty"`
+	Cross        string `json:"cross,omitempty"`
 	UserID       string `json:"user_id,omitempty"`
 	APIVersion   string `json:"api_version,omitempty"`
 	LibraryID    string `json:"library_id,omitempty"`

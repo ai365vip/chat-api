@@ -89,6 +89,7 @@ const EditChannel = (props) => {
         region: '',
         sk: '',
         ak: '',
+        cross: '',
         user_id: '',
         project_id:'',
         client_id:'',
@@ -930,6 +931,17 @@ const EditChannel = (props) => {
                                     placeholder={'AWS IAM Secret Key'}
                                     onChange={(value) => handleConfigChange({ name: 'sk', value })}
                                     value={config.sk}
+                                    autoComplete='new-password'
+                                />
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>AWS Cross：</Typography.Text>
+                                </div>
+                                <Input
+                                    label='Cross'
+                                    name='cross'
+                                    placeholder={'AWS eu or us'}
+                                    onChange={(value) => handleConfigChange({ name: 'cross', value })}
+                                    value={config.cross}
                                     autoComplete='new-password'
                                 />
                             </div> // 新增的包裹元素的结束标签

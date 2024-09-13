@@ -51,9 +51,36 @@ func awsModelID(requestModel string) (string, error) {
 
 	return "", errors.Errorf("model %s not found", requestModel)
 }
+func awsCrossModelID(requestModel string, cross string) (string, error) {
+	prefix := cross
+	if prefix != "" {
+		prefix += "."
+	}
 
+	modelMap := map[string]string{
+		"claude-instant-1.2":         prefix + "anthropic.claude-instant-v1",
+		"claude-2.0":                 prefix + "anthropic.claude-v2",
+		"claude-2.1":                 prefix + "anthropic.claude-v2:1",
+		"claude-3-sonnet-20240229":   prefix + "anthropic.claude-3-sonnet-20240229-v1:0",
+		"claude-3-5-sonnet-20240620": prefix + "anthropic.claude-3-5-sonnet-20240620-v1:0",
+		"claude-3-opus-20240229":     prefix + "anthropic.claude-3-opus-20240229-v1:0",
+		"claude-3-haiku-20240307":    prefix + "anthropic.claude-3-haiku-20240307-v1:0",
+	}
+
+	if awsModelID, ok := modelMap[requestModel]; ok {
+		return awsModelID, nil
+	}
+
+	return "", errors.Errorf("model %s not found", requestModel)
+}
 func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
-	awsModelId, err := awsModelID(c.GetString(ctxkey.RequestModel))
+	var awsModelId string
+	var err error
+	if cross := c.GetString(ctxkey.Cross); cross != "" {
+		awsModelId, err = awsCrossModelID(c.GetString(ctxkey.RequestModel), cross)
+	} else {
+		awsModelId, err = awsModelID(c.GetString(ctxkey.RequestModel))
+	}
 	responseText := ""
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "awsModelID")), nil, ""
@@ -64,7 +91,6 @@ func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*
 		Accept:      aws.String("application/json"),
 		ContentType: aws.String("application/json"),
 	}
-
 	claudeReq_, ok := c.Get(ctxkey.ConvertedRequest)
 	if !ok {
 		return wrapErr(errors.New("request not found")), nil, ""
@@ -113,7 +139,13 @@ func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*
 func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
 	createdTime := helper.GetTimestamp()
 	responseText := ""
-	awsModelId, err := awsModelID(c.GetString(ctxkey.RequestModel))
+	var awsModelId string
+	var err error
+	if cross := c.GetString(ctxkey.Cross); cross != "" {
+		awsModelId, err = awsCrossModelID(c.GetString(ctxkey.RequestModel), cross)
+	} else {
+		awsModelId, err = awsModelID(c.GetString(ctxkey.RequestModel))
+	}
 
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "awsModelID")), nil, ""
@@ -220,7 +252,13 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 }
 
 func ClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
-	awsModelId, err := awsModelID(c.GetString(ctxkey.RequestModel))
+	var awsModelId string
+	var err error
+	if cross := c.GetString(ctxkey.Cross); cross != "" {
+		awsModelId, err = awsCrossModelID(c.GetString(ctxkey.RequestModel), cross)
+	} else {
+		awsModelId, err = awsModelID(c.GetString(ctxkey.RequestModel))
+	}
 	responseText := ""
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "awsModelID")), nil, ""
@@ -273,7 +311,13 @@ func ClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client, modelName stri
 
 func StreamClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
 	responseText := ""
-	awsModelId, err := awsModelID(c.GetString(ctxkey.RequestModel))
+	var awsModelId string
+	var err error
+	if cross := c.GetString(ctxkey.Cross); cross != "" {
+		awsModelId, err = awsCrossModelID(c.GetString(ctxkey.RequestModel), cross)
+	} else {
+		awsModelId, err = awsModelID(c.GetString(ctxkey.RequestModel))
+	}
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "awsModelID")), nil, ""
 	}

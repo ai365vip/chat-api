@@ -53,7 +53,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 	} else {
 		claudeReq = anthropic.ConvertRequest(*request)
 	}
-
+	c.Set(ctxkey.Cross, meta.Config.Cross)
 	c.Set(ctxkey.RequestModel, request.Model)
 	c.Set(ctxkey.ConvertedRequest, claudeReq)
 	return claudeReq, nil
