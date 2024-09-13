@@ -21,6 +21,7 @@ import (
 	relaymodel "one-api/relay/model"
 	"one-api/relay/util"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -125,9 +126,13 @@ func randomID() string {
 
 func buildTestRequest(modelTest string) *relaymodel.GeneralOpenAIRequest {
 	testRequest := &relaymodel.GeneralOpenAIRequest{
-		MaxTokens: 3,
-		Stream:    false,
-		Model:     modelTest,
+		Stream: false,
+		Model:  modelTest,
+	}
+	if strings.HasPrefix(modelTest, "o1-") {
+		testRequest.MaxCompletionTokens = 5
+	} else {
+		testRequest.MaxTokens = 5
 	}
 	//content, _ := json.Marshal("hi")
 	testMessage := relaymodel.Message{
