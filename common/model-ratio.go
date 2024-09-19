@@ -351,6 +351,9 @@ func GetCompletionRatio(name string) float64 {
 		return 3
 	}
 	if strings.HasPrefix(name, "gemini-") {
+		if strings.Contains(name, "flash") {
+			return 4
+		}
 		return 3
 	}
 	if strings.HasPrefix(name, "command-") && strings.HasSuffix(name, "-internet") {
