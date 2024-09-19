@@ -86,7 +86,6 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		claudeRequest.Tools = convertToolsLegacy(textRequest.Tools)
 		claudeRequest.ToolChoice = convertToolChoice(textRequest.ToolChoice)
 	}
-	claudeRequest.ToolChoice = convertToolChoice(textRequest.ToolChoice)
 	claudeRequest = applyLegacyModelMapping(claudeRequest)
 	claudeRequest.Messages = convertMessagesLegacy(textRequest.Messages, &claudeRequest.System)
 	return claudeRequest
