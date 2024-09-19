@@ -32,7 +32,7 @@ type Request struct {
 	Model         string    `json:"model"`
 	Messages      []Message `json:"messages"`
 	System        string    `json:"system,omitempty"`
-	MaxTokens     int       `json:"max_tokens,omitempty"`
+	MaxTokens     uint      `json:"max_tokens,omitempty"`
 	StopSequences []string  `json:"stop_sequences,omitempty"`
 	Stream        bool      `json:"stream,omitempty"`
 	Temperature   float64   `json:"temperature,omitempty"`
