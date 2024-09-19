@@ -54,12 +54,12 @@ func ValidateUserToken(key string, model string) (token *Token, err error) {
 	token, err = CacheGetTokenByKey(key)
 	if err == nil {
 		if token.Status == common.TokenStatusExhausted {
-			return nil, errors.New("该令牌额度已用尽")
+			return token, errors.New("该令牌额度已用尽")
 		} else if token.Status == common.TokenStatusExpired {
-			return nil, errors.New("该令牌已过期")
+			return token, errors.New("该令牌已过期")
 		}
 		if token.Status != common.TokenStatusEnabled {
-			return nil, errors.New("该令牌状态不可用")
+			return token, errors.New("该令牌状态不可用")
 		}
 		if token.ExpiredTime != -1 && token.ExpiredTime < common.GetTimestamp() {
 			if !common.RedisEnabled {
@@ -69,7 +69,7 @@ func ValidateUserToken(key string, model string) (token *Token, err error) {
 					common.SysError("failed to update token status" + err.Error())
 				}
 			}
-			return nil, errors.New("该令牌已过期")
+			return token, errors.New("该令牌已过期")
 		}
 		if !token.UnlimitedQuota && token.RemainQuota <= 0 {
 			if !common.RedisEnabled {
@@ -80,7 +80,7 @@ func ValidateUserToken(key string, model string) (token *Token, err error) {
 					common.SysError("failed to update token status" + err.Error())
 				}
 			}
-			return nil, errors.New("该令牌额度已用尽")
+			return token, errors.New("该令牌额度已用尽")
 		}
 		if token.Models != "" {
 			models := strings.Split(token.Models, ",")
@@ -95,7 +95,7 @@ func ValidateUserToken(key string, model string) (token *Token, err error) {
 				}
 			}
 			if !modelFound && model != "" {
-				return nil, errors.New("该令牌不支持指定的模型")
+				return token, errors.New("该令牌不支持指定的模型")
 			}
 		}
 		return token, nil
