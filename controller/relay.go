@@ -65,22 +65,28 @@ func Relay(c *gin.Context) {
 	var attemptsLog []string
 	failedChannelIds := []int{channelId}
 	for i := retryTimes; i > 0; i-- {
-		value, _ := c.Get("is_tools")
+		// 获取并处理上下文值
+		valueTools, okTools := c.Get("is_tools")
+		valueClaudeOriginalRequest, okClaudeOriginalRequest := c.Get("claude_original_request")
+		// 初始化变量为 false
+		isTools := false
+		isClaudeOriginalRequest := false
 
-		// 尝试将值转换为bool类型
-		isTools, ok := value.(bool)
-		if !ok {
-			// 如果转换失败，处理类型不匹配的情况
-			fmt.Println("is_tools value is not of type bool")
-			return
+		// 如果成功获取上下文值，尝试转换为 bool 类型
+		if okTools {
+			isTools, _ = valueTools.(bool)
 		}
-		valueclaudeoriginalrequest, _ := c.Get("claude_original_request")
-		isclaudeoriginalrequest, ok := valueclaudeoriginalrequest.(bool)
-		if !ok {
-			fmt.Println("claude_original_request value is not of type bool")
-			return
+
+		if okClaudeOriginalRequest {
+			isClaudeOriginalRequest, _ = valueClaudeOriginalRequest.(bool)
 		}
-		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i != retryTimes, isTools, isclaudeoriginalrequest, failedChannelIds, i)
+
+		// 如果有任何值获取失败，打印日志
+		if !okTools || !okClaudeOriginalRequest {
+			fmt.Println("Failed to get one or more context values, using default false values")
+		}
+
+		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i != retryTimes, isTools, isClaudeOriginalRequest, failedChannelIds, i)
 		if err != nil {
 			common.Errorf(ctx, "CacheGetRandomSatisfiedChannel failed: %w", err)
 			break
