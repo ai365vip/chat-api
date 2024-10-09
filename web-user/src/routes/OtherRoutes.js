@@ -12,6 +12,7 @@ const ForgetPassword = Loadable(lazy(() => import('views/Authentication/Auth/For
 const ResetPassword = Loadable(lazy(() => import('views/Authentication/Auth/ResetPassword')));
 const Home = Loadable(lazy(() => import('views/Home')));
 const About = Loadable(lazy(() => import('views/About')));
+const Chat = Loadable(lazy(() => import('views/Chat')));
 const NotFoundView = Loadable(lazy(() => import('views/Error')));
 
 // ==============================|| AUTHENTICATION ROUTING ||============================== //
@@ -47,6 +48,10 @@ const OtherRoutes = {
     {
       path: '/oauth/github',
       element: <GitHubOAuth />
+    },
+    {
+      path: '/chatweb',
+      element: <Chat />
     },
     {
       path: '/404',

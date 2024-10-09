@@ -1,7 +1,7 @@
+import React, { useEffect, useCallback, useReducer } from 'react';
 import PropTypes from 'prop-types';
-import { useState,useEffect } from 'react';
 import { API } from 'utils/api';
-
+import { Link } from 'react-router-dom';
 import {
   Popover,
   TableRow,
@@ -16,12 +16,63 @@ import {
   Button,
   Tooltip,
   Stack,
-  ButtonGroup,Select, FormControl,Checkbox
+  ButtonGroup,
+  Select,
+  FormControl,
+  Checkbox
 } from '@mui/material';
 import TableSwitch from 'ui-component/Switch';
-import { renderQuota, showSuccess,showError, timestamp2string } from 'utils/common';
+import { renderQuota, showSuccess, showError, timestamp2string } from 'utils/common';
 import CircularProgress from '@mui/material/CircularProgress';
-import { IconDotsVertical, IconEdit, IconTrash,IconEye  } from '@tabler/icons-react';
+import { IconDotsVertical, IconEdit, IconTrash, IconEye } from '@tabler/icons-react';
+
+// 初始状态
+const initialState = {
+  open: null,
+  menuItems: null,
+  openDelete: false,
+  statusSwitch: 1,
+  loading: false,
+  billingEnabled: 0,
+  modelRatioEnabled: false,
+  userGroupEnabled: false,
+  billingByRequestEnabled: false,
+  options: {},
+  serverAddress: '',
+  chatLink: ''
+};
+
+// Reducer 函数
+function reducer(state, action) {
+  switch (action.type) {
+    case 'SET_OPEN':
+      return { ...state, open: action.payload };
+    case 'SET_MENU_ITEMS':
+      return { ...state, menuItems: action.payload };
+    case 'SET_OPEN_DELETE':
+      return { ...state, openDelete: action.payload };
+    case 'SET_STATUS_SWITCH':
+      return { ...state, statusSwitch: action.payload };
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    case 'SET_BILLING_ENABLED':
+      return { ...state, billingEnabled: action.payload };
+    case 'SET_OPTIONS':
+      return { ...state, options: action.payload };
+    case 'SET_SERVER_ADDRESS':
+      return { ...state, serverAddress: action.payload };
+    case 'SET_CHAT_LINK':
+      return { ...state, chatLink: action.payload };
+    case 'SET_MODEL_RATIO_ENABLED':
+      return { ...state, modelRatioEnabled: action.payload };
+    case 'SET_USER_GROUP_ENABLED':
+      return { ...state, userGroupEnabled: action.payload };
+    case 'SET_BILLING_BY_REQUEST_ENABLED':
+      return { ...state, billingByRequestEnabled: action.payload };
+    default:
+      return state;
+  }
+}
 
 function createMenu(menuItems) {
   return (
@@ -36,145 +87,138 @@ function createMenu(menuItems) {
   );
 }
 
-export default function TokensTableRow({ item, manageToken, handleOpenModal, setModalTokenId, selected, handleSelectOne }) {
+const TokensTableRow = React.memo(function TokensTableRow({ item, manageToken, handleOpenModal, setModalTokenId, selected, handleSelectOne }) {
+  const [state, dispatch] = useReducer(reducer, { ...initialState, statusSwitch: item.status, billingEnabled: item.billing_enabled ? 1 : 0 });
 
-  const [open, setOpen] = useState(null);
-  const [menuItems, setMenuItems] = useState(null);
-  const [openDelete, setOpenDelete] = useState(false);
-  const [statusSwitch, setStatusSwitch] = useState(item.status);
-  const [loading, setLoading] = useState(false);
-  const [billingEnabled, setBillingEnabled] = useState(item.billing_enabled ? 1 : 0);
-  const [modelRatioEnabled, setModelRatioEnabled] = useState('');
-  const [userGroupEnabled, setUserGroupEnabled] = useState('');
-  const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
-  const [options, setOptions] = useState({});
-  
-
-  const handleBillingChange = async (event) => {
-    const billingValue = event.target.value;
-    setLoading(true); // 开始使用loading状态
-    setBillingEnabled(billingValue); // 更新billingEnabled状态
+  const getOptions = useCallback(async () => {
     try {
-        const res  = await API.put(`/api/token/${item.id}/billing_strategy`, {
-        billing_enabled: billingValue,
-      });
-      if (res && res.data) {
-        if (res.data.success) {
-          showSuccess('计费策略已更新');
-
-        } else {
-          alert(res.data.message || '未知错误');
-        }
+      const res = await API.get('/api/user/option');
+      const { success, message, data } = res.data;
+      if (success) {
+        let newOptions = {};
+        data.forEach((item) => {
+          newOptions[item.key] = item.value;
+        });
+        dispatch({ type: 'SET_OPTIONS', payload: newOptions });
       } else {
-        throw new Error('Invalid response structure');
+        showError(message);
       }
     } catch (error) {
-      alert(`更新失败: ${error.message ?? error.toString()}`);
-    } finally {
-      setLoading(false); // 完成请求后更新loading状态
+      console.error('Failed to fetch options:', error);
     }
-  };
-
-  useEffect(() => {
-      getOptions();
   }, []);
 
-  const getOptions = async () => {
-    const res = await API.get('/api/user/option');
-    const { success, message, data } = res.data;
-    if (success) {
-      let newOptions = {};
-      data.forEach((item) => {
-        newOptions[item.key] = item.value;
-      });
-      setOptions(newOptions); // 设置所有选项的状态
-    } else {
-      showError(message);
-    }
-  };
+  useEffect(() => {
+    let isMounted = true;
+    const getStatus = async () => {
+      try {
+        const res = await API.get('/api/status');
+        if (isMounted && res.data.success) {
+          dispatch({ type: 'SET_SERVER_ADDRESS', payload: res.data.data.server_address });
+          dispatch({ type: 'SET_CHAT_LINK', payload: res.data.data.chat_link });
+        }
+      } catch (error) {
+        console.error('Failed to fetch status:', error);
+      }
+    };
+    getStatus();
+    getOptions();
+    return () => {
+      isMounted = false;
+    };
+  }, [getOptions]);
 
   useEffect(() => {
-    if (options.ModelRatioEnabled) { 
-      setModelRatioEnabled(options.ModelRatioEnabled === 'true');
+    if (state.options.ModelRatioEnabled) {
+      dispatch({ type: 'SET_MODEL_RATIO_ENABLED', payload: state.options.ModelRatioEnabled === 'true' });
     }
-    if (options.BillingByRequestEnabled) { 
-      setBillingByRequestEnabled(options.BillingByRequestEnabled === 'true');
+    if (state.options.BillingByRequestEnabled) {
+      dispatch({ type: 'SET_BILLING_BY_REQUEST_ENABLED', payload: state.options.BillingByRequestEnabled === 'true' });
     }
-    if (options.UserGroupEnabled) { 
-      setUserGroupEnabled(options.UserGroupEnabled === 'true');
+    if (state.options.UserGroupEnabled) {
+      dispatch({ type: 'SET_USER_GROUP_ENABLED', payload: state.options.UserGroupEnabled === 'true' });
     }
-  }, [options]);
+  }, [state.options]);
 
+  const handleBillingChange = useCallback(async (event) => {
+    const billingValue = event.target.value;
+    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_BILLING_ENABLED', payload: billingValue });
+    try {
+      const res = await API.put(`/api/token/${item.id}/billing_strategy`, {
+        billing_enabled: billingValue,
+      });
+      if (res && res.data && res.data.success) {
+        showSuccess('计费策略已更新');
+      } else {
+        throw new Error(res.data.message || '未知错误');
+      }
+    } catch (error) {
+      showError(`更新失败: ${error.message ?? error.toString()}`);
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, [item.id]);
 
-  
-  
+  const handleDeleteOpen = useCallback(() => {
+    dispatch({ type: 'SET_OPEN', payload: null });
+    dispatch({ type: 'SET_OPEN_DELETE', payload: true });
+  }, []);
 
-  const handleDeleteOpen = () => {
-    handleCloseMenu();
-    setOpenDelete(true);
-  };
+  const handleDeleteClose = useCallback(() => {
+    dispatch({ type: 'SET_OPEN_DELETE', payload: false });
+  }, []);
 
-  const handleDeleteClose = () => {
-    setOpenDelete(false);
-  };
-
-  const handleOpenMenu = (event, type) => {
+  const handleOpenMenu = useCallback((event, type) => {
+    let menuItems;
     switch (type) {
-      case 'copy':
-        setMenuItems(copyItems);
+      case 'action':
+        menuItems = createMenu([
+          {
+            text: '编辑',
+            icon: <IconEdit style={{ marginRight: '16px' }} />,
+            onClick: () => {
+              dispatch({ type: 'SET_OPEN', payload: null });
+              handleOpenModal();
+              setModalTokenId(item.id);
+            },
+            color: undefined
+          },
+          {
+            text: '删除',
+            icon: <IconTrash style={{ marginRight: '16px' }} />,
+            onClick: handleDeleteOpen,
+            color: 'error.main'
+          }
+        ]);
         break;
-      case 'link':
-        setMenuItems(linkItems);
-        break;
+      // 可以添加其他类型的菜单
       default:
-        setMenuItems(actionItems);
+        menuItems = null;
     }
-    setOpen(event.currentTarget);
-  };
+    dispatch({ type: 'SET_MENU_ITEMS', payload: menuItems });
+    dispatch({ type: 'SET_OPEN', payload: event.currentTarget });
+  }, [handleOpenModal, setModalTokenId, item.id, handleDeleteOpen]);
 
-  const handleCloseMenu = () => {
-    setOpen(null);
-  };
+  const handleCloseMenu = useCallback(() => {
+    dispatch({ type: 'SET_OPEN', payload: null });
+  }, []);
 
-  const handleStatus = async () => {
-    const switchVlue = statusSwitch === 1 ? 2 : 1;
-    const { success } = await manageToken(item.id, 'status', switchVlue);
+  const handleStatus = useCallback(async () => {
+    const switchValue = state.statusSwitch === 1 ? 2 : 1;
+    const { success } = await manageToken(item.id, 'status', switchValue);
     if (success) {
-      setStatusSwitch(switchVlue);
+      dispatch({ type: 'SET_STATUS_SWITCH', payload: switchValue });
     }
-  };
+  }, [state.statusSwitch, manageToken, item.id]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     handleCloseMenu();
     await manageToken(item.id, 'delete', '');
-  };
-
-  const actionItems = createMenu([
-    {
-      text: '编辑',
-      icon: <IconEdit style={{ marginRight: '16px' }} />,
-      onClick: () => {
-        handleCloseMenu();
-        handleOpenModal();
-        setModalTokenId(item.id);
-      },
-      color: undefined
-    },
-    {
-      text: '删除',
-      icon: <IconTrash style={{ marginRight: '16px' }} />,
-      onClick: handleDeleteOpen,
-      color: 'error.main'
-    }
-  ]);
-
-
-
-
+  }, [handleCloseMenu, manageToken, item.id]);
 
   return (
     <>
-
       <TableRow tabIndex={item.id}>
         <TableCell padding="checkbox">
           <Checkbox
@@ -183,61 +227,50 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
           />
         </TableCell>
         <TableCell onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(`${item.name}`);
-                  showSuccess('已复制到剪贴板！');
-                } catch (error) {
-                  showError(`复制失败，请手动复制。${item.name}`); // 提示用户手动复制
-                }
-              }}
-            >
+          try {
+            await navigator.clipboard.writeText(`${item.name}`);
+            showSuccess('已复制到剪贴板！');
+          } catch (error) {
+            showError(`复制失败，请手动复制。${item.name}`);
+          }
+        }}>
           {item.name}
         </TableCell>
         <TableCell>
           <Tooltip
             title={(() => {
-              switch (statusSwitch) {
-                case 1:
-                  return '已启用';
-                case 2:
-                  return '已禁用';
-                case 3:
-                  return '已过期';
-                case 4:
-                  return '已耗尽';
-                default:
-                  return '未知';
+              switch (state.statusSwitch) {
+                case 1: return '已启用';
+                case 2: return '已禁用';
+                case 3: return '已过期';
+                case 4: return '已耗尽';
+                default: return '未知';
               }
             })()}
             placement="top"
           >
             <TableSwitch
               id={`switch-${item.id}`}
-              checked={statusSwitch === 1}
+              checked={state.statusSwitch === 1}
               onChange={handleStatus}
             />
           </Tooltip>
         </TableCell>
-        {userGroupEnabled && (
+        {state.userGroupEnabled && (
           <TableCell>{item.group ? item.group : '默认'}</TableCell>
         )}
-
         <TableCell>{renderQuota(item.used_quota)}</TableCell>
-        
         <TableCell>{item.unlimited_quota ? '无限制' : renderQuota(item.remain_quota, 2)}</TableCell>
-
         <TableCell>{timestamp2string(item.created_time)}</TableCell>
-
         <TableCell>{item.expired_time === -1 ? '永不过期' : timestamp2string(item.expired_time)}</TableCell>
-        {modelRatioEnabled && billingByRequestEnabled && (
-        <TableCell>
-          {loading ? (
-            <CircularProgress size={24} />
-          ) : (
-            
+        {state.modelRatioEnabled && state.billingByRequestEnabled && (
+          <TableCell>
+            {state.loading ? (
+              <CircularProgress size={24} />
+            ) : (
               <FormControl fullWidth size="small" variant="outlined" sx={{ minWidth: 100 }}>
                 <Select
-                  value={billingEnabled}
+                  value={state.billingEnabled}
                   onChange={handleBillingChange}
                   displayEmpty
                   inputProps={{ 'aria-label': 'Without label' }}
@@ -246,37 +279,43 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
                   <MenuItem value={1}>按次计费</MenuItem>
                 </Select>
               </FormControl>
-
-          )}
-        </TableCell>
+            )}
+          </TableCell>
         )}
-
         <TableCell>
           <Stack direction="row" spacing={1}>
-            <Tooltip title={`sk-${item.key}`} placement="top" >
-                <IconButton
-                  edge="end"
-                  aria-label="view"
-                  sx={{ color: 'rgb(99, 115, 129)' }}
-                >
-                  <IconEye />
-                </IconButton>
+            <Tooltip title={`sk-${item.key}`} placement="top">
+              <IconButton
+                edge="end"
+                aria-label="view"
+                sx={{ color: 'rgb(99, 115, 129)' }}
+              >
+                <IconEye />
+              </IconButton>
             </Tooltip>
             <ButtonGroup size="small" aria-label="split button">
-            <Button
-              color="primary"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(`sk-${item.key}`);
-                  showSuccess('已复制到剪贴板！');
-                } catch (error) {
-                  showError(`复制失败，请手动复制。sk-${item.key}`); // 提示用户手动复制
-                }
-              }}
-            >
-              复制
-            </Button>
-
+              <Button
+                color="primary"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(`sk-${item.key}`);
+                    showSuccess('已复制到剪贴板！');
+                  } catch (error) {
+                    showError(`复制失败，请手动复制。sk-${item.key}`);
+                  }
+                }}
+              >
+                复制
+              </Button>
+              {state.chatLink && (
+                <Button
+                  component={Link}
+                  to={`/chatweb?chat_link=${state.chatLink}/#/?settings={"key":"sk-${item.key}","url":"${state.serverAddress}"}`}
+                  color="primary"
+                >
+                  对话
+                </Button>
+              )}
             </ButtonGroup>
             <IconButton onClick={(e) => handleOpenMenu(e, 'action')} sx={{ color: 'rgb(99, 115, 129)' }}>
               <IconDotsVertical />
@@ -285,8 +324,8 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
         </TableCell>
       </TableRow>
       <Popover
-        open={!!open}
-        anchorEl={open}
+        open={!!state.open}
+        anchorEl={state.open}
         onClose={handleCloseMenu}
         anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
@@ -294,10 +333,10 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
           sx: { width: 140 }
         }}
       >
-        {menuItems}
+        {state.menuItems}
       </Popover>
 
-      <Dialog open={openDelete} onClose={handleDeleteClose}>
+      <Dialog open={state.openDelete} onClose={handleDeleteClose}>
         <DialogTitle>删除Token</DialogTitle>
         <DialogContent>
           <DialogContentText>是否删除Token {item.name}？</DialogContentText>
@@ -311,7 +350,7 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
       </Dialog>
     </>
   );
-}
+});
 
 TokensTableRow.propTypes = {
   item: PropTypes.object,
@@ -321,3 +360,5 @@ TokensTableRow.propTypes = {
   selected: PropTypes.array.isRequired,
   handleSelectOne: PropTypes.func.isRequired
 };
+
+export default TokensTableRow;
