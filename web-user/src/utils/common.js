@@ -1,9 +1,8 @@
-import { enqueueSnackbar,closeSnackbar } from 'notistack';
+import React from 'react';
+import { enqueueSnackbar, closeSnackbar, SnackbarContent } from 'notistack';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle,Box,Typography   } from '@mui/material';
 import { snackbarConstants } from 'constants/SnackbarConstants';
 import { API } from './api';
-
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
 export function getSystemName() {
   let system_name = localStorage.getItem('system_name');
   if (!system_name) return 'Chat API';
@@ -67,27 +66,75 @@ export function showError(error) {
 }
 
 export function showNotice(message, isHTML = false) {
-  const action = (snackbarId) => (
-    <IconButton
-      size="small"
-      aria-label="close"
-      color="inherit"
-      onClick={() => closeSnackbar(snackbarId)}
-    >
-      <CloseIcon fontSize="small" />
-    </IconButton>
-  );
+  const NoticeContent = React.forwardRef(({ id, ...props }, ref) => {
+    return (
+      <SnackbarContent ref={ref} role="alert" {...props}>
+        <Dialog 
+          open={true} 
+          maxWidth="md" 
+          fullWidth
+          style={{ pointerEvents: 'auto' }}
+          disableEscapeKeyDown
+          onClose={(event, reason) => {
+            if (reason !== 'backdropClick') {
+              closeSnackbar(id);
+            }
+          }}
+        >
+          <DialogTitle>
+            <Typography 
+              variant="h4" 
+              align="center" 
+              sx={{ 
+                fontWeight: 'bold',
+                fontSize: '28px',
+              }}
+            >
+              服务公告
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            {isHTML ? (
+              <div dangerouslySetInnerHTML={{ __html: message }} />
+            ) : (
+              <p>{message}</p>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 2 }}>
+              <Button 
+                onClick={() => closeSnackbar(id)} 
+                color="primary" 
+                variant="contained"
+                sx={{
+                  borderRadius: '20px',
+                  padding: '6px 20px',
+                  textTransform: 'none',
+                }}
+              >
+                我已知晓
+              </Button>
+            </Box>
+          </DialogActions>
+        </Dialog>
+      </SnackbarContent>
+    );
+  });
 
-  const options = {
-    ...getSnackbarOptions('INFO'),
-    action,
-  };
+  NoticeContent.displayName = 'NoticeContent';
 
-  if (isHTML) {
-    enqueueSnackbar(<SnackbarHTMLContent htmlContent={message} />, options);
-  } else {
-    enqueueSnackbar(message, options);
-  }
+  enqueueSnackbar(message, {
+    content: (key) => <NoticeContent id={key} />,
+    anchorOrigin: {
+      vertical: 'top',
+      horizontal: 'center',
+    },
+    persist: true,
+    preventDuplicate: true,
+    autoHideDuration: null,
+    disableWindowBlurListener: true,
+    style: { pointerEvents: 'none' },
+  });
 }
 
 export function showWarning(message) {
