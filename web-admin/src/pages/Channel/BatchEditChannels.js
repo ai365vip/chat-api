@@ -57,6 +57,7 @@ const BatchEditChannels = (props) => {
     const [loading, setLoading] = useState(false);
     const [autoBan, setAutoBan] = useState(true);
     const [rateLimited, setRateLimited] = useState(false);
+    const [rateLimitedConut, setRateLimitedConut] = useState(0);
     const [priority, setPriority] = useState(0);
     const [modelTest, setModelTest] = useState('gpt-3.5-turbo');
     const [claudeoriginalrequest, setClaudeOriginalRequest] = useState(false);
@@ -189,7 +190,10 @@ const BatchEditChannels = (props) => {
                     newData.model_test = data.model_test;
                     setModelTest(data.model_test);
                 }
-    
+                if (data.rate_limit_count !== undefined) {
+                    newData.rate_limit_count = data.rate_limit_count;
+                    setRateLimitedConut(data.rate_limit_count);
+                }
                 // 更新状态
                 setInputs(inputs => ({ ...inputs, ...newData }));
             } else {
@@ -232,6 +236,7 @@ const BatchEditChannels = (props) => {
         localInputs.is_tools = istools;
         localInputs.is_image_url_enabled = isimageurenabled ? 1 : 0;
         localInputs.claude_original_request = claudeoriginalrequest;
+        localInputs.rate_limit_count = rateLimitedConut;
         if (localInputs.base_url && localInputs.base_url.endsWith('/')) {
             localInputs.base_url = localInputs.base_url.slice(0, localInputs.base_url.length - 1);
         }
@@ -559,8 +564,19 @@ const BatchEditChannels = (props) => {
                                 checked={rateLimited}
                                 onChange={() => setRateLimited(!rateLimited)}
                             />
-                            <Typography.Text strong>启用频率限制（开启后渠道每分钟限制三次）</Typography.Text>
+                            <Typography.Text strong>启用频率限制（每分钟次数）</Typography.Text>
                         </Space>
+                        <div >
+                            <AutoComplete
+                                style={{ width: '100%', marginTop: 8 }}
+                                placeholder={'延迟时间-毫秒'}
+                                onChange={(value) => setRateLimitedConut(Number(value))}
+                                onSelect={(value) => setRateLimitedConut(Number(value))}
+                                value={String(rateLimitedConut)} 
+                                autoComplete='off'
+                                type='number'
+                            />
+                        </div>
                     </div>
                     <div style={{marginTop: 10, display: 'flex'}}>
                         <Space>

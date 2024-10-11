@@ -181,7 +181,17 @@ type ChannelModelKey struct {
 	Model     string
 }
 
-func checkRateLimit(channelId int, model string) (*ChannelRateLimit, bool) {
+func isRateLimited(channel Channel, channelId int, model string) bool {
+	if (channel.RateLimited != nil && *channel.RateLimited) && (channel.RateLimitCount != nil && *channel.RateLimitCount > 0) {
+		if _, ok := checkRateLimit(&channel, channelId, model); !ok {
+			return true
+		}
+		updateRateLimitStatus(channelId, model)
+	}
+	return false
+}
+
+func checkRateLimit(channel *Channel, channelId int, model string) (*ChannelRateLimit, bool) {
 	now := time.Now()
 	key := ChannelModelKey{ChannelID: channelId, Model: model}
 
@@ -202,7 +212,7 @@ func checkRateLimit(channelId int, model string) (*ChannelRateLimit, bool) {
 		rl.Count = 1
 		rl.ResetTime = now.Add(time.Minute)
 		return rl, true
-	} else if rl.Count < 5 {
+	} else if rl.Count <= (int64(*channel.RateLimitCount) + 1) {
 		rl.Count++
 		return rl, true
 	}
@@ -341,16 +351,6 @@ func getRandomWeightedIndex(abilities []Ability) (int, error) {
 
 func removeAbility(abilities []Ability, index int) []Ability {
 	return append(abilities[:index], abilities[index+1:]...)
-}
-
-func isRateLimited(channel Channel, channelId int, model string) bool {
-	if channel.RateLimited != nil && *channel.RateLimited {
-		if _, ok := checkRateLimit(channelId, model); !ok {
-			return true
-		}
-		updateRateLimitStatus(channelId, model)
-	}
-	return false
 }
 
 func getChannelFromNextPriority(group string, model string) (*Channel, error) {

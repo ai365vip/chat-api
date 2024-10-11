@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 var (
@@ -375,22 +377,78 @@ func weightedRandomSelection(channels []*Channel, totalWeight int, model string)
 		return randomSelection(channels, model)
 	}
 
-	randomWeight := rand.Intn(totalWeight)
+	// 创建一个新的切片，只包含未被频率限制的通道
+	validChannels := make([]*Channel, 0, len(channels))
+	validTotalWeight := 0
+
 	for _, channel := range channels {
+		if !isRedisLimited(*channel, channel.Id, model) {
+			validChannels = append(validChannels, channel)
+			validTotalWeight += channel.GetWeight()
+		}
+	}
+
+	if len(validChannels) == 0 {
+		return nil, errors.New("所有通道都被频率限制")
+	}
+
+	// 使用有效通道的总权重进行随机选择
+	randomWeight := rand.Intn(validTotalWeight)
+	for _, channel := range validChannels {
 		randomWeight -= channel.GetWeight()
 		if randomWeight < 0 {
-			if channel.RateLimited != nil && *channel.RateLimited {
-				_, ok := checkRateLimit(channel.Id, model)
-				if !ok {
-					log.Println("频道频率限制超出", channel.Id)
-					continue
-				}
-			}
-			updateRateLimitStatus(channel.Id, model)
 			return channel, nil
 		}
 	}
-	return nil, errors.New("在当前优先级未能选择有效的频道")
+
+	// 这种情况理论上不应该发生
+	return nil, errors.New("在当前优先级未能选择有效的通道")
+}
+func isRedisLimited(channel Channel, channelId int, model string) bool {
+	if channel.RateLimited != nil && *channel.RateLimited && channel.RateLimitCount != nil && *channel.RateLimitCount > 0 {
+		if !checkRedisLimit(channel, channelId, model) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkRedisLimit(channel Channel, channelId int, model string) bool {
+	key := fmt.Sprintf("rate_limit:%d:%s", channelId, model)
+
+	countStr, err := common.RedisGet(key)
+	if err == redis.Nil {
+		// Key doesn't exist, set it with expiration
+		err = common.RedisSet(key, "1", time.Minute)
+		if err != nil {
+			log.Printf("Error setting rate limit: %v", err)
+			return false
+		}
+		return true
+	} else if err != nil {
+		log.Printf("Error checking rate limit: %v", err)
+		return false
+	}
+
+	count, err := strconv.ParseInt(countStr, 10, 64)
+	if err != nil {
+		log.Printf("Error parsing rate limit count: %v", err)
+		return false
+	}
+
+	if count >= int64(*channel.RateLimitCount) {
+		return false // 已达到或超过限制
+	}
+
+	// 增加计数
+	newCount := strconv.FormatInt(count+1, 10)
+	err = common.RedisSet(key, newCount, time.Minute) // 增加计数并重置过期时间
+	if err != nil {
+		log.Printf("Error incrementing rate limit: %v", err)
+		return false
+	}
+
+	return true
 }
 
 func CacheGetChannel(id int) (*Channel, error) {

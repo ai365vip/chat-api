@@ -65,6 +65,7 @@ const EditChannel = (props) => {
         client_secret:'',
         refresh_token:'',
         gcp_account:'',
+        rate_limit_count:'',
     };
     const [batch, setBatch] = useState(false);
     const [autoBan, setAutoBan] = useState(true);
@@ -82,6 +83,7 @@ const EditChannel = (props) => {
     const [priority, setPriority] = useState(0);
     const [weight, setWeight] = useState(0);
     const [rateLimited, setRateLimited] = useState(false);
+    const [rateLimitedConut, setRateLimitedConut] = useState(0);
     const [istools, setIstools] = useState(true);
     const [isimageurenabled, setIsImageURLEnabled] = useState(false);
     const [claudeoriginalrequest, setClaudeOriginalRequest] = useState(false);
@@ -295,6 +297,7 @@ const EditChannel = (props) => {
             setRateLimited(data.rate_limited || false);
             setIstools(data.is_tools || false);
             setClaudeOriginalRequest(data.claude_original_request || false);
+            setRateLimitedConut(data.rate_limit_count || 0);
             // console.log(data);
         } else {
             showError(message);
@@ -401,6 +404,7 @@ const EditChannel = (props) => {
         localInputs.is_tools = istools;
         localInputs.is_image_url_enabled = isimageurenabled ? 1 : 0;
         localInputs.claude_original_request = claudeoriginalrequest;
+        localInputs.rate_limit_count = rateLimitedConut;
         if (localInputs.base_url && localInputs.base_url.endsWith('/')) {
             localInputs.base_url = localInputs.base_url.slice(0, localInputs.base_url.length - 1);
         }
@@ -439,6 +443,7 @@ const EditChannel = (props) => {
                 is_tools: istools,
                 proxy_url: inputs.proxy_url,
                 claude_original_request: claudeoriginalrequest,
+                rate_limit_count: parseInt(rateLimitedConut, 10) || 0, 
             };
             });
     
@@ -1066,6 +1071,17 @@ const EditChannel = (props) => {
                             />
                             <Typography.Text strong>启用频率限制（开启后渠道每分钟限制三次）</Typography.Text>
                         </Space>
+                        <div >
+                            <AutoComplete
+                                style={{ width: '100%', marginTop: 8 }}
+                                placeholder={'延迟时间-毫秒'}
+                                onChange={(value) => setRateLimitedConut(Number(value))}
+                                onSelect={(value) => setRateLimitedConut(Number(value))}
+                                value={String(rateLimitedConut)} 
+                                autoComplete='off'
+                                type='number'
+                            />
+                        </div>
                     </div>
                     <div style={{marginTop: 10, display: 'flex'}}>
                         <Space>

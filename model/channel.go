@@ -41,6 +41,7 @@ type Channel struct {
 	TestedTime            *int    `json:"tested_time" gorm:"bigint"`
 	ModelTest             string  `json:"model_test"`
 	RateLimited           *bool   `json:"rate_limited" gorm:"default:false"`
+	RateLimitCount        *int    `json:"rate_limit_count" gorm:"default:0"`
 	IsImageURLEnabled     *int    `json:"is_image_url_enabled" gorm:"default:0"`
 	StatusCodeMapping     *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
 	Config                string  `json:"config"`
