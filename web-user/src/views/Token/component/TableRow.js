@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useReducer } from 'react';
+import React, { useCallback, useReducer } from 'react';
 import PropTypes from 'prop-types';
 import { API } from 'utils/api';
 import { Link } from 'react-router-dom';
@@ -26,23 +26,15 @@ import { renderQuota, showSuccess, showError, timestamp2string } from 'utils/com
 import CircularProgress from '@mui/material/CircularProgress';
 import { IconDotsVertical, IconEdit, IconTrash, IconEye } from '@tabler/icons-react';
 
-// 初始状态
 const initialState = {
   open: null,
   menuItems: null,
   openDelete: false,
   statusSwitch: 1,
   loading: false,
-  billingEnabled: 0,
-  modelRatioEnabled: false,
-  userGroupEnabled: false,
-  billingByRequestEnabled: false,
-  options: {},
-  serverAddress: '',
-  chatLink: ''
+  billingEnabled: 0
 };
 
-// Reducer 函数
 function reducer(state, action) {
   switch (action.type) {
     case 'SET_OPEN':
@@ -57,18 +49,6 @@ function reducer(state, action) {
       return { ...state, loading: action.payload };
     case 'SET_BILLING_ENABLED':
       return { ...state, billingEnabled: action.payload };
-    case 'SET_OPTIONS':
-      return { ...state, options: action.payload };
-    case 'SET_SERVER_ADDRESS':
-      return { ...state, serverAddress: action.payload };
-    case 'SET_CHAT_LINK':
-      return { ...state, chatLink: action.payload };
-    case 'SET_MODEL_RATIO_ENABLED':
-      return { ...state, modelRatioEnabled: action.payload };
-    case 'SET_USER_GROUP_ENABLED':
-      return { ...state, userGroupEnabled: action.payload };
-    case 'SET_BILLING_BY_REQUEST_ENABLED':
-      return { ...state, billingByRequestEnabled: action.payload };
     default:
       return state;
   }
@@ -87,58 +67,23 @@ function createMenu(menuItems) {
   );
 }
 
-const TokensTableRow = React.memo(function TokensTableRow({ item, manageToken, handleOpenModal, setModalTokenId, selected, handleSelectOne }) {
-  const [state, dispatch] = useReducer(reducer, { ...initialState, statusSwitch: item.status, billingEnabled: item.billing_enabled ? 1 : 0 });
-
-  const getOptions = useCallback(async () => {
-    try {
-      const res = await API.get('/api/user/option');
-      const { success, message, data } = res.data;
-      if (success) {
-        let newOptions = {};
-        data.forEach((item) => {
-          newOptions[item.key] = item.value;
-        });
-        dispatch({ type: 'SET_OPTIONS', payload: newOptions });
-      } else {
-        showError(message);
-      }
-    } catch (error) {
-      console.error('Failed to fetch options:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-    const getStatus = async () => {
-      try {
-        const res = await API.get('/api/status');
-        if (isMounted && res.data.success) {
-          dispatch({ type: 'SET_SERVER_ADDRESS', payload: res.data.data.server_address });
-          dispatch({ type: 'SET_CHAT_LINK', payload: res.data.data.chat_link });
-        }
-      } catch (error) {
-        console.error('Failed to fetch status:', error);
-      }
-    };
-    getStatus();
-    getOptions();
-    return () => {
-      isMounted = false;
-    };
-  }, [getOptions]);
-
-  useEffect(() => {
-    if (state.options.ModelRatioEnabled) {
-      dispatch({ type: 'SET_MODEL_RATIO_ENABLED', payload: state.options.ModelRatioEnabled === 'true' });
-    }
-    if (state.options.BillingByRequestEnabled) {
-      dispatch({ type: 'SET_BILLING_BY_REQUEST_ENABLED', payload: state.options.BillingByRequestEnabled === 'true' });
-    }
-    if (state.options.UserGroupEnabled) {
-      dispatch({ type: 'SET_USER_GROUP_ENABLED', payload: state.options.UserGroupEnabled === 'true' });
-    }
-  }, [state.options]);
+const TokensTableRow = React.memo(function TokensTableRow({ 
+  item, 
+  manageToken, 
+  handleOpenModal, 
+  setModalTokenId, 
+  selected, 
+  handleSelectOne,
+  modelRatioEnabled,
+  billingByRequestEnabled,
+  userGroupEnabled,
+  serverStatus
+}) {
+  const [state, dispatch] = useReducer(reducer, { 
+    ...initialState, 
+    statusSwitch: item.status, 
+    billingEnabled: item.billing_enabled ? 1 : 0
+  });
 
   const handleBillingChange = useCallback(async (event) => {
     const billingValue = event.target.value;
@@ -192,7 +137,6 @@ const TokensTableRow = React.memo(function TokensTableRow({ item, manageToken, h
           }
         ]);
         break;
-      // 可以添加其他类型的菜单
       default:
         menuItems = null;
     }
@@ -256,14 +200,14 @@ const TokensTableRow = React.memo(function TokensTableRow({ item, manageToken, h
             />
           </Tooltip>
         </TableCell>
-        {state.userGroupEnabled && (
+        {userGroupEnabled && (
           <TableCell>{item.group ? item.group : '默认'}</TableCell>
         )}
         <TableCell>{renderQuota(item.used_quota)}</TableCell>
         <TableCell>{item.unlimited_quota ? '无限制' : renderQuota(item.remain_quota, 2)}</TableCell>
         <TableCell>{timestamp2string(item.created_time)}</TableCell>
         <TableCell>{item.expired_time === -1 ? '永不过期' : timestamp2string(item.expired_time)}</TableCell>
-        {state.modelRatioEnabled && state.billingByRequestEnabled && (
+        {modelRatioEnabled && billingByRequestEnabled && (
           <TableCell>
             {state.loading ? (
               <CircularProgress size={24} />
@@ -307,10 +251,10 @@ const TokensTableRow = React.memo(function TokensTableRow({ item, manageToken, h
               >
                 复制
               </Button>
-              {state.chatLink && (
+              {serverStatus.chat_link && (
                 <Button
                   component={Link}
-                  to={`/chatweb?chat_link=${state.chatLink}/#/?settings={"key":"sk-${item.key}","url":"${state.serverAddress}"}`}
+                  to={`/chatweb?chat_link=${serverStatus.chat_link}/#/?settings={"key":"sk-${item.key}","url":"${serverStatus.server_address}"}`}
                   color="primary"
                 >
                   对话
@@ -353,12 +297,17 @@ const TokensTableRow = React.memo(function TokensTableRow({ item, manageToken, h
 });
 
 TokensTableRow.propTypes = {
-  item: PropTypes.object,
-  manageToken: PropTypes.func,
-  handleOpenModal: PropTypes.func,
-  setModalTokenId: PropTypes.func,
+  item: PropTypes.object.isRequired,
+  manageToken: PropTypes.func.isRequired,
+  handleOpenModal: PropTypes.func.isRequired,
+  setModalTokenId: PropTypes.func.isRequired,
   selected: PropTypes.array.isRequired,
-  handleSelectOne: PropTypes.func.isRequired
+  handleSelectOne: PropTypes.func.isRequired,
+  modelRatioEnabled: PropTypes.bool.isRequired,
+  billingByRequestEnabled: PropTypes.bool.isRequired,
+  userGroupEnabled: PropTypes.bool.isRequired,
+  serverStatus: PropTypes.object.isRequired,
+  options: PropTypes.object.isRequired
 };
 
 export default TokensTableRow;

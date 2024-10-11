@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { showError, showSuccess } from 'utils/common';
-
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableContainer from '@mui/material/TableContainer';
@@ -10,16 +9,16 @@ import LinearProgress from '@mui/material/LinearProgress';
 import Alert from '@mui/material/Alert';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Toolbar from '@mui/material/Toolbar';
-
-import { Button, Card, Box, Stack, Container,TextField } from '@mui/material';
+import { Button, Card, Box, Stack, Container, TextField } from '@mui/material';
 import TokensTableRow from './component/TableRow';
 import TokenTableHead from './component/TableHead';
 import { API } from 'utils/api';
 import { ITEMS_PER_PAGE } from 'constants';
-import { IconRefresh, IconPlus,IconTrash } from '@tabler/icons-react';
+import { IconRefresh, IconPlus, IconTrash } from '@tabler/icons-react';
 import EditeModal from './component/EditModal';
 import { useSelector } from 'react-redux';
 import { styled } from '@mui/system';
+
 export default function Token() {
   const [tokens, setTokens] = useState([]);
   const [activePage, setActivePage] = useState(0);
@@ -28,14 +27,42 @@ export default function Token() {
   const [openModal, setOpenModal] = useState(false);
   const [editTokenId, setEditTokenId] = useState(0);
   const siteInfo = useSelector((state) => state.siteInfo);
-  const [modelRatioEnabled, setModelRatioEnabled] = useState('');
-  const [billingByRequestEnabled, setBillingByRequestEnabled] = useState('');
-  const [userGroupEnabled, setUserGroupEnabled] = useState('');
-  const [options, setOptions] = useState({});
-  const [selected, setSelected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(ITEMS_PER_PAGE);
   const [searchToken, setSearchToken] = useState('');
+  const [selected, setSelected] = useState([]);
+  const [options, setOptions] = useState({});
+  const [serverStatus, setServerStatus] = useState({});
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [optionsRes, statusRes] = await Promise.all([
+          API.get('/api/user/option'),
+          API.get('/api/status')
+        ]);
+
+        if (optionsRes.data.success) {
+          const newOptions = {};
+          optionsRes.data.data.forEach(item => {
+            newOptions[item.key] = item.value;
+          });
+          setOptions(newOptions);
+        } else {
+          showError(optionsRes.data.message);
+        }
+
+        if (statusRes.data.success) {
+          setServerStatus(statusRes.data.data);
+        } else {
+          showError(statusRes.data.message);
+        }
+      } catch (error) {
+        showError(`Failed to fetch data: ${error}`);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const loadTokens = async (startIdx = 0, rowsPerPage = ITEMS_PER_PAGE) => {
     setSearching(true);
@@ -59,44 +86,10 @@ export default function Token() {
       setSearching(false);
     }
   };
-  
-  
 
   useEffect(() => {
-    loadTokens(0, rowsPerPage)
-      .then()
-      .catch((reason) => {
-        showError(reason);
-      });
-      getOptions();
+    loadTokens(0, rowsPerPage);
   }, [rowsPerPage]);
-  
-
-  const getOptions = async () => {
-    const res = await API.get('/api/user/option');
-    const { success, message, data } = res.data;
-    if (success) {
-      let newOptions = {};
-      data.forEach((item) => {
-        newOptions[item.key] = item.value;
-      });
-      setOptions(newOptions); // 设置所有选项的状态
-    } else {
-      showError(message);
-    }
-  };
-
-  useEffect(() => {
-    if (options.ModelRatioEnabled) { 
-      setModelRatioEnabled(options.ModelRatioEnabled === 'true');
-    }
-    if (options.BillingByRequestEnabled) { 
-      setBillingByRequestEnabled(options.BillingByRequestEnabled === 'true');
-    }
-    if (options.UserGroupEnabled) { 
-      setUserGroupEnabled(options.UserGroupEnabled === 'true');
-    }
-  }, [options]);
 
   const onPaginationChange = (event, newActivePage) => {
     (async () => {
@@ -106,8 +99,6 @@ export default function Token() {
       setActivePage(newActivePage);
     })();
   };
-  
-  
 
   const searchTokens = async (event) => {
     event.preventDefault();
@@ -131,8 +122,6 @@ export default function Token() {
       setSearching(false);
     }
   };
-  
-  
 
   const handleSearchTokenChange = (event) => {
     setSearchToken(event.target.value);
@@ -170,7 +159,6 @@ export default function Token() {
     return res.data;
   };
 
-  // 处理刷新
   const handleRefresh = async () => {
     await loadTokens(0);
     setActivePage(0);
@@ -203,30 +191,27 @@ export default function Token() {
     setSelected([]);
   };
 
-  // 分页处理函数
   const handleRowsPerPageChange = (event) => {
     const newRowsPerPage = parseInt(event.target.value, 10);
-    setRowsPerPage(newRowsPerPage); // 更新每页显示的行数
-    setActivePage(0); // 重置到第一页
-    loadTokens(0, newRowsPerPage); 
+    setRowsPerPage(newRowsPerPage);
+    setActivePage(0);
+    loadTokens(0, newRowsPerPage);
   };
-  
 
   const handleDeleteSelected = async () => {
-
     const promises = selected.map((id) => API.delete(`/api/token/${id}`));
     const results = await Promise.allSettled(promises);
     const success = results.every((result) => result.status === 'fulfilled');
     if (success) {
       showSuccess('选中的 Token 已删除');
-      setSelected([]); // 清空选中状态
-      loadTokens(0); // 重新加载数据
+      setSelected([]);
+      loadTokens(0);
     } else {
       showError('删除时发生错误');
     }
   };
 
-  const handleSelectOne = (event, id) => {
+  const handleSelectOne = useCallback((event, id) => {
     const selectedIndex = selected.indexOf(id);
     let newSelected = [];
   
@@ -237,19 +222,19 @@ export default function Token() {
     }
   
     setSelected(newSelected);
-  };
-  
+  }, [selected]);
+
   const copySelectedKeys = () => {
     const selectedKeysText = selected.map((id) => {
       const token = tokens.find((token) => token.id === id);
-      return token ? `sk-${token.key}` : ''; 
+      return token ? `sk-${token.key}` : '';
     }).join('\n');
-  
+
     if (!navigator.clipboard) {
       showError('复制到剪贴板失败：剪贴板功能不可用');
       return;
     }
-  
+
     navigator.clipboard.writeText(selectedKeysText)
       .then(() => {
         showSuccess('选中的 keys 已复制到剪贴板');
@@ -258,48 +243,45 @@ export default function Token() {
         showError('复制到剪贴板失败：' + err);
       });
   };
-  
+
   const BoldText = styled('b')({
-    fontSize: '1.2em', // 放大字体
-    color: '#d32f2f', // 设置为红色
+    fontSize: '1.2em',
+    color: '#d32f2f',
   });
 
   return (
     <>
       <Stack mb={5}>
         <Alert severity="info">
-        将OpenAI API基础地址https://api.openai.com替换为<BoldText>{siteInfo.server_address}</BoldText>，复制下面的密钥即可使用。
+          将OpenAI API基础地址https://api.openai.com替换为<BoldText>{siteInfo.server_address}</BoldText>，复制下面的密钥即可使用。
         </Alert>
       </Stack>
       <Card>
-      <Box component="form" onSubmit={searchTokens} mt={2} noValidate sx={{ display: 'flex', alignItems: 'center', gap: 4, padding: 2 }}>
-        {/* 搜索名称的输入框 - 设置边距 */}
-        <TextField
-          label="名称"
-          value={searchKeyword}
-          onChange={handleSearchKeyword}
-          variant="outlined"
-          size="small"
-          placeholder="搜索令牌的名称..."
-          fullWidth // 输入框全宽
-          sx={{ flex: 1, minWidth: '150px', marginX: 1 }} // 增加左右外边距
-        />
-        {/* 搜索 Token 的输入框 - 设置边距 */}
-        <TextField
-          label="令牌"
-          value={searchToken}
-          onChange={handleSearchTokenChange}
-          variant="outlined"
-          size="small"
-          placeholder="搜索令牌的 key..."
-          fullWidth // 输入框全宽
-          sx={{ flex: 1, minWidth: '150px', marginX: 1 }} // 增加左右外边距
-        />
-        {/* 搜索按钮 - 设置边距 */}
-        <Button type="submit" variant="contained" color="primary" sx={{ marginX: 1 }}>
-          搜索
-        </Button>
-      </Box>
+        <Box component="form" onSubmit={searchTokens} mt={2} noValidate sx={{ display: 'flex', alignItems: 'center', gap: 4, padding: 2 }}>
+          <TextField
+            label="名称"
+            value={searchKeyword}
+            onChange={handleSearchKeyword}
+            variant="outlined"
+            size="small"
+            placeholder="搜索令牌的名称..."
+            fullWidth
+            sx={{ flex: 1, minWidth: '150px', marginX: 1 }}
+          />
+          <TextField
+            label="令牌"
+            value={searchToken}
+            onChange={handleSearchTokenChange}
+            variant="outlined"
+            size="small"
+            placeholder="搜索令牌的 key..."
+            fullWidth
+            sx={{ flex: 1, minWidth: '150px', marginX: 1 }}
+          />
+          <Button type="submit" variant="contained" color="primary" sx={{ marginX: 1 }}>
+            搜索
+          </Button>
+        </Box>
 
         <Toolbar
           sx={{
@@ -323,17 +305,16 @@ export default function Token() {
               )}
               {selected.length > 0 && (
                 <Button
-                    onClick={copySelectedKeys}
-                    disabled={selected.length === 0} // 当没有选中项时禁用按钮
-                  >
-                    复制选中的 Key
-                  </Button>
-              
+                  onClick={copySelectedKeys}
+                  disabled={selected.length === 0}
+                >
+                  复制选中的 Key
+                </Button>
               )}
               <Button 
                 onClick={handleRefresh} 
-                startIcon={<IconRefresh  />}
-                style={{ marginRight: '8px' }}  // 添加右边距
+                startIcon={<IconRefresh />}
+                style={{ marginRight: '8px' }}
               >
                 刷新
               </Button>
@@ -356,29 +337,30 @@ export default function Token() {
           <TableContainer sx={{ overflow: 'unset' }}>
             <Table sx={{ minWidth: 800 }}>
               <TokenTableHead 
-              numSelected={selected.length}
-              rowCount={tokens.length}
-              onSelectAllClick={handleSelectAllClick}
-              modelRatioEnabled={modelRatioEnabled}
-              billingByRequestEnabled={billingByRequestEnabled}
-              userGroupEnabled={userGroupEnabled}
+                numSelected={selected.length}
+                rowCount={tokens.length}
+                onSelectAllClick={handleSelectAllClick}
+                modelRatioEnabled={options.ModelRatioEnabled === 'true'}
+                billingByRequestEnabled={options.BillingByRequestEnabled === 'true'}
+                userGroupEnabled={options.UserGroupEnabled === 'true'}
               />
               <TableBody>
-              {tokens.slice(activePage * rowsPerPage, (activePage + 1) * rowsPerPage).map((row) => (
-                <TokensTableRow
-                  item={row}
-                  manageToken={manageToken}
-                  key={row.id}
-                  handleOpenModal={handleOpenModal}
-                  setModalTokenId={setEditTokenId}
-                  modelRatioEnabled={modelRatioEnabled}
-                  billingByRequestEnabled={billingByRequestEnabled}
-                  userGroupEnabled={userGroupEnabled}
-                  selected={selected}
-                  handleSelectOne={handleSelectOne} // 这里传递 handleSelectOne
-                />
-              ))}
-
+                {tokens.slice(activePage * rowsPerPage, (activePage + 1) * rowsPerPage).map((row) => (
+                  <TokensTableRow
+                    item={row}
+                    manageToken={manageToken}
+                    key={row.id}
+                    handleOpenModal={handleOpenModal}
+                    setModalTokenId={setEditTokenId}
+                    modelRatioEnabled={options.ModelRatioEnabled === 'true'}
+                    billingByRequestEnabled={options.BillingByRequestEnabled === 'true'}
+                    userGroupEnabled={options.UserGroupEnabled === 'true'}
+                    selected={selected}
+                    handleSelectOne={handleSelectOne}
+                    serverStatus={serverStatus}
+                    options={options}
+                  />
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
@@ -386,15 +368,13 @@ export default function Token() {
         <TablePagination
           page={activePage}
           component="div"
-          count={-1} 
-          rowsPerPage={rowsPerPage} 
+          count={-1}
+          rowsPerPage={rowsPerPage}
           onPageChange={onPaginationChange}
-          onRowsPerPageChange={handleRowsPerPageChange} 
-          rowsPerPageOptions={[10, 30,50,100]} 
-          labelRowsPerPage="每页行数：" 
-          labelDisplayedRows={({ from, to }) => {
-            return `${from}–${to}`;
-          }}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          rowsPerPageOptions={[10, 30, 50, 100]}
+          labelRowsPerPage="每页行数："
+          labelDisplayedRows={({ from, to }) => `${from}–${to}`}
         />
       </Card>
       <EditeModal open={openModal} onCancel={handleCloseModal} onOk={handleOkModal} tokenId={editTokenId} />

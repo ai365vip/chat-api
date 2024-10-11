@@ -18,8 +18,9 @@ import {
   OutlinedInput,
   InputAdornment,
   Switch,
-  FormHelperText,TextField,Select, MenuItem,Chip,Checkbox,ListItemText
+  FormHelperText,TextField,Select, MenuItem,Chip,Checkbox,ListItemText,Box
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
@@ -330,51 +331,57 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
               />{' '}
               无限额度
               <FormControl fullWidth sx={{ ...theme.typography.otherInput, mt: 2 }}>
-
               <InputLabel htmlFor="models-multiple-select">可用模型</InputLabel>
-                <Select
-                  labelId="models-multiple-label"
-                  id="models-multiple-select"
-                  multiple
-                  value={values.models}
-                  onChange={(event) => {
-                    setFieldValue('models', event.target.value);
-                  }}
-                  renderValue={(selected) => (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                      {selected.map((value) => (
-                        <Chip
-                          key={value}
-                          label={value}
-                          // 添加 margin 来解决标签之间的间距问题
-                          style={{ margin: '1px' }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        maxHeight: 48 * 4.5 + 8,
-                        width: 250,
-                      },
-                    },
-                  }}
-                >
-                  {models.map((model) => (
-            <MenuItem key={model} value={model}>
-              <Checkbox checked={values.models.indexOf(model) > -1} />
-              <ListItemText primary={model} />
-            </MenuItem>
-          ))}
-                </Select>
-                <FormHelperText>选择令牌可以使用的模型，为空表示全部可用。</FormHelperText>
-                {touched.models && errors.models && (
-                  <FormHelperText error id="helper-text-models">
-                    {errors.models}
-                  </FormHelperText>
+              <Select
+                labelId="models-multiple-label"
+                id="models-multiple-select"
+                multiple
+                value={values.models}
+                onChange={(event) => {
+                  setFieldValue('models', event.target.value);
+                }}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => (
+                      <Chip
+                        key={value}
+                        label={value}
+                        onDelete={() => {
+                          const newSelected = values.models.filter(model => model !== value);
+                          setFieldValue('models', newSelected);
+                        }}
+                        deleteIcon={
+                          <CloseIcon
+                            onMouseDown={(event) => event.stopPropagation()}
+                          />
+                        }
+                      />
+                    ))}
+                  </Box>
                 )}
-              </FormControl>
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 48 * 4.5 + 8,
+                      width: 250,
+                    },
+                  },
+                }}
+              >
+                {models.map((model) => (
+                  <MenuItem key={model} value={model}>
+                    <Checkbox checked={values.models.indexOf(model) > -1} />
+                    <ListItemText primary={model} />
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>选择令牌可以使用的模型，为空表示全部可用。点击模型旁的 x 可直接删除。</FormHelperText>
+              {touched.models && errors.models && (
+                <FormHelperText error id="helper-text-models">
+                  {errors.models}
+                </FormHelperText>
+              )}
+            </FormControl>
               {userGroupEnabled && (
                 <FormControl fullWidth sx={{ ...theme.typography.otherInput, mt: 2 }}>
                   <InputLabel id="group-select-label">分组</InputLabel>
