@@ -564,7 +564,7 @@ const BatchEditChannels = (props) => {
                                 checked={rateLimited}
                                 onChange={() => setRateLimited(!rateLimited)}
                             />
-                            <Typography.Text strong>启用频率限制（每分钟次数）</Typography.Text>
+                            <Typography.Text strong>启用频率限制（每分钟限制）</Typography.Text>
                         </Space>
                         <div >
                             <AutoComplete
