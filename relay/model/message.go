@@ -61,6 +61,10 @@ func (m Message) IsStringContent() bool {
 	return ok
 }
 
+type StreamOptions struct {
+	IncludeUsage bool `json:"include_usage,omitempty"`
+}
+
 func (m Message) StringContent() string {
 	content, ok := m.Content.(string)
 	if ok {

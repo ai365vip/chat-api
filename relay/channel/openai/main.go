@@ -37,7 +37,6 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 	stopChan := make(chan bool)
 
 	go func() {
-		var stopMessage string
 		var needInjectFixedContent = false // 标志是否需要注入固定内容
 
 		for scanner.Scan() {
@@ -75,10 +74,10 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 								responseText += common.AsString(tool.Function.Arguments)
 							}
 						}
-						if choice.FinishReason != nil && *choice.FinishReason == "stop" {
+						if choice.FinishReason != nil && *choice.FinishReason == "stop" && fixedContent != "" {
 							needInjectFixedContent = true // 需要注入fixedContent
-							stopMessage = data
 						}
+
 					}
 
 				case constant.RelayModeCompletions:
@@ -90,9 +89,8 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 					}
 					for _, choice := range streamResponse.Choices {
 						responseText += choice.Text
-						if choice.FinishReason == "stop" {
+						if choice.FinishReason == "stop" && fixedContent != "" {
 							needInjectFixedContent = true // 需要注入fixedContent
-							stopMessage = data
 						}
 					}
 				}
@@ -110,9 +108,6 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 		if needInjectFixedContent && fixedContent != "" {
 			fixedContentMessage := GenerateFixedContentMessage(fixedContent, modelName)
 			dataChan <- fixedContentMessage
-		} else {
-			// 发送暂存的停止消息
-			dataChan <- stopMessage
 		}
 
 		// 最后发送结束信号
