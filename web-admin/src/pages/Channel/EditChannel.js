@@ -1069,7 +1069,7 @@ const EditChannel = (props) => {
                                 checked={rateLimited}
                                 onChange={() => setRateLimited(!rateLimited)}
                             />
-                            <Typography.Text strong>启用频率限制（开启后渠道每分钟限制三次）</Typography.Text>
+                            <Typography.Text strong>启用频率限制（每分钟限制）</Typography.Text>
                         </Space>
                         <div >
                             <AutoComplete
