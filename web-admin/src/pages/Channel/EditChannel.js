@@ -3,7 +3,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import {API, isMobile, showError, showInfo, showSuccess, verifyJSON} from '../../helpers';
 import {CHANNEL_OPTIONS} from '../../constants';
 import Title from "@douyinfe/semi-ui/lib/es/typography/title";
-import {SideSheet, Space, Spin, Button, Input, Typography, Select, TextArea, Checkbox, Banner,AutoComplete} from "@douyinfe/semi-ui";
+import {SideSheet, Space, Spin, Button, Input,TagInput, Typography, Select, TextArea, Checkbox, Banner,AutoComplete} from "@douyinfe/semi-ui";
 
 const MODEL_MAPPING_EXAMPLE = {
     'gpt-3.5-turbo-0301': 'gpt-3.5-turbo',
@@ -13,7 +13,15 @@ const MODEL_MAPPING_EXAMPLE = {
 const STATUS_CODE_MAPPING_EXAMPLE = {
     '400': '500',
   };
-
+  const DEFAULT_GEMINI_MODELS = [
+    'gemini-1.5-pro-002',
+    'gemini-1.5-flash-002',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-pro-exp-0801',
+    'gemini-1.5-pro-exp-0827',
+    'gemini-1.5-flash-exp-0827'
+];
 function type2secretPrompt(type) {
     // inputs.type === 15 ? '按照如下格式输入：APIKey|SecretKey' : (inputs.type === 18 ? '按照如下格式输入：APPID|APISecret|APIKey' : '请输入渠道对应的鉴权密钥')
     switch (type) {
@@ -66,6 +74,7 @@ const EditChannel = (props) => {
         refresh_token:'',
         gcp_account:'',
         rate_limit_count:'',
+        gemini_model: '',
     };
     const [batch, setBatch] = useState(false);
     const [autoBan, setAutoBan] = useState(true);
@@ -97,6 +106,7 @@ const EditChannel = (props) => {
         client_id:'',
         client_secret:'',
         refresh_token:'',
+        gemini_model: '',
       });
     const handleInputChange = (name, value) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
@@ -136,7 +146,7 @@ const EditChannel = (props) => {
                     break;
                 case 24:
                     localModels = ['gemini-1.5-pro-001','gemini-1.5-pro-latest','gemini-1.5-flash-latest','gemini-1.5-pro-exp-0801',
-                        'gemini-1.5-pro-exp-0827','gemini-1.5-flash-exp-0827'];
+                        'gemini-1.5-pro-exp-0827','gemini-1.5-flash-exp-0827','gemini-1.5-pro-002','gemini-1.5-flash-002',];
                     break;
                 case 2:
                     localModels = ['midjourney'];
@@ -347,9 +357,26 @@ const EditChannel = (props) => {
         }
     };
 
+    const handleGeminiModelChange = (value) => {
+        handleConfigChange({ name: 'gemini_model', value: value.join(',') });
+    };
+
+    const resetGeminiModels = () => {
+        handleConfigChange({ name: 'gemini_model', value: DEFAULT_GEMINI_MODELS.join(',') });
+    };
+
     useEffect(() => {
         setModelOptions(originModelOptions);
     }, [originModelOptions]);
+
+    useEffect(() => {
+        if (inputs.type === 24 && !config.gemini_model) {
+            setConfig(prevConfig => ({
+                ...prevConfig,
+                gemini_model: DEFAULT_GEMINI_MODELS.join(',')
+            }));
+        }
+    }, [inputs.type, config.gemini_model]);
     
 
     useEffect(() => {
@@ -713,6 +740,33 @@ const EditChannel = (props) => {
                         autoComplete='new-password'
                         optionList={groupOptions}
                     />
+                    {
+                        inputs.type === 24 && (
+                            <>
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>模型版本（需要v1beta的模型）：</Typography.Text>
+                                </div>
+                                <TagInput
+                                    style={{ width: '100%', marginTop: '10px' }}
+                                    placeholder='请输入需要v1beta的模型，按回车添加'
+                                    value={(config.gemini_model || DEFAULT_GEMINI_MODELS.join(',')).split(',')}
+                                    onChange={handleGeminiModelChange}
+                                    onInputConfirm={(text) => {
+                                        const currentModels = (config.gemini_model || '').split(',').filter(Boolean);
+                                        if (!currentModels.includes(text)) {
+                                            handleGeminiModelChange([...currentModels, text]);
+                                        }
+                                    }}
+                                />
+                                <Button 
+                                    style={{ marginTop: '10px' }}
+                                    onClick={resetGeminiModels}
+                                >
+                                    重置为默认模型
+                                </Button>
+                            </>
+                        )
+                    }
                     {
                         inputs.type === 18 && (
                             <>

@@ -10,6 +10,7 @@ import (
 	"one-api/relay/constant"
 	"one-api/relay/model"
 	"one-api/relay/util"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,23 +22,18 @@ func (a *Adaptor) Init(meta *util.RelayMeta) {
 
 }
 
-var modelVersionMap = map[string]string{
-	"gemini-1.5-pro-latest":     "v1beta",
-	"gemini-1.5-flash-latest":   "v1beta",
-	"gemini-ultra":              "v1beta",
-	"gemini-1.5-pro-exp-0801":   "v1beta",
-	"gemini-1.5-pro-exp-0827":   "v1beta",
-	"gemini-1.5-flash-exp-0827": "v1beta",
-}
-
 func (a *Adaptor) GetRequestURL(meta *util.RelayMeta) (string, error) {
-	version, beta := modelVersionMap[meta.ActualModelName]
+	version := "v1"
 	action := ""
-	if !beta {
-		if meta.Config.APIVersion != "" {
-			version = meta.Config.APIVersion
-		} else {
-			version = "v1"
+
+	// 将 meta.Config.GeminiModel 分割成模型列表
+	geminiModels := strings.Split(meta.Config.GeminiModel, ",")
+
+	// 检查当前模型是否在 GeminiModel 列表中
+	for _, model := range geminiModels {
+		if strings.TrimSpace(model) == meta.ActualModelName {
+			version = "v1beta"
+			break
 		}
 	}
 

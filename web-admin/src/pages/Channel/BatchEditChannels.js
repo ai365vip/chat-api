@@ -3,7 +3,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import {API, isMobile, showError, showInfo, showSuccess, verifyJSON} from '../../helpers';
 import {CHANNEL_OPTIONS} from '../../constants';
 import Title from "@douyinfe/semi-ui/lib/es/typography/title";
-import {SideSheet, Space, Spin, Button, Input, Typography, Select, TextArea, Checkbox, Banner,AutoComplete} from "@douyinfe/semi-ui";
+import {SideSheet, Space, Spin, Button, Input,TagInput, Typography, Select, TextArea, Checkbox, Banner,AutoComplete} from "@douyinfe/semi-ui";
 
 const MODEL_MAPPING_EXAMPLE = {
     'gpt-3.5-turbo-0301': 'gpt-3.5-turbo',
@@ -15,7 +15,15 @@ const STATUS_CODE_MAPPING_EXAMPLE = {
     '400': '500',
   };
 
-
+const DEFAULT_GEMINI_MODELS = [
+    'gemini-1.5-pro-002',
+    'gemini-1.5-flash-002',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-pro-exp-0801',
+    'gemini-1.5-pro-exp-0827',
+    'gemini-1.5-flash-exp-0827'
+];
 const BatchEditChannels = (props) => {
     
     const {
@@ -40,8 +48,12 @@ const BatchEditChannels = (props) => {
         tested_time:'',
         priority:'',
         weight:'',
-        groups: ['default']
+        groups: ['default'],
+        gemini_model: '',
     };
+    const [config, setConfig] = useState({
+        gemini_model: '',
+      });
     // const [autoBan, setAutoBan] = useState(true);
     const [inputs, setInputs] = useState(originInputs);
     const [originModelOptions, setOriginModelOptions] = useState([]);
@@ -112,9 +124,35 @@ const BatchEditChannels = (props) => {
         }
     };
 
+    const handleGeminiModelChange = (value) => {
+        setConfig(prevConfig => ({
+            ...prevConfig,
+            gemini_model: Array.isArray(value) ? value.join(',') : value
+        }));
+    };
+
+    const resetGeminiModels = () => {
+        setConfig(prevConfig => ({
+            ...prevConfig,
+            gemini_model: DEFAULT_GEMINI_MODELS.join(',')
+        }));
+    };
+
     useEffect(() => {
         setModelOptions(originModelOptions);
     }, [originModelOptions]);
+
+    useEffect(() => {
+        if (inputs.type === 24) {
+            setConfig(prevConfig => {
+                const geminiModel = prevConfig.gemini_model || DEFAULT_GEMINI_MODELS.join(',');
+                return {
+                    ...prevConfig,
+                    gemini_model: geminiModel
+                };
+            });
+        }
+    }, [inputs.type]);
 
     useEffect(() => {
         // 当editingChannelIds改变时，获取第一个channelId的信息，并设置到表单
@@ -194,6 +232,19 @@ const BatchEditChannels = (props) => {
                     newData.rate_limit_count = data.rate_limit_count;
                     setRateLimitedConut(data.rate_limit_count);
                 }
+                if (data.config !== '') {
+                    try {
+                        const parsedConfig = JSON.parse(data.config);
+                        setConfig(prevConfig => ({
+                            ...prevConfig,
+                            ...parsedConfig,
+                            // 如果 parsedConfig 中没有 gemini_model，保留之前的值或使用默认值
+                            gemini_model: parsedConfig.gemini_model || prevConfig.gemini_model || DEFAULT_GEMINI_MODELS.join(',')
+                        }));
+                    } catch (error) {
+                        console.error("Error parsing config:", error);
+                    }
+                }
                 // 更新状态
                 setInputs(inputs => ({ ...inputs, ...newData }));
             } else {
@@ -226,6 +277,10 @@ const BatchEditChannels = (props) => {
             showInfo('请求头必须是合法的 JSON 格式！');
             return;
         }
+        let updatedConfig = {...config};
+        if (inputs.type === 24) {
+            updatedConfig.gemini_model = config.gemini_model;
+        }
         let localInputs = {...inputs};
          // 将 autoBan 状态转换为对应的整数值并添加到 localInputs 中
         localInputs.auto_ban = autoBan ? 1 : 0;
@@ -250,7 +305,7 @@ const BatchEditChannels = (props) => {
         if (!localInputs.model_test) {
             localInputs.model_test = 'gpt-3.5-turbo';
         }
-
+        localInputs.config = JSON.stringify(updatedConfig);
         localInputs.models = localInputs.models.join(',');
         localInputs.group = localInputs.groups.join(',');
     
@@ -388,6 +443,33 @@ const BatchEditChannels = (props) => {
                         autoComplete='new-password'
                         optionList={groupOptions}
                     />
+                    {
+                        inputs.type === 24 && (
+                            <>
+                                <div style={{marginTop: 10}}>
+                                    <Typography.Text strong>模型版本：</Typography.Text>
+                                </div>
+                                <TagInput
+                                    style={{ width: '100%', marginTop: '10px' }}
+                                    placeholder='请输入需要v1beta的模型，按回车添加'
+                                    value={(config.gemini_model || DEFAULT_GEMINI_MODELS.join(',')).split(',').filter(Boolean)}
+                                    onChange={handleGeminiModelChange}
+                                    onInputConfirm={(text) => {
+                                        const currentModels = (config.gemini_model || '').split(',').filter(Boolean);
+                                        if (!currentModels.includes(text)) {
+                                            handleGeminiModelChange([...currentModels, text]);
+                                        }
+                                    }}
+                                />
+                                <Button 
+                                    style={{ marginTop: '10px' }}
+                                    onClick={resetGeminiModels}
+                                >
+                                    重置为默认模型
+                                </Button>
+                            </>
+                        )
+                    }
                     {
                         inputs.type === 18 && (
                             <>
