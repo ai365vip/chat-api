@@ -78,7 +78,8 @@ const Header = () => {
       flexDirection: isExtraSmallScreen ? 'column' : 'row',
       alignItems: 'center',
       width: '100%',
-      padding: isSmallScreen ? '8px' : '16px',
+      padding: isSmallScreen ? '2px' : '4px', 
+      marginTop: '-8px', 
     }}>
       <Box
         sx={{
