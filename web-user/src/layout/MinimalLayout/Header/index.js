@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@mui/material/styles';
-import { Box, Button, Stack } from '@mui/material';
+import { Box, Button, Stack, useMediaQuery } from '@mui/material';
 import LogoSection from 'layout/MainLayout/LogoSection';
 import { Link } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import ThemeButton from 'ui-component/ThemeButton';
 import { API } from 'utils/api';
+
 const Header = () => {
   const theme = useTheme();
   const { pathname } = useLocation();
   const account = useSelector((state) => state.account);
   const [chatLink, setChatLink] = useState('');
+  const isExtraSmallScreen = useMediaQuery(theme.breakpoints.down('xs'));
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     loadStatus();
@@ -43,6 +46,9 @@ const Header = () => {
         color: pathname === to ? theme.palette.primary.main : theme.palette.text.primary,
         fontWeight: pathname === to ? 'bold' : 'normal',
         position: 'relative',
+        fontSize: isSmallScreen ? '0.8rem' : '1rem',
+        padding: isSmallScreen ? '6px 8px' : '8px 16px',
+        minWidth: 'auto',
         '&::after': {
           content: '""',
           position: 'absolute',
@@ -67,65 +73,56 @@ const Header = () => {
   );
 
   return (
-    <>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: isExtraSmallScreen ? 'column' : 'row',
+      alignItems: 'center',
+      width: '100%',
+      padding: isSmallScreen ? '8px' : '16px',
+    }}>
       <Box
         sx={{
-          width: 228,
-          display: 'flex',
-          [theme.breakpoints.down('md')]: {
-            width: 'auto'
-          }
+          width: isSmallScreen ? 'auto' : 228,
+          marginBottom: isExtraSmallScreen ? '8px' : '0',
         }}
       >
-        <Box component="span" sx={{ flexGrow: 1 }}>
-          <LogoSection />
-        </Box>
+        <LogoSection />
       </Box>
 
-      <Box sx={{ flexGrow: 1 }} />
-      <Box sx={{ flexGrow: 1 }} />
-      <Stack spacing={2} direction="row" alignItems="center">
+      <Stack 
+        spacing={isSmallScreen ? 1 : 2} 
+        direction={isExtraSmallScreen ? 'column' : 'row'} 
+        alignItems="center"
+        sx={{ 
+          flexGrow: 1, 
+          justifyContent: isExtraSmallScreen ? 'center' : 'flex-end',
+          marginTop: isExtraSmallScreen ? '8px' : '0',
+        }}
+      >
         <NavButton to="/home">首页</NavButton>
         <NavButton to="/about">教程</NavButton>
         {chatLink && <NavButton to="/chatweb" chatLink={chatLink}>对话</NavButton>}
         <ThemeButton />
-        {account.user ? (
-          <Button
-            component={Link}
-            variant="contained"
-            to="/login"
-            color="primary"
-            sx={{
-              boxShadow: '0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08)',
-              transition: 'all 0.15s ease',
-              '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: '0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08)'
-              }
-            }}
-          >
-            控制台
-          </Button>
-        ) : (
-          <Button
-            component={Link}
-            variant="contained"
-            to="/login"
-            color="primary"
-            sx={{
-              boxShadow: '0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08)',
-              transition: 'all 0.15s ease',
-              '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: '0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08)'
-              }
-            }}
-          >
-            登入
-          </Button>
-        )}
+        <Button
+          component={Link}
+          variant="contained"
+          to="/login"
+          color="primary"
+          sx={{
+            boxShadow: '0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08)',
+            transition: 'all 0.15s ease',
+            fontSize: isSmallScreen ? '0.8rem' : '1rem',
+            padding: isSmallScreen ? '6px 12px' : '8px 16px',
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              boxShadow: '0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08)'
+            }
+          }}
+        >
+          {account.user ? '控制台' : '登入'}
+        </Button>
       </Stack>
-    </>
+    </Box>
   );
 };
 
