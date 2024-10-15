@@ -250,9 +250,23 @@ const ChannelsTable = () => {
                 <div>
                      <SplitButtonGroup style={{marginRight: 1}} aria-label="测试操作">
                         <Button theme="light" onClick={()=>{testChannel(record, '')}}>测试</Button>
-                        <Dropdown trigger="click" position="bottomRight" menu={record.test_models}
+                        <Dropdown
+                            trigger="click"
+                            position="bottomRight"
+                            render={
+                                <Dropdown.Menu style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                    {record.test_models.map((model, index) => (
+                                        <Dropdown.Item
+                                            key={index}
+                                            onClick={() => testChannel({ ...record }, model.name)}
+                                        >
+                                            {model.name}
+                                        </Dropdown.Item>
+                                    ))}
+                                </Dropdown.Menu>
+                            }
                         >
-                            <Button style={ { padding: '8px 4px'}} type="primary" icon={<IconTreeTriangleDown />}></Button>
+                            <Button style={{ padding: '8px 4px' }} type="primary" icon={<IconTreeTriangleDown />}></Button>
                         </Dropdown>
                     </SplitButtonGroup>
 
@@ -706,8 +720,8 @@ const ChannelsTable = () => {
                 editingChannelIds={Array.from(selectedChannels)}
             />
     
-            <div style={{ position: 'sticky', top: 0, marginTop: 10,zIndex: 1000, background: '#fff', padding: '10px 0' }}>
-                <Form labelPosition='left' >
+    <div style={{ position: 'sticky', top: 0, marginTop: 10, zIndex: 1000, padding: '10px 0' }}>
+                <Form labelPosition='left'>
                     <div style={{ display: 'flex', marginBottom: 20 }}>
                         <Space>
                             <Input
@@ -766,45 +780,43 @@ const ChannelsTable = () => {
                                 }}
                                 autoComplete='new-password'
                             />
-    
+
                             {/* 查询按钮 */}
                             <Button
                                 onClick={() => searchChannels(searchKeyword, searchGroup, searchTypeKey, searchModel)}
                             >
                                 查询
                             </Button>
-                            <Button style={{ marginRight: 28 }}
-                                theme='light'
-                                type='danger'
+                            <Button
+                                type='tertiary'
+                                style={{ marginRight: 28 }}
                                 onClick={resetSearch}
                             >
                                 清除搜索条件
                             </Button>
                             <>
                                 {selectedChannels.size === 0 && (
-                                    <Button theme='light' type='primary' style={{ marginRight: 8 }} onClick={() => {
+                                    <Button type='primary' style={{ marginRight: 8 }} onClick={() => {
                                         setEditingChannel({
                                             id: undefined,
                                         });
                                         setShowEdit(true);
                                     }}>添加渠道</Button>
                                 )}
-    
+
                                 {selectedChannels.size === 1 && (
-                                    <Button theme='light' type='primary' style={{ marginRight: 8 }} onClick={copySelectedChannel}>复制渠道</Button>
+                                    <Button type='primary' style={{ marginRight: 8 }} onClick={copySelectedChannel}>复制渠道</Button>
                                 )}
-    
+
                                 {selectedChannels.size > 1 && (
-                                    <Button theme='light' type='danger' style={{ marginRight: 8 }} onClick={deleteSelectedChannels}>删除选中</Button>
+                                    <Button type='danger' style={{ marginRight: 8 }} onClick={deleteSelectedChannels}>删除选中</Button>
                                 )}
                                 {selectedChannels.size > 1 && (
-                                    // 在点击按钮的事件处理器中
-                                    <Button theme='light' type='secondary' onClick={() => {
+                                    <Button type='secondary' onClick={() => {
                                         setShowBatchEdit(true);
                                     }}>批量编辑</Button>
                                 )}
                             </>
-    
                         </Space>
                     </div>
                 </Form>
