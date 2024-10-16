@@ -644,7 +644,7 @@ func decreaseUserQuota(userID int, quotaToDecrease int) error {
 
 		// 4. 获取充值记录
 		var records []RechargeRecord
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("user_id = ? AND amount > 0", userID).
+		if err := tx.Where("user_id = ? AND amount > 0", userID).
 			Order("end_date ASC").
 			Find(&records).Error; err != nil {
 			return err
