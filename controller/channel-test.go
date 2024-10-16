@@ -77,7 +77,7 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	}
 	adaptor.Init(meta)
 	request := buildTestRequest(modelTest)
-	request.Model = modelTest
+	request.Model, _ = util.GetMappedModelName(request.Model, meta.ModelMapping)
 	meta.OriginModelName, meta.ActualModelName = modelTest, modelTest
 	convertedRequest, err := adaptor.ConvertRequest(c, meta, request)
 	if err != nil {
