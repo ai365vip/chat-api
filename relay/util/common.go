@@ -58,7 +58,7 @@ func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
 	//if strings.Contains(err.Message, "quota") {
 	//	return true
 	//}
-	if strings.Contains(err.Message, "Bedrock Runtime") {
+	if strings.Contains(err.Message, "ValidationException: Operation not allowed") {
 		return true
 	}
 	if strings.Contains(err.Message, "用户已被封禁") {
