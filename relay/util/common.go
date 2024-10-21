@@ -24,6 +24,15 @@ func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
 	if statusCode == http.StatusUnauthorized {
 		return true
 	}
+	if statusCode == http.StatusBadGateway {
+		return true
+	}
+	if statusCode == http.StatusNotAcceptable {
+		return true
+	}
+	if statusCode == http.StatusNotFound {
+		return true
+	}
 	if statusCode == http.StatusPreconditionRequired {
 		return true
 	}
@@ -49,6 +58,9 @@ func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
 	//if strings.Contains(err.Message, "quota") {
 	//	return true
 	//}
+	if strings.Contains(err.Message, "Bedrock Runtime") {
+		return true
+	}
 	if strings.Contains(err.Message, "用户已被封禁") {
 		return true
 	}
