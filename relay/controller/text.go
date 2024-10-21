@@ -160,6 +160,13 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	// 执行 DoResponse 方法
 	aitext, usage, respErr := adaptor.DoResponse(c, resp, meta)
 	if respErr != nil {
+		if meta.ChannelType == common.ChannelTypeAwsClaude {
+			actualStatusCode := determineActualStatusCode(respErr.StatusCode, respErr.Message)
+			// 更新 respErr 的状态码
+			respErr.StatusCode = actualStatusCode
+			// 使用实际的状态码
+			c.Status(actualStatusCode)
+		}
 		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
 		util.ResetStatusCode(respErr, statusCodeMappingStr)
 		return respErr

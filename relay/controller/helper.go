@@ -292,3 +292,19 @@ func isErrorHappened(meta *util.RelayMeta, resp *http.Response) bool {
 	}
 	return false
 }
+
+func determineActualStatusCode(statusCode int, errorMessage string) int {
+	// 使用正则表达式匹配 "StatusCode: XXX" 模式
+	re := regexp.MustCompile(`StatusCode:\s*(\d+)`)
+	matches := re.FindStringSubmatch(errorMessage)
+
+	if len(matches) > 1 {
+		// 提取状态码
+		if actualStatusCode, err := strconv.Atoi(matches[1]); err == nil {
+			return actualStatusCode
+		}
+	}
+
+	// 如果没有匹配到或解析失败，返回原始状态码
+	return statusCode
+}

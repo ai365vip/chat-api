@@ -111,28 +111,39 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 		logger.Errorf(ctx, "DoRequest failed: %s", err.Error())
 		return openai.ErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
+	statusCodeMappingStr := c.GetString("status_code_mapping")
 	if resp != nil {
 		errorHappened := (resp.StatusCode != http.StatusOK) || (meta.IsStream && strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json"))
 		if errorHappened {
 			logger.Errorf(ctx, "errorHappened is not nil: %+v", errorHappened)
 			util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
-			return util.RelayErrorHandler(resp)
+			openaiErr := util.RelayErrorHandler(resp)
+			// reset status code 重置状态码
+			util.ResetStatusCode(openaiErr, statusCodeMappingStr)
+			return openaiErr
 		}
 	}
 
 	// 执行 DoResponse 方法
 	aitext, usage, respErr := adaptor.DoResponse(c, resp, meta)
-
+	if respErr != nil {
+		if meta.ChannelType == common.ChannelTypeAwsClaude {
+			actualStatusCode := determineActualStatusCode(respErr.StatusCode, respErr.Message)
+			// 更新 respErr 的状态码
+			respErr.StatusCode = actualStatusCode
+			// 使用实际的状态码
+			c.Status(actualStatusCode)
+		}
+		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
+		util.ResetStatusCode(respErr, statusCodeMappingStr)
+		return respErr
+	}
 	// 记录结束时间
 	endTime := time.Now()
 
 	// 计算执行时间（单位：秒）
 	duration := int(endTime.Sub(startTime).Seconds())
-	if respErr != nil {
-		logger.Errorf(ctx, "respErr is not nil: %+v", respErr)
-		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
-		return respErr
-	}
+
 	// post-consume quota
 	go postConsumeQuota(ctx, usage, meta, textRequest, ratio, preConsumedQuota, modelRatio, groupRatio, aitext, duration)
 	return nil
