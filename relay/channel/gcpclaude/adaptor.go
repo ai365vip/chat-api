@@ -24,11 +24,13 @@ var gcpModelIDMap = map[string]string{
 	"claude-3-5-sonnet-20240620": "claude-3-5-sonnet@20240620",
 	"claude-3-opus-20240229":     "claude-3-opus@20240229",
 	"claude-3-haiku-20240307":    "claude-3-haiku@20240307",
+	"claude-3-5-sonnet-20241022": "claude-3-5-sonnet-v2@20241022",
 }
 
 var modelLocations = map[string][]string{
 	"claude-3-sonnet-20240229":   {"asia-southeast1", "us-central1", "us-east5"},
 	"claude-3-5-sonnet-20240620": {"us-east5", "europe-west1"},
+	"claude-3-5-sonnet-20241022": {"us-east5"},
 	"claude-3-opus-20240229":     {"us-east5"},
 	"claude-3-haiku-20240307":    {"europe-west1", "europe-west4", "us-central1", "us-east5"},
 }
