@@ -1,6 +1,6 @@
-import { Typography, Stack, OutlinedInput, InputAdornment, Button, InputLabel,
-   FormControl,Modal,Box,useMediaQuery ,Select ,MenuItem } from '@mui/material';
-import { IconWallet } from '@tabler/icons-react';
+import { Typography, Stack, OutlinedInput, InputAdornment, Button,InputLabel,
+  FormControl, Modal, Box, useMediaQuery,  IconButton, Select, MenuItem, Switch } from '@mui/material'; 
+import { IconWallet,IconBellRinging } from '@tabler/icons-react';
 import { useTheme } from '@mui/material/styles';
 import SubCard from 'ui-component/cards/SubCard';
 import UserCard from 'ui-component/cards/UserCard';
@@ -27,6 +27,132 @@ const TopupCard = () => {
   const [paymentMultiplier, setPaymentMultiplier] = useState({}); 
   const [topupAmountEnabled, setTopupAmountEnabled] = useState('');
   const [topupAmount, setTopupAmount] = useState({}); 
+
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertSettings, setAlertSettings] = useState({
+    min_quota: 5,
+    alert_interval: 24,
+    email: '',
+    enabled: false  // 默认关闭
+  });
+
+  // 添加邮箱验证的正则表达式
+  const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+  // 添加错误状态
+  const [formErrors, setFormErrors] = useState({
+    email: ''
+  });
+
+   // 获取现有的提醒设置
+   const getAlertSettings = async () => {
+    try {
+      const res = await API.get('/api/user/quota_alert');
+      const { success, data } = res.data;
+      if (success) {
+        if (data && Object.keys(data).length > 0) {
+          // 有数据时使用数据的值
+          setAlertSettings({
+            min_quota: data.min_quota || 2,
+            alert_interval: data.alert_interval || 24,
+            email: data.email || '',
+            enabled: data.enabled || false
+          });
+        } else {
+          // 没有数据时使用默认值（关闭状态）
+          setAlertSettings({
+            min_quota: 5,
+            alert_interval: 24,
+            email: '',
+            enabled: false
+          });
+        }
+      }
+    } catch (err) {
+      // 发生错误时也使用默认值
+      setAlertSettings({
+        min_quota: 2,
+        alert_interval: 24,
+        email: '',
+        enabled: false
+      });
+      showError('获取提醒设置失败');
+    }
+  };
+
+  // 保存提醒设置
+  const saveAlertSettings = async (settingsToSave = alertSettings) => {
+    // 验证表单
+    let hasError = false;
+    const newErrors = { email: '' };
+  
+    if (!settingsToSave.email) {
+      newErrors.email = '请输入邮箱地址';
+      hasError = true;
+    } else if (!EMAIL_REGEX.test(settingsToSave.email)) {
+      newErrors.email = '请输入有效的邮箱地址';
+      hasError = true;
+    }
+  
+    setFormErrors(newErrors);
+  
+    if (hasError) {
+      return;
+    }
+  
+    // 提交表单
+    try {
+      const res = await API.post('/api/user/quota_alert', {
+        enabled: true,  // 始终设置为 true，因为只有在开启时才会调用这个函数
+        min_quota: settingsToSave.min_quota,
+        alert_interval: settingsToSave.alert_interval,
+        email: settingsToSave.email
+      });
+      
+      const { success, message } = res.data;
+      if (success) {
+        showSuccess('设置保存成功');
+        setAlertSettings(prev => ({...prev, ...settingsToSave, enabled: true}));
+        setAlertOpen(false);
+      } else {
+        console.error('保存失败:', message);
+        showError(message || '保存失败');
+      }
+    } catch (err) {
+      console.error('请求失败:', err);
+      showError('保存设置失败');
+    }
+  };
+
+  const handleAlertToggle = async (newEnabled) => {
+    try {
+      // 无论当前额度多少，都允许关闭提醒
+      const res = await API.post('/api/user/quota_alert', {
+        ...alertSettings,
+        enabled: newEnabled
+      });
+      
+      if (res.data.success) {
+        if (newEnabled) {
+          // 开启时，打开设置弹窗
+          setAlertOpen(true);
+        } else {
+          // 关闭时，直接更新本地状态
+          setAlertSettings(prev => ({...prev, enabled: false}));
+          showSuccess('额度提醒已关闭');
+        }
+      } else {
+        showError(res.data.message || '操作失败');
+      }
+    } catch (err) {
+      console.error('请求失败:', err);
+      showError('操作失败');
+    }
+  };
+
+  useEffect(() => {
+    getAlertSettings();
+  }, []);
 
   const topUp = async () => {
     if (redemptionCode === '') {
@@ -367,13 +493,149 @@ const TopupCard = () => {
     </Box>
   );
 
+   // 添加提醒设置的弹窗内容
+   const renderAlertModalContent = () => (
+    <Box sx={{
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: 400,
+      bgcolor: 'background.paper',
+      boxShadow: 24,
+      p: 4,
+      borderRadius: 1,
+    }}>
+      <Typography variant="h4" sx={{ mb: 3 }}>额度提醒设置</Typography>
+      
+      <FormControl fullWidth sx={{ mb: 2 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>最低额度阈值</Typography>
+        <Select
+          value={alertSettings.min_quota}
+          onChange={(e) => setAlertSettings({...alertSettings, min_quota: e.target.value})}
+        >
+          <MenuItem value={2}>2 $</MenuItem>
+          <MenuItem value={5}>5 $</MenuItem>
+          <MenuItem value={20}>20 $</MenuItem>
+          <MenuItem value={50}>50 $</MenuItem>
+          <MenuItem value={200}>200 $</MenuItem>
+        </Select>
+      </FormControl>
+  
+      <FormControl fullWidth sx={{ mb: 2 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>提醒间隔</Typography>
+        <Select
+          value={alertSettings.alert_interval}
+          onChange={(e) => setAlertSettings({...alertSettings, alert_interval: e.target.value})}
+        >
+          <MenuItem value={1}>1 小时</MenuItem>
+          <MenuItem value={2}>2 小时</MenuItem>
+          <MenuItem value={8}>8 小时</MenuItem>
+          <MenuItem value={24}>24 小时</MenuItem>
+        </Select>
+      </FormControl>
+  
+      <FormControl fullWidth sx={{ mb: 2 }} error={!!formErrors.email}>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          提醒邮箱
+          <Typography component="span" color="error" sx={{ ml: 0.5 }}>*</Typography>
+        </Typography>
+        <OutlinedInput
+          type="email"
+          value={alertSettings.email}
+          onChange={(e) => {
+            setAlertSettings({...alertSettings, email: e.target.value});
+            // 清除错误提示
+            if (formErrors.email) {
+              setFormErrors({...formErrors, email: ''});
+            }
+          }}
+          placeholder="请输入邮箱地址"
+          error={!!formErrors.email}
+        />
+        {formErrors.email && (
+          <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+            {formErrors.email}
+          </Typography>
+        )}
+      </FormControl>
+  
+      <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 3 }}>
+        <Button onClick={() => {
+          setAlertOpen(false);
+          setFormErrors({ email: '' }); // 关闭时清除错误提示
+        }} color="error">
+          取消
+        </Button>
+        <Button onClick={() => saveAlertSettings(alertSettings)} variant="contained">
+        保存并开启
+      </Button>
+      </Stack>
+    </Box>
+  );
+
   return (
     <UserCard>
-      <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'20px'}>
+      <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} paddingTop={'1px'}>
         <IconWallet color={theme.palette.primary.main} />
         <Typography variant="h4">当前额度:</Typography>
         <Typography variant="h4">{renderQuota(userQuota)}</Typography>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography 
+            variant="body2" 
+            color="textSecondary"
+            sx={{ 
+              minWidth: 'max-content',
+              mr: 1
+            }}
+          >
+            额度提醒
+          </Typography>
+          <Switch
+            checked={alertSettings.enabled}
+            onChange={(e) => handleAlertToggle(e.target.checked)}
+            size="small"
+          />
+          {/* 只有在已启用且设置了邮箱后才显示图标和提示 */}
+          {alertSettings.enabled && alertSettings.email && (
+            <>
+              <IconButton 
+                onClick={() => setAlertOpen(true)}
+                sx={{ ml: 1 }}
+                title="设置额度提醒"
+              >
+                <IconBellRinging color={theme.palette.primary.main} />
+              </IconButton>
+              {alertSettings.min_quota > 0 && (
+                <Typography 
+                  variant="caption" 
+                  color="textSecondary"
+                  sx={{ 
+                    ml: 1,
+                    fontSize: '0.75rem',
+                    color: 'text.secondary'
+                  }}
+                >
+                  {`(${alertSettings.min_quota}$/${alertSettings.alert_interval}小时)`}
+                </Typography>
+              )}
+            </>
+          )}
+        </Stack>
       </Stack>
+
+      <SubCard sx={{ marginTop: '40px' }}>
+        {renderTopUpAmountInput()}
+        <Modal open={open} onClose={() => setOpen(false)}>
+          {renderModalContent()}
+        </Modal>
+      </SubCard>
+
+      {/* 添加额度提醒设置的Modal */}
+      <Modal open={alertOpen} onClose={() => setAlertOpen(false)}>
+        {renderAlertModalContent()}
+      </Modal>
+
       <SubCard
         sx={{
           marginTop: '40px'
