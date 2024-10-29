@@ -86,7 +86,6 @@ func main() {
 	go model.UpdateUserQuotaData()
 	//定时更新GCP AccessTokens
 	go model.StartScheduledRefreshAccessTokens()
-
 	if os.Getenv("CHANNEL_UPDATE_FREQUENCY") != "" {
 		frequency, err := strconv.Atoi(os.Getenv("CHANNEL_UPDATE_FREQUENCY"))
 		if err != nil {
@@ -102,8 +101,12 @@ func main() {
 
 		go controller.AutomaticallyTestChannels(frequency)
 	}
+	// 启动禁用通道测试器
 	go controller.AutomaticallyTestDisabledChannels(60)
+	// 启动Midjourney任务更新器
 	go controller.UpdateMidjourneyTask()
+	// 启动额度提醒检查器
+	go controller.StartQuotaAlertChecker()
 	//go controller.UpdateMidjourneyTaskBulk()
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
 		config.BatchUpdateEnabled = true

@@ -54,6 +54,8 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/option", controller.GetUserOptions)
 				selfRoute.GET("/userwithdrawals", controller.GetWithdrawalOrdersEndpoint) // 获取用户自己的提现订单列表
 				selfRoute.GET("/group", controller.GetUserGroups)
+				selfRoute.POST("/quota_alert", controller.SetUserQuotaAlert)
+				selfRoute.GET("/quota_alert", controller.GetUserQuotaAlertSettings)
 			}
 
 			adminRoute := userRoute.Group("/")
