@@ -114,7 +114,7 @@ func checkAndSendQuotaAlerts() {
 				// 发送提醒邮件
 				topUpLink := fmt.Sprintf("%s/topup", config.ServerAddress)
 				err = common.SendEmail(
-					"Ai365额度不足提醒",
+					"额度不足提醒",
 					setting.Email,
 					fmt.Sprintf("尊敬的「%s」用户，您当前剩余额度为 %.2f，低于设定的 %d，为了不影响您的使用，请及时充值。<br/>充值链接：<a href='%s'>%s</a>", user.Username, userQuota, setting.MinQuota, topUpLink, topUpLink),
 				)
