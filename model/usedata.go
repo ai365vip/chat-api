@@ -95,8 +95,8 @@ func SaveQuotaDataCache() {
 	// 3. 如果没有数据，就插入数据
 	for _, quotaData := range CacheQuotaData {
 		quotaDataDB := &QuotaData{}
-		DB.Table("quota_data").Where("user_id = ? and username = ? and type = ? and channel_id = ? and model_name = ? and created_at = ?",
-			quotaData.UserID, quotaData.Username, quotaData.Type, quotaData.ChannelId, quotaData.ModelName, quotaData.CreatedAt).First(quotaDataDB)
+		DB.Table("quota_data").Where("user_id = ? and type = ? and channel_id = ? and model_name = ? and created_at = ?",
+			quotaData.UserID, quotaData.Type, quotaData.ChannelId, quotaData.ModelName, quotaData.CreatedAt).First(quotaDataDB)
 		if quotaDataDB.Id > 0 {
 			quotaDataDB.Count += quotaData.Count
 			quotaDataDB.Quota += quotaData.Quota
