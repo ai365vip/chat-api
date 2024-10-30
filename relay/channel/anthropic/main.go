@@ -606,7 +606,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	fullTextResponse := responseClaude2OpenAI(&claudeResponse)
 	fullTextResponse.Model = modelName
 
-	if len(claudeResponse.Content[0].Text) > 0 {
+	if len(claudeResponse.Content) > 0 && claudeResponse.Content[0].Text != "" {
 		aitext = claudeResponse.Content[0].Text
 	}
 	usage := model.Usage{
