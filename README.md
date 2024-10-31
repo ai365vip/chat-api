@@ -1,102 +1,80 @@
 # Chat API
 
 > [!NOTE]
-> 本项目为开源项目，在[One API](https://github.com/songquanpeng/one-api)与[New API](https://github.com/Calcium-Ion/new-api)的基础上进行二次开发，感谢原作者的无私奉献。
-> 使用者必须在遵循 OpenAI 的[使用条款](https://openai.com/policies/terms-of-use)以及**法律法规**的情况下使用，不得用于非法用途。
+> 本项目是基于 [One API](https://github.com/songquanpeng/one-api) 和 [New API](https://github.com/Calcium-Ion/new-api) 进行二次开发的开源项目。感谢原作者的无私奉献。使用者必须在遵循 OpenAI 的[使用条款](https://openai.com/policies/terms-of-use)以及相关法律法规的情况下使用，不得用于非法用途。
 
 > [!WARNING]
-> 本项目为个人学习使用，不保证稳定性，且不提供任何技术支持，使用者必须在遵循 OpenAI 的使用条款以及法律法规的情况下使用，不得用于非法用途。
-> 根据[《生成式人工智能服务管理暂行办法》](http://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm)的要求，请勿对中国地区公众提供一切未经备案的生成式人工智能服务。
+> 本项目仅供个人学习使用，不保证稳定性，且不提供任何技术支持。使用者必须遵守 OpenAI 的使用条款和相关法律法规，禁止用于非法用途。根据[《生成式人工智能服务管理暂行办法》](http://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm)，请勿在中国地区向公众提供未经备案的生成式人工智能服务。
 
-## 此分叉版本的主要变更
+## 主要特性
 
-1. 全新的UI界面，C端与管理端 (/admin)
-2. 支持在线支付按钮的启用关闭
-3. 支持普通用户自行选择令牌按倍率、按次计费（倍率和按次全启用）
-4. 支持令牌分组，**模型限制**
-5. 支持WxPusher消息推送，在线充值通知
-6. 支持通知更换邮箱
-7. 支持渠道自启时间设置
-8. 支持显示新用户注册时间
-9. 管理员支持开启日志详情
-10. 支持自定义**网站描述**（TG网站预览）
-11. 支持数据面板统计
-12. 支持新用户设置默认分组
-13. 支持充值用户设置默认分组（充值后自动切换）
-14. 支持邀请用户充值返利（后台设置返利百分比。最低提现额度）
-15. 支持渠道设置模型rpm限制
-16. 支持渠道显示可用模型，可自定义排序
-17. 支持gpt-4v通用格式（添加模型gpt-4-vision，对话中放入图像链接即可）
-18. 支持按日期设置充值不同倍率
-19. 支持分销查询页[chat-api-key-tool](https://github.com/ai365vip/chat-api-key-tool)（消费、MJ、设置发卡站）
-20. 支持渠道添加自定义请求头
-21. 支持令牌添加自定义后缀内容
-22. 支持midjourney-proxy-plus(支持/mj-turbo/mj、/mj-relax/mj，对应模型midjourney-turbo、midjourney-relax)
-23. 支持设置充值数量对应折扣
-24. 支持渠道复制、批量编辑
-25. 支持Claude原始请求方式
-26. 支持开启上游空返回重试
-27. 支持日志显示RPM、TPM
-28. 支持GCP-Claude，使用rt、密钥两种方式
-29. 支持单渠道设置代理
-30. 支持用户设置低额度邮箱通知
+## 主要特性
 
-## 部署
+### 用户体验
 
-### 基于 Docker 进行部署
+1. 全新 UI 界面（C 端和管理端 /admin）
+2. 用户自选令牌计费方式（按倍率或按次）
+3. 支持令牌分组和模型限制
+4. 新用户默认分组设置及充值自动切换
+
+### 通知与推送
+
+5. 集成 WxPusher 消息推送
+6. 在线充值通知
+7. 用户低额度邮箱提醒
+
+### 管理功能
+
+8. 详细日志查看（管理员专用）
+9. 自定义网站描述（用于 TG 预览）
+10. 新用户注册时间显示
+11. 渠道自启时间设置
+12. 渠道 RPM 限制配置
+13. 渠道复制和批量编辑
+14. 单渠道代理设置
+15. 渠道自定义请求头
+
+### 计费与优惠
+
+16. 按过期时间设置充值倍率
+17. 邀请用户充值返利系统
+18. 自定义充值折扣方案
+
+### 技术特性
+
+19. 支持 GPT-4V 通用格式
+20. 支持 Claude 原始请求方式
+21. 支持 GCP-Claude（RT 和密钥两种方式）
+22. 上游空返回重试机制
+23. 令牌自定义后缀功能
+
+## 部署指南
+
+### Docker 部署
 
 ```shell
-# 使用 SQLite 的部署命令：
+# SQLite 部署:
 docker run --name chat-api -d --restart always -p 3000:3000 -e TZ=Asia/Shanghai ai365/chat-api:latest
-# 使用 MySQL 的部署命令，在上面的基础上添加 `-e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi"`，请自行修改数据库连接参数。
-# 例如：
+
+# MySQL 部署:
 docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" -e TZ=Asia/Shanghai ai365/chat-api:latest
 ```
 
-### 基于 Docker Compose 进行部署
-
-> 仅启动方式不同，参数设置不变，请参考基于 Docker 部署部分修改docker-compose.yml文件内容
+### Docker Compose 部署
 
 ```sh
-# 执行
+# 启动
 docker-compose up -d
 
-# 查看部署状态
+# 查看状态
 docker-compose ps
 ```
 
 ### 手动部署
 
-1. 从 [GitHub Releases ](https://github.com/ai365vip/chat-api/releases)下载可执行文件或者从源码编译：
-
-   ```shell
-   git clone https://github.com/ai365vip/chat-api.git
-
-   # 构建前端（管理端）
-   cd chat-api/web-admin
-   npm install
-   npm run build
-
-   # 构建前端（C端）
-   cd ..
-   cd web-user
-   npm install
-   npm run build
-
-   # 构建后端
-   cd ..
-   go mod download
-   go build -ldflags "-s -w" -o chat-api
-   ```
-2. 运行：
-
-   ```shell
-   chmod u+x chat-api
-   .env //设置环境变量 放在同一目录下
-   ./chat-api --port 3000 --log-dir ./logs
-   ```
-3. 访问 [http://localhost:3000/](http://localhost:3000/) 并登录。初始账号用户名为 `root`，密码为 `123456`。
-4. 管理端访问 [http://localhost:3000/admin](http://localhost:3000/admin) 并登录。初始账号用户名为 `root`，密码为 `123456`。
+1. 下载或编译可执行文件
+2. 运行程序
+3. 访问 http://localhost:3000/ 并登录（初始账号: root, 密码: 123456）
 
 ### 环境变量
 
@@ -145,22 +123,15 @@ docker-compose ps
 15. `RELAY_TIMEOUT`：中继超时设置，单位为秒，默认不设置超时时间。
 16. `SQLITE_BUSY_TIMEOUT`：SQLite 锁等待超时设置，单位为毫秒，默认 `3000`。
 
-## 界面截图
+## 界面预览
 
-![image](https://github.com/ai365vip/chat-api/assets/154959065/13fde0aa-aa19-4c2f-9ace-611fb9cd60b8)
+![管理界面](https://github.com/ai365vip/chat-api/assets/154959065/13fde0aa-aa19-4c2f-9ace-611fb9cd60b8)
 
-![image](https://github.com/ai365vip/chat-api/assets/154959065/23bf7267-6fac-4ca0-b6c4-2151e486f6a0)
+![用户界面](https://github.com/ai365vip/chat-api/assets/154959065/23bf7267-6fac-4ca0-b6c4-2151e486f6a0)
 
-![image](https://github.com/ai365vip/chat-api/assets/154959065/0017e8cb-645b-4c05-aefa-6cd538989278)
+![渠道管理](https://github.com/ai365vip/chat-api/assets/154959065/0017e8cb-645b-4c05-aefa-6cd538989278)
 
-![image](https://github.com/ai365vip/chat-api/assets/154959065/e40cf5fd-0cd3-4065-8c81-b88275ecd8d0)
-![image](https://github.com/ai365vip/chat-api/assets/154959065/95a66dec-fe0d-4446-9d76-fe2f3e59e2ea)
-
-![image](https://github.com/ai365vip/chat-api/assets/154959065/e182c58f-0957-4705-8f9a-14f02acd1b9a)
-![image](https://github.com/ai365vip/chat-api/assets/154959065/ecdbd755-fc08-4ee4-a08c-fc179fca51f7)
-![image](https://github.com/ai365vip/chat-api/assets/154959065/e48e016e-6d92-47b1-ab9b-3d5fec53175f)
-
-## 赞助
+## 赞助支持
 
 如果觉得这个软件对你有所帮助，欢迎请作者喝可乐、喝咖啡～
 
