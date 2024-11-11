@@ -34,7 +34,7 @@ var modelLocations = map[string][]string{
 	"claude-3-5-sonnet-20241022": {"us-east5"},
 	"claude-3-opus-20240229":     {"us-east5"},
 	"claude-3-haiku-20240307":    {"europe-west1", "europe-west4", "us-central1", "us-east5"},
-}
+	"claude-3-5-haiku-20241022":  {"us-east5"},
 
 type Adaptor struct {
 }
