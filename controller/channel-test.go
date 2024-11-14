@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -97,6 +96,83 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 		err := util.RelayErrorHandler(resp)
 		return fmt.Errorf("status code %d: %s", resp.StatusCode, err.Error.Message), &err.Error
 	}
+	// 读取并保存原始响应内容
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %v", err), nil
+	}
+	resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
+
+	// 验证模型映射
+	modelMap := map[string]string{
+		"gpt-3.5-turbo":          "gpt-3.5-turbo-0125",
+		"gpt-3.5-turbo-1106":     "gpt-3.5-turbo-1106",
+		"gpt-3.5-turbo-0125":     "gpt-3.5-turbo-0125",
+		"gpt-3.5-turbo-16k":      "gpt-3.5-turbo-16k-0613",
+		"gpt-4":                  "gpt-4-0613",
+		"gpt-4-0613":             "gpt-4-0613",
+		"gpt-4-1106-preview":     "gpt-4-1106-preview",
+		"gpt-4-0125-preview":     "gpt-4-0125-preview",
+		"gpt-4-turbo-preview":    "gpt-4-0125-preview",
+		"gpt-4-turbo":            "gpt-4-turbo-2024-04-09",
+		"gpt-4-turbo-2024-04-09": "gpt-4-turbo-2024-04-09",
+		"gpt-4o":                 "gpt-4o-2024-08-06",
+		"gpt-4o-2024-08-06":      "gpt-4o-2024-08-06",
+		"gpt-4o-2024-05-13":      "gpt-4o-2024-05-13",
+		"chatgpt-4o-latest":      "chatgpt-4o-latest",
+		"gpt-4o-mini":            "gpt-4o-mini-2024-07-18",
+		"gpt-4o-mini-2024-07-18": "gpt-4o-mini-2024-07-18",
+		"o1-preview-2024-09-12":  "o1-preview-2024-09-12",
+		"o1-preview":             "o1-preview-2024-09-12",
+		"o1-mini-2024-09-12":     "o1-mini-2024-09-12",
+		"o1-mini":                "o1-mini-2024-09-12",
+	}
+
+	// 检查模型映射
+	if expectedModel, exists := modelMap[modelTest]; exists && (meta.ChannelType == common.ChannelTypeCustom ||
+		meta.ChannelType == common.ChannelTypeOpenAI) {
+		var openaiResp struct {
+			Model string `json:"model"`
+			Usage struct {
+				PromptTokens        int `json:"prompt_tokens"`
+				CompletionTokens    int `json:"completion_tokens"`
+				TotalTokens         int `json:"total_tokens"`
+				PromptTokensDetails *struct {
+					CachedTokens int `json:"cached_tokens"`
+					AudioTokens  int `json:"audio_tokens"`
+				} `json:"prompt_tokens_details"`
+				CompletionTokensDetails *struct {
+					ReasoningTokens          int `json:"reasoning_tokens"`
+					AudioTokens              int `json:"audio_tokens"`
+					AcceptedPredictionTokens int `json:"accepted_prediction_tokens"`
+					RejectedPredictionTokens int `json:"rejected_prediction_tokens"`
+				} `json:"completion_tokens_details"`
+			} `json:"usage"`
+		}
+
+		if err := json.Unmarshal(responseBody, &openaiResp); err != nil {
+			return fmt.Errorf("failed to parse response: %v", err), nil
+		}
+
+		var warnings []string
+		if expectedModel != openaiResp.Model {
+			warnings = append(warnings, fmt.Sprintf("模型不匹配：期望 %s，实际返回 %s", expectedModel, openaiResp.Model))
+		}
+
+		if openaiResp.Usage.PromptTokensDetails == nil {
+			warnings = append(warnings, "Usage 中缺少 prompt_tokens_details 信息")
+		}
+
+		if openaiResp.Usage.CompletionTokensDetails == nil {
+			warnings = append(warnings, "Usage 中缺少 completion_tokens_details 信息")
+		}
+
+		if len(warnings) > 0 {
+			warningMessage := strings.Join(warnings, "; ")
+			common.SysLog(fmt.Sprintf("Response warnings for model %s: %s", modelTest, warningMessage))
+			return fmt.Errorf("模型可用，但有警告: %s", warningMessage), nil
+		}
+	}
 	_, usage, respErr := adaptor.DoResponse(c, resp, meta)
 	if respErr != nil {
 		return fmt.Errorf("%s", respErr.Error.Message), &respErr.Error
@@ -104,24 +180,7 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 	if usage == nil {
 		return errors.New("usage is nil"), nil
 	}
-	//result := w.Result()
-	// print result.Body
-	//respBody, err := io.ReadAll(result.Body)
-	//if err != nil {
-	//	return err, nil
-	//}
-	//common.SysLog(fmt.Sprintf("testing channel #%d, response: \n%s", channel.Id, string(respBody)))
 	return nil, nil
-}
-
-func randomID() string {
-	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
-	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	b := make([]byte, 10)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return "chatcmpl-" + string(b)
 }
 
 func buildTestRequest(modelTest string) *relaymodel.GeneralOpenAIRequest {

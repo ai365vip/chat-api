@@ -9,6 +9,7 @@ import {
     shouldShowPrompt,
     showError,
     showInfo,
+    showWarning,
     showSuccess,
     timestamp2string
 } from '../helpers';
@@ -517,17 +518,27 @@ const ChannelsTable = () => {
     
     
     const testChannel = async (record, model) => {
-        const res = await API.get(`/api/channel/test/${record.id}?model=${model}`);
-        const {success, message, time} = res.data;
-        if (success) {
-            setChannels((prevChannels) => prevChannels.map(channel =>
-                channel.id === record.id
-                    ? { ...channel, response_time: time * 1000, test_time: Date.now() / 1000 }
-                    : channel
-            ));
-            showInfo(`通道 ${record.name}，${model} 测试成功，耗时 ${time.toFixed(2)} 秒。`);
-        } else {
-            showError(message);
+        try {
+            const res = await API.get(`/api/channel/test/${record.id}?model=${model}`);
+            const { success, message, time } = res.data;
+    
+            if (success) {
+                setChannels((prevChannels) => prevChannels.map(channel =>
+                    channel.id === record.id
+                        ? { ...channel, response_time: time * 1000, test_time: Date.now() / 1000 }
+                        : channel
+                ));
+                showInfo(`通道 ${record.id} ${record.name}，${model} 测试成功，耗时 ${time.toFixed(2)} 秒。`);
+            } else {
+                // 判断是否包含"模型可用，但有警告"
+                if (message.includes('模型可用，但有警告')) {
+                    showWarning(`通道 ${record.id} ${record.name}，${model} 测试结果：${message}`);
+                } else {
+                    showError(`通道 ${record.id} ${record.name}，${model} 测试失败：${message}`);
+                }
+            }
+        } catch (error) {
+            showError(`通道 ${record.id} ${record.name}，${model} 测试失败：${error.message}`);
         }
     };
 
