@@ -135,14 +135,17 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 		if expectedModel, exists := modelMap[modelTest]; exists {
 			var openaiResp BotResponse
 
-			// 尝试解析响应
+			// 先尝试解析是否为字符串包装的JSON
+			var jsonString string
+			err := json.Unmarshal(responseBody, &jsonString)
+			if err == nil {
+				// 如果成功解析为字符串，说明JSON被包装了，需要再次解析
+				responseBody = []byte(jsonString)
+			}
+
+			// 尝试解析为BotResponse
 			if err := json.Unmarshal(responseBody, &openaiResp); err != nil {
-				// 如果解析失败，尝试判断是否为字符串响应
-				var stringResp string
-				if err := json.Unmarshal(responseBody, &stringResp); err == nil {
-					common.SysLog(fmt.Sprintf("Received string response for model %s: %s", modelTest, stringResp))
-					return fmt.Errorf("收到意外的字符串响应: %s", stringResp), nil
-				}
+				common.SysLog(fmt.Sprintf("Failed to parse response for model %s: %s", modelTest, string(responseBody)))
 				return fmt.Errorf("failed to parse response: %v", err), nil
 			}
 
