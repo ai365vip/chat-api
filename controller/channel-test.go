@@ -16,7 +16,6 @@ import (
 	"one-api/model"
 	"one-api/relay/constant"
 	"one-api/relay/helper"
-	dbmodel "one-api/relay/model"
 	relaymodel "one-api/relay/model"
 	"one-api/relay/util"
 	"strconv"
@@ -28,21 +27,22 @@ import (
 )
 
 type BotResponse struct {
-	ID      string        `json:"id"`
-	Created int64         `json:"created"`
-	Object  string        `json:"object"`
-	Choices []interface{} `json:"choices"`
-	Usage   BotUsage      `json:"usage"`
-	Model   string        `json:"model"`
-	// added Error field here
-	Error        dbmodel.Error `json:"error"`
-	FinishReason interface{}   `json:"finish_reason,omitempty"`
-}
-
-type BotUsage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
+	Model string `json:"model"`
+	Usage struct {
+		PromptTokens        int `json:"prompt_tokens"`
+		CompletionTokens    int `json:"completion_tokens"`
+		TotalTokens         int `json:"total_tokens"`
+		PromptTokensDetails *struct {
+			CachedTokens int `json:"cached_tokens"`
+			AudioTokens  int `json:"audio_tokens"`
+		} `json:"prompt_tokens_details,omitempty"`
+		CompletionTokensDetails *struct {
+			ReasoningTokens          int `json:"reasoning_tokens"`
+			AudioTokens              int `json:"audio_tokens"`
+			AcceptedPredictionTokens int `json:"accepted_prediction_tokens"`
+			RejectedPredictionTokens int `json:"rejected_prediction_tokens"`
+		} `json:"completion_tokens_details,omitempty"`
+	} `json:"usage"`
 }
 
 func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr *relaymodel.Error) {
@@ -133,40 +133,34 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 
 		// 检查模型映射
 		if expectedModel, exists := modelMap[modelTest]; exists {
-			var openaiResp struct {
-				Model string `json:"model"`
-				Usage struct {
-					PromptTokens        int `json:"prompt_tokens"`
-					CompletionTokens    int `json:"completion_tokens"`
-					TotalTokens         int `json:"total_tokens"`
-					PromptTokensDetails *struct {
-						CachedTokens int `json:"cached_tokens"`
-						AudioTokens  int `json:"audio_tokens"`
-					} `json:"prompt_tokens_details"`
-					CompletionTokensDetails *struct {
-						ReasoningTokens          int `json:"reasoning_tokens"`
-						AudioTokens              int `json:"audio_tokens"`
-						AcceptedPredictionTokens int `json:"accepted_prediction_tokens"`
-						RejectedPredictionTokens int `json:"rejected_prediction_tokens"`
-					} `json:"completion_tokens_details"`
-				} `json:"usage"`
-			}
+			var openaiResp BotResponse
 
+			// 尝试解析响应
 			if err := json.Unmarshal(responseBody, &openaiResp); err != nil {
+				// 如果解析失败，尝试判断是否为字符串响应
+				var stringResp string
+				if err := json.Unmarshal(responseBody, &stringResp); err == nil {
+					common.SysLog(fmt.Sprintf("Received string response for model %s: %s", modelTest, stringResp))
+					return fmt.Errorf("收到意外的字符串响应: %s", stringResp), nil
+				}
 				return fmt.Errorf("failed to parse response: %v", err), nil
 			}
 
 			var warnings []string
+			// 检查模型匹配
 			if expectedModel != openaiResp.Model {
 				warnings = append(warnings, fmt.Sprintf("模型不匹配：期望 %s，实际返回 %s", expectedModel, openaiResp.Model))
 			}
 
-			if openaiResp.Usage.PromptTokensDetails == nil {
-				warnings = append(warnings, "Usage 中缺少 prompt_tokens_details 信息")
-			}
+			// 根据通道类型检查token details
+			if channel.Type == common.ChannelTypeCustom {
+				if openaiResp.Usage.PromptTokensDetails == nil {
+					warnings = append(warnings, "Usage 中缺少 prompt_tokens_details 信息")
+				}
 
-			if openaiResp.Usage.CompletionTokensDetails == nil {
-				warnings = append(warnings, "Usage 中缺少 completion_tokens_details 信息")
+				if openaiResp.Usage.CompletionTokensDetails == nil {
+					warnings = append(warnings, "Usage 中缺少 completion_tokens_details 信息")
+				}
 			}
 
 			if len(warnings) > 0 {
