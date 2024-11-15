@@ -66,33 +66,34 @@ func RedisDel(key string) error {
 
 func RedisDecrease(key string, value int64) error {
 	ctx := context.Background()
-	err := RDB.Watch(ctx, func(tx *redis.Tx) error {
-		// 获取当前值
-		current, err := tx.Get(ctx, key).Int64()
-		if err != nil {
-			return err
-		}
-
-		// 检查是否配额不足
-		if current-value < 0 {
-			// 设置为0并返回错误
-			_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-				pipe.Set(ctx, key, 0, 0) // 设置为0，保持原有过期时间
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-			return fmt.Errorf("配额不足并已清零: 当前值=%d, 请求减少=%d", current, value)
-		}
-
-		// 正常扣减
-		_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-			pipe.DecrBy(ctx, key, value)
-			return nil
-		})
+	// 修改 Lua 脚本，使其返回简单的整数值
+	script := `
+        local current = redis.call('GET', KEYS[1])
+        if not current then
+            return -1  -- 键不存在
+        end
+        
+        redis.call('DECRBY', KEYS[1], ARGV[1])
+        
+        local ttl = redis.call('TTL', KEYS[1])
+        if ttl > 0 then
+            redis.call('EXPIRE', KEYS[1], ttl)
+        end
+        
+        return 0  -- 操作成功
+    `
+	result, err := RDB.Eval(ctx, script, []string{key}, value).Result()
+	if err != nil {
 		return err
-	}, key)
-
-	return err
+	}
+	// 检查返回值类型
+	switch v := result.(type) {
+	case int64:
+		if v == -1 {
+			return fmt.Errorf("Key does not exist")
+		}
+		return nil
+	default:
+		return fmt.Errorf("unexpected result type: %T", result)
+	}
 }
