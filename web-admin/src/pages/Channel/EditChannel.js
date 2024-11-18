@@ -20,7 +20,8 @@ const STATUS_CODE_MAPPING_EXAMPLE = {
     'gemini-1.5-flash-latest',
     'gemini-1.5-pro-exp-0801',
     'gemini-1.5-pro-exp-0827',
-    'gemini-1.5-flash-exp-0827'
+    'gemini-1.5-flash-exp-0827',
+    'gemini-exp-1114',
 ];
 function type2secretPrompt(type) {
     // inputs.type === 15 ? '按照如下格式输入：APIKey|SecretKey' : (inputs.type === 18 ? '按照如下格式输入：APPID|APISecret|APIKey' : '请输入渠道对应的鉴权密钥')
@@ -146,7 +147,7 @@ const EditChannel = (props) => {
                     break;
                 case 24:
                     localModels = ['gemini-1.5-pro-001','gemini-1.5-pro-latest','gemini-1.5-flash-latest','gemini-1.5-pro-exp-0801',
-                        'gemini-1.5-pro-exp-0827','gemini-1.5-flash-exp-0827','gemini-1.5-pro-002','gemini-1.5-flash-002',];
+                        'gemini-1.5-pro-exp-0827','gemini-1.5-flash-exp-0827','gemini-1.5-pro-002','gemini-1.5-flash-002','gemini-exp-1114'];
                     break;
                 case 2:
                     localModels = ['midjourney'];

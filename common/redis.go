@@ -90,7 +90,7 @@ func RedisDecrease(key string, value int64) error {
 	switch v := result.(type) {
 	case int64:
 		if v == -1 {
-			return fmt.Errorf("Key does not exist")
+			return fmt.Errorf("key does not exist")
 		}
 		return nil
 	default:
