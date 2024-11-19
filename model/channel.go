@@ -29,6 +29,7 @@ type Channel struct {
 	Balance               float64 `json:"balance"` // in USD
 	BalanceUpdatedTime    int64   `json:"balance_updated_time" gorm:"bigint"`
 	Models                string  `json:"models"`
+	Tags                  string  `json:"tags" gorm:"type:varchar(255)"`
 	Group                 string  `json:"group" gorm:"type:varchar(255);default:'default'"`
 	UsedQuota             int64   `json:"used_quota" gorm:"bigint;default:0"`
 	UsedCount             int     `json:"used_count" gorm:"default:0"`
@@ -502,4 +503,33 @@ func handleTokenError(ch Channel, err error) {
 		}
 	}
 	common.SysError(fmt.Sprintf("获取通道 %d 的访问令牌失败：%v", ch.Id, err))
+}
+
+func GetTaggedChannels() ([]*Channel, error) {
+	var channels []*Channel
+	// 查询所有有标签的渠道
+	err := DB.Select("id, type, status, name, weight, created_time, test_time, response_time, balance, balance_updated_time, models, `group`, tags, used_quota, used_count, priority, auto_ban, tested_time, model_test, rate_limited").
+		Where("tags IS NOT NULL AND tags != ''").
+		Find(&channels).Error
+	return channels, err
+}
+
+func GetUntaggedChannels(startIdx int, num int) ([]*Channel, error) {
+	var channels []*Channel
+	// 查询所有没有标签的渠道，并进行分页
+	err := DB.Select("id, type, status, name, weight, created_time, test_time, response_time, balance, balance_updated_time, models, `group`, tags, used_quota, used_count, priority, auto_ban, tested_time, model_test, rate_limited").
+		Where("tags IS NULL OR tags = ''").
+		Order("id desc").
+		Limit(num).
+		Offset(startIdx).
+		Find(&channels).Error
+	return channels, err
+}
+
+func GetUntaggedChannelsCount() (int64, error) {
+	var count int64
+	err := DB.Model(&Channel{}).
+		Where("tags IS NULL OR tags = ''").
+		Count(&count).Error
+	return count, err
 }

@@ -22,8 +22,9 @@ func GetAllChannels(c *gin.Context) {
 	if pageSize < 0 {
 		pageSize = config.ItemsPerPage
 	}
-	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
-	channels, err := model.GetAllChannels(p*pageSize, pageSize, false, idSort)
+
+	// 获取所有标签渠道
+	taggedChannels, err := model.GetTaggedChannels()
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -31,12 +32,36 @@ func GetAllChannels(c *gin.Context) {
 		})
 		return
 	}
+
+	// 获取分页的未标签渠道
+	untaggedChannels, err := model.GetUntaggedChannels(p*pageSize, pageSize)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 获取未标签渠道总数
+	total, err := model.GetUntaggedChannelsCount()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 合并结果
+	allChannels := append(taggedChannels, untaggedChannels...)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    channels,
+		"data":    allChannels,
+		"total":   total, // 返回未标签渠道的总数
 	})
-	return
 }
 
 func SearchChannels(c *gin.Context) {
