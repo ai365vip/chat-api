@@ -146,11 +146,13 @@ type ChatCompletionsStreamResponseChoice struct {
 }
 
 type ChatCompletionsStreamResponse struct {
-	Id      string                                `json:"id"`
-	Object  string                                `json:"object"`
-	Created int64                                 `json:"created"`
-	Model   string                                `json:"model"`
-	Choices []ChatCompletionsStreamResponseChoice `json:"choices"`
+	Id                string                                `json:"id"`
+	Object            string                                `json:"object"`
+	Created           int64                                 `json:"created"`
+	Model             string                                `json:"model"`
+	Choices           []ChatCompletionsStreamResponseChoice `json:"choices"`
+	Usage             *model.Usage                          `json:"usage,omitempty"`
+	SystemFingerprint *string                               `json:"system_fingerprint"`
 }
 
 type CompletionsStreamResponse struct {

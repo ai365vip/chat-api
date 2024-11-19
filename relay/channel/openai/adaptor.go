@@ -85,6 +85,16 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
+
+	if meta.ChannelType == common.ChannelTypeOpenAI {
+		request.StreamOptions = nil
+	}
+
+	if request.StreamOptions == nil && meta.ChannelType == common.ChannelTypeOpenAI && meta.IsStream {
+		request.StreamOptions = &model.StreamOptions{
+			IncludeUsage: true,
+		}
+	}
 	if strings.HasPrefix(request.Model, "o1-") {
 		if request.MaxCompletionTokens == 0 && request.MaxTokens != 0 {
 			request.MaxCompletionTokens = request.MaxTokens
@@ -112,7 +122,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 
 		var responseText string
 		var toolCount int
-		err, responseText, toolCount = StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
+		err, responseText, toolCount, usage = StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
 		aitext = responseText
 		if usage == nil || usage.TotalTokens == 0 {
 			usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)

@@ -17,9 +17,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName string, fixedContent string) (*model.ErrorWithStatusCode, string, int) {
+func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName string, fixedContent string) (*model.ErrorWithStatusCode, string, int, *model.Usage) {
 	responseText := ""
 	toolCount := 0
+	var usage *model.Usage
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
@@ -79,6 +80,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 						}
 
 					}
+					if streamResponse.Usage != nil && streamResponse.Usage.TotalTokens != 0 {
+						usage = streamResponse.Usage
+					}
 
 				case constant.RelayModeCompletions:
 					var streamResponse CompletionsStreamResponse
@@ -131,9 +135,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 	})
 	err := resp.Body.Close()
 	if err != nil {
-		return ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), "", 0
+		return ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), "", 0, nil
 	}
-	return nil, responseText, toolCount
+	return nil, responseText, toolCount, usage
 }
 
 func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {
