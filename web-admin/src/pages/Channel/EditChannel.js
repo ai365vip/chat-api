@@ -76,6 +76,7 @@ const EditChannel = (props) => {
         gcp_account:'',
         rate_limit_count:'',
         gemini_model: '',
+        tags: '',
     };
     const [batch, setBatch] = useState(false);
     const [autoBan, setAutoBan] = useState(true);
@@ -567,6 +568,19 @@ const EditChannel = (props) => {
                 width={isMobile() ? '100%' : 600}
             >
                 <Spin spinning={loading}>
+                    <div style={{marginTop: 10}}>
+                         <Typography.Text strong>标签：</Typography.Text>
+                     </div>
+                     <Input
+                         label='标签'
+                         name='tags'
+                         placeholder={'请输入标签名称'}
+                         onChange={value => {
+                             handleInputChange('tags', value)
+                         }}
+                         value={inputs.tags}
+                     autoComplete='new-password'
+                     />
                     <div style={{marginTop: 10}}>
                         <Typography.Text strong>类型：</Typography.Text>
                     </div>

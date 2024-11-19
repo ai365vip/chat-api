@@ -50,6 +50,7 @@ const BatchEditChannels = (props) => {
         weight:'',
         groups: ['default'],
         gemini_model: '',
+        tags: '',
     };
     const [config, setConfig] = useState({
         gemini_model: '',
@@ -369,6 +370,19 @@ const BatchEditChannels = (props) => {
                 width={isMobile() ? '100%' : 600}
             >
                 <Spin spinning={loading}>
+                     <div style={{marginTop: 10}}>
+                         <Typography.Text strong>标签：</Typography.Text>
+                     </div>
+                     <Input
+                         label='标签'
+                         name='tags'
+                         placeholder={'请输入标签名称'}
+                         onChange={value => {
+                             handleInputChange('tags', value)
+                         }}
+                         value={inputs.tags}
+                     autoComplete='new-password'
+                     />
                     <div style={{marginTop: 10}}>
                         <Typography.Text strong>类型：</Typography.Text>
                     </div>

@@ -53,7 +53,7 @@ export function isMobile() {
   const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
   
   // 检查屏幕宽度是否小于或等于600像素
-  const widthCheck = window.innerWidth <= 600;
+  const widthCheck = window.innerWidth <= 1460;
 
   // 使用 navigator.userAgent 检查设备是否匹配移动设备正则表达式
   const userAgentCheck = mobileRegex.test(navigator.userAgent);
