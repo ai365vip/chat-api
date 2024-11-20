@@ -510,6 +510,7 @@ func GetTaggedChannels() ([]*Channel, error) {
 	// 查询所有有标签的渠道
 	err := DB.Select("id, type, status, name, weight, created_time, test_time, response_time, balance, balance_updated_time, models, `group`, tags, used_quota, used_count, priority, auto_ban, tested_time, model_test, rate_limited").
 		Where("tags IS NOT NULL AND tags != ''").
+		Order("id desc").
 		Find(&channels).Error
 	return channels, err
 }

@@ -134,7 +134,20 @@ const ChannelsTable = () => {
             render: (text, record) => record.isTag ? (
                 <Space>
                     <Tag color="blue">{record.name}</Tag>
-                    <Typography.Text>{record.children?.length || 0}个通道</Typography.Text>
+                    {record.children?.length > 0 && (
+                        <Typography.Text>
+                            {record.children.filter(ch => ch.status === 1).length > 0 && (
+                                <span style={{ color: 'var(--semi-color-success)' }}>
+                                    启{record.children.filter(ch => ch.status === 1).length}
+                                </span>
+                            )}
+                            {record.children.filter(ch => ch.status !== 1).length > 0 && (
+                                <span style={{ color: 'var(--semi-color-danger)' }}>
+                                    禁{record.children.filter(ch => ch.status !== 1).length}
+                                </span>
+                            )}
+                        </Typography.Text>
+                    )}
                 </Space>
             ) : text
         },
