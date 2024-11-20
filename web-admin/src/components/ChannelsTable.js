@@ -933,18 +933,46 @@ const ChannelsTable = () => {
       
 
     const updateChannelBalance = async (record) => {
-        const res = await API.get(`/api/channel/update_balance/${record.id}/`);
-        if (res.data.success) {
-            const newChannels = channels.map(channel => {
-                if (channel.id === record.id) {
-                    return { ...channel, balance: res.data.balance, balance_updated_time: Date.now() / 1000 };
-                }
-                return channel;
-            });
-            setChannels(newChannels);
-            showInfo(`通道 ${record.name} 余额更新成功！`);
-        } else {
-            showError(res.data.message);
+        try {
+            const res = await API.get(`/api/channel/update_balance/${record.id}/`);
+            if (res.data.success) {
+                setChannels(prevChannels => prevChannels.map(channel => {
+                    // 如果是标签组
+                    if (channel.isTag && channel.children) {
+                        return {
+                            ...channel,
+                            children: channel.children.map(child => {
+                                if (child.id === record.id) {
+                                    return { 
+                                        ...child, 
+                                        balance: res.data.balance, 
+                                        balance_updated_time: Date.now() / 1000 
+                                    };
+                                }
+                                return child;
+                            }),
+                            // 更新标签组的总余额
+                            balance: channel.children.reduce((sum, ch) => {
+                                return sum + (ch.id === record.id ? res.data.balance : (ch.balance || 0));
+                            }, 0)
+                        };
+                    }
+                    // 如果是普通渠道
+                    if (channel.id === record.id) {
+                        return { 
+                            ...channel, 
+                            balance: res.data.balance, 
+                            balance_updated_time: Date.now() / 1000 
+                        };
+                    }
+                    return channel;
+                }));
+                showInfo(`通道 ${record.name} 余额更新成功！`);
+            } else {
+                showError(res.data.message);
+            }
+        } catch (error) {
+            showError(`更新余额失败：${error.message}`);
         }
     };
     
