@@ -44,36 +44,53 @@
 5. 令牌自定义后缀功能
 
 
+
 ## 部署指南
 
-### Docker 部署
+### 1. 宝塔一键部署
+
+- 适用于宝塔 9.2 及以上版本
+- 未安装宝塔面板可前往[宝塔官网](https://www.bt.cn/u/5OJvCS)安装
+- 详细步骤请参考[宝塔一键部署指南](./BT.md)
+
+### 2. Docker 部署
 
 ```shell
-# SQLite 部署:
-docker run --name chat-api -d --restart always -p 3000:3000 -e TZ=Asia/Shanghai ai365/chat-api:latest
+# SQLite 方式
+docker run --name chat-api -d \
+  --restart always \
+  -p 3000:3000 \
+  -e TZ=Asia/Shanghai \
+  ai365/chat-api:latest
 
-# MySQL 部署:
-docker run --name chat-api -d --restart always -p 3000:3000 -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" -e TZ=Asia/Shanghai ai365/chat-api:latest
+# MySQL 方式 
+docker run --name chat-api -d \
+  --restart always \
+  -p 3000:3000 \
+  -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" \
+  -e TZ=Asia/Shanghai \
+  ai365/chat-api:latest
 ```
 
-### Docker Compose 部署
+### 3. Docker Compose 部署
 
-```sh
-# 启动
+```shell
+# 启动服务
 docker-compose up -d
 
-# 查看状态
+# 查看运行状态
 docker-compose ps
 ```
 
-### 手动部署
+### 4. 手动部署
 
 1. 下载或编译可执行文件
 2. 运行程序
-3. 访问 http://localhost:3000/ 并登录（初始账号: root, 密码: 123456）\
+3. 访问 http://localhost:3000/ 
+4. 使用初始账号登录:
+   - 用户名: root
+   - 密码: 123456
 
-### 宝塔一键部署
-详细的宝塔部署教程请参考 [宝塔一键部署指南](./BT.md)
 
 ### 环境变量
 

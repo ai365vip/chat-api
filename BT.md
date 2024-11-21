@@ -2,15 +2,9 @@
 
 ### 关于宝塔
 
-[宝塔面板](https://www.bt.cn/u/JEYMaa)（BT Panel）是一个简单易用的服务器管理面板，提供图形化界面来管理 Linux 和 Windows 服务器，支持网站、数据库、FTP、SSH 等多项功能的快速配置与管理。
+[宝塔面板](https://www.bt.cn/u/5OJvCS)（BT Panel）是一个简单易用的服务器管理面板，提供图形化界面来管理 Linux 和 Windows 服务器，支持网站、数据库、FTP、SSH 等多项功能的快速配置与管理。
 
 
-
-### 前提条件
-
-此方法适用于宝塔9.2及以上版本，
-
-如果您还没有安装宝塔面板，可前往[宝塔官网](https://www.bt.cn/u/JEYMaa)使用一键脚本进行安装。
 
 ### 部署Chat API
 
