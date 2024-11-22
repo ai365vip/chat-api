@@ -24,6 +24,8 @@ function renderType(type) {
             return <Tag color='orange' size='large'> 管理 </Tag>;
         case 4:
             return <Tag color='purple' size='large'> 系统 </Tag>;
+        case 5:
+            return <Tag color='red' size='large'> 失败 </Tag>;
         default:
             return <Tag color='black' size='large'> 未知 </Tag>;
     }
@@ -93,7 +95,7 @@ const LogsTable = () => {
                 let channelName = record.channel_name || '未知渠道名称'; // 若不存在，则默认显示“未知渠道名称”
                 return (
                     isAdminUser ?
-                        (record.type === 0 || record.type === 2) ?
+                        (record.type === 0 || record.type === 2 || record.type === 5) ?
                             <div>
                                 <Tooltip content={channelName} position="top">
                                     <Tag color={colors[parseInt(text) % colors.length]} size='large' onClick={()=>{
@@ -132,7 +134,7 @@ const LogsTable = () => {
             dataIndex: 'token_name',
             render: (text, record, index) => {
                 return (
-                    record.type === 0 || record.type === 2 ?
+                    record.type === 0 || record.type === 2 || record.type === 5?
                         <div>
                             <Tag color='grey' size='large' onClick={() => {
                                 copyText(text)
@@ -159,7 +161,7 @@ const LogsTable = () => {
             dataIndex: 'model_name',
             render: (text, record, index) => {
                 return (
-                    record.type === 0 || record.type === 2 ?
+                    record.type === 0 || record.type === 2 || record.type === 5?
                         <div>
                             <Tag color={stringToColor(text)} size='large' onClick={() => {
                                 copyText(text)
@@ -175,7 +177,7 @@ const LogsTable = () => {
             dataIndex: 'ip',
             render: (text, record, index) => {
                 return (
-                    record.type === 0 || record.type === 2 ?
+                    record.type === 0 || record.type === 2 || record.type === 5?
                         <div>
                             <Tag color={stringToColor(text)} size='large' onClick={() => {
                                 copyText(text)
@@ -523,7 +525,8 @@ const LogsTable = () => {
                     <Select.Option value="2">消费</Select.Option>
                     <Select.Option value="3">管理</Select.Option>
                     <Select.Option value="4">系统</Select.Option>
-                    <Select.Option value="5">重试</Select.Option>
+                    <Select.Option value="5">失败</Select.Option>
+                    <Select.Option value="6">重试</Select.Option>
                 </Select>
                 <Modal
                     visible={isModalOpen}

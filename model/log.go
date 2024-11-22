@@ -68,6 +68,7 @@ const (
 	LogTypeConsume
 	LogTypeManage
 	LogTypeSystem
+	LogTypeAPIError
 )
 
 type HourlyStats struct {
@@ -281,7 +282,10 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	// 假设 Log 是你的日志记录结构体
 	tx := DB.Model(&Log{}).Where("user_id = ?", userId)
 
-	if logType != LogTypeUnknown {
+	if logType == -1 {
+		// 特殊值-1表示排除type=5的所有日志
+		tx = tx.Where("type != 5")
+	} else if logType != LogTypeUnknown {
 		tx = tx.Where("type = ?", logType)
 	}
 	if modelName != "" {
@@ -485,4 +489,44 @@ func SearchHourlyAndModelStats(userID int, tokenName, modelName, startTimestamp,
 
 	err = modelQuery.Find(&modelStats).Error
 	return
+}
+
+// 添加记录登录日志的函数
+func RecordLoginLog(ctx context.Context, userId int, ip string) {
+	username := GetUsernameById(userId)
+	log := &Log{
+		UserId:     userId,
+		Username:   username,
+		CreatedAt:  common.GetTimestamp(),
+		Type:       LogTypeSystem,
+		Multiplier: "用户登录",
+		Ip:         ip,
+	}
+
+	err := DB.Create(log).Error
+	if err != nil {
+		common.LogError(ctx, "failed to record login log: "+err.Error())
+	}
+}
+
+// 新增记录API错误日志的函数
+func RecordAPIErrorLog(userId int, channelId int, channelName, modelName, tokenName string, tokenId int, content string, ip string) {
+	log := &Log{
+		UserId:      userId,
+		Username:    GetUsernameById(userId),
+		CreatedAt:   common.GetTimestamp(),
+		Type:        LogTypeAPIError,
+		AttemptsLog: content,
+		ChannelId:   channelId,
+		ChannelName: channelName,
+		ModelName:   modelName,
+		TokenName:   tokenName,
+		TokenId:     tokenId,
+		Ip:          ip,
+	}
+
+	err := DB.Create(log).Error
+	if err != nil {
+		common.SysError("failed to record API error log: " + err.Error())
+	}
 }

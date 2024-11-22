@@ -117,6 +117,16 @@ func Relay(c *gin.Context) {
 			bizErr.Error.Message = "当前分组上游负载已饱和，请稍后再试"
 		}
 		bizErr.Error.Message = common.MessageWithRequestId(bizErr.Error.Message, requestId)
+		model.RecordAPIErrorLog(
+			c.GetInt("id"),
+			c.GetInt("channel_id"),
+			c.GetString("channel_name"),
+			c.GetString("original_model"),
+			c.GetString("token_name"),
+			c.GetInt("token_id"),
+			bizErr.Error.Message,
+			c.ClientIP(),
+		)
 		c.JSON(bizErr.StatusCode, gin.H{
 			"error": bizErr.Error,
 		})

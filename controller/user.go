@@ -89,6 +89,7 @@ func setupLogin(user *model.User, c *gin.Context) {
 	if err != nil {
 		common.SysError(fmt.Sprintf("update user last_login_at err: %s", err.Error()))
 	}
+	model.RecordLoginLog(c.Request.Context(), user.Id, c.ClientIP())
 	c.JSON(http.StatusOK, gin.H{
 		"message": "",
 		"success": true,
