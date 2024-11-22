@@ -121,8 +121,8 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 			"gpt-4-turbo-2024-04-09": "gpt-4-turbo-2024-04-09",
 			"gpt-4o":                 "gpt-4o-2024-08-06",
 			"gpt-4o-2024-08-06":      "gpt-4o-2024-08-06",
-			"gpt-4o-2024-05-13":      "gpt-4o-2024-05-13",
 			"gpt-4o-2024-11-20":      "gpt-4o-2024-11-20",
+			"gpt-4o-2024-05-13":      "gpt-4o-2024-05-13",
 			"chatgpt-4o-latest":      "chatgpt-4o-latest",
 			"gpt-4o-mini":            "gpt-4o-mini-2024-07-18",
 			"gpt-4o-mini-2024-07-18": "gpt-4o-mini-2024-07-18",
@@ -134,8 +134,6 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 
 		// 检查模型映射
 		if expectedModel, exists := modelMap[modelTest]; exists {
-			var openaiResp BotResponse
-
 			// 先尝试解析是否为字符串包装的JSON
 			var jsonString string
 			err := json.Unmarshal(responseBody, &jsonString)
@@ -144,27 +142,37 @@ func testChannel(channel *model.Channel, modelTest string) (err error, openaiErr
 				responseBody = []byte(jsonString)
 			}
 
-			// 尝试解析为BotResponse
-			if err := json.Unmarshal(responseBody, &openaiResp); err != nil {
+			// 解析为通用map
+			var fullResponseMap map[string]interface{}
+			if err := json.Unmarshal(responseBody, &fullResponseMap); err != nil {
 				common.SysLog(fmt.Sprintf("Failed to parse response for model %s: %s", modelTest, string(responseBody)))
 				return fmt.Errorf("failed to parse response: %v", err), nil
 			}
 
 			var warnings []string
 			// 检查模型匹配
-			if expectedModel != openaiResp.Model {
-				warnings = append(warnings, fmt.Sprintf("模型不匹配：期望 %s，实际返回 %s", expectedModel, openaiResp.Model))
+			model, _ := fullResponseMap["model"].(string)
+			if expectedModel != model {
+				warnings = append(warnings, fmt.Sprintf("模型不匹配：期望 %s，实际返回 %s", expectedModel, model))
 			}
 
-			// 根据通道类型检查token details
-			if channel.Type == common.ChannelTypeCustom {
-				if openaiResp.Usage.PromptTokensDetails == nil {
-					warnings = append(warnings, "Usage 中缺少 prompt_tokens_details 信息")
-				}
+			// 获取 usage 部分
+			usage, ok := fullResponseMap["usage"].(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("response missing usage field"), nil
+			}
 
-				if openaiResp.Usage.CompletionTokensDetails == nil {
-					warnings = append(warnings, "Usage 中缺少 completion_tokens_details 信息")
-				}
+			if promptDetails, ok := usage["prompt_tokens_details"].(map[string]interface{}); !ok {
+				warnings = append(warnings, "Usage 中缺少 prompt_tokens_details 信息")
+			} else if len(promptDetails) < 2 { // 应该有 cached_tokens 和 audio_tokens 两个字段
+				warnings = append(warnings, "prompt_tokens_details 数据不完整")
+			}
+
+			// 检查 completion_tokens_details
+			if completionDetails, ok := usage["completion_tokens_details"].(map[string]interface{}); !ok {
+				warnings = append(warnings, "Usage 中缺少 completion_tokens_details 信息")
+			} else if len(completionDetails) < 4 { // 应该有 reasoning_tokens, audio_tokens, accepted_prediction_tokens, rejected_prediction_tokens 四个字段
+				warnings = append(warnings, "completion_tokens_details 数据不完整")
 			}
 
 			if len(warnings) > 0 {
@@ -434,8 +442,6 @@ func AutomaticallyTestDisabledChannels(frequency int) {
 }
 
 func testChannelAndHandleResult(channel *model.Channel, testInterval time.Duration, lastTestTime time.Time) {
-
-	// 检查modelTest字段是否为空，如果为空则设置为默认值"gpt-3.5-turbo"
 	modelTest := channel.ModelTest
 	if modelTest == "" {
 		modelTest = "gpt-3.5-turbo"
@@ -444,14 +450,25 @@ func testChannelAndHandleResult(channel *model.Channel, testInterval time.Durati
 	// 调用testChannel函数使用确定好的模型进行测试
 	err, _ := testChannel(channel, modelTest)
 
-	if err == nil && channel.Status == common.ChannelStatusAutoDisabled {
-		// 测试通过，更新通道状态为启用
-		model.UpdateChannelStatusById(channel.Id, common.ChannelStatusEnabled)
-		notifyChannelEnabled(channel)  // 发送通知
-		notifyWxPusherEnabled(channel) // 发送通知wxpusher
-	} else if err != nil {
-		// 测试失败，记录错误
-		common.SysError(fmt.Sprintf("Error testing channel #%d: %s", channel.Id, err.Error()))
+	// 如果通道当前是自动禁用状态
+	if channel.Status == common.ChannelStatusAutoDisabled {
+		// 检查是否是"模型可用，但有警告"的情况
+		isModelWarning := err != nil && strings.HasPrefix(err.Error(), "模型可用，但有警告")
+
+		if err == nil || isModelWarning {
+			// 测试通过或仅是模型警告，更新通道状态为启用
+			model.UpdateChannelStatusById(channel.Id, common.ChannelStatusEnabled)
+			notifyChannelEnabled(channel)  // 发送通知
+			notifyWxPusherEnabled(channel) // 发送通知wxpusher
+
+			if isModelWarning {
+				// 记录警告信息但不影响通道启用
+				common.SysLog(fmt.Sprintf("Channel #%d enabled with model warnings: %s", channel.Id, err.Error()))
+			}
+		} else {
+			// 测试失败且是其他错误，记录错误
+			common.SysError(fmt.Sprintf("Error testing channel #%d: %s", channel.Id, err.Error()))
+		}
 	}
 }
 
