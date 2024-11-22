@@ -86,7 +86,9 @@ docker-compose ps
 
 1. 下载或编译可执行文件
 2. 运行程序
-3. 访问 http://localhost:3000/ 
+3. 
+   - 访问管理端：http://localhost:3000/admin 
+   - 访问用户端：http://localhost:3000/ 
 4. 使用初始账号登录:
    - 用户名: root
    - 密码: 123456
