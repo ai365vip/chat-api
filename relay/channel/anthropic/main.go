@@ -98,17 +98,7 @@ func ConverClaudeRequest(request model.GeneralOpenAIRequest) *Request {
 	if err != nil {
 		return nil
 	}
-	if len(request.Tools) > 0 {
-		claudeRequest.Tools, err = convertTools(request.Tools)
-		if err != nil {
-			return nil
-		}
-		claudeRequest.ToolChoice = convertToolChoice(request.ToolChoice)
-	}
 
-	if err != nil {
-		return nil
-	}
 	return claudeRequest
 }
 
