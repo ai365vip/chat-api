@@ -15,4 +15,5 @@ type Request struct {
 	TopP             float64             `json:"top_p,omitempty"`
 	TopK             int                 `json:"top_k,omitempty"`
 	StopSequences    []string            `json:"stop_sequences,omitempty"`
+	Tools            []anthropic.Tool    `json:"tools,omitempty"`
 }

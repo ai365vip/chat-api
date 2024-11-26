@@ -13,14 +13,16 @@ type ImageSource struct {
 }
 
 type Content struct {
-	Type      string       `json:"type"`
-	Text      string       `json:"text,omitempty"`
-	Source    *ImageSource `json:"source,omitempty"`
-	Id        string       `json:"id,omitempty"`
-	Name      string       `json:"name,omitempty"`
-	Input     any          `json:"input,omitempty"`
-	Content   string       `json:"content,omitempty"`
-	ToolUseId string       `json:"tool_use_id,omitempty"`
+	Type       string       `json:"type"`
+	Text       string       `json:"text,omitempty"`
+	Source     *ImageSource `json:"source,omitempty"`
+	Id         string       `json:"id,omitempty"`
+	Name       string       `json:"name,omitempty"`
+	Input      any          `json:"input,omitempty"`
+	Content    interface{}  `json:"content,omitempty"`
+	ToolUseId  string       `json:"tool_use_id,omitempty"`
+	ToolUse    *ToolUse     `json:"tool_use,omitempty"`
+	ToolResult *ToolResult  `json:"tool_result,omitempty"`
 }
 
 type Message struct {
@@ -113,4 +115,14 @@ type NewMessageType struct {
 	Type   string  `json:"type"`
 	Text   string  `json:"text,omitempty"`
 	Source *Source `json:"source,omitempty"`
+}
+type ToolUse struct {
+	ID    string                 `json:"id"`
+	Name  string                 `json:"name"`
+	Input map[string]interface{} `json:"input"`
+}
+
+type ToolResult struct {
+	ToolUseID string    `json:"tool_use_id"`
+	Content   []Content `json:"content"`
 }

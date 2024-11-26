@@ -267,7 +267,6 @@ func ClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client, modelName stri
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "awsModelID")), nil, ""
 	}
-
 	awsReq := &bedrockruntime.InvokeModelInput{
 		ModelId:     aws.String(awsModelId),
 		Accept:      aws.String("application/json"),
@@ -290,12 +289,10 @@ func ClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client, modelName stri
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "marshal request")), nil, ""
 	}
-
 	awsResp, err := awsCli.InvokeModel(c.Request.Context(), awsReq)
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "InvokeModel")), nil, ""
 	}
-
 	claudeResponse := new(anthropic.Response)
 	err = json.Unmarshal(awsResp.Body, claudeResponse)
 	if err != nil {
@@ -363,7 +360,6 @@ func StreamClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaym
 		if !ok {
 			return false
 		}
-
 		switch v := event.(type) {
 		case *types.ResponseStreamMemberChunk:
 			var data map[string]interface{}
