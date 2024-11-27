@@ -467,9 +467,6 @@ func ResponseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
 		},
 	}
 
-	// 打印返回的 OpenAI 格式响应
-	fmt.Printf("返回的 OpenAI 格式响应:\n%+v\n", fullTextResponse)
-
 	return &fullTextResponse
 }
 
@@ -478,16 +475,35 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 	var response *Response
 	var responseText string
 	var stopReason string
+	tools := make([]model.Tool, 0)
+
 	switch claudeResponse.Type {
 	case "message_start":
 		return nil, claudeResponse.Message
 	case "content_block_start":
 		if claudeResponse.ContentBlock != nil {
 			responseText = claudeResponse.ContentBlock.Text
+			if claudeResponse.ContentBlock.Type == "tool_use" {
+				tools = append(tools, model.Tool{
+					Id:   claudeResponse.ContentBlock.Id,
+					Type: "function",
+					Function: model.Function{
+						Name:      claudeResponse.ContentBlock.Name,
+						Arguments: "",
+					},
+				})
+			}
 		}
 	case "content_block_delta":
 		if claudeResponse.Delta != nil {
 			responseText = claudeResponse.Delta.Text
+			if claudeResponse.Delta.Type == "input_json_delta" {
+				tools = append(tools, model.Tool{
+					Function: model.Function{
+						Arguments: claudeResponse.Delta.PartialJson,
+					},
+				})
+			}
 		}
 	case "message_delta":
 		if claudeResponse.Usage != nil {
@@ -501,6 +517,10 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 	}
 	var choice openai.ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = responseText
+	if len(tools) > 0 {
+		choice.Delta.Content = nil // compatible with other OpenAI derivative applications, like LobeOpenAICompatibleFactory ...
+		choice.Delta.ToolCalls = tools
+	}
 	choice.Delta.Role = "assistant"
 	finishReason := stopReasonClaude2OpenAI(&stopReason)
 	if finishReason != "null" {
@@ -511,7 +531,6 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 	openaiResponse.Choices = []openai.ChatCompletionsStreamResponseChoice{choice}
 	return &openaiResponse, response
 }
-
 func responseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
 	var responseText string
 	if len(claudeResponse.Content) > 0 {
@@ -578,6 +597,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	var modelName string
 	var id string
 	var streamError *model.ErrorWithStatusCode
+	var lastToolCallChoice openai.ChatCompletionsStreamResponseChoice
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case data := <-dataChan:
@@ -593,15 +613,29 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			if meta != nil {
 				usage.PromptTokens += meta.Usage.InputTokens
 				usage.CompletionTokens += meta.Usage.OutputTokens
-				modelName = meta.Model
-				id = fmt.Sprintf("chatcmpl-%s", meta.Id)
-				return true
+				if len(meta.Id) > 0 { // only message_start has an id, otherwise it's a finish_reason event.
+					id = fmt.Sprintf("chatcmpl-%s", meta.Id)
+					return true
+				} else { // finish_reason case
+					ProcessToolCalls(&lastToolCallChoice, response)
+				}
 			}
 			if response == nil {
 				return true
 			}
-			responsePart := response.Choices[0].Delta.Content.(string)
-			responseTextBuilder.WriteString(responsePart)
+			if response != nil && len(response.Choices) > 0 {
+				choice := response.Choices[0]
+				if choice.Delta.Content != nil {
+					if content, ok := choice.Delta.Content.(string); ok {
+						responseTextBuilder.WriteString(content)
+					} else if content, ok := choice.Delta.Content.(map[string]interface{}); ok {
+						// 处理其他可能的内容类型
+						if textContent, exists := content["text"].(string); exists {
+							responseTextBuilder.WriteString(textContent)
+						}
+					}
+				}
+			}
 			response.Id = id
 			response.Model = modelName
 			response.Created = createdTime
@@ -815,4 +849,14 @@ func ClaudeHandler(c *gin.Context, resp *http.Response, promptTokens int, modelN
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = c.Writer.Write(responseBody)
 	return nil, &usage, aitext
+}
+func ProcessToolCalls(lastToolCallChoice *openai.ChatCompletionsStreamResponseChoice, response *openai.ChatCompletionsStreamResponse) {
+	if len(lastToolCallChoice.Delta.ToolCalls) > 0 {
+		lastToolCall := &lastToolCallChoice.Delta.ToolCalls[len(lastToolCallChoice.Delta.ToolCalls)-1]
+		if lastToolCall != nil && lastToolCall.Function.Arguments == nil {
+			lastToolCall.Function.Arguments = "{}"
+			response.Choices[len(response.Choices)-1].Delta.Content = nil
+			response.Choices[len(response.Choices)-1].Delta.ToolCalls = lastToolCallChoice.Delta.ToolCalls
+		}
+	}
 }

@@ -214,20 +214,20 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 					id = fmt.Sprintf("chatcmpl-%s", meta.Id)
 					return true
 				} else { // finish_reason case
-					if len(lastToolCallChoice.Delta.ToolCalls) > 0 {
-						lastArgs := &lastToolCallChoice.Delta.ToolCalls[len(lastToolCallChoice.Delta.ToolCalls)-1].Function
-						if len(lastArgs.Arguments.(string)) == 0 { // compatible with OpenAI sending an empty object `{}` when no arguments.
-							lastArgs.Arguments = "{}"
-							response.Choices[len(response.Choices)-1].Delta.Content = nil
-							response.Choices[len(response.Choices)-1].Delta.ToolCalls = lastToolCallChoice.Delta.ToolCalls
-						}
-					}
+					anthropic.ProcessToolCalls(&lastToolCallChoice, response)
 				}
 			}
 			if response == nil {
 				return true
 			}
-			responseText += response.Choices[0].Delta.Content.(string)
+			if response.Choices != nil && len(response.Choices) > 0 {
+				choice := response.Choices[0]
+				if choice.Delta.Content != nil {
+					if content, ok := choice.Delta.Content.(string); ok {
+						responseText += content
+					}
+				}
+			}
 			response.Id = id
 			response.Model = c.GetString(ctxkey.OriginalModel)
 			response.Created = createdTime

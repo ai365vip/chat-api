@@ -58,8 +58,14 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 	if !meta.IsClaude {
 		if meta.IsStream {
 			var responseText string
-			err, _, responseText = StreamHandler(c, resp)
-			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			err, usage, responseText = StreamHandler(c, resp)
+			if usage == nil {
+				usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			}
+			if usage.TotalTokens != 0 && usage.CompletionTokens == 0 || usage.PromptTokens == 0 { // some channels don't return prompt tokens & completion tokens
+				usage.PromptTokens = meta.PromptTokens
+				usage.CompletionTokens = usage.TotalTokens - meta.PromptTokens
+			}
 
 			if usage.CompletionTokens == 0 {
 				if config.BlankReplyRetryEnabled {
@@ -81,8 +87,14 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 	} else {
 		if meta.IsStream {
 			var responseText string
-			err, _, responseText = ClaudeStreamHandler(c, resp)
-			usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			err, usage, responseText = ClaudeStreamHandler(c, resp)
+			if usage == nil {
+				usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+			}
+			if usage.TotalTokens != 0 && usage.CompletionTokens == 0 || usage.PromptTokens == 0 { // some channels don't return prompt tokens & completion tokens
+				usage.PromptTokens = meta.PromptTokens
+				usage.CompletionTokens = usage.TotalTokens - meta.PromptTokens
+			}
 			if usage.CompletionTokens == 0 {
 				if config.BlankReplyRetryEnabled {
 					return "", nil, &model.ErrorWithStatusCode{
