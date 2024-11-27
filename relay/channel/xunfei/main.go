@@ -283,13 +283,15 @@ func parseAPIVersionByModelName(modelName string) string {
 func apiVersion2domain(apiVersion string) string {
 	switch apiVersion {
 	case "v1.1":
-		return "general"
+		return "lite"
 	case "v2.1":
 		return "generalv2"
 	case "v3.1":
 		return "generalv3"
 	case "v3.5":
 		return "generalv3.5"
+	case "v4.0":
+		return "4.0Ultra"
 	}
 	return "general" + apiVersion
 }
