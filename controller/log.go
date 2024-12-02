@@ -160,10 +160,33 @@ func GetLogByKey(c *gin.Context) {
 		})
 		return
 	}
+	// 转换日志结果到 UserLogResponse 结构体
+	var responseLogs []model.UserLogResponse
+	for _, log := range logs {
+		responseLog := model.UserLogResponse{
+			Id:               log.Id,
+			UserId:           log.UserId,
+			CreatedAt:        log.CreatedAt,
+			Type:             log.Type,
+			Username:         log.Username,
+			TokenName:        log.TokenName,
+			ModelName:        log.ModelName,
+			Quota:            log.Quota,
+			PromptTokens:     log.PromptTokens,
+			CompletionTokens: log.CompletionTokens,
+			TokenId:          log.TokenId,
+			UseTime:          log.UseTime,
+			IsStream:         log.IsStream,
+			Multiplier:       log.Multiplier,
+			UserQuota:        log.UserQuota,
+			Ip:               log.Ip,
+		}
+		responseLogs = append(responseLogs, responseLog)
+	}
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "",
-		"data":    logs,
+		"data":    responseLogs,
 	})
 }
 

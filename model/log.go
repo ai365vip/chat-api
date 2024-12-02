@@ -85,7 +85,7 @@ type ModelStats struct {
 
 func GetLogByKey(key string) (logs []*Log, err error) {
 	err = DB.Joins("left join tokens on tokens.id = logs.token_id").
-		Where("tokens.key = ?", strings.Split(key, "-")[1]).
+		Where("tokens.key = ? AND type != 5", strings.Split(key, "-")[1]).
 		Order("created_at DESC").
 		Find(&logs).Error
 	return logs, err
@@ -209,8 +209,8 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	var count int64
 
 	tx := DB.Model(&Log{})
-	if logType == 5 {
-		tx = tx.Where("attempts_log !=''")
+	if logType == 6 {
+		tx = tx.Where("attempts_log !='' AND type != 5")
 	} else if logType != LogTypeUnknown {
 		tx = tx.Where("type = ?", logType)
 	}
