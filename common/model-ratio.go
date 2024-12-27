@@ -98,18 +98,21 @@ var ModelRatio = map[string]float64{
 	"bge-large-en":       0.002 * RMB,
 	"tao-8k":             0.002 * RMB,
 	// https://ai.google.dev/pricing
-	"PaLM-2":                    1,
-	"gemini-pro":                1, // $0.00025 / 1k characters -> $0.001 / 1k tokens
-	"gemini-pro-vision":         1, // $0.00025 / 1k characters -> $0.001 / 1k tokens
-	"gemini-1.0-pro-vision-001": 1,
-	"gemini-1.0-pro-001":        1,
-	"gemini-1.5-pro":            1,
-	"gemini-1.5-pro-exp-0801":   1,
-	"gemini-1.5-pro-exp-0827":   1,
-	"gemini-1.5-flash-exp-0827": 1,
-	"gemini-1.5-pro-002":        1,
-	"gemini-1.5-flash-002":      1,
-	"gemini-exp-1114":           1,
+	"PaLM-2":                             1,
+	"gemini-pro":                         1, // $0.00025 / 1k characters -> $0.001 / 1k tokens
+	"gemini-pro-vision":                  1, // $0.00025 / 1k characters -> $0.001 / 1k tokens
+	"gemini-1.0-pro-vision-001":          1,
+	"gemini-1.0-pro-001":                 1,
+	"gemini-1.5-pro":                     1,
+	"gemini-1.5-pro-exp-0801":            1,
+	"gemini-1.5-pro-exp-0827":            1,
+	"gemini-1.5-flash-exp-0827":          1,
+	"gemini-1.5-pro-002":                 1,
+	"gemini-1.5-flash-002":               1,
+	"gemini-exp-1114":                    1,
+	"gemini-exp-1206":                    1,
+	"gemini-2.0-flash-thinking-exp-1219": 1,
+	"gemini-2.0-flash-exp":               1,
 	// https://open.bigmodel.cn/pricing
 	"glm-4":                     0.1 * RMB,
 	"glm-4v":                    0.1 * RMB,
