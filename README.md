@@ -175,6 +175,8 @@ docker-compose ps
 ![渠道管理](https://github.com/user-attachments/assets/c83b08ff-d731-4a0e-a4ca-dfeea97947e2)
 
 
+![管理日志](https://github.com/user-attachments/assets/a8cb630c-6b65-4147-856e-d9b5887b5233)
+
 
 ![运营设置](https://github.com/user-attachments/assets/c0ea81c2-33fd-404b-87b5-3673a4309d3a)
 
@@ -184,7 +186,6 @@ docker-compose ps
 
 
 
-![管理日志](https://github.com/user-attachments/assets/a8cb630c-6b65-4147-856e-d9b5887b5233)
 
 
 
