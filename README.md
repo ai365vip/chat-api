@@ -147,11 +147,26 @@ docker-compose ps
 
 ## 界面预览
 
-![管理界面](https://github.com/ai365vip/chat-api/assets/154959065/13fde0aa-aa19-4c2f-9ace-611fb9cd60b8)
 
-![用户界面](https://github.com/ai365vip/chat-api/assets/154959065/23bf7267-6fac-4ca0-b6c4-2151e486f6a0)
+![用户界面](https://github.com/user-attachments/assets/e9c459b5-7e8d-47f9-884b-485bf89c34b9)
+
+![令牌界面](https://github.com/user-attachments/assets/aed8848b-05ff-4adc-a141-a7fe81506f68)
+
+![日志界面](https://github.com/user-attachments/assets/ad248ec2-f8dc-4bfb-ae94-83331df00357)
 
 ![渠道管理](https://github.com/ai365vip/chat-api/assets/154959065/0017e8cb-645b-4c05-aefa-6cd538989278)
+
+![管理界面](https://github.com/user-attachments/assets/84534621-47cf-4a76-8c99-69a35fd6f871)
+
+![渠道管理](https://github.com/user-attachments/assets/c83b08ff-d731-4a0e-a4ca-dfeea97947e2)
+
+![管理日志](https://github.com/user-attachments/assets/a8cb630c-6b65-4147-856e-d9b5887b5233)
+
+![运营设置](https://github.com/user-attachments/assets/c0ea81c2-33fd-404b-87b5-3673a4309d3a)
+
+![支付设置](https://github.com/user-attachments/assets/20fe1fa6-c220-4867-b819-ec6721105c30)
+
+
 
 ## 赞助支持
 
