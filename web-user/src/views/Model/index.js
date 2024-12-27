@@ -113,10 +113,19 @@ export default function Log() {
   const groupModelsByType = (models) => {
     const groupedModels = {};
     models.forEach(model => {
-      if (!groupedModels[model.model_type]) {
-        groupedModels[model.model_type] = [];
+      let modelType = model.model_type;
+      
+      // 根据模型名称重新分类
+      if (model.model.startsWith('o1-')) {
+        modelType = 'OpenAI';
+      } else if (model.model.startsWith('gemini')) {
+        modelType = 'Google Gemini';
       }
-      groupedModels[model.model_type].push(model);
+      
+      if (!groupedModels[modelType]) {
+        groupedModels[modelType] = [];
+      }
+      groupedModels[modelType].push(model);
     });
     return groupedModels;
   };
