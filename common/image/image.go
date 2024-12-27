@@ -8,6 +8,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"one-api/common/client"
 	"one-api/common/config"
 	"regexp"
@@ -42,10 +43,18 @@ func GetImageSizeFromUrl(url string) (width int, height int, err error) {
 		return
 	}
 	defer resp.Body.Close()
-	img, _, err := image.DecodeConfig(resp.Body)
+
+	// 创建一个限制读取大小的 reader，只读取前 512KB 数据
+	// 这个大小足够读取大多数图片的头部信息
+	limitReader := io.LimitReader(resp.Body, 512*1024)
+	img, _, err := image.DecodeConfig(limitReader)
 	if err != nil {
 		return
 	}
+
+	// 丢弃剩余的响应内容
+	io.Copy(io.Discard, resp.Body)
+
 	return img.Width, img.Height, nil
 }
 
