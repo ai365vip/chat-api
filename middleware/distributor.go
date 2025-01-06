@@ -124,11 +124,11 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("headers", channel.GetModelHeaders())
 	c.Set(ctxkey.OriginalModel, modelName)
 	c.Set("attemptsLog", attemptsLog)
-	ban := true
-	if channel.AutoBan != nil && *channel.AutoBan == 0 {
-		ban = false
+	if channel.AutoBan != nil && *channel.AutoBan != 0 {
+		c.Set("auto_ban", 1)
+	} else {
+		c.Set("auto_ban", 0)
 	}
-	c.Set("auto_ban", ban)
 	c.Set("model_mapping", channel.GetModelMapping())
 	c.Set("status_code_mapping", channel.GetStatusCodeMapping())
 	c.Set("original_model", modelName)
