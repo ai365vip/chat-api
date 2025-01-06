@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { TableRow, TableCell } from '@mui/material';
+import { TableRow, TableCell, Tooltip } from '@mui/material';
 import { timestamp2string, renderQuota, showSuccess, showError } from 'utils/common';
 import Label from 'ui-component/Label';
 import {  blue, grey, orange, red, green } from '@mui/material/colors';
@@ -60,19 +60,39 @@ const originalModelColorMap = {
   'whisper-1': 'rgb(80,160,60)',           // 深草绿
 };
 
+// 用于存储新模型的颜色映射
+const dynamicModelColorMap = new Map();
+
+// 新模型可用的颜色列表
 const extraColors = [
-  '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#20B2AA',
-  '#FF8C00', '#00CED1', '#FF69B4', '#1E90FF', '#32CD32',
-  '#FF7F50', '#8A2BE2', '#00FA9A', '#FF1493', '#00BFFF',
-  '#ADFF2F', '#FF00FF', '#1ABC9C', '#F39C12', '#8E44AD'
+    'rgb(180,60,160)',   // 深红
+    'rgb(120,60,160)',   // 深紫
+    'rgb(50,120,130)',   // 深青
+    'rgb(20,100,180)',   // 深蓝
+    'rgb(100,100,180)',  // 深蓝紫
+    'rgb(180,180,20)',   // 深黄
+    'rgb(140,100,120)',  // 深粉
+    'rgb(180,60,100)',   // 深红粉
+    'rgb(80,160,60)',    // 深绿
+    'rgb(60,120,180)',   // 深蓝灰
 ];
 
 const getModelColor = (modelName) => {
-  if (originalModelColorMap[modelName]) {
-    return originalModelColorMap[modelName];
-  }
-  // 如果没有对应的颜色，随机选择一个额外颜色
-  return extraColors[Math.floor(Math.random() * extraColors.length)];
+    // 1. 首先检查是否在原始映射中
+    if (originalModelColorMap[modelName]) {
+        return originalModelColorMap[modelName];
+    }
+
+    // 2. 检查是否已经在动态映射中
+    if (dynamicModelColorMap.has(modelName)) {
+        return dynamicModelColorMap.get(modelName);
+    }
+
+    // 3. 为新模型分配颜色
+    const newColor = extraColors[dynamicModelColorMap.size % extraColors.length];
+    dynamicModelColorMap.set(modelName, newColor);
+    
+    return newColor;
 };
 
 function renderType(type) {
@@ -134,7 +154,56 @@ export default function LogTableRow({ item }) {
       <TableCell>{item.prompt_tokens || ''}</TableCell>
       <TableCell>{item.completion_tokens || ''}</TableCell>
       <TableCell>{item.quota ? renderQuota(item.quota, 6) : ''}</TableCell>
-      <TableCell>{item.multiplier}</TableCell>
+      <TableCell>
+        {item.multiplier ? (
+          <Tooltip title={
+            <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+              {(() => {
+                try {
+                  const multiplierObj = typeof item.multiplier === 'string' 
+                    ? JSON.parse(item.multiplier) 
+                    : item.multiplier;
+                  return [
+                    `模型倍率: ${multiplierObj.model_ratio || 0}`,
+                    `分组倍率: ${multiplierObj.group_ratio || 0}`,
+                    `补全倍率: ${multiplierObj.completion_ratio || 0}`,
+                    multiplierObj.audio_ratio ? `音频倍率: ${multiplierObj.audio_ratio}` : null,
+                    multiplierObj.audio_completion_ratio ? `音频补全倍率: ${multiplierObj.audio_completion_ratio}` : null,
+                    '------------------------',
+                    multiplierObj.text_input ? `文本输入消耗: ${multiplierObj.text_input}` : null,
+                    multiplierObj.text_output ? `文本输出消耗: ${multiplierObj.text_output}` : null,
+                    multiplierObj.audio_input ? `音频输入消耗: ${multiplierObj.audio_input}` : null,
+                    multiplierObj.audio_output ? `音频输出消耗: ${multiplierObj.audio_output}` : null,
+                   
+                    multiplierObj.ws ? `WebSocket: 是` : null
+                  ].filter(Boolean).join('\n');
+                } catch (e) {
+                  return item.multiplier;
+                }
+              })()}
+            </pre>
+          }>
+            <Label 
+              style={{ 
+                color: getModelColor(item.model_name),
+                cursor: 'pointer'
+              }} 
+              variant="outlined"
+            >
+              {(() => {
+                try {
+                  const multiplierObj = typeof item.multiplier === 'string' 
+                    ? JSON.parse(item.multiplier) 
+                    : item.multiplier;
+                  return `模型倍率: ${multiplierObj.model_ratio || 0}倍`;
+                } catch (e) {
+                  return item.multiplier;
+                }
+              })()}
+            </Label>
+          </Tooltip>
+        ) : '-'}
+      </TableCell>
     </TableRow>
   );
 }
