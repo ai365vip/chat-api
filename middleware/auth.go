@@ -16,6 +16,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	headerAuthorization        = "Authorization"
+	headerSecWebsocketProtocol = "Sec-Websocket-Protocol"
+	headerXAPIKey              = "x-api-key"
+	headerMJAPISecret          = "mj-api-secret"
+	prefixOpenAIInsecureKey    = "openai-insecure-api-key."
+	keyMidjourneyProxy         = "midjourney-proxy"
+)
+
 func authHelper(c *gin.Context, minRole int) {
 	session := sessions.Default(c)
 	username := session.Get("username")
@@ -106,6 +115,7 @@ func getModelForPath(path string) string {
 		"/v1/audio/speech":         "tts-1",
 		"/v1/audio/transcriptions": "whisper-1",
 		"/v1/audio/translations":   "whisper-1",
+		"/v1/realtime":             "gpt-4o-realtime",
 	}
 
 	if strings.HasPrefix(path, "/mj-turbo/mj") {
@@ -128,16 +138,29 @@ func getModelForPath(path string) string {
 
 func TokenAuth() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		var err error
-		key, parts := processAuthHeader(c.Request.Header.Get("Authorization"))
-		if key == "" {
-			headerKey := "x-api-key"
-			if c.Request.Header.Get("mj-api-secret") != "" {
-				headerKey = "mj-api-secret"
+		isWebSocket := c.GetHeader("Upgrade") == "websocket"
+		key, parts := processAuthHeader(c.Request.Header.Get(headerAuthorization))
+
+		switch {
+		case isWebSocket && key == "":
+			protocols := c.Request.Header[headerSecWebsocketProtocol]
+			if len(protocols) > 0 {
+				for _, protocol := range strings.Split(protocols[0], ",") {
+					protocol = strings.TrimSpace(protocol)
+					if strings.HasPrefix(protocol, prefixOpenAIInsecureKey) {
+						key, parts = processAuthHeader(strings.TrimPrefix(protocol, prefixOpenAIInsecureKey))
+						break
+					}
+				}
+			}
+		case key == "":
+			headerKey := headerXAPIKey
+			if c.Request.Header.Get(headerMJAPISecret) != "" {
+				headerKey = headerMJAPISecret
 			}
 			key, parts = processAuthHeader(c.Request.Header.Get(headerKey))
-		} else if key == "midjourney-proxy" {
-			key, parts = processAuthHeader(c.Request.Header.Get("mj-api-secret"))
+		case key == keyMidjourneyProxy:
+			key, parts = processAuthHeader(c.Request.Header.Get(headerMJAPISecret))
 		}
 		c.Set("claude_original_request", false)
 		if c.Request.URL.Path == "/v1/messages" {
@@ -145,8 +168,7 @@ func TokenAuth() func(c *gin.Context) {
 		}
 		modelRequest := ModelRequest{Model: getModelForPath(c.Request.URL.Path)}
 		if !strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") && c.Request.Method != http.MethodGet {
-			err = common.UnmarshalBodyReusable(c, &modelRequest)
-			if err != nil {
+			if err := common.UnmarshalBodyReusable(c, &modelRequest); err != nil {
 				abortWithMessage(c, http.StatusBadRequest, "无效的请求: "+err.Error())
 				return
 			}
@@ -156,7 +178,12 @@ func TokenAuth() func(c *gin.Context) {
 				modelRequest.Model = c.Param("model")
 			}
 		}
-
+		if strings.HasSuffix(c.Request.URL.Path, "realtime") {
+			modelRequest.Model = c.Query("model")
+			if modelRequest.Model == "" {
+				abortWithMessage(c, http.StatusUnauthorized, "model_name_required")
+			}
+		}
 		token, err := model.ValidateUserToken(key, modelRequest.Model)
 		if err != nil {
 			if token != nil {

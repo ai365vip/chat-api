@@ -14,11 +14,29 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
+func ShouldDisableChannel(err *relaymodel.Error, statusCode int, channelAutoBan int) bool {
 	if !config.AutomaticDisableChannelEnabled {
 		return false
 	}
+	if channelAutoBan == 0 {
+		return false
+	}
 	if err == nil {
+		return false
+	}
+	if strings.Contains(err.Message, "This is not a chat model") {
+		return false
+	}
+	if strings.Contains(err.Message, "Missing required parameter") {
+		return false
+	}
+	if strings.Contains(err.Message, "An internal error has occurred. Our team has been alerted") {
+		return false
+	}
+	if strings.Contains(err.Message, "This is a chat model") {
+		return false
+	}
+	if strings.Contains(err.Message, "tools is not supported in this model") {
 		return false
 	}
 	if statusCode == http.StatusUnauthorized {
@@ -55,13 +73,19 @@ func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
 	} else if strings.HasPrefix(err.Message, "This organization has been disabled.") {
 		return true
 	}
-	//if strings.Contains(err.Message, "quota") {
-	//	return true
-	//}
 	if strings.Contains(err.Message, "ValidationException: Operation not allowed") {
 		return true
 	}
+	//if strings.Contains(err.Message, "quota") {
+	//	return true
+	//}
 	if strings.Contains(err.Message, "用户已被封禁") {
+		return true
+	}
+	if strings.Contains(err.Message, "This is a Premium Model") {
+		return true
+	}
+	if strings.Contains(err.Message, "Insufficient credits") {
 		return true
 	}
 	if strings.Contains(err.Message, "credit") {
@@ -72,7 +96,6 @@ func ShouldDisableChannel(err *relaymodel.Error, statusCode int) bool {
 	}
 	return false
 }
-
 func ShouldEnableChannel(err error, openAIErr *relaymodel.Error) bool {
 	if !config.AutomaticEnableChannelEnabled {
 		return false

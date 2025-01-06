@@ -250,9 +250,41 @@ const LogsTable = () => {
             title: '倍率',
             dataIndex: 'multiplier',
             render: (text, record, index) => {
-                return (
-                    text
-                );
+                if (!text) return '-';
+                
+                try {
+                    const multiplierObj = typeof text === 'string' ? JSON.parse(text) : text;
+
+                    // 格式化显示内容，包含倍率和消耗信息
+                    const formattedContent = [
+                        // 倍率信息
+                        `模型倍率: ${multiplierObj.model_ratio || 0}`,
+                        `分组倍率: ${multiplierObj.group_ratio || 0}`,
+                        `补全倍率: ${multiplierObj.completion_ratio || 0}`,
+                        multiplierObj.audio_ratio ? `音频倍率: ${multiplierObj.audio_ratio}` : null,
+                        multiplierObj.audio_completion_ratio ? `音频补全倍率: ${multiplierObj.audio_completion_ratio}` : null,
+                        // 分隔线
+                        '------------------------',
+                        // 消耗信息
+                        multiplierObj.text_input ? `文本输入消耗: ${multiplierObj.text_input}` : null,
+                        multiplierObj.text_output ? `文本输出消耗: ${multiplierObj.text_output}` : null,
+                        multiplierObj.audio_input ? `音频输入消耗: ${multiplierObj.audio_input}` : null,
+                        multiplierObj.audio_output ? `音频输出消耗: ${multiplierObj.audio_output}` : null,
+                       
+                        // WebSocket标记
+                        multiplierObj.ws ? `WebSocket: 是` : null
+                    ].filter(Boolean).join('\n');
+
+                    return (
+                        <Tooltip content={<pre style={{ margin: 0 }}>{formattedContent}</pre>}>
+                            <span style={{ cursor: 'pointer' }}>
+                                {`模型倍率: ${multiplierObj.model_ratio || 0}倍`}
+                            </span>
+                        </Tooltip>
+                    );
+                } catch (e) {
+                    return <span>{text}</span>;
+                }
             },
         },
         {

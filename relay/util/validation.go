@@ -3,8 +3,12 @@ package util
 import (
 	"errors"
 	"math"
+	"one-api/common"
 	"one-api/relay/constant"
 	"one-api/relay/model"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 func ValidateTextRequest(textRequest *model.GeneralOpenAIRequest, relayMode int) error {
@@ -34,4 +38,13 @@ func ValidateTextRequest(textRequest *model.GeneralOpenAIRequest, relayMode int)
 		}
 	}
 	return nil
+}
+
+func WssString(c *gin.Context, ws *websocket.Conn, str string) error {
+	if ws == nil {
+		common.LogError(c, "websocket connection is nil")
+		return errors.New("websocket connection is nil")
+	}
+	//common.LogInfo(c, fmt.Sprintf("sending message: %s", str))
+	return ws.WriteMessage(1, []byte(str))
 }

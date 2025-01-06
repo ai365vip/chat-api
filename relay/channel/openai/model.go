@@ -5,6 +5,25 @@ import (
 	"one-api/relay/model"
 )
 
+const (
+	RealtimeEventTypeError              = "error"
+	RealtimeEventTypeSessionUpdate      = "session.update"
+	RealtimeEventTypeConversationCreate = "conversation.item.create"
+	RealtimeEventTypeResponseCreate     = "response.create"
+	RealtimeEventInputAudioBufferAppend = "input_audio_buffer.append"
+)
+
+const (
+	RealtimeEventTypeResponseDone                   = "response.done"
+	RealtimeEventTypeSessionUpdated                 = "session.updated"
+	RealtimeEventTypeSessionCreated                 = "session.created"
+	RealtimeEventResponseAudioDelta                 = "response.audio.delta"
+	RealtimeEventResponseAudioTranscriptionDelta    = "response.audio_transcript.delta"
+	RealtimeEventResponseFunctionCallArgumentsDelta = "response.function_call_arguments.delta"
+	RealtimeEventResponseFunctionCallArgumentsDone  = "response.function_call_arguments.done"
+	RealtimeEventConversationItemCreated            = "conversation.item.created"
+)
+
 type TextContent struct {
 	Type string `json:"type,omitempty"`
 	Text string `json:"text,omitempty"`
@@ -105,12 +124,13 @@ type TextResponseChoice struct {
 }
 
 type TextResponse struct {
-	Id          string               `json:"id"`
-	Model       string               `json:"model,omitempty"`
-	Object      string               `json:"object"`
-	Created     int64                `json:"created"`
-	Choices     []TextResponseChoice `json:"choices"`
-	model.Usage `json:"usage"`
+	Id                string               `json:"id"`
+	Object            string               `json:"object"`
+	Created           int64                `json:"created"`
+	Model             string               `json:"model,omitempty"`
+	SystemFingerprint string               `json:"system_fingerprint,omitempty"`
+	Choices           []TextResponseChoice `json:"choices"`
+	model.Usage       `json:"usage"`
 }
 
 type EmbeddingResponseItem struct {
@@ -125,7 +145,6 @@ type EmbeddingResponse struct {
 	Model       string                  `json:"model"`
 	model.Usage `json:"usage"`
 }
-
 type ImageData struct {
 	Url           string `json:"url,omitempty"`
 	B64Json       string `json:"b64_json,omitempty"`
@@ -142,7 +161,8 @@ type AudioResponse struct {
 type ChatCompletionsStreamResponseChoice struct {
 	Index        int           `json:"index"`
 	Delta        model.Message `json:"delta"`
-	FinishReason *string       `json:"finish_reason,omitempty"`
+	Logprobs     *string       `json:"logprobs"`
+	FinishReason *string       `json:"finish_reason"`
 }
 
 type ChatCompletionsStreamResponse struct {

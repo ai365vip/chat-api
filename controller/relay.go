@@ -50,12 +50,12 @@ func Relay(c *gin.Context) {
 		return
 	}
 	channelId := c.GetInt("channel_id")
-
+	channelAutoBan := c.GetInt("auto_ban")
 	lastFailedChannelId := channelId
 	channelName := c.GetString("channel_name")
 	group := c.GetString("group")
 	originalModel := c.GetString(ctxkey.OriginalModel)
-	processChannelRelayError(c, channelId, channelName, bizErr)
+	processChannelRelayError(c, channelId, channelAutoBan, channelName, bizErr)
 	requestId := c.GetString("X-Chatapi-Request-Id")
 	retryTimes := config.RetryTimes
 	if !shouldRetry(c, bizErr.StatusCode) {
@@ -108,9 +108,10 @@ func Relay(c *gin.Context) {
 		}
 		channelId := c.GetInt("channel_id")
 		lastFailedChannelId = channelId
+		channelAutoBan := c.GetInt("auto_ban")
 		failedChannelIds = append(failedChannelIds, channelId) // 更新失败的Channel ID列表
 		channelName := c.GetString("channel_name")
-		processChannelRelayError(c, channelId, channelName, bizErr)
+		processChannelRelayError(c, channelId, channelAutoBan, channelName, bizErr)
 	}
 	if bizErr != nil {
 		if bizErr.StatusCode == http.StatusTooManyRequests {
@@ -169,11 +170,12 @@ func RelayMidjourney(c *gin.Context) {
 
 	}
 }
-func processChannelRelayError(ctx *gin.Context, channelId int, channelName string, err *dbmodel.ErrorWithStatusCode) {
+func processChannelRelayError(ctx *gin.Context, channelId int, channelAutoBan int, channelName string, err *dbmodel.ErrorWithStatusCode) {
 	common.Errorf(ctx, "relay error (channel #%d): %s", channelId, err.Message)
 	// https://platform.openai.com/docs/guides/error-codes/api-errors
-	if util.ShouldDisableChannel(&err.Error, err.StatusCode) {
+	if util.ShouldDisableChannel(&err.Error, err.StatusCode, channelAutoBan) {
 		disableChannel(channelId, channelName, err.Message)
+
 	}
 }
 

@@ -343,7 +343,7 @@ func testAllChannels(notify bool) error {
 
 			// ban := false
 			// 标记是否应该禁用通道
-			ban := (openaiErr != nil || milliseconds > disableThreshold) && util.ShouldDisableChannel(openaiErr, -1)
+			ban := (openaiErr != nil || milliseconds > disableThreshold) && util.ShouldDisableChannel(openaiErr, -1, *channel.AutoBan)
 
 			if milliseconds > disableThreshold {
 				err = errors.New(fmt.Sprintf("响应时间 %.2fs 超过阈值 %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0))

@@ -1,6 +1,7 @@
 package openai
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"math"
@@ -9,6 +10,7 @@ import (
 	"one-api/common/image"
 	"one-api/common/logger"
 	"one-api/relay/model"
+	"one-api/relay/util"
 	"strings"
 	"unicode/utf8"
 
@@ -293,4 +295,119 @@ func CountTokenInput(input any, model string) int {
 func CountTokenText(text string, model string) int {
 	tokenEncoder := getTokenEncoder(model)
 	return getTokenNum(tokenEncoder, text)
+}
+func CountTokenRealtime(meta *util.RelayMeta, request model.RealtimeEvent, model string) (int, int, error) {
+	audioToken := 0
+	textToken := 0
+	switch request.Type {
+	case RealtimeEventTypeSessionUpdated:
+		if request.Session != nil {
+			msgTokens, err := CountTextToken(request.Session.Instructions, model)
+			if err != nil {
+				return 0, 0, err
+			}
+			textToken += msgTokens
+		}
+	case RealtimeEventResponseAudioDelta:
+		// count audio token
+		atk, err := CountAudioTokenOutput(request.Delta, meta.OutputAudioFormat)
+		if err != nil {
+			return 0, 0, fmt.Errorf("error counting audio token: %v", err)
+		}
+		audioToken += atk
+	case RealtimeEventResponseAudioTranscriptionDelta, RealtimeEventResponseFunctionCallArgumentsDelta:
+		// count text token
+		tkm, err := CountTextToken(request.Delta, model)
+		if err != nil {
+			return 0, 0, fmt.Errorf("error counting text token: %v", err)
+		}
+		textToken += tkm
+	case RealtimeEventInputAudioBufferAppend:
+		// count audio token
+		atk, err := CountAudioTokenInput(request.Audio, meta.InputAudioFormat)
+		if err != nil {
+			return 0, 0, fmt.Errorf("error counting audio token: %v", err)
+		}
+		audioToken += atk
+	case RealtimeEventConversationItemCreated:
+		if request.Item != nil {
+			switch request.Item.Type {
+			case "message":
+				for _, content := range request.Item.Content {
+					if content.Type == "input_text" {
+						tokens, err := CountTextToken(content.Text, model)
+						if err != nil {
+							return 0, 0, err
+						}
+						textToken += tokens
+					}
+				}
+			}
+		}
+	case RealtimeEventTypeResponseDone:
+		// count tools token
+		if !meta.IsFirstRequest {
+			if meta.RealtimeTools != nil && len(meta.RealtimeTools) > 0 {
+				for _, tool := range meta.RealtimeTools {
+					toolTokens := CountTokenInput(tool, model)
+					textToken += 8
+					textToken += int(toolTokens)
+				}
+			}
+		}
+	}
+	return textToken, audioToken, nil
+}
+
+func CountAudioTokenOutput(audioBase64 string, audioFormat string) (int, error) {
+	if audioBase64 == "" {
+		return 0, nil
+	}
+	duration, err := parseAudio(audioBase64, audioFormat)
+	if err != nil {
+		return 0, err
+	}
+	return int(duration / 60 * 200 / 0.24), nil
+}
+
+func CountAudioTokenInput(audioBase64 string, audioFormat string) (int, error) {
+	if audioBase64 == "" {
+		return 0, nil
+	}
+	duration, err := parseAudio(audioBase64, audioFormat)
+	if err != nil {
+		return 0, err
+	}
+	return int(duration / 60 * 100 / 0.06), nil
+}
+
+func CountTextToken(text string, model string) (int, error) {
+	tokenEncoder := getTokenEncoder(model)
+	tokenNum := getTokenNum(tokenEncoder, text)
+	return int(tokenNum), nil
+}
+
+func parseAudio(audioBase64 string, format string) (duration float64, err error) {
+	audioData, err := base64.StdEncoding.DecodeString(audioBase64)
+	if err != nil {
+		return 0, fmt.Errorf("base64 decode error: %v", err)
+	}
+
+	var samplesCount int
+	var sampleRate int
+
+	switch format {
+	case "pcm16":
+		samplesCount = len(audioData) / 2 // 16位 = 2字节每样本
+		sampleRate = 24000                // 24kHz
+	case "g711_ulaw", "g711_alaw":
+		samplesCount = len(audioData) // 8位 = 1字节每样本
+		sampleRate = 8000             // 8kHz
+	default:
+		samplesCount = len(audioData) // 8位 = 1字节每样本
+		sampleRate = 8000             // 8kHz
+	}
+
+	duration = float64(samplesCount) / float64(sampleRate)
+	return duration, nil
 }

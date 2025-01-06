@@ -14,63 +14,72 @@ const (
 
 var ModelRatio = map[string]float64{
 	// https://openai.com/pricing
-	"gpt-4":                   15,
-	"gpt-4-0314":              15,
-	"gpt-4-0613":              15,
-	"gpt-4-32k":               30,
-	"gpt-4-32k-0314":          30,
-	"gpt-4-32k-0613":          30,
-	"gpt-4-1106-preview":      5, // $0.01 / 1K tokens
-	"gpt-4-0125-preview":      5, // $0.01 / 1K tokens
-	"gpt-4-turbo-preview":     5, // $0.01 / 1K tokens
-	"gpt-4-turbo":             5, // $0.01 / 1K tokens
-	"gpt-4-turbo-2024-04-09":  5, // $0.01 / 1K tokens
-	"gpt-4-vision-preview":    5, // $0.01 / 1K tokens
-	"gpt-4o":                  1.25,
-	"gpt-4o-2024-05-13":       2.5,
-	"gpt-4o-mini":             0.075,
-	"gpt-4o-mini-2024-07-18":  0.075,
-	"gpt-4o-2024-08-06":       1.25,
-	"gpt-4o-2024-11-20":       1.25,
-	"chatgpt-4o-latest":       2.5,
-	"o1-preview":              7.5,
-	"o1-preview-2024-09-12":   7.5,
-	"o1-mini":                 1.5,
-	"o1-mini-2024-09-12":      1.5,
-	"gpt-3.5-turbo":           0.25, // $0.0005 / 1K tokens
-	"gpt-3.5-turbo-0301":      0.75,
-	"gpt-3.5-turbo-0613":      0.75,
-	"gpt-3.5-turbo-16k":       1.5, // $0.003 / 1K tokens
-	"gpt-3.5-turbo-16k-0613":  1.5,
-	"gpt-3.5-turbo-instruct":  0.75, // $0.0015 / 1K tokens
-	"gpt-3.5-turbo-1106":      0.5,  // $0.001 / 1K tokens
-	"gpt-3.5-turbo-0125":      0.25, // $0.0005 / 1K tokens
-	"davinci-002":             1,    // $0.002 / 1K tokens
-	"babbage-002":             0.2,  // $0.0004 / 1K tokens
-	"text-ada-001":            0.2,
-	"text-babbage-001":        0.25,
-	"text-curie-001":          1,
-	"text-davinci-002":        10,
-	"text-davinci-003":        10,
-	"text-davinci-edit-001":   10,
-	"code-davinci-edit-001":   10,
-	"whisper-1":               15,  // $0.006 / minute -> $0.006 / 150 words -> $0.006 / 200 tokens -> $0.03 / 1k tokens
-	"tts-1":                   7.5, // $0.015 / 1K characters
-	"tts-1-1106":              7.5,
-	"tts-1-hd":                15, // $0.030 / 1K characters
-	"tts-1-hd-1106":           15,
-	"davinci":                 10,
-	"curie":                   10,
-	"babbage":                 10,
-	"ada":                     10,
-	"text-embedding-ada-002":  0.05,
-	"text-embedding-3-small":  0.01,
-	"text-embedding-3-large":  0.065,
-	"text-search-ada-doc-001": 10,
-	"text-moderation-stable":  0.1,
-	"text-moderation-latest":  0.1,
-	"dall-e-2":                8,  // $0.016 - $0.020 / image
-	"dall-e-3":                20, // $0.040 - $0.120 / image
+	"gpt-4":                              15,
+	"gpt-4-0314":                         15,
+	"gpt-4-0613":                         15,
+	"gpt-4-32k":                          30,
+	"gpt-4-32k-0314":                     30,
+	"gpt-4-32k-0613":                     30,
+	"gpt-4-1106-preview":                 5, // $0.01 / 1K tokens
+	"gpt-4-0125-preview":                 5, // $0.01 / 1K tokens
+	"gpt-4-turbo-preview":                5, // $0.01 / 1K tokens
+	"gpt-4-turbo":                        5, // $0.01 / 1K tokens
+	"gpt-4-turbo-2024-04-09":             5, // $0.01 / 1K tokens
+	"gpt-4-vision-preview":               5, // $0.01 / 1K tokens
+	"gpt-4o":                             1.25,
+	"gpt-4o-2024-05-13":                  2.5,
+	"gpt-4o-mini":                        0.075,
+	"gpt-4o-mini-2024-07-18":             0.075,
+	"gpt-4o-2024-08-06":                  1.25,
+	"gpt-4o-2024-11-20":                  1.25,
+	"chatgpt-4o-latest":                  2.5,
+	"o1-preview":                         7.5,
+	"o1-preview-2024-09-12":              7.5,
+	"o1-mini":                            1.5,
+	"o1-mini-2024-09-12":                 1.5,
+	"o1":                                 7.5,
+	"o1-2024-12-17":                      7.5,
+	"gpt-3.5-turbo":                      0.25, // $0.0005 / 1K tokens
+	"gpt-3.5-turbo-0301":                 0.75,
+	"gpt-3.5-turbo-0613":                 0.75,
+	"gpt-3.5-turbo-16k":                  1.5, // $0.003 / 1K tokens
+	"gpt-3.5-turbo-16k-0613":             1.5,
+	"gpt-3.5-turbo-instruct":             0.75, // $0.0015 / 1K tokens
+	"gpt-3.5-turbo-1106":                 0.5,  // $0.001 / 1K tokens
+	"gpt-3.5-turbo-0125":                 0.25, // $0.0005 / 1K tokens
+	"davinci-002":                        1,    // $0.002 / 1K tokens
+	"babbage-002":                        0.2,  // $0.0004 / 1K tokens
+	"text-ada-001":                       0.2,
+	"text-babbage-001":                   0.25,
+	"text-curie-001":                     1,
+	"text-davinci-002":                   10,
+	"text-davinci-003":                   10,
+	"text-davinci-edit-001":              10,
+	"code-davinci-edit-001":              10,
+	"whisper-1":                          15,  // $0.006 / minute -> $0.006 / 150 words -> $0.006 / 200 tokens -> $0.03 / 1k tokens
+	"tts-1":                              7.5, // $0.015 / 1K characters
+	"tts-1-1106":                         7.5,
+	"tts-1-hd":                           15, // $0.030 / 1K characters
+	"tts-1-hd-1106":                      15,
+	"davinci":                            10,
+	"curie":                              10,
+	"babbage":                            10,
+	"ada":                                10,
+	"text-embedding-ada-002":             0.05,
+	"text-embedding-3-small":             0.01,
+	"text-embedding-3-large":             0.065,
+	"text-search-ada-doc-001":            10,
+	"text-moderation-stable":             0.1,
+	"text-moderation-latest":             0.1,
+	"dall-e-2":                           8,  // $0.016 - $0.020 / image
+	"dall-e-3":                           20, // $0.040 - $0.120 / image
+	"gpt-4o-realtime-preview":            2.5,
+	"gpt-4o-realtime-preview-2024-10-01": 2.5,
+	"gpt-4o-realtime-preview-2024-12-17": 2.5,
+	"gpt-4o-mini-realtime-preview":       0.3,
+	"gpt-4o-mini-realtime-preview-2024-12-17": 0.3,
+	"gpt-4o-audio-preview":                    1.25, // $2.5 / 1M tokens
+	"gpt-4o-audio-preview-2024-10-01":         1.25, // $2.5 / 1M tokens
 	// https://www.anthropic.com/api#pricing
 	"claude-instant-1.2":         0.8 / 1000 * USD,
 	"claude-2.0":                 8.0 / 1000 * USD,
@@ -383,4 +392,19 @@ func GetCompletionRatio(name string) float64 {
 	}
 
 	return 1
+}
+
+func GetAudioRatio(name string) float64 {
+	if strings.HasPrefix(name, "gpt-4o-realtime") {
+		return 20
+	} else if strings.HasPrefix(name, "gpt-4o-audio") {
+		return 40
+	}
+	return 20
+}
+func GetAudioCompletionRatio(name string) float64 {
+	if strings.HasPrefix(name, "gpt-4o-realtime") {
+		return 2
+	}
+	return 2
 }
