@@ -284,15 +284,21 @@ const UsersTable = () => {
             return;
         }
         setSearching(true);
-        const res = await API.get(`/api/user/search?keyword=${searchKeyword}&group=${searchGroup}`);
-        const {success, message, data} = res.data;
-        if (success) {
-            setUsers(data);
-            setActivePage(1);
-        } else {
-            showError(message);
+        try {
+            const res = await API.get(`/api/user/search?keyword=${searchKeyword}&group=${searchGroup}`);
+            const {success, message, data} = res.data;
+            if (success) {
+                setUsers(data);
+                setUserCount(data.length);
+                setActivePage(1);
+            } else {
+                showError(message);
+            }
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            setSearching(false);
         }
-        setSearching(false);
     };
 
     const handleKeywordChange = async (value) => {
