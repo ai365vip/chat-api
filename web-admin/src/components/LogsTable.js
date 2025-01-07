@@ -484,18 +484,45 @@ const LogsTable = () => {
             <Layout>
                 <Header>
                 <h3 style={{
-                    color: '#333', 
-                    fontSize: '1.2rem', 
-                    marginTop: '50px', 
-                    marginBottom: '10px',
-                    backgroundColor: '#f8f8f8', 
-                    padding: '10px',
-                    borderRadius: '5px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    color: '#333',
+                    fontSize: '1.2rem',
+                    marginTop: '50px',
+                    marginBottom: '5px',
+                    padding: '5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
                 }}>
-                    使用明细（总消耗额度：<span style={{ color: '#5ca941' }}>{renderQuota(stat.quota)}</span>,
-                    RPM: <span style={{ color: '#ff5722' }}>{stat.rpm}</span>,
-                    TPM: <span style={{ color: '#2196f3' }}>{stat.tpm}</span>）
+                    <span>使用明细</span>
+                    <div style={{ 
+                        display: 'flex', 
+                        gap: '20px' 
+                    }}>
+                        <div style={{ 
+                            padding: '5px 12px',
+                            backgroundColor: '#f1f8ef',
+                            borderRadius: '4px',
+                            border: '1px solid #e8f5e3'
+                        }}>
+                            总消耗额度：<span style={{ color: '#5ca941' }}>{renderQuota(stat.quota)}</span>
+                        </div>
+                        <div style={{ 
+                            padding: '5px 12px',
+                            backgroundColor: '#fff4f1',
+                            borderRadius: '4px',
+                            border: '1px solid #ffe4de'
+                        }}>
+                            RPM：<span style={{ color: '#ff5722' }}>{stat.rpm}</span>
+                        </div>
+                        <div style={{ 
+                            padding: '5px 12px',
+                            backgroundColor: '#f1f8ff',
+                            borderRadius: '4px',
+                            border: '1px solid #e3f2fd'
+                        }}>
+                            TPM：<span style={{ color: '#2196f3' }}>{stat.tpm}</span>
+                        </div>
+                    </div>
                 </h3>
 
                 </Header>
