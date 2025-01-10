@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Grid, Typography } from '@mui/material';
+import { Grid, Typography, Box, Skeleton } from '@mui/material';
 import { gridSpacing } from 'store/constant';
 import StatisticalLineChartCard from './component/StatisticalLineChartCard';
 import StatisticalBarChart from './component/StatisticalBarChart';
@@ -8,6 +8,9 @@ import { API } from 'utils/api';
 import { showError, calculateQuota, renderNumber } from 'utils/common';
 import UserCard from 'ui-component/cards/UserCard';
 import { useSelector } from 'react-redux';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import PaymentsIcon from '@mui/icons-material/Payments';
+import ApiIcon from '@mui/icons-material/Api';
 
 const Dashboard = () => {
   const [isLoading, setLoading] = useState(true);
@@ -118,24 +121,94 @@ const Dashboard = () => {
           </Grid>
           <Grid item lg={4} xs={12}>
             <UserCard>
-              <Grid container spacing={gridSpacing} justifyContent="center" alignItems="center" paddingTop={'20px'}>
-                <Grid item xs={4}>
-                  <Typography variant="h4">余 额:</Typography>
+              <Grid 
+                container 
+                spacing={3} 
+                sx={{
+                  padding: '24px',
+                  '& .MuiGrid-item': {
+                    display: 'flex',
+                    alignItems: 'center'
+                  }
+                }}
+              >
+                <Grid item xs={12} sm={12} md={12}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      width: '100%',
+                      alignItems: 'center',
+                      backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                        ? 'rgba(0, 0, 0, 0.1)' 
+                        : 'rgba(94, 53, 177, 0.1)',
+                      borderRadius: 2,
+                      padding: 2
+                    }}
+                  >
+                    <AccountBalanceWalletIcon sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">余额</Typography>
+                      <Typography variant="h4" color="primary">
+                        {isLoading ? (
+                          <Skeleton width={100} />
+                        ) : (
+                          '$' + calculateQuota(users?.quota || 0)
+                        )}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid item xs={8}>
-                  <Typography variant="h3"> {users?.quota ? '$' + calculateQuota(users.quota) : '未知'}</Typography>
+
+                <Grid item xs={12} sm={6}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                        ? 'rgba(245, 124, 0, 0.15)' 
+                        : 'rgba(245, 124, 0, 0.1)',
+                      borderRadius: 2,
+                      padding: 2
+                    }}
+                  >
+                    <PaymentsIcon sx={{ fontSize: 32, color: 'orange.main', mr: 2 }} />
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">已使用</Typography>
+                      <Typography variant="h5" sx={{ color: 'rgb(245, 124, 0)' }}>
+                        {isLoading ? (
+                          <Skeleton width={80} />
+                        ) : (
+                          '$' + calculateQuota(users?.used_quota || 0)
+                        )}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid item xs={4}>
-                  <Typography variant="h4">已使用:</Typography>
-                </Grid>
-                <Grid item xs={8}>
-                  <Typography variant="h3"> {users?.used_quota ? '$' + calculateQuota(users.used_quota) : '未知'}</Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <Typography variant="h4">调用次数:</Typography>
-                </Grid>
-                <Grid item xs={8}>
-                  <Typography variant="h3"> {users?.request_count || '未知'}</Typography>
+
+                <Grid item xs={12} sm={6}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                        ? 'rgba(0, 200, 83, 0.15)' 
+                        : 'rgba(0, 200, 83, 0.1)',
+                      borderRadius: 2,
+                      padding: 2
+                    }}
+                  >
+                    <ApiIcon sx={{ fontSize: 32, color: 'success.main', mr: 2 }} />
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">调用次数</Typography>
+                      <Typography variant="h5" color="success.main">
+                        {isLoading ? (
+                          <Skeleton width={80} />
+                        ) : (
+                          renderNumber(users?.request_count || 0)
+                        )}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Grid>
               </Grid>
             </UserCard>

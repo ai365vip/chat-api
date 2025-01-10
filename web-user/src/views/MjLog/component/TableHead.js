@@ -8,11 +8,11 @@ const LogTableHead = () => {
         <TableCell>时间</TableCell>
         {<TableCell>类型</TableCell>}
         <TableCell>任务ID</TableCell>
-        <TableCell>提交结果</TableCell>
+        <TableCell>任务</TableCell>
         <TableCell>模式</TableCell>
-        <TableCell>任务状态</TableCell>
+        <TableCell>状态</TableCell>
         <TableCell>进度</TableCell>
-        <TableCell>结果图片</TableCell>
+        <TableCell>结果</TableCell>
         <TableCell>Prompt</TableCell>
         <TableCell>PromptEn</TableCell>
         <TableCell>失败原因</TableCell>

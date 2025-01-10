@@ -16,27 +16,25 @@ import {
   InputLabel,
   TextField,
   Button,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Box,
-  Alert
+  Alert,
+  Tabs,
+  Tab
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SearchIcon from '@mui/icons-material/Search';
 import ModelTableHead from './component/TableHead';
 import { API } from 'utils/api';
 import { useTheme } from '@mui/material/styles';
 function formatNumber(num) {
   if (num % 1 !== 0) {
-      const decimalPart = num.toString().split('.')[1];
-      if (decimalPart.length > 5) {
-          return num.toFixed(5);
-      } else {
-          return num;
-      }
-  } else {
+    const decimalPart = num.toString().split('.')[1];
+    if (decimalPart.length > 5) {
+      return num.toFixed(5);
+    } else {
       return num;
+    }
+  } else {
+    return num;
   }
 }
 
@@ -47,7 +45,8 @@ export default function Log() {
   const [selectedGroup, setSelectedGroup] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentSearchTerm, setCurrentSearchTerm] = useState('');
-  
+  const [activeTab, setActiveTab] = useState('');
+
   const loadGroups = async () => {
       try {
           let res = await API.get('/api/user/group');
@@ -76,15 +75,13 @@ export default function Log() {
       if (params.toString()) url += `?${params.toString()}`;
 
       let res = await API.get(url);
-      const { success, message, data } = res.data;
+      const { success, data } = res.data;
       if (success && Array.isArray(data)) {
         setModels(data);
       } else {
-        showError(message);
         setModels([]);
       }
     } catch (err) {
-      showError(err.message);
       setModels([]);
     }
   };
@@ -142,11 +139,27 @@ export default function Log() {
   };
   const groupedModels = sortModelTypes(groupModelsByType(models));
   const hasModels = Object.keys(groupedModels).length > 0;
+
+  // 获取排序后的模型类型列表
+  const modelTypes = Object.keys(groupedModels);
+  
+  // 在搜索或切换分组时，如果当前选中的tab不在新的模型类型列表中，需要重置activeTab
+  useEffect(() => {
+    const modelTypes = Object.keys(groupedModels);
+    if (modelTypes.length > 0) {
+      if (!modelTypes.includes(activeTab)) {
+        setActiveTab(modelTypes[0]);
+      }
+    } else {
+      setActiveTab('');
+    }
+  }, [groupedModels, activeTab]);
+
   return (
     <Box sx={{ maxWidth: 1200, margin: 'auto', padding: 3 }}>
       <Alert severity="info">
         按次计费与按token计费同时存在 按次计费优先。
-        </Alert>
+      </Alert>
       <Stack direction="row" alignItems="center" mb={5} spacing={2}>
         <Typography variant="h4" sx={{ flexGrow: 1 }}>可用模型</Typography>
         <TextField 
@@ -191,61 +204,87 @@ export default function Log() {
       <Card elevation={3}>
         <TableContainer component={Paper}>
           {hasModels ? (
-            Object.entries(groupedModels).map(([modelType, models]) => (
-              <Accordion key={modelType} defaultExpanded>
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
-                  sx={{ 
+            <>
+              <Box sx={{ 
+                width: '100%',
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                msOverflowStyle: 'none',
+                scrollbarWidth: 'none',
+                '&::-webkit-scrollbar': {
+                  display: 'none'
+                }
+              }}>
+                <Tabs
+                  value={activeTab}
+                  onChange={(e, newValue) => setActiveTab(newValue)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{
+                    borderBottom: 1,
+                    borderColor: 'divider',
                     backgroundColor: theme.palette.mode === 'light' 
                       ? theme.palette.grey[100] 
                       : theme.palette.grey[800],
-                    '&:hover': {
-                      backgroundColor: theme.palette.mode === 'light'
-                        ? theme.palette.grey[200]
-                        : theme.palette.grey[500],
-                    },
-                    '&.Mui-expanded': {
-                      minHeight: 48,
-                      maxHeight: 48,
-                    },
-                    '& .MuiAccordionSummary-content, & .MuiAccordionSummary-expandIconWrapper': {
-                      color: theme.palette.text.primary,
-                    }
+                    minHeight: 48,
                   }}
                 >
-                  <Typography variant="h6">{modelType}</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                <Table size="small">
-                  <ModelTableHead />
-                  <TableBody>
-                    {models.map((modelInfo, index) => (
-                      <TableRow 
-                        key={index} 
-                        hover
-                      >
-                        <TableCell component="th" scope="row" align="left" sx={{ fontWeight: 'medium' }}>
-                          {modelInfo.model}
-                        </TableCell>
-                        <TableCell align="left">
-                          {modelInfo.model_ratio_2 !== undefined && modelInfo.model_ratio_2 !== 0 ?
-                            modelInfo.model_ratio_2.toFixed(3) : '无'}
-                        </TableCell>
-                        <TableCell align="left">
-                          {modelInfo.model_ratio !== undefined && modelInfo.model_ratio !== 0 ?
-                            formatNumber(modelInfo.model_ratio * 0.002) : '无'}
-                        </TableCell>
-                        <TableCell align="left">
-                          {modelInfo.model_ratio !== undefined && modelInfo.model_ratio !== 0 ?
-                            formatNumber(modelInfo.model_completion_ratio * 0.002) : '无'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                </AccordionDetails>
-              </Accordion>
-            ))
+                  {modelTypes.map((modelType) => (
+                    <Tab 
+                      key={modelType}
+                      label={modelType}
+                      value={modelType}
+                    />
+                  ))}
+                </Tabs>
+              </Box>
+              
+              {activeTab && groupedModels[activeTab] && (
+                <Box sx={{ 
+                  width: '100%',
+                  overflowX: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  msOverflowStyle: 'none',
+                  scrollbarWidth: 'none',
+                  '&::-webkit-scrollbar': {
+                    display: 'none'
+                  }
+                }}>
+                  <Table size="small" sx={{ 
+                    minWidth: 800,
+                    '@media (max-width: 600px)': {
+                      minWidth: 600
+                    }
+                  }}>
+                    <ModelTableHead />
+                    <TableBody>
+                      {groupedModels[activeTab].map((modelInfo, index) => (
+                        <TableRow 
+                          key={index} 
+                          hover
+                        >
+                          <TableCell component="th" scope="row" align="left" sx={{ fontWeight: 'medium' }}>
+                            {modelInfo.model}
+                          </TableCell>
+                          <TableCell align="left">
+                            {modelInfo.model_ratio_2 !== undefined && modelInfo.model_ratio_2 !== 0 ?
+                              modelInfo.model_ratio_2.toFixed(3) : '无'}
+                          </TableCell>
+                          <TableCell align="left">
+                            {modelInfo.model_ratio !== undefined && modelInfo.model_ratio !== 0 ?
+                              formatNumber(modelInfo.model_ratio * 0.002) : '无'}
+                          </TableCell>
+                          <TableCell align="left">
+                            {modelInfo.model_ratio !== undefined && modelInfo.model_ratio !== 0 ?
+                              formatNumber(modelInfo.model_completion_ratio * 0.002) : '无'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
+              )}
+            </>
           ) : (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6" color="text.secondary">

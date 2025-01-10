@@ -3,6 +3,9 @@ import PropTypes from 'prop-types';
 import { TableRow, TableCell, Button, Tooltip, Modal } from '@mui/material';
 import Label from 'ui-component/Label';
 import { amber, blue, grey, indigo, lightBlue, lime, orange, pink, purple, red, deepOrange, deepPurple, green, lightGreen, blueGrey, teal, yellow, brown, cyan } from '@mui/material/colors';
+import LinearProgress from '@mui/material/LinearProgress';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 
 const colors = [
   amber[500], blue[500], grey[500], indigo[500],
@@ -44,6 +47,7 @@ function renderType(type) {
       return <Label style={{ color: colors[9], borderColor: colors[9] }} size="small" variant="outlined">未知</Label>;
   }
 }
+
 
 function renderCode(code) {
   switch (code) {
@@ -102,6 +106,35 @@ function renderStatus(type) {
   }
 }
 
+// 定义带标签的进度条组件
+const LinearProgressWithLabel = (props) => {
+  const progressValue = typeof props.value === 'string' ? 
+    parseInt(props.value, 10) : 
+    props.value;
+    
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+      <Box sx={{ width: '100%', mr: 1 }}>
+        <LinearProgress 
+          variant="determinate" 
+          value={progressValue}
+          color={
+            progressValue < 30 ? 'warning' :
+            progressValue < 60 ? 'primary' :
+            'success'
+          }
+          sx={{ height: 8 }}
+        />
+      </Box>
+      <Box sx={{ minWidth: 30 }}>
+        <Typography variant="body2">
+          {`${progressValue}%`}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
 export default function LogTableRow({ item }) {
   const [modalImageUrl, setModalImageUrl] = React.useState('');
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -123,7 +156,25 @@ export default function LogTableRow({ item }) {
       <TableCell>{renderCode(item.code)}</TableCell>
       <TableCell>{renderMode(item.mode)}</TableCell>
       <TableCell>{renderStatus(item.status)}</TableCell>
-      <TableCell>{item.progress}</TableCell>
+      <TableCell>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2
+        }}>
+          <Box sx={{ width: 70 }}>
+            <LinearProgressWithLabel 
+              value={item.progress === 100 ? 100 : parseInt(item.progress) || 0} 
+            />
+          </Box>
+          <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
+            {(item.finish_time > item.start_time) ? 
+              `${Math.floor((item.finish_time - item.start_time) / 1000)}秒` : 
+              '-'
+            }
+          </Typography>
+        </Box>
+      </TableCell>
       <TableCell>
         <Button variant="outlined" size="small" onClick={() => handleImagePreview(item.image_url)}>
           查看

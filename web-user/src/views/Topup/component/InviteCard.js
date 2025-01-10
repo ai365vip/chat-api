@@ -27,6 +27,16 @@ const InviteCard = () => {
   const [withdrawalAmount, setWithdrawalAmount] = useState(0);
   const [alipayAccount, setAlipayAccount] = useState('');
 
+  const commonButtonSx = {
+    borderRadius: '8px',
+    transition: 'all 0.3s ease-in-out',
+    textTransform: 'none',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+    }
+  };
 
   const handleInviteUrl = async () => {
     try {
@@ -224,7 +234,14 @@ const InviteCard = () => {
             placeholder="点击生成邀请链接"
             endAdornment={
               <InputAdornment position="end">
-                <Button variant="contained" onClick={handleInviteUrl}>
+                <Button 
+                  variant="contained" 
+                  onClick={handleInviteUrl}
+                  sx={{
+                    ...commonButtonSx,
+                    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                  }}
+                >
                   {inviteUl ? '复制' : '生成'}
                 </Button>
               </InputAdornment>
@@ -291,6 +308,14 @@ const InviteCard = () => {
                   fullWidth 
                   onClick={withdrawal}
                   disabled={!withdrawalAmount || withdrawalAmount < Number(options.MiniQuota) || !alipayAccount}
+                  sx={{
+                    ...commonButtonSx,
+                    background: 'linear-gradient(45deg, #4CAF50 30%, #81C784 90%)',
+                    '&:disabled': {
+                      background: 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
+                      color: 'rgba(255, 255, 255, 0.8)'
+                    }
+                  }}
                 >
                   提交提现
                 </Button>
@@ -348,6 +373,14 @@ const InviteCard = () => {
                 fullWidth 
                 onClick={transfer}
                 disabled={!transferAmount || transferAmount < Number(options.MiniQuota) || transferAmount > parseQuotaStringToNumber(inviteQuota(userAffQuota))}
+                sx={{
+                  ...commonButtonSx,
+                  background: 'linear-gradient(45deg, #3f51b5 30%, #5c6bc0 90%)',
+                  '&:disabled': {
+                    background: 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
+                    color: 'rgba(255, 255, 255, 0.8)'
+                  }
+                }}
               >
                 提交划转
               </Button>
@@ -368,34 +401,67 @@ const InviteCard = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'row' }}>
             {/* 总收益 */}
             <Stack direction="column" alignItems="center" justifyContent="center" spacing={1} sx={{ flex: 1, textAlign: 'center' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: theme.palette.secondary.main }}>总收益</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: theme.palette.info.main }}>总收益</Typography>
               <Typography variant="h4" sx={{ color: theme.palette.primary.main }}>{inviteQuota(userAffHistor)}</Typography>
             </Stack>
             
             {/* 邀请人数 */}
             <Stack direction="column" alignItems="center" justifyContent="center" spacing={1} sx={{ flex: 1, textAlign: 'center' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: theme.palette.secondary.main }}>邀请人数</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: theme.palette.info.main }}>邀请人数</Typography>
               <Typography variant="h4" sx={{ color: theme.palette.primary.main }}>{userAffConut}</Typography>
             </Stack>
 
             {/* 待使用收益 */}
             <Stack direction="column" alignItems="center" justifyContent="center" spacing={1} sx={{ flex: 1, textAlign: 'center'}}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: theme.palette.secondary.main }}>待使用收益</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: theme.palette.info.main }}>待使用收益</Typography>
               <Typography variant="h4" sx={{ color: theme.palette.error.main }}>{inviteQuota(userAffQuota)}</Typography>
             </Stack>
           </Box>
       
           {/* 操作按钮区域 */}
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', pt: 1 }}>
-            <Button variant='contained' onClick={handleOpenTransfer} size='small' sx={{ mx: 1 }}>
+            <Button 
+              variant='contained' 
+              onClick={handleOpenTransfer} 
+              size='small' 
+              sx={{ 
+                ...commonButtonSx,
+                mx: 1,
+                background: 'linear-gradient(45deg, #3f51b5 30%, #5c6bc0 90%)',
+              }}
+            >
               划转
             </Button>
             {options.ProporTions !== "0" && (
               <>
-                <Button variant='contained' onClick={handleOpenWithdrawal} color="success" size='small' sx={{ mx: 1 }}>
+                <Button 
+                  variant='contained' 
+                  onClick={handleOpenWithdrawal} 
+                  size='small' 
+                  sx={{ 
+                    ...commonButtonSx,
+                    mx: 1,
+                    background: 'linear-gradient(45deg, #4CAF50 30%, #81C784 90%)',
+                  }}
+                >
                   提现
                 </Button>
-                <Button variant="outlined" onClick={goWithdrawal} size='small' sx={{ mx: 1 }}>
+                <Button 
+                  variant="outlined" 
+                  onClick={goWithdrawal} 
+                  size='small' 
+                  sx={{ 
+                    ...commonButtonSx,
+                    mx: 1,
+                    borderColor: '#2196F3',
+                    color: '#2196F3',
+                    '&:hover': {
+                      ...commonButtonSx['&:hover'],
+                      borderColor: '#21CBF3',
+                      background: 'rgba(33, 150, 243, 0.04)'
+                    }
+                  }}
+                >
                   提现记录
                 </Button>
               </>
