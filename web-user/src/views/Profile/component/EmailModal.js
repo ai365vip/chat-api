@@ -26,6 +26,17 @@ const validationSchema = Yup.object().shape({
   email_verification_code: Yup.string().required('验证码不能为空')
 });
 
+const commonButtonSx = {
+  borderRadius: '8px',
+  transition: 'all 0.3s ease-in-out',
+  textTransform: 'none',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+  }
+};
+
 const EmailModal = ({ open, handleClose, turnstileToken, turnstileEnabled}) => {
   const theme = useTheme();
   const [countdown, setCountdown] = useState(30);
@@ -117,6 +128,15 @@ const EmailModal = ({ open, handleClose, turnstileToken, turnstileEnabled}) => {
                           color="primary"
                           onClick={() => handleSendCode(values.email)}
                           disabled={disableButton || loading}
+                          sx={{
+                            ...commonButtonSx,
+                            background: disableButton ? 
+                              'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)' : 
+                              'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                            minWidth: '120px',
+                            height: '36px',
+                            ml: 1
+                          }}
                         >
                           {disableButton ? `重新发送(${countdown})` : '获取验证码'}
                         </Button>
@@ -152,8 +172,36 @@ const EmailModal = ({ open, handleClose, turnstileToken, turnstileEnabled}) => {
                   )}
                 </FormControl>
                 <DialogActions>
-                  <Button onClick={handleClose}>取消</Button>
-                  <Button disableElevation disabled={loading} type="submit" variant="contained" color="primary">
+                  <Button 
+                    onClick={handleClose}
+                    sx={{
+                      ...commonButtonSx,
+                      color: 'text.secondary',
+                      '&:hover': {
+                        ...commonButtonSx['&:hover'],
+                        background: 'rgba(0, 0, 0, 0.04)'
+                      }
+                    }}
+                  >
+                    取消
+                  </Button>
+                  <Button 
+                    disableElevation 
+                    disabled={loading} 
+                    type="submit" 
+                    variant="contained" 
+                    color="primary"
+                    sx={{
+                      ...commonButtonSx,
+                      background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                      color: 'white',
+                      opacity: loading ? 0.7 : 1,
+                      '&:disabled': {
+                        background: 'linear-gradient(45deg, #9e9e9e 30%, #bdbdbd 90%)',
+                        color: 'rgba(255, 255, 255, 0.8)'
+                      }
+                    }}
+                  >
                     提交
                   </Button>
                 </DialogActions>
