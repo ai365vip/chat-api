@@ -115,8 +115,6 @@ export default function Log() {
       // 根据模型名称重新分类
       if (model.model.startsWith('o1-')) {
         modelType = 'OpenAI';
-      } else if (model.model.startsWith('gemini')) {
-        modelType = 'Google Gemini';
       }
       
       if (!groupedModels[modelType]) {

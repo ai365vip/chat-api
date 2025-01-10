@@ -624,6 +624,7 @@ const TopupCard = () => {
         </Stack>
       </Stack>
 
+      {/* 第一个 SubCard - 在线充值 */}
       <SubCard sx={{ marginTop: '40px' }}>
         {renderTopUpAmountInput()}
         <Modal open={open} onClose={() => setOpen(false)}>
@@ -631,26 +632,15 @@ const TopupCard = () => {
         </Modal>
       </SubCard>
 
-      {/* 添加额度提醒设置的Modal */}
-      <Modal open={alertOpen} onClose={() => setAlertOpen(false)}>
-        {renderAlertModalContent()}
-      </Modal>
-
-      <SubCard
-        sx={{
-          marginTop: '40px'
-        }}
-      >
-        <SubCard sx={{ marginTop: '40px' }}>
+      {/* 第二个 SubCard - 兑换码充值 */}
+      <SubCard sx={{ marginTop: '40px' }}>
         <FormControl fullWidth variant="outlined" sx={{ mt: 2, mb: 1 }}>
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              flexDirection: isMobile ? 'column' : 'row', 
-              alignItems: 'center',
-              gap: isMobile ? 2 : 1, // 在移动设备上增加垂直间距，在桌面上增加水平间距
-            }}
-          >
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row', 
+            alignItems: 'center',
+            gap: isMobile ? 2 : 1
+          }}>
             <OutlinedInput
               id="key"
               label="兑换码"
@@ -662,19 +652,17 @@ const TopupCard = () => {
               name="key"
               placeholder="请输入兑换码"
               aria-describedby="helper-text-channel-quota-label"
-              sx={{ flex: 1, width: 'auto' }} // 确保输入框在行中占据可用空间
+              sx={{ flex: 1, width: 'auto' }}
             />
             <Button 
               variant="contained" 
               onClick={topUp} 
               disabled={isSubmitting}
-
             >
               {isSubmitting ? '兑换中...' : '兑换'}
             </Button>
           </Box>
         </FormControl>
-
 
         {topUpLink && (
           <Stack justifyContent="center" alignItems={'center'} spacing={3} paddingTop={'20px'}>
@@ -686,16 +674,12 @@ const TopupCard = () => {
             </Button>
           </Stack>
         )}
-        </SubCard>
-       
-        <SubCard sx={{ marginTop: '40px' }}>
-        {renderTopUpAmountInput()} {/* 正确的函数调用方式 */}
-         
-        </SubCard>
-          <Modal open={open} onClose={() => setOpen(false)}>
-            {renderModalContent()}
-          </Modal>
       </SubCard>
+
+      {/* 额度提醒设置的 Modal */}
+      <Modal open={alertOpen} onClose={() => setAlertOpen(false)}>
+        {renderAlertModalContent()}
+      </Modal>
     </UserCard>
   );
 };
