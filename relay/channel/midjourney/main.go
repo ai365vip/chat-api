@@ -27,6 +27,10 @@ func RelayMidjourneyImage(c *gin.Context) {
 	midjourneyTask, err := model.GetByOnlyMJId(taskId)
 	if err != nil {
 		log.Printf("获取任务失败: %v", err)
+		c.JSON(500, gin.H{
+			"error":   "failed_to_get_task",
+			"message": err.Error(),
+		})
 		return
 	}
 	if midjourneyTask == nil {
@@ -35,13 +39,29 @@ func RelayMidjourneyImage(c *gin.Context) {
 		})
 		return
 	}
-	resp, err := client.ProxiedHttpGet(midjourneyTask.ImageUrl, config.OutProxyUrl)
 
+	if midjourneyTask.ImageUrl == "" {
+		c.JSON(400, gin.H{
+			"error": "image_url_not_found",
+		})
+		return
+	}
+
+	resp, err := client.ProxiedHttpGet(midjourneyTask.ImageUrl, config.OutProxyUrl)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "http_get_image_failed",
 		})
+		return
 	}
+
+	if resp == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "empty_response",
+		})
+		return
+	}
+
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		responseBody, _ := io.ReadAll(resp.Body)
