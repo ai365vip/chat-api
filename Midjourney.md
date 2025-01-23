@@ -55,11 +55,11 @@
 
 ## 渠道设置
 
-### 对接 midjourney-proxy（url/mj 正常请求fast模式）
+### 对接 Midjourney Proxy Admin（url/mj 正常请求fast模式）
 
 1.
 
-部署Midjourney-Proxy，并配置好midjourney账号等（强烈建议设置密钥），[项目地址](https://github.com/novicezk/midjourney-proxy)
+部署Midjourney Proxy Admin，并配置好midjourney账号等，[项目地址](https://github.com/trueai-org/midjourney-proxy)
 
 2. 在渠道管理中添加渠道，渠道类型选择**Midjourney Proxy**，
    ，模型选择**midjourney**
