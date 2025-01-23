@@ -35,7 +35,11 @@ RUN go build -ldflags "-s -w -X 'one-api/common.Version=$(cat VERSION)' -extldfl
 
 FROM alpine:latest
 
-RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates && rm -rf /var/cache/apk/*
+RUN apk update \
+    && apk upgrade \
+    && apk add --no-cache ca-certificates tzdata ffmpeg ffmpeg-tools \
+    && update-ca-certificates 2>/dev/null || true \
+    && rm -rf /var/cache/apk/*
 
 # 复制 Go 二进制文件
 COPY --from=go-builder /build/chat-api /chat-api
