@@ -95,6 +95,12 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 			request.Temperature = nil
 		}
 	}
+	if request.Model == "o1" || request.Model == "o1-2024-12-17" || strings.HasPrefix(request.Model, "o3") {
+		//修改第一个Message的内容，将system改为developer
+		if len(request.Messages) > 0 && request.Messages[0].Role == "system" {
+			request.Messages[0].Role = "developer"
+		}
+	}
 	return request, nil
 }
 
