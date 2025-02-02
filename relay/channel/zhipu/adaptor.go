@@ -13,6 +13,7 @@ import (
 	"one-api/relay/util"
 	"strings"
 
+	"github.com/aws/smithy-go/ptr"
 	"github.com/gin-gonic/gin"
 )
 
@@ -68,8 +69,8 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 		request.TopP = math.Max(0.01, request.TopP)
 
 		// Temperature (0.0, 1.0)
-		request.Temperature = math.Min(0.99, request.Temperature)
-		request.Temperature = math.Max(0.01, request.Temperature)
+		request.Temperature = ptr.Float64(math.Min(0.99, *request.Temperature))
+		request.Temperature = ptr.Float64(math.Max(0.01, *request.Temperature))
 		a.SetVersionByModeName(request.Model)
 		if a.APIVersion == "v4" {
 			return request, nil

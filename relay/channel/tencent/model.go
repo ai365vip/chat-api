@@ -22,7 +22,7 @@ type ChatRequest struct {
 	// Temperature 较高的数值会使输出更加随机，而较低的数值会使其更加集中和确定
 	// 默认 1.0，取值区间为[0.0,2.0]，非必要不建议使用,不合理的取值会影响效果
 	// 建议该参数和 top_p 只设置1个，不要同时更改 top_p
-	Temperature float64 `json:"temperature"`
+	Temperature *float64 `json:"temperature"`
 	// TopP 影响输出文本的多样性，取值越大，生成文本的多样性越强
 	// 默认1.0，取值区间为[0.0, 1.0]，非必要不建议使用, 不合理的取值会影响效果
 	// 建议该参数和 temperature 只设置1个，不要同时更改

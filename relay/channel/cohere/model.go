@@ -10,7 +10,7 @@ type Request struct {
 	PromptTruncation string        `json:"prompt_truncation,omitempty"` // 默认值为"AUTO"
 	Connectors       []Connector   `json:"connectors,omitempty"`
 	Documents        []Document    `json:"documents,omitempty"`
-	Temperature      float64       `json:"temperature,omitempty"` // 默认值为0.3
+	Temperature      *float64      `json:"temperature,omitempty"` // 默认值为0.3
 	MaxTokens        uint          `json:"max_tokens,omitempty"`
 	MaxInputTokens   int           `json:"max_input_tokens,omitempty"`
 	K                int           `json:"k,omitempty"` // 默认值为0

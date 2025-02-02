@@ -218,7 +218,7 @@ func GetSign(req ChatRequest, secretKey string) string {
 	params = append(params, "secret_id="+req.SecretId)
 	params = append(params, "timestamp="+strconv.FormatInt(req.Timestamp, 10))
 	params = append(params, "query_id="+req.QueryID)
-	params = append(params, "temperature="+strconv.FormatFloat(req.Temperature, 'f', -1, 64))
+	params = append(params, "temperature="+strconv.FormatFloat(*req.Temperature, 'f', -1, 64))
 	params = append(params, "top_p="+strconv.FormatFloat(req.TopP, 'f', -1, 64))
 	params = append(params, "stream="+strconv.Itoa(req.Stream))
 	params = append(params, "expired="+strconv.FormatInt(req.Expired, 10))

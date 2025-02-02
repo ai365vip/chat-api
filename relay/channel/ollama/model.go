@@ -1,12 +1,12 @@
 package ollama
 
 type Options struct {
-	Seed             int     `json:"seed,omitempty"`
-	Temperature      float64 `json:"temperature,omitempty"`
-	TopK             int     `json:"top_k,omitempty"`
-	TopP             float64 `json:"top_p,omitempty"`
-	FrequencyPenalty float64 `json:"frequency_penalty,omitempty"`
-	PresencePenalty  float64 `json:"presence_penalty,omitempty"`
+	Seed             int      `json:"seed,omitempty"`
+	Temperature      *float64 `json:"temperature,omitempty"`
+	TopK             int      `json:"top_k,omitempty"`
+	TopP             float64  `json:"top_p,omitempty"`
+	FrequencyPenalty float64  `json:"frequency_penalty,omitempty"`
+	PresencePenalty  float64  `json:"presence_penalty,omitempty"`
 }
 
 type Message struct {

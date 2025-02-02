@@ -12,7 +12,7 @@ type Message struct {
 
 type Request struct {
 	Prompt      []Message `json:"prompt"`
-	Temperature float64   `json:"temperature,omitempty"`
+	Temperature *float64  `json:"temperature,omitempty"`
 	TopP        float64   `json:"top_p,omitempty"`
 	RequestId   string    `json:"request_id,omitempty"`
 	Incremental bool      `json:"incremental,omitempty"`
