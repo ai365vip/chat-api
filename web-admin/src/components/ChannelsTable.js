@@ -916,29 +916,26 @@ const ChannelsTable = () => {
 
     const copySelectedChannel = async () => {
         if (selectedChannels.size !== 1) {
-            showError("请选择一个渠道进行复制"); // 确保只选择了一个渠道
+            showError("请选择一个渠道进行复制");
             return;
         }
+        
         const channelId = Array.from(selectedChannels)[0];
-        const channelToCopy = channels.find(channel => String(channel.id) === String(channelId));
-        if (!channelToCopy) {
-            showError("选中的渠道未找到，请刷新页面后重试。");
-            return;
-        }
-
+    
         try {
-            const newChannel = {...channelToCopy, id: undefined,key: undefined,balance: undefined,used_quota: undefined,used_count: undefined}; // 示例：清除id以创建一个新渠道
-            // 发送复制请求到后端API
-            const response = await API.post('/api/channel/', newChannel);
+            // 确保 channelId 是数字类型
+            const response = await API.post('/api/channel/copy', {
+                id: Number(channelId) // 确保转换为数字
+            });
+            
             if (response.data.success) {
                 showSuccess("渠道复制成功");
-                // 刷新列表来显示新的渠道
                 refresh();
             } else {
-                showError(response.data.message);
+                showError(response.data.message || "复制失败");
             }
         } catch (error) {
-            showError("渠道复制失败: " + error.message);
+            showError("渠道复制失败: " + (error.response?.data?.message || error.message));
         }
     };
 

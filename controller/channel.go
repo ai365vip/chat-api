@@ -301,3 +301,33 @@ func FetchUpstreamModels(c *gin.Context) {
 		"data":    rawJSON,
 	})
 }
+
+func CopyChannel(c *gin.Context) {
+	var req struct {
+		ID int `json:"id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "无效的请求参数",
+		})
+		return
+	}
+
+	// 调用 model 层的复制函数
+	newChannel, err := model.CopyChannel(req.ID)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "渠道复制成功",
+		"data":    newChannel,
+	})
+}

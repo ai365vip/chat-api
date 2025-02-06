@@ -14,64 +14,66 @@ import (
 )
 
 type RelayMeta struct {
-	Mode              int
-	ChannelType       int
-	ChannelId         int
-	ChannelName       string
-	TokenId           int
-	TokenName         string
-	UserId            int
-	Group             string
-	ModelMapping      map[string]string
-	Headers           map[string]string
-	BaseURL           string
-	APIKey            string
-	APIType           int
-	Config            model.ChannelConfig
-	IsStream          bool
-	AttemptsLog       string
-	OriginModelName   string
-	ActualModelName   string
-	RequestURLPath    string
-	PromptTokens      int // only for DoResponse
-	FixedContent      string
-	IsClaude          bool
-	BillingEnabled    bool
-	UnlimitedQuota    bool
-	ProxyURL          string
-	RelayIp           string
-	ClientWs          *websocket.Conn
-	TargetWs          *websocket.Conn
-	RealtimeTools     []dbmodel.RealTimeTool
-	InputAudioFormat  string
-	OutputAudioFormat string
-	IsFirstRequest    bool
-	setFirstResponse  bool
-	FirstResponseTime time.Time
-	StartTime         time.Time
+	Mode                 int
+	ChannelType          int
+	ChannelId            int
+	ChannelName          string
+	TokenId              int
+	TokenName            string
+	UserId               int
+	Group                string
+	ModelMapping         map[string]string
+	Headers              map[string]string
+	BaseURL              string
+	APIKey               string
+	APIType              int
+	Config               model.ChannelConfig
+	IsStream             bool
+	AttemptsLog          string
+	OriginModelName      string
+	ActualModelName      string
+	RequestURLPath       string
+	PromptTokens         int // only for DoResponse
+	FixedContent         string
+	IsClaude             bool
+	BillingEnabled       bool
+	UnlimitedQuota       bool
+	ProxyURL             string
+	RelayIp              string
+	ClientWs             *websocket.Conn
+	TargetWs             *websocket.Conn
+	RealtimeTools        []dbmodel.RealTimeTool
+	InputAudioFormat     string
+	OutputAudioFormat    string
+	IsFirstRequest       bool
+	setFirstResponse     bool
+	FirstResponseTime    time.Time
+	StartTime            time.Time
+	SupportsCacheControl bool
 }
 
 func GetRelayMeta(c *gin.Context) *RelayMeta {
 	meta := RelayMeta{
-		Mode:           constant.Path2RelayMode(c.Request.URL.Path),
-		ChannelType:    c.GetInt("channel"),
-		ChannelId:      c.GetInt("channel_id"),
-		ChannelName:    c.GetString("channel_name"),
-		TokenId:        c.GetInt("token_id"),
-		TokenName:      c.GetString("token_name"),
-		UserId:         c.GetInt("id"),
-		Group:          c.GetString("group"),
-		ModelMapping:   c.GetStringMapString("model_mapping"),
-		Headers:        c.GetStringMapString("headers"),
-		BaseURL:        c.GetString("base_url"),
-		APIKey:         strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
-		RequestURLPath: c.Request.URL.String(),
-		FixedContent:   c.GetString("fixed_content"),
-		AttemptsLog:    c.GetString("attemptsLog"),
-		BillingEnabled: c.GetBool("billing_enabled"),
-		UnlimitedQuota: c.GetBool("token_unlimited_quota"),
-		ProxyURL:       c.GetString("proxy_url"),
-		RelayIp:        c.GetString("relayIp"),
+		Mode:                 constant.Path2RelayMode(c.Request.URL.Path),
+		ChannelType:          c.GetInt("channel"),
+		ChannelId:            c.GetInt("channel_id"),
+		ChannelName:          c.GetString("channel_name"),
+		TokenId:              c.GetInt("token_id"),
+		TokenName:            c.GetString("token_name"),
+		UserId:               c.GetInt("id"),
+		Group:                c.GetString("group"),
+		ModelMapping:         c.GetStringMapString("model_mapping"),
+		Headers:              c.GetStringMapString("headers"),
+		BaseURL:              c.GetString("base_url"),
+		APIKey:               strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
+		RequestURLPath:       c.Request.URL.String(),
+		FixedContent:         c.GetString("fixed_content"),
+		AttemptsLog:          c.GetString("attemptsLog"),
+		BillingEnabled:       c.GetBool("billing_enabled"),
+		UnlimitedQuota:       c.GetBool("token_unlimited_quota"),
+		ProxyURL:             c.GetString("proxy_url"),
+		RelayIp:              c.GetString("relayIp"),
+		SupportsCacheControl: c.GetBool("supports_cache_control"),
 	}
 
 	if meta.BaseURL == "" {

@@ -32,7 +32,25 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 		logger.Errorf(ctx, "getAndValidateTextRequest failed: %s", err.Error())
 		return openai.ErrorWrapper(err, "invalid_text_request", http.StatusBadRequest)
 	}
+	// 处理 system 消息格式
+	println(meta.SupportsCacheControl)
+	if textRequest.System != "" {
+		systemContent, ok := textRequest.System.([]interface{})
+		if ok {
+			if !meta.SupportsCacheControl {
 
+				// 不支持 cache_control，提取纯文本
+				for _, item := range systemContent {
+					if contentMap, ok := item.(map[string]interface{}); ok {
+						if text, exists := contentMap["text"]; exists {
+							textRequest.System = text.(string)
+							break
+						}
+					}
+				}
+			}
+		}
+	}
 	meta.IsStream = textRequest.Stream
 	meta.AttemptsLog = c.GetString("attemptsLog")
 	// map model name
@@ -103,12 +121,6 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 		logger.Debugf(ctx, "converted request: \n%s", string(jsonData))
 		requestBody = bytes.NewBuffer(jsonData)
 	}
-
-	// 将 requestBody 转换为字符串并打印
-	bodyBytes, _ := io.ReadAll(requestBody)
-	fmt.Println("Request Body Content: %s", string(bodyBytes))
-	// 重新创建一个新的 Reader，因为 ReadAll 会消耗原有的 Reader
-	requestBody = bytes.NewBuffer(bodyBytes)
 
 	// do responses
 	startTime := time.Now()

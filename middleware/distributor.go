@@ -134,6 +134,11 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("original_model", modelName)
 	c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", channel.Key))
 	c.Set("base_url", channel.GetBaseURL())
+	var supportsCacheControl bool
+	if channel.SupportsCacheControl != nil {
+		supportsCacheControl = *channel.SupportsCacheControl
+	}
+	c.Set("supports_cache_control", supportsCacheControl)
 	cfg, _ := channel.LoadConfig()
 	// 兼容旧版本
 	if cfg.APIVersion == "" {

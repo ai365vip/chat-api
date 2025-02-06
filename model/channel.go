@@ -48,6 +48,7 @@ type Channel struct {
 	Config                string  `json:"config"`
 	ProxyURL              *string `json:"proxy_url"`
 	GcpAccount            *string `json:"gcp_account" gorm:"type:varchar(4096);default:''"`
+	SupportsCacheControl  *bool   `json:"supports_cache_control"  gorm:"default:false"`
 }
 type ChannelConfig struct {
 	Region       string `json:"region,omitempty"`
@@ -533,4 +534,63 @@ func GetUntaggedChannelsCount() (int64, error) {
 		Where("tags IS NULL OR tags = ''").
 		Count(&count).Error
 	return count, err
+}
+
+func CopyChannel(id int) (*Channel, error) {
+	// 1. 查找原始渠道
+	var originalChannel Channel
+	if err := DB.First(&originalChannel, id).Error; err != nil {
+		return nil, fmt.Errorf("未找到源渠道: %v", err)
+	}
+
+	// 2. 创建新的渠道对象
+	newChannel := Channel{
+		// 基本信息
+		Type:   originalChannel.Type,
+		Name:   originalChannel.Name + " (copy)",
+		Status: originalChannel.Status,
+		Weight: originalChannel.Weight,
+		Other:  originalChannel.Other,
+		Models: originalChannel.Models,
+		Group:  originalChannel.Group,
+		Tags:   originalChannel.Tags,
+
+		// 配置信息
+		OpenAIOrganization:    originalChannel.OpenAIOrganization,
+		ModelMapping:          originalChannel.ModelMapping,
+		Headers:               originalChannel.Headers,
+		Priority:              originalChannel.Priority,
+		AutoBan:               originalChannel.AutoBan,
+		IsTools:               originalChannel.IsTools,
+		ClaudeOriginalRequest: originalChannel.ClaudeOriginalRequest,
+		TestedTime:            originalChannel.TestedTime,
+		ModelTest:             originalChannel.ModelTest,
+		RateLimitCount:        originalChannel.RateLimitCount,
+		IsImageURLEnabled:     originalChannel.IsImageURLEnabled,
+		StatusCodeMapping:     originalChannel.StatusCodeMapping,
+		Config:                originalChannel.Config,
+		ProxyURL:              originalChannel.ProxyURL,
+		GcpAccount:            originalChannel.GcpAccount,
+		SupportsCacheControl:  originalChannel.SupportsCacheControl,
+
+		// 设置新的时间戳
+		CreatedTime: time.Now().Unix(),
+
+		// 重置的字段
+		Key:                "", // 需要重新设置
+		Balance:            0,
+		BalanceUpdatedTime: 0,
+		UsedQuota:          0,
+		UsedCount:          0,
+		TestTime:           0,
+		ResponseTime:       0,
+		RateLimited:        originalChannel.RateLimited, // 默认 false
+	}
+
+	// 3. 保存新渠道到数据库
+	if err := DB.Create(&newChannel).Error; err != nil {
+		return nil, fmt.Errorf("创建新渠道失败: %v", err)
+	}
+
+	return &newChannel, nil
 }

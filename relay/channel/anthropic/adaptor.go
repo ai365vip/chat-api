@@ -46,7 +46,15 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	return ConvertRequest(*request), nil
+	var claudeReq any
+	valueclaudeoriginalrequest, _ := c.Get("claude_original_request")
+	isclaudeoriginalrequest, _ := valueclaudeoriginalrequest.(bool)
+	if isclaudeoriginalrequest {
+		claudeReq = ConverClaudeRequest(*request)
+	} else {
+		claudeReq = ConvertRequest(*request)
+	}
+	return claudeReq, nil
 
 }
 
