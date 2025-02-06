@@ -357,6 +357,13 @@ func GetCompletionRatio(name string) float64 {
 	if strings.HasPrefix(name, "o1") || strings.HasPrefix(name, "o3") {
 		return 4
 	}
+	lowercaseName := strings.ToLower(name)
+	if strings.HasPrefix(lowercaseName, "deepseek") {
+		if strings.HasSuffix(lowercaseName, "reasoner") || strings.HasSuffix(lowercaseName, "r1") {
+			return 4
+		}
+		return 2
+	}
 	if strings.HasPrefix(name, "chatgpt-4o") {
 		return 3
 	}
