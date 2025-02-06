@@ -20,13 +20,14 @@ const DEFAULT_GEMINI_MODELS = [
     'gemini-1.5-flash-002',
     'gemini-1.5-pro-latest',
     'gemini-1.5-flash-latest',
-    'gemini-1.5-pro-exp-0801',
-    'gemini-1.5-pro-exp-0827',
-    'gemini-1.5-flash-exp-0827',
-    'gemini-exp-1114',
     'gemini-exp-1206',
-    'gemini-2.0-flash-thinking-exp-1219',
     'gemini-2.0-flash-exp',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-001',
+    'gemini-2.0-flash-lite-preview',
+    'gemini-2.0-flash-lite-preview-02-05',
+    'gemini-2.0-pro-exp',
+    'gemini-2.0-pro-exp-02-05',
 ];
 const BatchEditChannels = (props) => {
     
@@ -78,6 +79,7 @@ const BatchEditChannels = (props) => {
     const [priority, setPriority] = useState(0);
     const [modelTest, setModelTest] = useState('gpt-3.5-turbo');
     const [claudeoriginalrequest, setClaudeOriginalRequest] = useState(false);
+    const [supportsCacheControl, setSupportsCacheControl] = useState(false);
     const handleInputChange = (name, value) => {
         setInputs((inputs) => ({...inputs, [name]: value}));
         if (name === 'type' && inputs.models.length === 0) {
@@ -221,6 +223,10 @@ const BatchEditChannels = (props) => {
                     newData.rate_limited = data.rate_limited;
                     setRateLimited(data.rate_limited);
                 }
+                if (data.supports_cache_control !== undefined) {
+                    newData.supports_cache_control = data.supports_cache_control;
+                    setSupportsCacheControl(data.supports_cache_control);
+                }
                 if (data.is_tools !== undefined) {
                     newData.is_tools = data.is_tools;
                     setIstools(data.is_tools);
@@ -293,6 +299,7 @@ const BatchEditChannels = (props) => {
         localInputs.priority = priority;
         localInputs.weight = weight;
         localInputs.rate_limited = rateLimited;
+        localInputs.supports_cache_control = supportsCacheControl;
         localInputs.is_tools = istools;
         localInputs.is_image_url_enabled = isimageurenabled ? 1 : 0;
         localInputs.claude_original_request = claudeoriginalrequest;
@@ -688,16 +695,27 @@ const BatchEditChannels = (props) => {
                         </Space>
                     </div>
                     {
-                        ((inputs.type === 42) || (inputs.type === 14)) && (
-                            <div style={{marginTop: 10, display: 'flex'}}>
-                                <Space>
-                                    <Checkbox
-                                        checked={claudeoriginalrequest}
-                                        onChange={() => setClaudeOriginalRequest(!claudeoriginalrequest)}
-                                    />
-                                    <Typography.Text strong>支持原始Claude请求</Typography.Text>
-                                </Space>
-                            </div>
+                        ((inputs.type === 42) || (inputs.type === 14) || (inputs.type === 35)) && (
+                            <>
+                                <div style={{marginTop: 10, display: 'flex'}}>
+                                    <Space>
+                                        <Checkbox
+                                            checked={claudeoriginalrequest}
+                                            onChange={() => setClaudeOriginalRequest(!claudeoriginalrequest)}
+                                        />
+                                        <Typography.Text strong>支持 Claude 原生请求格式</Typography.Text>
+                                    </Space>
+                                </div>
+                                <div style={{marginTop: 10, display: 'flex'}}>
+                                    <Space>
+                                        <Checkbox
+                                            checked={supportsCacheControl}
+                                            onChange={() => setSupportsCacheControl(!supportsCacheControl)}
+                                        />
+                                        <Typography.Text strong>支持 Cache-Control 缓存控制</Typography.Text>
+                                    </Space>
+                                </div>
+                            </>
                         )
                     }
                     {
