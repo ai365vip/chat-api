@@ -15,7 +15,10 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		}
 		claudeRequest.ToolChoice = anthropic.ConvertToolChoice(textRequest.ToolChoice)
 	}
-	claudeRequest.Messages = anthropic.ConvertMessagesLegacy(textRequest.Messages, &claudeRequest.System)
+	var systemMessage string
+	claudeRequest.Messages = anthropic.ConvertMessagesLegacy(textRequest.Messages, &systemMessage)
+	// 将转换后的 system 消息赋值给 claudeRequest.System
+	claudeRequest.System = systemMessage
 	return claudeRequest
 }
 

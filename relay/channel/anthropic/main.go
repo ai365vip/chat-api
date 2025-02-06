@@ -88,7 +88,11 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		claudeRequest.ToolChoice = ConvertToolChoice(textRequest.ToolChoice)
 	}
 	claudeRequest = ApplyLegacyModelMapping(claudeRequest)
-	claudeRequest.Messages = ConvertMessagesLegacy(textRequest.Messages, &claudeRequest.System)
+	// 创建一个临时的 string 变量来存储 system 消息
+	var systemMessage string
+	claudeRequest.Messages = ConvertMessagesLegacy(textRequest.Messages, &systemMessage)
+	// 将转换后的 system 消息赋值给 claudeRequest.System
+	claudeRequest.System = systemMessage
 	return claudeRequest
 }
 

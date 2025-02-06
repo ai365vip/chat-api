@@ -7,7 +7,7 @@ import "one-api/relay/channel/anthropic"
 // https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html
 type Request struct {
 	Messages         []anthropic.Message `json:"messages"`
-	System           string              `json:"system,omitempty"`
+	System           any                 `json:"system,omitempty"`
 	MaxTokens        uint                `json:"max_tokens,omitempty"`
 	StopSequences    []string            `json:"stop_sequences,omitempty"`
 	Stream           bool                `json:"stream,omitempty"`
