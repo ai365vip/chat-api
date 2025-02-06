@@ -103,6 +103,13 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 		logger.Debugf(ctx, "converted request: \n%s", string(jsonData))
 		requestBody = bytes.NewBuffer(jsonData)
 	}
+
+	// 将 requestBody 转换为字符串并打印
+	bodyBytes, _ := io.ReadAll(requestBody)
+	fmt.Println("Request Body Content: %s", string(bodyBytes))
+	// 重新创建一个新的 Reader，因为 ReadAll 会消耗原有的 Reader
+	requestBody = bytes.NewBuffer(bodyBytes)
+
 	// do responses
 	startTime := time.Now()
 	// do request

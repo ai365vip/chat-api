@@ -208,113 +208,147 @@ func ApplyLegacyModelMapping(request *Request) *Request {
 
 // 原有的 ConvertRequest 中的消息转换逻辑
 func ConvertMessagesLegacy(messages []model.Message, system *string) []Message {
-	formatMessages := make([]model.Message, 0)
-	for i, message := range messages {
-		if message.Role == "system" {
-			if i != 0 {
-				message.Role = "user"
-			}
-		}
-		if message.Role == "" {
-			message.Role = "user"
-		}
-
-		fmtMessage := model.Message{
-			Role: message.Role,
-		}
-
-		if message.Content == nil || (message.IsStringContent() && message.StringContent() == "") {
-			// 如果内容为空，使用 "_" 作为占位符
-			fmtMessage.Content = "_"
-		} else {
-			// 保持原始内容
-			fmtMessage.Content = message.Content
-		}
-
-		formatMessages = append(formatMessages, fmtMessage)
-
-		// 如果当前消息是用户消息，且不是最后一条，添加一个空的助手回复
-		if fmtMessage.Role == "user" && i < len(messages)-1 && messages[i+1].Role != "assistant" {
-			formatMessages = append(formatMessages, model.Message{
-				Role:    "assistant",
-				Content: "_",
-			})
-		}
-
-	}
-
-	// 确保最后一条消息是用户消息
-	if len(formatMessages) > 0 && formatMessages[len(formatMessages)-1].Role != "user" {
-		formatMessages = append(formatMessages, model.Message{
-			Role:    "user",
-			Content: "_",
-		})
-	}
-
 	var claudeMessages []Message
-	for _, message := range formatMessages {
-		if message.Role == "system" && *system == "" {
+	lastRole := ""
+
+	for _, message := range messages {
+		// Handle system message
+		if message.Role == "system" {
 			*system = message.StringContent()
 			continue
 		}
+
 		claudeMessage := Message{
 			Role: message.Role,
 		}
-		var content Content
-		if message.IsStringContent() {
-			content.Type = "text"
-			content.Text = message.StringContent()
-			if message.Role == "tool" {
-				claudeMessage.Role = "user"
-				content.Type = "tool_result"
-				content.Content = content.Text
-				content.Text = ""
-				content.ToolUseId = message.ToolCallId
-			}
-			claudeMessage.Content = append(claudeMessage.Content, content)
-			for i := range message.ToolCalls {
+
+		// Handle tool calls
+		if len(message.ToolCalls) > 0 {
+			claudeMessage.Role = "assistant"
+			for _, toolCall := range message.ToolCalls {
 				inputParam := make(map[string]any)
-				_ = json.Unmarshal([]byte(message.ToolCalls[i].Function.Arguments.(string)), &inputParam)
-				claudeMessage.Content = append(claudeMessage.Content, Content{
+				if args, ok := toolCall.Function.Arguments.(string); ok {
+					_ = json.Unmarshal([]byte(args), &inputParam)
+				}
+				claudeMessage.Content = []Content{{
 					Type:  "tool_use",
-					Id:    message.ToolCalls[i].Id,
-					Name:  message.ToolCalls[i].Function.Name,
+					Id:    toolCall.Id,
+					Name:  toolCall.Function.Name,
 					Input: inputParam,
-				})
+				}}
 			}
 			claudeMessages = append(claudeMessages, claudeMessage)
+			lastRole = "assistant"
 			continue
 		}
-		var contents []Content
-		openaiContent := message.ParseContent()
 
-		for _, part := range openaiContent {
-			var content Content
-			if part.Type == model.ContentTypeText {
-				content.Type = "text"
-				content.Text = part.Text
-			} else if part.Type == model.ContentTypeImageURL {
-				content.Type = "image"
-				content.Source = &ImageSource{
-					Type: "base64",
-				}
-				imageInfo, ok := part.ImageUrl.(model.MessageImageUrl)
-				if !ok {
-					log.Println("ImageUrl 类型断言失败")
-					return nil
-				}
-				mimeType, data, _ := image.GetImageFromUrl(imageInfo.Url)
-				content.Source.MediaType = mimeType
-				content.Source.Data = data
+		// Handle tool responses
+		if message.Role == "tool" {
+			if lastRole != "user" {
+				claudeMessages = append(claudeMessages, Message{
+					Role: "user",
+					Content: []Content{{
+						Type: "text",
+						Text: "_",
+					}},
+				})
 			}
-			contents = append(contents, content)
+
+			claudeMessage.Role = "assistant"
+			claudeMessage.Content = []Content{{
+				Type:      "tool_result",
+				Content:   message.StringContent(),
+				ToolUseId: message.ToolCallId,
+			}}
+			claudeMessages = append(claudeMessages, claudeMessage)
+			lastRole = "assistant"
+			continue
 		}
-		claudeMessage.Content = contents
-		claudeMessages = append(claudeMessages, claudeMessage)
+
+		// Handle regular messages
+		if message.Role == "" {
+			claudeMessage.Role = "user"
+		}
+
+		// Add intermediate message if needed
+		if lastRole == claudeMessage.Role && lastRole != "" {
+			intermediateRole := "assistant"
+			if lastRole == "assistant" {
+				intermediateRole = "user"
+			}
+			claudeMessages = append(claudeMessages, Message{
+				Role: intermediateRole,
+				Content: []Content{{
+					Type: "text",
+					Text: "_",
+				}},
+			})
+		}
+
+		// Handle message content
+		if message.IsStringContent() {
+			content := message.StringContent()
+			if content == "" {
+				content = "_"
+			}
+			claudeMessage.Content = []Content{{
+				Type: "text",
+				Text: content,
+			}}
+		} else if message.Content != nil {
+			var contents []Content
+			openaiContent := message.ParseContent()
+			for _, part := range openaiContent {
+				switch part.Type {
+				case model.ContentTypeText:
+					text := part.Text
+					if text == "" {
+						text = "_"
+					}
+					contents = append(contents, Content{
+						Type: "text",
+						Text: text,
+					})
+				case model.ContentTypeImageURL:
+					if imageInfo, ok := part.ImageUrl.(model.MessageImageUrl); ok {
+						mimeType, data, _ := image.GetImageFromUrl(imageInfo.Url)
+						contents = append(contents, Content{
+							Type: "image",
+							Source: &ImageSource{
+								Type:      "base64",
+								MediaType: mimeType,
+								Data:      data,
+							},
+						})
+					}
+				}
+			}
+			if len(contents) > 0 {
+				claudeMessage.Content = contents
+			}
+		}
+
+		if len(claudeMessage.Content) > 0 {
+			claudeMessages = append(claudeMessages, claudeMessage)
+			lastRole = claudeMessage.Role
+		}
 	}
+
+	// Ensure last message is from user
+	if len(claudeMessages) > 0 && lastRole != "user" {
+		claudeMessages = append(claudeMessages, Message{
+			Role: "user",
+			Content: []Content{{
+				Type: "text",
+				Text: "_",
+			}},
+		})
+	}
+
 	return claudeMessages
 }
 
+// 新的 ConverClaudeRequest 中的消息转换逻辑
 func ConvertMessages(messages []model.Message) ([]Message, error) {
 
 	var formatMessages []Message
@@ -417,8 +451,6 @@ func convertToContent(c map[string]interface{}) Content {
 }
 
 func ResponseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
-	// 打印接收到的 Claude 响应
-	fmt.Printf("接收到的 Claude 响应:\n%+v\n", claudeResponse)
 
 	var responseText string
 	var toolCalls []model.Tool
