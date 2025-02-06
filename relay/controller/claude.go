@@ -91,7 +91,7 @@ func RelayClaude(c *gin.Context) *model.ErrorWithStatusCode {
 	} else {
 		requestBody = c.Request.Body
 	}
-	if meta.APIType == constant.APITypeGCP || meta.APIType == constant.APITypeAwsClaude {
+	if meta.APIType == constant.APITypeGCP || meta.APIType == constant.APITypeAwsClaude || meta.APIType == constant.APITypeAnthropic {
 		convertedRequest, err := adaptor.ConvertRequest(c, meta, textRequest)
 		if err != nil {
 			return openai.ErrorWrapper(err, "convert_request_failed", http.StatusInternalServerError)
