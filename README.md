@@ -46,6 +46,7 @@
 3. 支持 GCP-Claude（RT 和密钥两种方式）
 4. 上游空返回重试机制
 5. 令牌自定义后缀功能
+6. 支持Claude Cache-Control 缓存控制
 
 
 
