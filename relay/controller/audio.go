@@ -40,6 +40,31 @@ var availableVoices = []string{
 const (
 	defaultWhisperPreConsumedTokens = 500  // 默认预扣 token 数
 	tokenPerMinute                  = 1000 // 每分钟音频消耗的 token 数
+	minTokens                       = 1    // 最小 token 数，改为 1
+	maxAudioDuration                = 240  // 最大音频时长（分钟）
+	// 文件大小相关常量
+	smallFileSize  = 1 * 1024 * 1024  // 1MB
+	mediumFileSize = 10 * 1024 * 1024 // 10MB
+	maxFileSize    = 50 * 1024 * 1024 // 50MB
+
+	// 缓冲区大小
+	smallBuffer  = 32 * 1024  // 32KB
+	mediumBuffer = 64 * 1024  // 64KB
+	largeBuffer  = 128 * 1024 // 128KB
+
+	// 并发控制
+	maxConcurrentLarge  = 20  // 大文件最大并发
+	maxConcurrentMedium = 50  // 中等文件最大并发
+	maxConcurrentSmall  = 100 // 小文件最大并发
+
+	tmpFilePattern = "whisper-audio-*.tmp"
+)
+
+// 针对不同大小文件的并发控制
+var (
+	largeSemaphore  = make(chan struct{}, maxConcurrentLarge)
+	mediumSemaphore = make(chan struct{}, maxConcurrentMedium)
+	smallSemaphore  = make(chan struct{}, maxConcurrentSmall)
 )
 
 func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCode {
@@ -79,18 +104,19 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 	}
 
 	// 优化预扣费计算逻辑
+	var estimatedTokens int
 	preConsumedTokens := config.PreConsumedQuota
 	if strings.HasPrefix(audioRequest.Model, "whisper-1") {
 		// 恢复请求体用于预估 token
 		c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-		estimatedTokens, err := countAudioTokens(c)
+		tokens, err := countAudioTokens(c)
 		if err != nil {
-			logger.Warn(c.Request.Context(), "estimate_audio_tokens_failed: "+err.Error())
+			logger.Warn(c.Request.Context(), fmt.Sprintf("音频token预估失败：%s", err.Error()))
 			preConsumedTokens = defaultWhisperPreConsumedTokens
 		} else {
-			preConsumedTokens = int(estimatedTokens)
+			preConsumedTokens = tokens
+			estimatedTokens = tokens
 		}
-		// 再次恢复请求体供后续使用
 		c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 	}
 
@@ -207,7 +233,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 	var audioResponse openai.AudioResponse
 
 	// 优化实际用量计算逻辑
-	defer func(ctx context.Context) {
+	defer func(ctx context.Context, estimatedTokens int) {
 		go func() {
 			useTimeSeconds := time.Now().Unix() - startTime.Unix()
 			var quota int
@@ -217,15 +243,8 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 				quota = openai.CountAudioToken(audioRequest.Input, audioRequest.Model)
 				promptTokens = quota
 			} else if strings.HasPrefix(audioRequest.Model, "whisper-1") {
-				// 恢复请求体用于计算实际 token
-				c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-				tokens, err := countAudioTokens(c)
-				if err != nil {
-					logger.Error(ctx, "count_audio_tokens_failed: "+err.Error())
-					quota = preConsumedTokens
-				} else {
-					quota = int(tokens)
-				}
+				// 直接使用之前计算的结果
+				quota = estimatedTokens
 				promptTokens = quota
 			}
 
@@ -277,7 +296,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 			}
 
 		}()
-	}(c.Request.Context())
+	}(c.Request.Context(), estimatedTokens)
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -312,9 +331,13 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 
 // 优化 countAudioTokens 函数
 func countAudioTokens(c *gin.Context) (int, error) {
+	// 使用更长的基础超时时间
+	baseCtx, baseCancel := context.WithTimeout(c.Request.Context(), 300*time.Second)
+	defer baseCancel()
+
 	body, err := common.GetRequestBody(c)
 	if err != nil {
-		return 0, fmt.Errorf("get request body failed: %w", err)
+		return defaultWhisperPreConsumedTokens, fmt.Errorf("get request body failed: %w", err)
 	}
 
 	var reqBody struct {
@@ -323,34 +346,120 @@ func countAudioTokens(c *gin.Context) (int, error) {
 
 	c.Request.Body = io.NopCloser(bytes.NewReader(body))
 	if err = c.ShouldBind(&reqBody); err != nil {
-		return 0, fmt.Errorf("bind request body failed: %w", err)
+		return defaultWhisperPreConsumedTokens, fmt.Errorf("bind request body failed: %w", err)
 	}
+
+	fileSize := reqBody.File.Size
+	if fileSize > maxFileSize {
+		return defaultWhisperPreConsumedTokens, fmt.Errorf("file too large: %d bytes", fileSize)
+	}
+
+	// 根据文件大小选择合适的信号量和处理策略
+	var sem chan struct{}
+	var bufferSize int
+	var processTimeout time.Duration
+
+	switch {
+	case fileSize > mediumFileSize:
+		sem = largeSemaphore
+		bufferSize = largeBuffer
+		processTimeout = 180 * time.Second
+	case fileSize > smallFileSize:
+		sem = mediumSemaphore
+		bufferSize = mediumBuffer
+		processTimeout = 120 * time.Second
+	default:
+		sem = smallSemaphore
+		bufferSize = smallBuffer
+		processTimeout = 60 * time.Second
+	}
+
+	// 获取处理令牌
+	select {
+	case sem <- struct{}{}:
+		defer func() { <-sem }()
+	case <-baseCtx.Done():
+		return defaultWhisperPreConsumedTokens, fmt.Errorf("request timeout while waiting for processing slot")
+	}
+
+	// 创建一个独立的上下文用于文件处理
+	processCtx, processCancel := context.WithTimeout(context.Background(), processTimeout)
+	defer processCancel()
 
 	reqFp, err := reqBody.File.Open()
 	if err != nil {
-		return 0, fmt.Errorf("open request file failed: %w", err)
+		return defaultWhisperPreConsumedTokens, fmt.Errorf("open request file failed: %w", err)
 	}
 	defer reqFp.Close()
 
-	tmpFp, err := os.CreateTemp("", "audio-*")
+	// 创建临时文件
+	tmpDir := os.TempDir()
+	tmpFp, err := os.CreateTemp(tmpDir, tmpFilePattern)
 	if err != nil {
-		return 0, fmt.Errorf("create temp file failed: %w", err)
+		return defaultWhisperPreConsumedTokens, fmt.Errorf("create temp file failed: %w", err)
 	}
-	defer os.Remove(tmpFp.Name())
-	defer tmpFp.Close()
 
-	if _, err = io.Copy(tmpFp, reqFp); err != nil {
-		return 0, fmt.Errorf("copy file failed: %w", err)
+	tmpPath := tmpFp.Name()
+	defer func() {
+		tmpFp.Close()
+		// 异步删除临时文件
+		go func(path string) {
+			// 为大文件提供更长的清理延迟
+			cleanupDelay := time.Second
+			if fileSize > mediumFileSize {
+				cleanupDelay = 3 * time.Second
+			}
+			time.Sleep(cleanupDelay)
+
+			if err := os.Remove(path); err != nil {
+				logger.Warn(context.Background(), fmt.Sprintf("Failed to remove temp file %s: %v", path, err))
+			}
+		}(tmpPath)
+	}()
+
+	// 使用适当大小的buffer复制文件
+	buf := make([]byte, bufferSize)
+	if _, err = io.CopyBuffer(tmpFp, reqFp, buf); err != nil {
+		return defaultWhisperPreConsumedTokens, fmt.Errorf("copy file failed: %w", err)
 	}
 
 	if err = tmpFp.Sync(); err != nil {
-		return 0, fmt.Errorf("sync temp file failed: %w", err)
+		return defaultWhisperPreConsumedTokens, fmt.Errorf("sync temp file failed: %w", err)
 	}
 
-	duration, err := common.GetAudioDuration(c.Request.Context(), tmpFp.Name())
+	// 确保文件指针重置到开始位置
+	if _, err = tmpFp.Seek(0, 0); err != nil {
+		return defaultWhisperPreConsumedTokens, fmt.Errorf("seek temp file failed: %w", err)
+	}
+
+	// 使用独立的上下文获取音频时长
+	duration, err := common.GetAudioDuration(processCtx, tmpPath)
 	if err != nil {
-		return 0, fmt.Errorf("get audio duration failed: %w", err)
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return defaultWhisperPreConsumedTokens, nil
+		}
+		logger.Warn(processCtx, fmt.Sprintf("Failed to get audio duration for %s (size: %d bytes): %v, using default tokens",
+			tmpPath, fileSize, err))
+		return defaultWhisperPreConsumedTokens, nil
 	}
 
-	return int(math.Round(math.Ceil(duration) / 60.0 * tokenPerMinute)), nil
+	// 计算token数量
+	durationMinutes := duration / 60.0
+	if durationMinutes > float64(maxAudioDuration) {
+		durationMinutes = float64(maxAudioDuration)
+	}
+
+	// 简化 token 计算逻辑，按实际时长比例计算
+	estimatedTokens := int(math.Ceil(durationMinutes * tokenPerMinute))
+	if estimatedTokens < minTokens {
+		estimatedTokens = minTokens
+	}
+
+	// 简化日志输出，只显示秒数
+	logger.Info(processCtx, fmt.Sprintf("音频文件处理完成：文件大小=%d字节，时长=%.1f秒，预估tokens=%d",
+		fileSize,
+		duration,
+		estimatedTokens))
+
+	return estimatedTokens, nil
 }
