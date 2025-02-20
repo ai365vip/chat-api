@@ -69,8 +69,13 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 		request.TopP = math.Max(0.01, request.TopP)
 
 		// Temperature (0.0, 1.0)
-		request.Temperature = ptr.Float64(math.Min(0.99, *request.Temperature))
-		request.Temperature = ptr.Float64(math.Max(0.01, *request.Temperature))
+		if request.Temperature == nil {
+			request.Temperature = ptr.Float64(0.7) // 设置默认值
+		}
+		temp := math.Min(0.99, *request.Temperature)
+		temp = math.Max(0.01, temp)
+		request.Temperature = ptr.Float64(temp)
+
 		a.SetVersionByModeName(request.Model)
 		if a.APIVersion == "v4" {
 			return request, nil
