@@ -82,8 +82,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 				usage.PromptTokens = meta.PromptTokens
 				usage.CompletionTokens = usage.TotalTokens - meta.PromptTokens
 			}
-
-			if usage.CompletionTokens == 0 {
+			if usage.CompletionTokens == 0 && err == nil {
 				if config.BlankReplyRetryEnabled {
 					return "", nil, &model.ErrorWithStatusCode{
 						Error: model.Error{
@@ -111,7 +110,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 				usage.PromptTokens = meta.PromptTokens
 				usage.CompletionTokens = usage.TotalTokens - meta.PromptTokens
 			}
-			if usage.CompletionTokens == 0 {
+			if usage.CompletionTokens == 0 && err == nil {
 				if config.BlankReplyRetryEnabled {
 					return "", nil, &model.ErrorWithStatusCode{
 						Error: model.Error{

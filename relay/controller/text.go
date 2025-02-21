@@ -163,8 +163,6 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 			actualStatusCode := determineActualStatusCode(respErr.StatusCode, respErr.Message)
 			// 更新 respErr 的状态码
 			respErr.StatusCode = actualStatusCode
-			// 使用实际的状态码
-			c.Status(actualStatusCode)
 		}
 		util.ReturnPreConsumedQuota(ctx, preConsumedQuota, meta.TokenId)
 		util.ResetStatusCode(respErr, statusCodeMappingStr)

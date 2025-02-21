@@ -515,7 +515,16 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 
 	switch claudeResponse.Type {
 	case "message_start":
-		return nil, claudeResponse.Message
+		if claudeResponse.Message != nil {
+			response = &Response{
+				Usage: Usage{
+					InputTokens: claudeResponse.Message.Usage.InputTokens,
+					// OutputTokens 会在 message_delta 中更新
+					OutputTokens: 0,
+				},
+			}
+		}
+		return nil, response
 	case "content_block_start":
 		if claudeResponse.ContentBlock != nil {
 			responseText = claudeResponse.ContentBlock.Text
