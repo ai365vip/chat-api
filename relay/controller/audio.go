@@ -196,41 +196,168 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 			fullRequestURL = fmt.Sprintf("%s/openai/deployments/%s/audio/speech?api-version=%s", baseURL, audioRequest.Model, apiVersion)
 		}
 	}
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, c.Request.Body)
-	if err != nil {
-		// 处理可能的错误
-		return openai.ErrorWrapper(err, "failed_to_read_request_body", http.StatusInternalServerError)
-	}
+	var responseBody []byte
+	if strings.HasPrefix(audioRequest.Model, "tts-1") {
+		// TTS 请求使用 JSON 格式
+		req, err := http.NewRequest(c.Request.Method, fullRequestURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			return openai.ErrorWrapper(err, "create_request_failed", http.StatusInternalServerError)
+		}
 
-	// 创建 HTTP 请求，使用 buf 作为请求体
-	req, err := http.NewRequest(c.Request.Method, fullRequestURL, &buf)
-	if err != nil {
-		return openai.ErrorWrapper(err, "new_request_failed", http.StatusInternalServerError)
-	}
-	if (relayMode == constant.RelayModeAudioTranscription || relayMode == constant.RelayModeAudioSpeech) && meta.ChannelType == common.ChannelTypeAzure {
-		// https://learn.microsoft.com/en-us/azure/ai-services/openai/whisper-quickstart?tabs=command-line#rest-api
-		apiKey := c.Request.Header.Get("Authorization")
-		apiKey = strings.TrimPrefix(apiKey, "Bearer ")
-		req.Header.Set("api-key", apiKey)
-		req.ContentLength = c.Request.ContentLength
+		// 设置请求头
+		req.Header = make(http.Header)
+		for k, v := range c.Request.Header {
+			req.Header[k] = v
+		}
+		req.Header.Set("Content-Type", "application/json")
+
+		// 发送请求
+		resp, err := util.HTTPClient.Do(req)
+		if err != nil {
+			return openai.ErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
+		}
+
+		if resp == nil {
+			return openai.ErrorWrapper(errors.New("empty response"), "empty_response", http.StatusInternalServerError)
+		}
+		defer resp.Body.Close()
+
+		// 处理响应
+		for k, v := range resp.Header {
+			c.Writer.Header()[k] = v
+		}
+		c.Writer.WriteHeader(resp.StatusCode)
+		_, err = io.Copy(c.Writer, resp.Body)
+		if err != nil {
+			return openai.ErrorWrapper(err, "copy_response_failed", http.StatusInternalServerError)
+		}
 	} else {
-		req.Header.Set("Authorization", c.Request.Header.Get("Authorization"))
-	}
-	req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
-	req.Header.Set("Accept", c.Request.Header.Get("Accept"))
+		// Whisper 转录请求使用 multipart/form-data
+		err = c.Request.ParseMultipartForm(32 << 20) // 32MB max memory
+		if err != nil {
+			return openai.ErrorWrapper(err, "parse_multipart_failed", http.StatusBadRequest)
+		}
 
-	resp, err := util.HTTPClient.Do(req)
+		// 获取文件
+		file, fileHeader, err := c.Request.FormFile("file")
+		if err != nil {
+			return openai.ErrorWrapper(err, "get_form_file_failed", http.StatusBadRequest)
+		}
+		defer file.Close()
 
-	if err != nil {
-		return openai.ErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
-	}
-	defer resp.Body.Close()
-	if resp != nil && resp.StatusCode != http.StatusOK {
-		util.RelayErrorHandler(resp)
+		// 创建一个新的 pipe
+		pr, pw := io.Pipe()
+
+		// 创建一个新的 multipart writer
+		writer := multipart.NewWriter(pw)
+
+		// 在新的 goroutine 中写入表单数据
+		go func() {
+			defer pw.Close()
+			defer writer.Close()
+
+			// 复制文件部分
+			part, err := writer.CreateFormFile("file", fileHeader.Filename)
+			if err != nil {
+				pw.CloseWithError(err)
+				return
+			}
+
+			if _, err = io.Copy(part, file); err != nil {
+				pw.CloseWithError(err)
+				return
+			}
+
+			// 添加其他表单字段
+			for key, values := range c.Request.PostForm {
+				if key != "file" {
+					for _, value := range values {
+						if err := writer.WriteField(key, value); err != nil {
+							pw.CloseWithError(err)
+							return
+						}
+					}
+				}
+			}
+		}()
+
+		// 创建新的请求
+		req, err := http.NewRequest(c.Request.Method, fullRequestURL, pr)
+		if err != nil {
+			return openai.ErrorWrapper(err, "create_request_failed", http.StatusInternalServerError)
+		}
+
+		// 设置请求头
+		req.Header = make(http.Header)
+		for k, v := range c.Request.Header {
+			if k != "Content-Type" && k != "Content-Length" { // 排除这两个头，我们会重新设置
+				req.Header[k] = v
+			}
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		// 发送请求
+		resp, err := util.HTTPClient.Do(req)
+		if err != nil {
+			return openai.ErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
+		}
+
+		if resp == nil {
+			return openai.ErrorWrapper(errors.New("empty response"), "empty_response", http.StatusInternalServerError)
+		}
+
+		// 先读取响应体，再关闭
+		responseBody, err = io.ReadAll(resp.Body)
+		if err != nil {
+			resp.Body.Close()
+			return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError)
+		}
+
+		resp.Body.Close()
+
+		// 检查响应状态
+		if resp.StatusCode != http.StatusOK {
+			errResp := &http.Response{
+				Status:     resp.Status,
+				StatusCode: resp.StatusCode,
+				Header:     resp.Header,
+				Body:       io.NopCloser(bytes.NewReader(responseBody)),
+			}
+			return util.RelayErrorHandler(errResp)
+		}
+
+		// 验证响应数据
+		if len(responseBody) == 0 {
+			return openai.ErrorWrapper(errors.New("empty response body"), "empty_response", http.StatusInternalServerError)
+		}
+
+		// 设置响应头
+		c.Writer.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+		for k, v := range resp.Header {
+			if k != "Content-Length" && k != "Connection" {
+				c.Writer.Header().Set(k, v[0])
+			}
+		}
+
+		// 设置明确的内容长度
+		c.Writer.Header().Set("Content-Length", strconv.Itoa(len(responseBody)))
+
+		// 写入状态码
+		c.Writer.WriteHeader(resp.StatusCode)
+
+		// 一次性写入响应体
+		if _, err = c.Writer.Write(responseBody); err != nil {
+			return openai.ErrorWrapper(err, "write_response_failed", http.StatusInternalServerError)
+		}
 	}
 
-	var audioResponse openai.AudioResponse
+	// 如果需要解析响应用于计费等目的
+	if strings.HasPrefix(audioRequest.Model, "whisper-1") {
+		var audioResponse openai.AudioResponse
+		if err = json.Unmarshal(responseBody, &audioResponse); err != nil {
+			// 忽略解析错误，不影响主流程
+		}
+	}
 
 	// 优化实际用量计算逻辑
 	defer func(ctx context.Context, estimatedTokens int) {
@@ -298,34 +425,6 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *dbmodel.ErrorWithStatusCod
 		}()
 	}(c.Request.Context(), estimatedTokens)
 
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return openai.ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError)
-	}
-	if strings.HasPrefix(audioRequest.Model, "tts-1") {
-
-	} else {
-		err = json.Unmarshal(responseBody, &audioResponse)
-		if err != nil {
-			return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError)
-		}
-	}
-
-	resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
-
-	for k, v := range resp.Header {
-		c.Writer.Header().Set(k, v[0])
-	}
-	c.Writer.WriteHeader(resp.StatusCode)
-
-	_, err = io.Copy(c.Writer, resp.Body)
-	if err != nil {
-		return openai.ErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError)
-	}
-	err = resp.Body.Close()
-	if err != nil {
-		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError)
-	}
 	return nil
 }
 
