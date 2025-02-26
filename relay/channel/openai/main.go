@@ -22,6 +22,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 	toolCount := 0
 	var usage *model.Usage
 	scanner := bufio.NewScanner(resp.Body)
+	var isProcessingReasoning = false
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
 			return 0, nil, nil
@@ -66,6 +67,71 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 					}
 					for _, choice := range streamResponse.Choices {
 						responseText += common.AsString(choice.Delta.Content)
+						// 处理 ReasoningContent
+						if choice.Delta.ReasoningContent != "" && (choice.Delta.Content == nil || choice.Delta.Content == "") {
+							content := choice.Delta.ReasoningContent
+
+							// 只在开始时添加<think>标签
+							if !isProcessingReasoning {
+								content = "<think>" + content
+								isProcessingReasoning = true
+							}
+
+							// 创建新的响应对象，保持原始字段
+							newResponse := ChatCompletionsStreamResponse{
+								Id:      streamResponse.Id,
+								Object:  streamResponse.Object,
+								Created: streamResponse.Created,
+								Model:   streamResponse.Model,
+								Choices: []ChatCompletionsStreamResponseChoice{
+									{
+										Index: choice.Index,
+										Delta: model.Message{
+											Role:    "",
+											Content: content,
+										},
+									},
+								},
+								Usage: streamResponse.Usage,
+							}
+
+							// 重新序列化修改后的响应
+							modifiedResponse, err := json.Marshal(newResponse)
+							if err != nil {
+								log.Println("修改响应序列化失败:", err)
+								continue
+							}
+							data = "data: " + string(modifiedResponse)
+						} else if isProcessingReasoning && (choice.Delta.Content != nil || choice.Delta.Content != "") {
+							// 在切换到普通Content之前添加结束标签
+							newResponse := ChatCompletionsStreamResponse{
+								Id:      streamResponse.Id,
+								Object:  streamResponse.Object,
+								Created: streamResponse.Created,
+								Model:   streamResponse.Model,
+								Choices: []ChatCompletionsStreamResponseChoice{
+									{
+										Index: choice.Index,
+										Delta: model.Message{
+											Role:    "",
+											Content: "</think>",
+										},
+									},
+								},
+								Usage: streamResponse.Usage,
+							}
+
+							modifiedResponse, err := json.Marshal(newResponse)
+							if err != nil {
+								log.Println("修改响应序列化失败:", err)
+								continue
+							}
+							data = "data: " + string(modifiedResponse)
+							isProcessingReasoning = false
+						}
+						if choice.Delta.ReasoningContent != "" {
+							responseText += choice.Delta.ReasoningContent
+						}
 						if choice.Delta.ToolCalls != nil {
 							if len(choice.Delta.ToolCalls) > toolCount {
 								toolCount = len(choice.Delta.ToolCalls)
@@ -167,6 +233,49 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 			responseText = choice.Message.StringContent()
 		}
 
+	}
+	needModify := false
+	for _, choice := range textResponse.Choices {
+		if choice.Message.ReasoningContent != "" {
+			needModify = true
+			break
+		}
+	}
+
+	if needModify {
+		for i, choice := range textResponse.Choices {
+			content := choice.Message.StringContent()
+			if choice.Message.ReasoningContent != "" {
+				content = "<think>" + choice.Message.ReasoningContent + "</think>\n\n" + content
+				// 更新 choice 中的内容
+				textResponse.Choices[i].Message.Content = content
+				// 清空 ReasoningContent
+				textResponse.Choices[i].Message.ReasoningContent = ""
+			}
+		}
+
+		// 重新序列化修改后的响应
+		modifiedResponseBody, err := json.Marshal(textResponse)
+		if err != nil {
+			return ErrorWrapper(err, "remarshal_response_body_failed", http.StatusInternalServerError), nil, ""
+		}
+
+		// 更新 Content-Length
+		resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedResponseBody)))
+		// 重设 resp.Body
+		resp.Body = io.NopCloser(bytes.NewBuffer(modifiedResponseBody))
+
+		// 发送修改后的响应
+		for k, v := range resp.Header {
+			c.Writer.Header().Set(k, v[0])
+		}
+		c.Writer.WriteHeader(resp.StatusCode)
+		_, err = io.Copy(c.Writer, resp.Body)
+		if err != nil {
+			return ErrorWrapper(err, "write_modified_response_body_failed", http.StatusInternalServerError), nil, ""
+		}
+
+		return nil, &textResponse.Usage, responseText
 	}
 	if textResponse.Usage.TotalTokens == 0 {
 		completionTokens := 0
