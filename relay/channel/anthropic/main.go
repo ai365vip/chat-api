@@ -617,30 +617,6 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 	return &openaiResponse, response
 }
 
-func responseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
-	var responseText string
-	if len(claudeResponse.Content) > 0 {
-		responseText = claudeResponse.Content[0].Text
-	}
-	choice := openai.TextResponseChoice{
-		Index: 0,
-		Message: model.Message{
-			Role:    "assistant",
-			Content: responseText,
-			Name:    nil,
-		},
-		FinishReason: stopReasonClaude2OpenAI(claudeResponse.StopReason),
-	}
-	fullTextResponse := openai.TextResponse{
-		Id:      fmt.Sprintf("chatcmpl-%s", claudeResponse.Id),
-		Model:   claudeResponse.Model,
-		Object:  "chat.completion",
-		Created: helper.GetTimestamp(),
-		Choices: []openai.TextResponseChoice{choice},
-	}
-	return &fullTextResponse
-}
-
 func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage, string) {
 	createdTime := helper.GetTimestamp()
 	scanner := bufio.NewScanner(resp.Body)
@@ -772,7 +748,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 			StatusCode: resp.StatusCode,
 		}, nil, ""
 	}
-	fullTextResponse := responseClaude2OpenAI(&claudeResponse)
+	fullTextResponse := ResponseClaude2OpenAI(&claudeResponse)
 	fullTextResponse.Model = modelName
 
 	if len(claudeResponse.Content) > 0 && claudeResponse.Content[0].Text != "" {
