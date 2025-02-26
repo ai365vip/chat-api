@@ -227,7 +227,11 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 			StatusCode: resp.StatusCode,
 		}, nil, ""
 	}
-	if strings.HasPrefix(modelName, "gpt") || strings.HasPrefix(modelName, "o3") || strings.HasPrefix(modelName, "o1") || strings.HasPrefix(modelName, "chatgpt") {
+	if strings.HasPrefix(modelName, "gpt") ||
+		strings.HasPrefix(modelName, "o3") ||
+		strings.HasPrefix(modelName, "o1") ||
+		strings.HasPrefix(modelName, "chatgpt") ||
+		strings.HasPrefix(modelName, "claude") {
 		for _, choice := range textResponse.Choices {
 			if choice.Message.ReasoningContent != "" {
 				responseText = "<think>" + choice.Message.ReasoningContent + "</think>\n\n"
