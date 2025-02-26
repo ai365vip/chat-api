@@ -136,7 +136,9 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		requestBody = bytes.NewBuffer(jsonData)
 
 	}
-
+	if debugBody, ok := requestBody.(*bytes.Buffer); ok {
+		println("requestBody", debugBody.String())
+	}
 	// do response
 	startTime := time.Now()
 	// do request

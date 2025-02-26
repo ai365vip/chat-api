@@ -19,6 +19,12 @@ import (
 	"github.com/google/uuid"
 )
 
+// Thinking 定义了 Claude 模型的思考功能配置
+type Thinking struct {
+	Type         string `json:"type"`
+	BudgetTokens int    `json:"budget_tokens"`
+}
+
 func stopReasonClaude2OpenAI(reason *string) string {
 	if reason == nil {
 		return ""
@@ -117,10 +123,27 @@ func createBaseRequest(request model.GeneralOpenAIRequest) *Request {
 		Model:       request.Model,
 		MaxTokens:   request.MaxTokens,
 		Stream:      request.Stream,
+		Thinking:    request.Thinking,
 		Temperature: request.Temperature,
 		TopP:        request.TopP,
 		TopK:        request.TopK,
 		System:      request.System,
+	}
+	if strings.HasSuffix(request.Model, "-thinking") {
+
+		if claudeRequest.MaxTokens == 0 {
+			claudeRequest.MaxTokens = 8192
+		}
+
+		if claudeRequest.MaxTokens < 1280 {
+			claudeRequest.MaxTokens = 1280
+		}
+		claudeRequest.TopP = 0
+		claudeRequest.Thinking = &Thinking{
+			Type:         "enabled",
+			BudgetTokens: int(float64(claudeRequest.MaxTokens) * 0.8),
+		}
+		claudeRequest.Model = strings.TrimSuffix(request.Model, "-thinking")
 	}
 	if claudeRequest.MaxTokens == 0 {
 		claudeRequest.MaxTokens = 4096
@@ -454,6 +477,7 @@ func ResponseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
 
 	var responseText string
 	var toolCalls []model.Tool
+	var thinkingText string
 
 	// 处理 Content
 	if len(claudeResponse.Content) > 0 {
@@ -475,8 +499,16 @@ func ResponseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
 					},
 				}
 				toolCalls = append(toolCalls, toolCall)
+			} else if content.Type == "thinking" {
+				// 处理思考内容
+				thinkingText = content.Thinking
 			}
 		}
+	}
+
+	// 如果有思考内容，添加到响应文本前面
+	if thinkingText != "" {
+		responseText = "<think>" + thinkingText + "</think>\n\n" + responseText
 	}
 
 	choice := openai.TextResponseChoice{
@@ -518,8 +550,7 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 		if claudeResponse.Message != nil {
 			response = &Response{
 				Usage: Usage{
-					InputTokens: claudeResponse.Message.Usage.InputTokens,
-					// OutputTokens 会在 message_delta 中更新
+					InputTokens:  claudeResponse.Message.Usage.InputTokens,
 					OutputTokens: 0,
 				},
 			}
@@ -527,7 +558,11 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 		return nil, response
 	case "content_block_start":
 		if claudeResponse.ContentBlock != nil {
-			responseText = claudeResponse.ContentBlock.Text
+			if claudeResponse.ContentBlock.Type == "thinking" {
+				responseText = "<think>"
+			} else {
+				responseText = claudeResponse.ContentBlock.Text
+			}
 			if claudeResponse.ContentBlock.Type == "tool_use" {
 				tools = append(tools, model.Tool{
 					Id:   claudeResponse.ContentBlock.Id,
@@ -541,8 +576,13 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 		}
 	case "content_block_delta":
 		if claudeResponse.Delta != nil {
-			responseText = claudeResponse.Delta.Text
-			if claudeResponse.Delta.Type == "input_json_delta" {
+			if claudeResponse.Delta.Type == "thinking_delta" {
+				responseText = claudeResponse.Delta.Thinking
+			} else if claudeResponse.Delta.Type == "signature_delta" {
+				responseText = "</think>\n\n"
+			} else if claudeResponse.Delta.Type == "text_delta" {
+				responseText = claudeResponse.Delta.Text
+			} else if claudeResponse.Delta.Type == "input_json_delta" {
 				tools = append(tools, model.Tool{
 					Function: model.Function{
 						Arguments: claudeResponse.Delta.PartialJson,
@@ -576,6 +616,7 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 	openaiResponse.Choices = []openai.ChatCompletionsStreamResponseChoice{choice}
 	return &openaiResponse, response
 }
+
 func responseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
 	var responseText string
 	if len(claudeResponse.Content) > 0 {

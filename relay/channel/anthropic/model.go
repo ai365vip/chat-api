@@ -18,6 +18,7 @@ type Content struct {
 	Source     *ImageSource `json:"source,omitempty"`
 	Id         string       `json:"id,omitempty"`
 	Name       string       `json:"name,omitempty"`
+	Thinking   string       `json:"thinking,omitempty"`
 	Input      any          `json:"input,omitempty"`
 	Content    interface{}  `json:"content,omitempty"`
 	ToolUseId  string       `json:"tool_use_id,omitempty"`
@@ -35,6 +36,7 @@ type Request struct {
 	Messages      []Message `json:"messages"`
 	System        any       `json:"system,omitempty"`
 	MaxTokens     uint      `json:"max_tokens,omitempty"`
+	Thinking      any       `json:"thinking,omitempty"`
 	StopSequences []string  `json:"stop_sequences,omitempty"`
 	Stream        bool      `json:"stream,omitempty"`
 	Temperature   *float64  `json:"temperature,omitempty"`
@@ -73,6 +75,7 @@ type Delta struct {
 	PartialJson  string  `json:"partial_json,omitempty"`
 	StopReason   *string `json:"stop_reason"`
 	StopSequence *string `json:"stop_sequence"`
+	Thinking     string  `json:"thinking,omitempty"`
 }
 type Tool struct {
 	Name        string      `json:"name"`

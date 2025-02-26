@@ -6,6 +6,7 @@ type GeneralOpenAIRequest struct {
 	Prompt              any            `json:"prompt,omitempty"`
 	Stream              bool           `json:"stream,omitempty"`
 	System              any            `json:"system,omitempty"`
+	Thinking            any            `json:"thinking,omitempty"`
 	MaxTokens           uint           `json:"max_tokens,omitempty"`
 	MaxCompletionTokens uint           `json:"max_completion_tokens,omitempty"`
 	Temperature         *float64       `json:"temperature,omitempty"`
