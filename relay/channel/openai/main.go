@@ -37,6 +37,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 	})
 	dataChan := make(chan string)
 	stopChan := make(chan bool)
+	
+	// 添加一个标志，标记是否接收到了实质性的内容
+	receivedContent := false
 
 	go func() {
 		var needInjectFixedContent = false // 标志是否需要注入固定内容
@@ -56,6 +59,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 			// 在暂存stop消息前进行relayMode的逻辑处理
 			if strings.HasPrefix(data, "data: ") {
 				jsonData := data[6:]
+				hasContent := false // 标记当前数据包是否包含实际内容
 
 				switch relayMode {
 				case constant.RelayModeChatCompletions:
@@ -66,6 +70,22 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 						continue
 					}
 					for _, choice := range streamResponse.Choices {
+						// 检查此数据包是否包含实际内容
+						if choice.Delta.Content != nil && choice.Delta.Content != "" {
+							hasContent = true
+							receivedContent = true
+						}
+						
+						if choice.Delta.ReasoningContent != "" {
+							hasContent = true
+							receivedContent = true
+						}
+						
+						if choice.Delta.ToolCalls != nil && len(choice.Delta.ToolCalls) > 0 {
+							hasContent = true
+							receivedContent = true
+						}
+						
 						responseText += common.AsString(choice.Delta.Content)
 						// 处理 ReasoningContent
 						if choice.Delta.ReasoningContent != "" && (choice.Delta.Content == nil || choice.Delta.Content == "") {
@@ -158,6 +178,10 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 						continue
 					}
 					for _, choice := range streamResponse.Choices {
+						if choice.Text != "" {
+							hasContent = true
+							receivedContent = true
+						}
 						responseText += choice.Text
 						if choice.FinishReason == "stop" && fixedContent != "" {
 							needInjectFixedContent = true // 需要注入fixedContent
@@ -178,10 +202,13 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 		if needInjectFixedContent && fixedContent != "" {
 			fixedContentMessage := GenerateFixedContentMessage(fixedContent, modelName)
 			dataChan <- fixedContentMessage
+			receivedContent = true // 注入固定内容也算是有内容
 		}
 
-		// 最后发送结束信号
-		dataChan <- "data: [DONE]"
+		// 只有在收到了实际内容的情况下，才发送结束信号
+		if receivedContent {
+			dataChan <- "data: [DONE]"
+		}
 		stopChan <- true
 	}()
 	common.SetEventStreamHeaders(c)
