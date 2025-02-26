@@ -66,7 +66,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 						continue
 					}
 					for _, choice := range streamResponse.Choices {
-						responseText += common.AsString(choice.Delta.Content)
+
 						// 处理 ReasoningContent
 						if choice.Delta.ReasoningContent != "" && (choice.Delta.Content == nil || choice.Delta.Content == "") {
 							content := choice.Delta.ReasoningContent
@@ -129,9 +129,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 							data = "data: " + string(modifiedResponse)
 							isProcessingReasoning = false
 						}
-						if choice.Delta.ReasoningContent != "" {
-							responseText += choice.Delta.ReasoningContent
-						}
+						responseText += common.AsString(choice.Delta.Content)
 						if choice.Delta.ToolCalls != nil {
 							if len(choice.Delta.ToolCalls) > toolCount {
 								toolCount = len(choice.Delta.ToolCalls)
