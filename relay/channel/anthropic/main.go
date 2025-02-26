@@ -710,7 +710,9 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonStr)})
 			return true
 		case <-stopChan:
-			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
+			if responseTextBuilder.String() != "" {
+				c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
+			}
 			return false
 		case err := <-errorChan:
 			streamError = err

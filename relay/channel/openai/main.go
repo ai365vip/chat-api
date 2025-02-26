@@ -179,9 +179,10 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int, modelName
 			fixedContentMessage := GenerateFixedContentMessage(fixedContent, modelName)
 			dataChan <- fixedContentMessage
 		}
-
-		// 最后发送结束信号
-		dataChan <- "data: [DONE]"
+		// 只有在有实际内容时才发送 DONE
+		if responseText != "" {
+			dataChan <- "data: [DONE]"
+		}
 		stopChan <- true
 	}()
 	common.SetEventStreamHeaders(c)
@@ -228,11 +229,13 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 			StatusCode: resp.StatusCode,
 		}, nil, ""
 	}
-	if strings.HasPrefix(modelName, "gpt") || strings.HasPrefix(modelName, "o1") || strings.HasPrefix(modelName, "chatgpt") {
+	if strings.HasPrefix(modelName, "gpt") || strings.HasPrefix(modelName, "o3") || strings.HasPrefix(modelName, "o1") || strings.HasPrefix(modelName, "chatgpt") {
 		for _, choice := range textResponse.Choices {
-			responseText = choice.Message.StringContent()
+			if choice.Message.ReasoningContent != "" {
+				responseText = "<think>" + choice.Message.ReasoningContent + "</think>\n\n"
+			}
+			responseText += choice.Message.StringContent()
 		}
-
 	}
 	needModify := false
 	for _, choice := range textResponse.Choices {

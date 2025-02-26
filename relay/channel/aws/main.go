@@ -194,7 +194,9 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 	c.Stream(func(w io.Writer) bool {
 		event, ok := <-stream.Events()
 		if !ok {
-			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
+			if responseText != "" {
+				c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
+			}
 			return false
 		}
 
