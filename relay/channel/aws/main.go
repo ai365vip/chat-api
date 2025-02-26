@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"one-api/common/ctxkey"
 
@@ -302,7 +303,22 @@ func ClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client, modelName stri
 		return wrapErr(errors.Wrap(err, "unmarshal response")), nil, ""
 	}
 
-	responseText = claudeResponse.Content[0].Text
+	if len(claudeResponse.Content) > 0 {
+		var thinkingText string
+		var responseText string
+
+		for _, content := range claudeResponse.Content {
+			if content.Type == "thinking" {
+				thinkingText = content.Thinking
+			} else if content.Type == "text" {
+				responseText = content.Text
+			}
+		}
+
+		if thinkingText != "" {
+			responseText = "<think>" + thinkingText + "</think>\n\n" + responseText
+		}
+	}
 	usage := relaymodel.Usage{
 		PromptTokens:     claudeResponse.Usage.InputTokens,
 		CompletionTokens: claudeResponse.Usage.OutputTokens,
@@ -314,7 +330,7 @@ func ClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client, modelName stri
 }
 
 func StreamClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage, string) {
-	responseText := ""
+
 	var awsModelId string
 	var err error
 	if cross := c.GetString(ctxkey.Cross); cross != "" {
@@ -358,73 +374,47 @@ func StreamClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaym
 
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	var usage relaymodel.Usage
+	var responseTextBuilder strings.Builder
+
 	c.Stream(func(w io.Writer) bool {
 		event, ok := <-stream.Events()
 		if !ok {
 			return false
 		}
+
 		switch v := event.(type) {
 		case *types.ResponseStreamMemberChunk:
-			var data map[string]interface{}
-			if err := json.Unmarshal(v.Value.Bytes, &data); err != nil {
-				logger.SysError("error unmarshalling stream response: " + err.Error())
-				return false
-			}
-			eventType, ok := data["type"].(string)
-			if !ok {
-				logger.SysError("error getting event type")
+			// 直接写入原始响应
+			line := fmt.Sprintf("data: %s\n\n", string(v.Value.Bytes))
+			if _, err := w.Write([]byte(line)); err != nil {
+				logger.SysError("Error writing to stream: " + err.Error())
 				return false
 			}
 
-			// 处理不同类型的事件
-			switch eventType {
-			case "message_start":
-				if message, ok := data["message"].(map[string]interface{}); ok {
-					if usageData, ok := message["usage"].(map[string]interface{}); ok {
-						usage.PromptTokens = int(usageData["input_tokens"].(float64))
-					}
-				}
-			case "content_block_delta":
-				if delta, ok := data["delta"].(map[string]interface{}); ok {
-					if textDelta, ok := delta["text"].(string); ok {
-						responseText += textDelta
-					}
-				}
-			case "message_delta":
-				if usageData, ok := data["usage"].(map[string]interface{}); ok {
-					usage.CompletionTokens += int(usageData["output_tokens"].(float64))
-				}
-			case "message_stop":
-				usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+			// 解析响应
+			var claudeResponse anthropic.StreamResponse
+			if err := json.Unmarshal(v.Value.Bytes, &claudeResponse); err != nil {
+				logger.SysError("Error unmarshalling stream response: " + err.Error())
+				return true
 			}
 
-			// 构建新的响应格式
-			response := fmt.Sprintf("event: %s\ndata: %s\n\n", eventType, string(v.Value.Bytes))
-
-			_, err := w.Write([]byte(response))
-			if err != nil {
-				logger.SysError("error writing stream response: " + err.Error())
-				return false
+			// 使用相同的转换逻辑
+			response, meta := anthropic.StreamResponseClaude2OpenAI(&claudeResponse)
+			if meta != nil {
+				usage.PromptTokens += meta.Usage.InputTokens
+				usage.CompletionTokens += meta.Usage.OutputTokens
 			}
-
-			// 如果是 message_stop 事件，发送一个额外的 ping 事件
-			if eventType == "message_stop" {
-				pingEvent := "event: ping\ndata: {\"type\": \"ping\"}\n\n"
-				_, err := w.Write([]byte(pingEvent))
-				if err != nil {
-					logger.SysError("error writing ping event: " + err.Error())
-					return false
-				}
+			if response != nil {
+				responsePart := response.Choices[0].Delta.Content.(string)
+				responseTextBuilder.WriteString(responsePart)
 			}
 
 			return true
-		case *types.UnknownUnionMember:
-			logger.SysError("unknown tag: " + v.Tag)
-			return false
 		default:
-			logger.SysError("union is nil or unknown type")
 			return false
 		}
 	})
-	return nil, &usage, responseText
+
+	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+	return nil, &usage, responseTextBuilder.String()
 }

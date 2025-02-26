@@ -899,7 +899,24 @@ func ClaudeHandler(c *gin.Context, resp *http.Response, promptTokens int, modelN
 		}, nil, ""
 	}
 
-	aitext = claudeResponse.Content[0].Text
+	if len(claudeResponse.Content) > 0 {
+		var thinkingText string
+		var responseText string
+
+		for _, content := range claudeResponse.Content {
+			if content.Type == "thinking" {
+				thinkingText = content.Thinking
+			} else if content.Type == "text" {
+				responseText = content.Text
+			}
+		}
+
+		if thinkingText != "" {
+			aitext = "<think>" + thinkingText + "</think>\n\n" + responseText
+		} else {
+			aitext = responseText
+		}
+	}
 	usage := model.Usage{
 		PromptTokens:     claudeResponse.Usage.InputTokens,
 		CompletionTokens: claudeResponse.Usage.OutputTokens,
