@@ -3,6 +3,7 @@ package aws
 import (
 	"io"
 	"net/http"
+	"strings"
 
 	"one-api/common/config"
 	"one-api/common/ctxkey"
@@ -52,6 +53,9 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 		claudeReq = anthropic.ConverClaudeRequest(*request)
 	} else {
 		claudeReq = anthropic.ConvertRequest(*request)
+	}
+	if strings.HasSuffix(request.Model, "-thinking") {
+		request.Model = strings.TrimSuffix(request.Model, "-thinking")
 	}
 	c.Set(ctxkey.Cross, meta.Config.Cross)
 	c.Set(ctxkey.RequestModel, request.Model)

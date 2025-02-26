@@ -91,7 +91,6 @@ func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "awsModelID")), nil, ""
 	}
-
 	awsReq := &bedrockruntime.InvokeModelInput{
 		ModelId:     aws.String(awsModelId),
 		Accept:      aws.String("application/json"),
