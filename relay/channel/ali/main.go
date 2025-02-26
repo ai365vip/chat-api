@@ -184,6 +184,8 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	})
 	dataChan := make(chan string)
 	stopChan := make(chan bool)
+	// Flag whether the actual data was received
+	receivedData := false
 	go func() {
 		for scanner.Scan() {
 			data := scanner.Text()
@@ -218,6 +220,11 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			if response == nil {
 				return true
 			}
+			// If a valid response is received, the data is marked as received
+			if response.Choices != nil && len(response.Choices) > 0 && 
+			   response.Choices[0].Delta.Content != "" {
+				receivedData = true
+			}
 			//response.Choices[0].Delta.Content = strings.TrimPrefix(response.Choices[0].Delta.Content, lastResponseText)
 			//lastResponseText = aliResponse.Output.Text
 			jsonResponse, err := json.Marshal(response)
@@ -228,7 +235,10 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonResponse)})
 			return true
 		case <-stopChan:
-			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
+			// The DONE signal is sent only when the data has actually been received
+			if receivedData {
+				c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
+			}
 			return false
 		}
 	})
