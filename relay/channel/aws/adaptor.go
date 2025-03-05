@@ -127,6 +127,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 					}
 				}
 			}
+			aitext = responseText
 		} else {
 			err, usage, aitext = ClaudeHandler(c, a.awsClient, meta.OriginModelName)
 		}

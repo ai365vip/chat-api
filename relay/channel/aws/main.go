@@ -384,18 +384,18 @@ func StreamClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaym
 
 		switch v := event.(type) {
 		case *types.ResponseStreamMemberChunk:
-			// 直接写入原始响应
-			line := fmt.Sprintf("data: %s\n\n", string(v.Value.Bytes))
-			if _, err := w.Write([]byte(line)); err != nil {
-				logger.SysError("Error writing to stream: " + err.Error())
-				return false
-			}
-
-			// 解析响应
+			// 首先解析响应
 			var claudeResponse anthropic.StreamResponse
 			if err := json.Unmarshal(v.Value.Bytes, &claudeResponse); err != nil {
 				logger.SysError("Error unmarshalling stream response: " + err.Error())
 				return true
+			}
+
+			// 构建事件流
+			line := fmt.Sprintf("event: %s\ndata: %s\n\n", claudeResponse.Type, string(v.Value.Bytes))
+			if _, err := w.Write([]byte(line)); err != nil {
+				logger.SysError("Error writing stream: " + err.Error())
+				return false
 			}
 
 			// 使用相同的转换逻辑
