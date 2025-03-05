@@ -331,3 +331,20 @@ func CopyChannel(c *gin.Context) {
 		"data":    newChannel,
 	})
 }
+
+// 重置通道的计数
+func ResetChannelStats(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	model.ResetChannelStats(id)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+}

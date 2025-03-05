@@ -594,3 +594,12 @@ func CopyChannel(id int) (*Channel, error) {
 
 	return &newChannel, nil
 }
+
+// 重置通道的计数
+func ResetChannelStats(id int) {
+	DB.Model(&Channel{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"used_quota": 0,
+		"balance":    0,
+		"used_count": 0,
+	})
+}
