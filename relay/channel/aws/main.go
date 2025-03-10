@@ -102,6 +102,9 @@ func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*
 		return wrapErr(errors.New("request not found")), nil, ""
 	}
 	claudeReq := claudeReq_.(*anthropic.Request)
+	if claudeReq == nil {
+		return wrapErr(errors.New("claude request is nil")), nil, ""
+	}
 	awsClaudeReq := &Request{
 		AnthropicVersion: "bedrock-2023-05-31",
 	}
@@ -168,6 +171,9 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 		return wrapErr(errors.New("request not found")), nil, ""
 	}
 	claudeReq := claudeReq_.(*anthropic.Request)
+	if claudeReq == nil {
+		return wrapErr(errors.New("claude request is nil")), nil, ""
+	}
 
 	awsClaudeReq := &Request{
 		AnthropicVersion: "bedrock-2023-05-31",
@@ -282,6 +288,9 @@ func ClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client, modelName stri
 		return wrapErr(errors.New("request not found")), nil, ""
 	}
 	claudeReq := claudeReq_.(*anthropic.Request)
+	if claudeReq == nil {
+		return wrapErr(errors.New("claude request is nil")), nil, ""
+	}
 	awsClaudeReq := &Request{
 		AnthropicVersion: "bedrock-2023-05-31",
 	}
@@ -353,6 +362,9 @@ func StreamClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaym
 		return wrapErr(errors.New("request not found")), nil, ""
 	}
 	claudeReq := claudeReq_.(*anthropic.Request)
+	if claudeReq == nil {
+		return wrapErr(errors.New("claude request is nil")), nil, ""
+	}
 
 	awsClaudeReq := &Request{
 		AnthropicVersion: "bedrock-2023-05-31",
@@ -396,6 +408,14 @@ func StreamClaudeHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaym
 			if _, err := w.Write([]byte(line)); err != nil {
 				logger.SysError("Error writing stream: " + err.Error())
 				return false
+			}
+			// 如果是消息结束，发送一个 ping 事件
+			if claudeResponse.Type == "message_stop" {
+				pingEvent := "event: ping\ndata: {\"type\": \"ping\"}\n\n"
+				if _, err := w.Write([]byte(pingEvent)); err != nil {
+					logger.SysError("Error writing ping event: " + err.Error())
+					return false
+				}
 			}
 
 			// 使用相同的转换逻辑
