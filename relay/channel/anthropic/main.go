@@ -519,8 +519,14 @@ func ResponseClaude2OpenAI(claudeResponse *Response) *openai.TextResponse {
 		FinishReason: stopReasonClaude2OpenAI(claudeResponse.StopReason),
 	}
 
+	// 生成默认ID如果不存在
+	responseId := claudeResponse.Id
+	if responseId == "" {
+		responseId = helper.GetUUID()
+	}
+
 	fullTextResponse := openai.TextResponse{
-		Id:      fmt.Sprintf("chatcmpl-%s", claudeResponse.Id),
+		Id:      fmt.Sprintf("chatcmpl-%s", responseId),
 		Model:   claudeResponse.Model,
 		Object:  "chat.completion",
 		Created: helper.GetTimestamp(),

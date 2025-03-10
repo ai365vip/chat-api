@@ -60,11 +60,3 @@ func createBaseRequest(request model.GeneralOpenAIRequest) *Request {
 func isStringContent(content []anthropic.Content) bool {
 	return len(content) == 1 && content[0].Type == "text"
 }
-
-// 辅助函数：获取字符串内容
-func getStringContent(content []anthropic.Content) string {
-	if isStringContent(content) {
-		return content[0].Text
-	}
-	return ""
-}
