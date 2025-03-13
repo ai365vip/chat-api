@@ -2,6 +2,10 @@ import PropTypes from 'prop-types';
 import { TableRow, TableCell, Tooltip } from '@mui/material';
 import { timestamp2string, renderQuota, showSuccess, showError } from 'utils/common';
 import Label from 'ui-component/Label';
+import { InputOutlined, OutputOutlined, PaidOutlined } from '@mui/icons-material';
+
+import { getModelIcon } from 'utils/common';
+
 import {  blue, grey, orange, red, green } from '@mui/material/colors';
 function renderIsStream(bool) {
   return bool ? (
@@ -180,7 +184,8 @@ export default function LogTableRow({ item }) {
       <TableCell>{renderType(item.type)}</TableCell>
       <TableCell onClick={() => handleCopyToClipboard(item.model_name)}>
           <Label style={{ color: getModelColor(item.model_name) }} variant="outlined">
-            {item.model_name}
+            {getModelIcon(item.model_name)}
+            <span style={{ marginLeft: '4px' }}>{item.model_name}</span>
           </Label>
         </TableCell>
       <TableCell>{item.ip}</TableCell>  
@@ -188,9 +193,24 @@ export default function LogTableRow({ item }) {
         {renderUseTime(item.use_time)}
         {renderIsStream(item.is_stream)}
       </TableCell>
-      <TableCell>{item.prompt_tokens || ''}</TableCell>
-      <TableCell>{item.completion_tokens || ''}</TableCell>
-      <TableCell>{item.quota ? renderQuota(item.quota, 6) : ''}</TableCell>
+      <TableCell>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <InputOutlined fontSize="small" sx={{ color: '#2196F3', marginRight: '4px' }}/>
+          {item.prompt_tokens || ''}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <OutputOutlined fontSize="small" sx={{ color: '#4CAF50', marginRight: '4px' }}/>
+          {item.completion_tokens || ''}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <PaidOutlined fontSize="small" sx={{ color: '#FF9800', marginRight: '4px' }}/>
+          {item.quota ? renderQuota(item.quota, 6) : ''}
+        </div>
+      </TableCell>
       <TableCell>
         {item.multiplier ? (
           <Tooltip title={

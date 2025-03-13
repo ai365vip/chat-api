@@ -160,11 +160,12 @@ docker-compose ps
 
 
 
-![日志界面](https://github.com/user-attachments/assets/ad248ec2-f8dc-4bfb-ae94-83331df00357)
+![日志界面](https://github.com/user-attachments/assets/f4ce6400-200a-47d5-97d6-4811700625d9)
+
+![模型计费](https://github.com/user-attachments/assets/0389a065-00f3-41ac-9fb1-0c7eccd41d49)
 
 
-
-![渠道管理](https://github.com/ai365vip/chat-api/assets/154959065/0017e8cb-645b-4c05-aefa-6cd538989278)
+![渠道管理](https://github.com/user-attachments/assets/69a8511c-e976-45a1-b3ab-a33fbbdadbee)
 
 
 

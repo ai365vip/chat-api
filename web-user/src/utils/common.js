@@ -8,6 +8,13 @@ export function getSystemName() {
   if (!system_name) return 'Chat API';
   return system_name;
 }
+import { 
+  OpenAI, Claude, Gemini, DeepSeek, Zhipu, Hunyuan, 
+  Spark, Minimax, Yi, Groq, Ollama, 
+  Doubao, Ai360, Midjourney, Flux, Grok, Suno,
+  Pika, Vidu,BaiduCloud,AlibabaCloud,Cohere,Baichuan,Kimi
+} from '@lobehub/icons';
+
 
 export function isMobile() {
   return window.innerWidth <= 600;
@@ -288,3 +295,66 @@ export function removeTrailingSlash(url) {
     return url;
   }
 }
+
+export const getModelIcon = (modelName) => {
+  if (modelName.startsWith('gpt-3')) {
+    return <OpenAI.Avatar size={20} type="gpt3" />;
+  } else if (modelName.startsWith('gpt-4') || modelName.startsWith('chatgpt')) {
+    return <OpenAI.Avatar size={20} type="gpt4" />;
+  } else if (modelName.startsWith('o1') || modelName.startsWith('o3')) {
+    return <OpenAI.Avatar size={20} type="o1" />;
+  } else if (modelName.startsWith('tts') || modelName.startsWith('dall-e') || 
+  modelName.startsWith('whisper') || modelName.startsWith('omni-') || 
+  modelName.startsWith('text-embedding') || modelName.startsWith('text-moderation-')
+   || modelName.startsWith('davinci') ||  modelName.startsWith('babbage')
+  ) {
+    return <OpenAI.Avatar size={20} />;
+  }else if (modelName.startsWith('claude')) {
+    return <Claude.Color size={20} />;
+  } else if (modelName.startsWith('gemini')) {
+    return <Gemini.Color size={20} />;
+  } else if (modelName.startsWith('deepseek')) {
+    return <DeepSeek.Color size={20} />;
+  } else if (modelName.startsWith('glm') || modelName.startsWith('chatglm')) {
+    return <Zhipu.Color size={20} />;
+  } else if (modelName.startsWith('hunyuan')) {
+    return <Hunyuan.Color size={20} />;
+  } else if (modelName.startsWith('Spark')) {
+    return <Spark.Color size={20} />;
+  } else if (modelName.startsWith('abab')) {
+    return <Minimax.Color size={20} />;
+  } else if (modelName.startsWith('moonshot')) {
+    return <Kimi.Color size={20} />;
+  } else if (modelName.startsWith('yi')) {
+    return <Yi.Color size={20} />;
+  } else if (modelName.startsWith('groq')) {
+    return <Groq size={20} />;
+  } else if (modelName.startsWith('ollama') || modelName.startsWith('llama')) {
+    return <Ollama size={20} />;
+  } else if (modelName.startsWith('doubao')) {
+    return <Doubao.Color size={20} />;
+  } else if (modelName.startsWith('360')) {
+    return <Ai360.Color size={20} />;
+  } else if (modelName.startsWith('midjourney') || modelName.startsWith('mj-chat')) {
+    return <Midjourney size={20} />;
+  } else if (modelName.startsWith('flux')) {
+    return <Flux size={20} />;
+  } else if (modelName.startsWith('grok')) {
+    return <Grok size={20} />;
+  } else if (modelName.startsWith('suno')) {
+    return <Suno size={20} />;
+  } else if (modelName.startsWith('pika')) {
+    return <Pika size={20} />;
+  } else if (modelName.startsWith('vidu')) {
+    return <Vidu.Color size={20} />;
+  } else if (modelName.startsWith('ERNIE-')) {
+    return <BaiduCloud.Color size={20} />;
+  } else if (modelName.startsWith('qwen-')) {
+    return <AlibabaCloud.Color size={20} />;
+  } else if (modelName.startsWith('command')) {
+    return <Cohere.Color size={20} />;
+  } else if (modelName.startsWith('Baichuan')) {
+    return <Baichuan.Color size={20} />;
+  }
+  return null;
+};

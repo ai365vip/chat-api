@@ -25,6 +25,7 @@ import WechatModal from 'views/Authentication/AuthForms/WechatModal';
 import { useSelector } from 'react-redux';
 import EmailModal from './component/EmailModal';
 import Turnstile from 'react-turnstile';
+import { getModelIcon } from 'utils/common';
 const validationSchema = Yup.object().shape({
   username: Yup.string().required('用户名 不能为空').min(3, '用户名 不能小于 3 个字符'),
   display_name: Yup.string(),
@@ -44,6 +45,37 @@ const commonButtonSx = {
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
   }
 };
+
+const MODEL_CATEGORIES = [
+  { key: 'OpenAI', includes: ['gpt-3', 'gpt-4', 'o1', 'o3', 'chatgpt', 'tts', 'dall-e', 'whisper', 'omni-', 'text-embedding','text-moderation-','davinci','babbage'] },
+  { key: 'Claude', includes: ['claude'] },
+  { key: 'Gemini', includes: ['gemini'] },
+  { key: 'Deep Seek', includes: ['deepseek'] },
+  { key: 'Grok', includes: ['grok'] },
+  { key: '智谱AI', includes: ['glm','chatglm'] },
+  { key: '混元', includes: ['hunyuan'] },
+  { key: 'Spark', includes: ['spark'] },
+  { key: 'Minimax', includes: ['abad'] },
+  { key: 'kimi', includes: ['moonshot'] },
+  { key: '一零万物', includes: ['yi'] },
+  { key: 'Groq', includes: ['groq'] },
+  { key: 'Ollama', includes: ['ollama','llama'] },
+  { key: '豆包', includes: ['doubao'] },
+  { key: '360', includes: ['360'] },
+  { key: 'Midjourney', includes: ['midjourney', 'mj-chat'] },
+  { key: 'Flux', includes: ['flux'] },
+  { key: 'Suno', includes: ['suno'] },
+  { key: 'Pika', includes: ['pika'] },
+  { key: 'Vidu', includes: ['vidu'] },
+  { key: 'Baidu', includes: ['ERNIE'] },
+  { key: 'Ali', includes: ['qwen'] },
+  { key: 'Cohere', includes: ['command'] },
+  { key: 'Baichuan', includes: ['Baichuan'] },
+  { key: 'ERNIE-', includes: ['ERNIE-'] },
+  { key: 'command', includes: ['command'] },
+  { key: 'Baichuan', includes: ['Baichuan'] },
+
+];
 
 export default function Profile() {
   const [inputs, setInputs] = useState([]);
@@ -79,7 +111,7 @@ export default function Profile() {
       showError(message);
     }
   };
-
+  
   const bindWeChat = async (code) => {
     if (code === '') return;
     try {
@@ -129,7 +161,17 @@ export default function Profile() {
         let res = await API.get('/api/user/models');
         const { success, message, data } = res.data;
         if (success) {
-            setModels(data);
+            // 对模型进行分类和排序
+            const sortedModels = data.sort((a, b) => {
+                const getModelPriority = (model) => {
+                    if (model.toLowerCase().includes('gpt')) return 1;
+                    if (model.toLowerCase().includes('claude')) return 2;
+                    if (model.toLowerCase().includes('gemini')) return 3;
+                    return 4;
+                };
+                return getModelPriority(a) - getModelPriority(b);
+            });
+            setModels(sortedModels);
         } else {
             showError(message);
         }
@@ -303,7 +345,7 @@ export default function Profile() {
             </SubCard>
             <SubCard title="">
               <Stack direction="row" alignItems="center" justifyContent="flex-start" mb={2} spacing={2}>
-                <Typography variant="h2">模型</Typography>
+                <Typography variant="h2">可用模型</Typography>
                 <Button 
                   variant="contained" 
                   onClick={copyAllModels}
@@ -317,44 +359,136 @@ export default function Profile() {
               </Stack>
               <Box sx={{
                 display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
+                flexDirection: 'column',
+                gap: 2
               }}>
-                {models.map((model) => (
-                  <Chip
-                    key={model}
-                    label={model}
-                    variant="outlined"
-                    size="small"
-                    onClick={() => {
-                      if (navigator.clipboard) {
-                        navigator.clipboard.writeText(model).then(() => {
-                          showSuccess(`模型 ${model} 已复制到剪贴板`);
-                        }).catch(() => {
-                          showError(`复制失败，请手动复制！ ${model}`);
-                        });
-                      } else {
-                        showError(`复制失败，请手动复制！ ${model}`);
-                      }
-                    }}
-                    sx={(theme) => ({ 
-                      margin: '3px',
-                      borderRadius: '4px',
-                      backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                      border: '1px solid',
-                      borderColor: 'rgba(33, 150, 243, 0.2)',
-                      color: theme.palette.text.primary,
-                      '&:hover': {
-                        backgroundColor: 'rgba(76, 175,80, 0.1)',
-                        borderColor: 'rgba(76, 175,80, 0.3)',
-                        color: '#FF1493',
-                        cursor: 'pointer'
-                      },
-                      fontSize: '0.875rem',
-                      height: '24px'
-                    })} 
-                  />
-                ))}
+                {MODEL_CATEGORIES.map(category => {
+                    const categoryModels = models.filter(model => 
+                        category.includes.some(prefix => 
+                            model.toLowerCase().startsWith(prefix.toLowerCase())
+                        )
+                    );
+                    
+                    return categoryModels.length > 0 && (
+                        <Box key={category.key}>
+                            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                                {category.key}
+                            </Typography>
+                            <Box sx={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                alignItems: 'center',
+                                gap: 1
+                            }}>
+                                {categoryModels.map((model) => (
+                                    <Chip
+                                        key={model}
+                                        label={
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                {getModelIcon(model)}
+                                                <span>{model}</span>
+                                            </Box>
+                                        }
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={() => {
+                                            if (navigator.clipboard) {
+                                                navigator.clipboard.writeText(model).then(() => {
+                                                    showSuccess(`模型 ${model} 已复制到剪贴板`);
+                                                }).catch(() => {
+                                                    showError(`复制失败，请手动复制！ ${model}`);
+                                                });
+                                            } else {
+                                                showError(`复制失败，请手动复制！ ${model}`);
+                                            }
+                                        }}
+                                        sx={(theme) => ({ 
+                                            margin: '3px',
+                                            borderRadius: '4px',
+                                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                                            border: '1px solid',
+                                            borderColor: 'rgba(33, 150, 243, 0.2)',
+                                            color: theme.palette.text.primary,
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(76, 175,80, 0.1)',
+                                                borderColor: 'rgba(76, 175,80, 0.3)',
+                                                color: '#FF1493',
+                                                cursor: 'pointer'
+                                            },
+                                            fontSize: '0.875rem',
+                                            height: '24px'
+                                        })} 
+                                    />
+                                ))}
+                            </Box>
+                        </Box>
+                    );
+                })}
+                
+                {(() => {
+                    const otherModels = models.filter(model => 
+                        !MODEL_CATEGORIES.some(category => 
+                            category.includes.some(prefix => 
+                                model.toLowerCase().startsWith(prefix.toLowerCase())
+                            )
+                        )
+                    );
+                    
+                    return otherModels.length > 0 && (
+                        <Box>
+                            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                                其他模型
+                            </Typography>
+                            <Box sx={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                alignItems: 'center',
+                                gap: 1
+                            }}>
+                                {otherModels.map((model) => (
+                                    <Chip
+                                        key={model}
+                                        label={
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                {getModelIcon(model)}
+                                                <span>{model}</span>
+                                            </Box>
+                                        }
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={() => {
+                                            if (navigator.clipboard) {
+                                                navigator.clipboard.writeText(model).then(() => {
+                                                    showSuccess(`模型 ${model} 已复制到剪贴板`);
+                                                }).catch(() => {
+                                                    showError(`复制失败，请手动复制！ ${model}`);
+                                                });
+                                            } else {
+                                                showError(`复制失败，请手动复制！ ${model}`);
+                                            }
+                                        }}
+                                        sx={(theme) => ({ 
+                                            margin: '3px',
+                                            borderRadius: '4px',
+                                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                                            border: '1px solid',
+                                            borderColor: 'rgba(33, 150, 243, 0.2)',
+                                            color: theme.palette.text.primary,
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(76, 175,80, 0.1)',
+                                                borderColor: 'rgba(76, 175,80, 0.3)',
+                                                color: '#FF1493',
+                                                cursor: 'pointer'
+                                            },
+                                            fontSize: '0.875rem',
+                                            height: '24px'
+                                        })} 
+                                    />
+                                ))}
+                            </Box>
+                        </Box>
+                    );
+                })()}
               </Box>
             </SubCard>
             <SubCard title="账号绑定">
