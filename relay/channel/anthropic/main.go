@@ -109,6 +109,10 @@ func ConverClaudeRequest(request model.GeneralOpenAIRequest) *Request {
 	if err != nil {
 		return nil
 	}
+	if len(request.Tools) > 0 {
+		claudeRequest.Tools = ConvertTools(request.Tools)
+		claudeRequest.ToolChoice = ConvertToolChoice(request.ToolChoice)
+	}
 
 	return claudeRequest
 }
@@ -193,24 +197,28 @@ func ConvertToolChoice(toolChoice any) map[string]interface{} {
 		"type": "none",
 	}
 
-	if choice, ok := toolChoice.(map[string]any); ok {
-		if function, ok := choice["function"].(map[string]any); ok {
+	switch v := toolChoice.(type) {
+	case string:
+		if v == "auto" || v == "any" {
+			claudeToolChoice["type"] = "tool_use"
+		}
+	case map[string]any:
+		if function, ok := v["function"].(map[string]any); ok {
 			claudeToolChoice["type"] = "tool_use"
 			claudeToolChoice["name"] = function["name"].(string)
 
-			// 解析 arguments 字符串为 JSON 对象
+			// 生成唯一 ID
+			toolUseId := "toolu_" + uuid.New().String()
+			claudeToolChoice["id"] = toolUseId
+
+			// 处理 arguments
 			if args, ok := function["arguments"].(string); ok {
 				var inputArgs map[string]interface{}
 				if err := json.Unmarshal([]byte(args), &inputArgs); err == nil {
 					claudeToolChoice["input"] = inputArgs
 				}
 			}
-
-			// 生成唯一 ID
-			claudeToolChoice["id"] = "toolu_" + uuid.New().String()
 		}
-	} else if toolChoiceType, ok := toolChoice.(string); ok && toolChoiceType == "any" {
-		claudeToolChoice["type"] = "tool_use"
 	}
 
 	return claudeToolChoice
