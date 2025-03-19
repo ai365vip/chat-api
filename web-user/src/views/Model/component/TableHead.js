@@ -7,8 +7,8 @@ const ModelTableHead = () => {
       <TableRow>
         <TableCell>模型</TableCell>
         <TableCell>按次计费</TableCell>
-        <TableCell>按Token输入 /1k</TableCell>
-        <TableCell>按Token输出 /1k</TableCell>
+        <TableCell>按Token输入 /1M</TableCell>
+        <TableCell>按Token输出 /1M</TableCell>
       </TableRow>
     </TableHead>
   );
