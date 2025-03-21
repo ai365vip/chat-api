@@ -30,6 +30,7 @@ const (
 	RelayMidjourneyImage
 	RelayModeMessages
 	RelayRealtime
+	RelayResponses
 )
 
 func Path2RelayMode(path string) int {
@@ -58,6 +59,8 @@ func Path2RelayMode(path string) int {
 		relayMode = RelayModeMessages
 	} else if strings.HasPrefix(path, "/v1/realtime") {
 		relayMode = RelayRealtime
+	} else if strings.HasPrefix(path, "/v1/responses") {
+		relayMode = RelayResponses
 	}
 	return relayMode
 }

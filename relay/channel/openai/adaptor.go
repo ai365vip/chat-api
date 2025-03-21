@@ -81,7 +81,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 		request.StreamOptions = nil
 	}
 
-	if request.StreamOptions == nil && meta.ChannelType == common.ChannelTypeOpenAI && meta.IsStream {
+	if meta.Mode != constant.RelayResponses && request.StreamOptions == nil && meta.ChannelType == common.ChannelTypeOpenAI && meta.IsStream {
 		request.StreamOptions = &model.StreamOptions{
 			IncludeUsage: true,
 		}
@@ -122,8 +122,13 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 
 		var responseText string
 		var toolCount int
-		err, responseText, toolCount, usage = StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
-		aitext = responseText
+		if meta.Mode == constant.RelayResponses {
+			err, responseText, _, usage = ResponsesStreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent, meta.PromptTokens)
+			aitext = responseText
+		} else {
+			err, responseText, toolCount, usage = StreamHandler(c, resp, meta.Mode, meta.ActualModelName, meta.FixedContent)
+			aitext = responseText
+		}
 		if usage == nil || usage.TotalTokens == 0 {
 			usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 		}
@@ -152,6 +157,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 			err, _ = ImageHandler(c, resp)
 		case constant.RelayModeEdits:
 			err, _ = ImagesEditsHandler(c, resp)
+		case constant.RelayResponses:
+			err, usage, aitext = ResponsesHandler(c, resp, meta.PromptTokens, meta.OriginModelName)
+
 		default:
 			err, usage, aitext = Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
 		}

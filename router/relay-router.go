@@ -99,6 +99,7 @@ func SetRelayRouter(router *gin.Engine) {
 		httpRouter.GET("/threads/:id/runs/:runsId/steps/:stepId", controller.RelayNotImplemented)
 		httpRouter.GET("/threads/:id/runs/:runsId/steps", controller.RelayNotImplemented)
 		httpRouter.POST("/messages", controller.Relay)
+		httpRouter.POST("/responses", controller.Relay)
 	}
 	relayMjTurboRouter := router.Group("/mj-turbo/mj")
 	configureMidjourneyRoutes(relayMjTurboRouter)

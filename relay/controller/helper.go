@@ -191,13 +191,39 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *util.R
 		return
 	}
 	usertext := ""
-	for _, message := range textRequest.Messages {
-		jsonBytes, err := json.Marshal(message.Content)
-		if err != nil {
-			continue
+	if textRequest.Messages != nil && len(textRequest.Messages) > 0 {
+		for _, message := range textRequest.Messages {
+			jsonBytes, err := json.Marshal(message.Content)
+			if err != nil {
+				logger.Warn(ctx, "Failed to marshal message content: "+err.Error())
+				continue
+			}
+			usertext += string(jsonBytes)
 		}
-		usertext = string(jsonBytes)
-
+	} else if textRequest.Input != "" {
+		// 处理 Input 字段
+		if inputStr, ok := textRequest.Input.(string); ok {
+			usertext = inputStr
+		} else {
+			jsonBytes, err := json.Marshal(textRequest.Input)
+			if err != nil {
+				logger.Warn(ctx, "Failed to marshal input content: "+err.Error())
+			} else {
+				usertext = string(jsonBytes)
+			}
+		}
+	} else if textRequest.Prompt != "" {
+		// 处理 Prompt 字段
+		if promptStr, ok := textRequest.Prompt.(string); ok {
+			usertext = promptStr
+		} else {
+			jsonBytes, err := json.Marshal(textRequest.Prompt)
+			if err != nil {
+				logger.Warn(ctx, "Failed to marshal prompt content: "+err.Error())
+			} else {
+				usertext = string(jsonBytes)
+			}
+		}
 	}
 	userQuota, err := model.CacheGetUserQuota(ctx, meta.UserId)
 	if err != nil {

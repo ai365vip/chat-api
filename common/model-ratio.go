@@ -20,6 +20,8 @@ var ModelRatio = map[string]float64{
 	"gpt-4-32k":                          30,
 	"gpt-4-32k-0314":                     30,
 	"gpt-4-32k-0613":                     30,
+	"gpt-4.5-preview-2025-02-27":         37.5,
+	"gpt-4.5-preview":                    37.5,
 	"gpt-4-1106-preview":                 5, // $0.01 / 1K tokens
 	"gpt-4-0125-preview":                 5, // $0.01 / 1K tokens
 	"gpt-4-turbo-preview":                5, // $0.01 / 1K tokens
@@ -39,6 +41,8 @@ var ModelRatio = map[string]float64{
 	"o1-mini-2024-09-12":                 0.55,
 	"o1":                                 7.5,
 	"o1-2024-12-17":                      7.5,
+	"o1-pro-2025-03-19":                  75,
+	"o1-pro":                             75,
 	"o3-mini":                            0.55,
 	"o3-mini-2025-01-31":                 0.55,
 	"gpt-3.5-turbo":                      0.25, // $0.0005 / 1K tokens
@@ -344,16 +348,19 @@ func GetCompletionRatio(name string) float64 {
 		return 4.0 / 3.0
 	}
 	if strings.HasPrefix(name, "gpt-4") {
-		if strings.HasSuffix(name, "preview") || strings.Contains(name, "turbo") {
-			return 3
-		}
-		if strings.HasPrefix(name, "gpt-4o") {
+		switch {
+		case strings.HasPrefix(name, "gpt-4.5"):
+			return 2
+		case strings.HasPrefix(name, "gpt-4o"):
 			if name == "gpt-4o-2024-05-13" {
 				return 3
 			}
 			return 4
+		case strings.HasSuffix(name, "preview"), strings.Contains(name, "turbo"):
+			return 3
+		default:
+			return 2
 		}
-		return 2
 	}
 	if strings.HasPrefix(name, "o1") || strings.HasPrefix(name, "o3") {
 		return 4
