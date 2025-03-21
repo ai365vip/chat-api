@@ -5,9 +5,9 @@ type Tool struct {
 	Id          string      `json:"id,omitempty"`
 	Type        string      `json:"type"`
 	Function    Function    `json:"function"`
-	Name        string      `json:"name",omitempty`
+	Name        string      `json:"name,omitempty"`
 	Description string      `json:"description,omitempty"`
-	InputSchema InputSchema `json:"input_schema",omitempty`
+	InputSchema InputSchema `json:"input_schema,omitempty"`
 }
 
 type Function struct {
