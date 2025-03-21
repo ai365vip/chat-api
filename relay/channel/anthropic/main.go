@@ -177,7 +177,7 @@ func ConvertTools(tools []model.Tool) []Tool {
 		claudeTool := Tool{
 			Name:        tool.Name,
 			Description: tool.Description,
-			InputSchema: convertInputSchema(tool.InputSchema),
+			InputSchema: convertInputSchema(*tool.InputSchema),
 		}
 		claudeTools = append(claudeTools, claudeTool)
 	}

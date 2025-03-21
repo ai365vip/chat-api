@@ -1,13 +1,12 @@
 package model
 
 type Tool struct {
-	Index       int         `json:"index"`
-	Id          string      `json:"id,omitempty"`
-	Type        string      `json:"type"`
-	Function    Function    `json:"function"`
-	Name        string      `json:"name,omitempty"`
-	Description string      `json:"description,omitempty"`
-	InputSchema InputSchema `json:"input_schema,omitempty"`
+	Id          string       `json:"id,omitempty"`
+	Type        string       `json:"type"`
+	Function    Function     `json:"function"`
+	Name        string       `json:"name,omitempty"`
+	Description string       `json:"description,omitempty"`
+	InputSchema *InputSchema `json:"input_schema,omitempty"`
 }
 
 type Function struct {
