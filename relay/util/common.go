@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -183,20 +184,46 @@ func RelayErrorHandler(resp *http.Response) (ErrorWithStatusCode *relaymodel.Err
 	if err != nil {
 		return
 	}
+
 	err = resp.Body.Close()
 	if err != nil {
 		return
 	}
+	// 记录原始响应体，便于调试
+	common.Errorf(context.Background(), "Error response body: %s", string(responseBody))
 	var errResponse GeneralErrorResponse
 	err = json.Unmarshal(responseBody, &errResponse)
 	if err != nil {
+		// 如果无法解析为标准格式，尝试解析为数组格式
+		var errorArray []map[string]interface{}
+		if json.Unmarshal(responseBody, &errorArray) == nil && len(errorArray) > 0 {
+			// 提取第一个错误对象
+			if errorObj, ok := errorArray[0]["error"].(map[string]interface{}); ok {
+				if msg, ok := errorObj["message"].(string); ok {
+					ErrorWithStatusCode.Error.Message = msg
+					return
+				}
+			}
+		}
+
+		// 如果所有解析尝试都失败，直接使用原始响应体
+		if len(responseBody) > 0 {
+			ErrorWithStatusCode.Error.Message = string(responseBody)
+		}
 		return
 	}
 	if errResponse.Error.Message != "" {
 		// OpenAI format error, so we override the default one
 		ErrorWithStatusCode.Error = errResponse.Error
 	} else {
-		ErrorWithStatusCode.Error.Message = errResponse.ToMessage()
+		errorMessage := errResponse.ToMessage()
+		if errorMessage != "" {
+			ErrorWithStatusCode.Error.Message = errorMessage
+		} else {
+			// 如果所有已知字段都为空，直接使用原始响应体
+			ErrorWithStatusCode.Error.Message = string(responseBody)
+		}
+
 	}
 	if ErrorWithStatusCode.Error.Message == "" {
 		ErrorWithStatusCode.Error.Message = fmt.Sprintf("bad response status code %d", resp.StatusCode)
