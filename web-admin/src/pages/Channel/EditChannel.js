@@ -427,7 +427,7 @@ const EditChannel = (props) => {
             showInfo('密钥文件必须是合法的 JSON 格式！');
             return;
         }
-        if (config.ak !== '' && config.sk !== '' && config.region !== '') {
+        if (inputs.type === 36 && (config.ak !== '' && config.sk !== '' && config.region !== '')) {
             inputs.key = `${config.ak}|${config.sk}|${config.region}`;
         }
         let localInputs = {...inputs};
