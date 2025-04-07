@@ -10,6 +10,7 @@ type Request struct {
 	AnthropicVersion string              `json:"anthropic_version"`
 	System           any                 `json:"system,omitempty"`
 	Messages         []anthropic.Message `json:"messages"`
+	Thinking         any                 `json:"thinking,omitempty"`
 	MaxTokens        int                 `json:"max_tokens,omitempty"`
 	Temperature      float64             `json:"temperature,omitempty"`
 	TopP             float64             `json:"top_p,omitempty"`

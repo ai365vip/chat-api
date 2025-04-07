@@ -132,10 +132,6 @@ func createBaseRequest(request model.GeneralOpenAIRequest) *Request {
 	}
 	if strings.HasSuffix(request.Model, "-thinking") {
 
-		if claudeRequest.MaxTokens == 0 {
-			claudeRequest.MaxTokens = 8192
-		}
-
 		if claudeRequest.MaxTokens < 1280 {
 			claudeRequest.MaxTokens = 1280
 		}
