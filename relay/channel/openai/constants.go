@@ -10,6 +10,8 @@ var ModelList = []string{
 	"gpt-4-turbo-preview", "gpt-4-turbo", "gpt-4-turbo-2024-04-09",
 	"gpt-4o", "gpt-4o-2024-05-13", "gpt-4o-mini", "gpt-4o-mini-2024-07-18",
 	"gpt-4o-2024-08-06", "gpt-4o-2024-11-20", "chatgpt-4o-latest",
+	"gpt-4.1", "gpt-4.1-2025-04-14", "gpt-4.1-mini", "gpt-4.1-mini-2025-04-14",
+	"gpt-4.1-nano", "gpt-4.1-nano-2025-04-14",
 	"gpt-4-vision-preview", "gpt-4-vision",
 	"o1-preview", "o1-preview-2024-09-12",
 	"o1-mini", "o1-mini-2024-09-12",
