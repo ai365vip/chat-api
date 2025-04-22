@@ -51,6 +51,10 @@ var ModelRatio = map[string]float64{
 	"o1-pro":                             75,
 	"o3-mini":                            0.55,
 	"o3-mini-2025-01-31":                 0.55,
+	"o3":                                 5,
+	"o3-2025-04-16":                      5,
+	"o4-mini":                            0.55,
+	"o4-mini-2025-04-16":                 0.55,
 	"gpt-3.5-turbo":                      0.25, // $0.0005 / 1K tokens
 	"gpt-3.5-turbo-0301":                 0.75,
 	"gpt-3.5-turbo-0613":                 0.75,
@@ -370,7 +374,7 @@ func GetCompletionRatio(name string) float64 {
 			return 2
 		}
 	}
-	if strings.HasPrefix(name, "o1") || strings.HasPrefix(name, "o3") {
+	if strings.HasPrefix(name, "o1") || strings.HasPrefix(name, "o3") || strings.HasPrefix(name, "o4") {
 		return 4
 	}
 	lowercaseName := strings.ToLower(name)
