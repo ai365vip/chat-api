@@ -10,12 +10,17 @@ const CardWrapper = styled(MainCard)(({ theme }) => ({
   color: theme.palette.primary.light,
   overflow: 'hidden',
   position: 'relative',
+  transition: 'all .2s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-3px)',
+    boxShadow: theme.customShadows.primary
+  },
   '&:after': {
     content: '""',
     position: 'absolute',
     width: 210,
     height: 210,
-    background: `linear-gradient(210.04deg, ${theme.palette.primary[200]} -50.94%, rgba(144, 202, 249, 0) 83.49%)`,
+    background: `linear-gradient(210.04deg, ${theme.palette.primary[200]} -50.94%, rgba(144, 202, 249, 0.1) 83.49%)`,
     borderRadius: '50%',
     top: -30,
     right: -180
@@ -25,7 +30,7 @@ const CardWrapper = styled(MainCard)(({ theme }) => ({
     position: 'absolute',
     width: 210,
     height: 210,
-    background: `linear-gradient(140.9deg, ${theme.palette.primary[200]} -14.02%, rgba(144, 202, 249, 0) 77.58%)`,
+    background: `linear-gradient(140.9deg, ${theme.palette.primary[200]} -14.02%, rgba(144, 202, 249, 0.1) 77.58%)`,
     borderRadius: '50%',
     top: -160,
     right: -130
@@ -41,7 +46,7 @@ const StatisticalCard = ({ isLoading }) => {
 
   return (
     <CardWrapper border={false} content={false}>
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2.25 }}>
         <List sx={{ py: 0 }}>
           <ListItem alignItems="center" disableGutters sx={{ py: 0 }}>
             <ListItemAvatar>
@@ -50,8 +55,15 @@ const StatisticalCard = ({ isLoading }) => {
                 sx={{
                   ...theme.typography.commonAvatar,
                   ...theme.typography.largeAvatar,
-                  backgroundColor: theme.palette.primary[800],
-                  color: '#fff'
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? theme.palette.primary[800] 
+                    : theme.palette.primary[200],
+                  color: theme.palette.primary.main,
+                  transition: 'all .2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: theme.palette.primary.main,
+                    color: theme.palette.common.white
+                  }
                 }}
               >
                 <TableChartOutlinedIcon fontSize="inherit" />
@@ -60,12 +72,28 @@ const StatisticalCard = ({ isLoading }) => {
             <ListItemText
               sx={{ py: 0, mt: 0.45, mb: 0.45 }}
               primary={
-                <Typography variant="h4" sx={{ color: '#fff' }}>
+                <Typography 
+                  variant="h4" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' 
+                      ? theme.palette.common.white 
+                      : theme.palette.grey[900],
+                    fontWeight: 600
+                  }}
+                >
                   $203k
                 </Typography>
               }
               secondary={
-                <Typography variant="subtitle2" sx={{ color: 'primary.light', mt: 0.25 }}>
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark'
+                      ? theme.palette.grey[400]
+                      : theme.palette.grey[700],
+                    mt: 0.25 
+                  }}
+                >
                   Total Income
                 </Typography>
               }

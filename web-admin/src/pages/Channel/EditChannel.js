@@ -191,6 +191,9 @@ const EditChannel = (props) => {
                 case 41:
                     localModels = ['Doubao-pro-128k','Doubao-pro-32k','Doubao-pro-4k','Doubao-lite-128k','Doubao-lite-32k','Doubao-lite-4k'];
                     break;
+                case 43:
+                    localModels = ['grok-3-beta', 'grok-3-mini-beta', 'grok-3-fast-beta', 'grok-3-mini-fast-beta', 'grok-2-image', 'grok-2', 'grok-2-vision', 'grok-beta', 'grok-vision-beta'];
+                    break;
     
             }
             setInputs((inputs) => ({...inputs, models: localModels}));

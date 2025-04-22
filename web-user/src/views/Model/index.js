@@ -141,13 +141,12 @@ export default function Log() {
   const groupModelsByType = (models) => {
     const groupedModels = {};
     models.forEach(model => {
-      let modelType = model.model_type;
+      // 根据模型名称确定模型类型
+      let modelType = getModelTypeByName(model.model);
       
-      // 根据模型名称重新分类
-      if (model.model.startsWith('o1-')|| model.model.startsWith('o3-')) {
-        modelType = 'OpenAI';
-      } else if (model.model.startsWith('gemini')) {
-        modelType = 'Google Gemini';
+      // 如果getModelTypeByName返回other，尝试使用model_type作为备选
+      if (modelType === 'other' && model.model_type) {
+        modelType = model.model_type;
       }
       
       if (!groupedModels[modelType]) {
@@ -156,6 +155,68 @@ export default function Log() {
       groupedModels[modelType].push(model);
     });
     return groupedModels;
+  };
+
+  // 根据模型名称确定其类型
+  const getModelTypeByName = (modelName) => {
+    if (modelName.startsWith('gpt-') || modelName.startsWith('o1-') || 
+        modelName.startsWith('o3-') || modelName.startsWith('o4-') ||
+        modelName.startsWith('tts-') || modelName.startsWith('dall-e') || 
+        modelName.startsWith('whisper') || modelName.startsWith('omni-') || 
+        modelName.startsWith('text-embedding') || modelName.startsWith('text-moderation-') || 
+        modelName.startsWith('davinci') || modelName.startsWith('babbage') ||
+        modelName.startsWith('chatgpt')) {
+      return 'OpenAI';
+    } else if (modelName.startsWith('claude')) {
+      return 'Anthropic Claude';
+    } else if (modelName.startsWith('gemini')) {
+      return 'Google Gemini';
+    } else if (modelName.startsWith('deepseek')) {
+      return 'deepseek';
+    } else if (modelName.startsWith('glm') || modelName.startsWith('chatglm')) {
+      return '智谱 AI';
+    } else if (modelName.startsWith('hunyuan')) {
+      return '腾讯混元';
+    } else if (modelName.startsWith('spark') || modelName.startsWith('Spark')) {
+      return '讯飞星火';
+    } else if (modelName.startsWith('abab')) {
+      return 'MiniMax';
+    } else if (modelName.startsWith('moonshot')) {
+      return 'moonshot';
+    } else if (modelName.startsWith('yi')) {
+      return '零一万物';
+    } else if (modelName.startsWith('groq')) {
+      return 'Groq';
+    } else if (modelName.startsWith('ollama') || modelName.startsWith('llama')) {
+      return 'Ollama';
+    } else if (modelName.startsWith('doubao')) {
+      return '豆包';
+    } else if (modelName.startsWith('360')) {
+      return '360 AI';
+    } else if (modelName.startsWith('midjourney') || modelName.startsWith('mj-chat')) {
+      return 'Midjourney';
+    } else if (modelName.startsWith('flux')) {
+      return 'Flux';
+    } else if (modelName.startsWith('grok')) {
+      return 'Grok';
+    } else if (modelName.startsWith('suno')) {
+      return 'Suno';
+    } else if (modelName.startsWith('pika')) {
+      return 'Pika';
+    } else if (modelName.startsWith('vidu')) {
+      return 'Vidu';
+    } else if (modelName.startsWith('ERNIE-')) {
+      return 'Baidu';
+    } else if (modelName.startsWith('qwen-')) {
+      return 'Ali';
+    } else if (modelName.startsWith('command')) {
+      return 'Cohere';
+    } else if (modelName.startsWith('Baichuan')) {
+      return 'Baichuan';
+    } else {
+      // 如果没有匹配，返回其他
+      return 'other';
+    }
   };
 
   const sortModelTypes = (groupedModels) => {
@@ -186,77 +247,75 @@ export default function Log() {
     }
   }, [groupedModels, activeTab]);
 
+  // 根据模型名称获取图标
   const getModelIcon = (modelInfo) => {
-    const { model_type, model } = modelInfo;
+    const { model } = modelInfo;
     
-    // 只有 OpenAI 相关模型使用 Avatar
-    if (model_type === 'OpenAI') {
-      if (model.startsWith('gpt-3')) {
-        return <OpenAI.Avatar size={20} type="gpt3" />;
-      } else if (model.startsWith('gpt-4') || model.startsWith('chatgpt')) {
-        return <OpenAI.Avatar size={20} type="gpt4" />;
-      } else if (model.startsWith('o1') || model.startsWith('o3')) {
-        return <OpenAI.Avatar size={20} type="o1" />;
-      }
+    if (model.startsWith('gpt-3')) {
+      return <OpenAI.Avatar size={20} type="gpt3" />;
+    } else if (model.startsWith('gpt-4') || model.startsWith('chatgpt')) {
+      return <OpenAI.Avatar size={20} type="gpt4" />;
+    } else if (model.startsWith('o1') || model.startsWith('o3') || model.startsWith('o4')) {
+      return <OpenAI.Avatar size={20} type="o1" />;
+    } else if (model.startsWith('tts') || model.startsWith('dall-e') || 
+    model.startsWith('whisper') || model.startsWith('omni-') || 
+    model.startsWith('text-embedding') || model.startsWith('text-moderation-')
+     || model.startsWith('davinci') ||  model.startsWith('babbage')
+    ) {
       return <OpenAI.Avatar size={20} />;
+    } else if (model.startsWith('claude')) {
+      return <Claude.Color size={20} />;
+    } else if (model.startsWith('gemini')) {
+      return <Gemini.Color size={20} />;
+    } else if (model.startsWith('deepseek')) {
+      return <DeepSeek.Color size={20} />;
+    } else if (model.startsWith('glm') || model.startsWith('chatglm')) {
+      return <Zhipu.Color size={20} />;
+    } else if (model.startsWith('hunyuan')) {
+      return <Hunyuan.Color size={20} />;
+    } else if (model.startsWith('spark') || model.startsWith('Spark')) {
+      return <Spark.Color size={20} />;
+    } else if (model.startsWith('abab')) {
+      return <Minimax.Color size={20} />;
+    } else if (model.startsWith('moonshot')) {
+      return <Kimi.Color size={20} />;
+    } else if (model.startsWith('yi')) {
+      return <Yi.Color size={20} />;
+    } else if (model.startsWith('groq')) {
+      return <Groq size={20} />;
+    } else if (model.startsWith('ollama') || model.startsWith('llama')) {
+      return <Ollama size={20} />;
+    } else if (model.startsWith('doubao')) {
+      return <Doubao.Color size={20} />;
+    } else if (model.startsWith('360')) {
+      return <Ai360.Color size={20} />;
+    } else if (model.startsWith('midjourney') || model.startsWith('mj-chat')) {
+      return <Midjourney size={20} />;
+    } else if (model.startsWith('flux')) {
+      return <Flux size={20} />;
+    } else if (model.startsWith('grok')) {
+      return <Grok size={20} />;
+    } else if (model.startsWith('suno')) {
+      return <Suno size={20} />;
+    } else if (model.startsWith('pika')) {
+      return <Pika size={20} />;
+    } else if (model.startsWith('vidu')) {
+      return <Vidu.Color size={20} />;
+    } else if (model.startsWith('ERNIE-')) {
+      return <BaiduCloud.Color size={20} />;
+    } else if (model.startsWith('qwen-')) {
+      return <AlibabaCloud.Color size={20} />;
+    } else if (model.startsWith('command')) {
+      return <Cohere.Color size={20} />;
+    } else if (model.startsWith('Baichuan')) {
+      return <Baichuan.Color size={20} />;
     }
-
-    // 其他模型使用普通图标
-    switch (model_type) {
-      case 'Anthropic Claude':
-        return <Claude.Color size={20} />;
-      case 'google gemini':
-        return <Gemini.Color size={20} />;
-      case 'deepseek':
-        return <DeepSeek.Color size={20} />;
-      case 'zhipu':
-        return <Zhipu.Color size={20} />;
-      case 'tencent':
-        return <Hunyuan.Color size={20} />;
-      case '讯飞星火':
-        return <Spark.Color size={20} />;
-      case 'minimax':
-        return <Minimax.Color size={20} />;
-      case 'moonshot':
-        return <Kimi.Color size={20} />;
-      case '零一万物':
-        return <Yi.Color size={20} />;
-      case 'groq':
-        return <Groq size={20} />;
-      case 'Ollama':
-        return <Ollama size={20} />;
-      case 'doubao':
-        return <Doubao.Color size={20} />;
-      case '360 AI':
-        return <Ai360.Color size={20} />;
-      case 'Midjourney':
-        return <Midjourney size={20} />;
-      case 'Flux':
-        return <Flux size={20} />;
-      case 'Grok':
-        return <Grok size={20} />;
-      case 'Suno':
-        return <Suno size={20} />;
-      case 'Pika':
-        return <Pika size={20} />;
-      case 'Vidu':
-        return <Vidu.Color size={20} />;
-      case 'baidu':
-        return <BaiduCloud.Color size={20} />;
-      case 'ali':
-        return <AlibabaCloud.Color size={20} />;
-      case 'Cohere':
-        return <Cohere.Color size={20} />;
-      case 'baichuan':
-        return <Baichuan.Color size={20} />;
-      case '360':
-        return <Ai360.Color size={20} />;
-      default:
-        return <OpenAI size={20} />;
-    }
+    
+    // 如果没有匹配到，返回默认图标
+    return <OpenAI size={20} />;
   };
 
-  // 添加一个获取类型图标的函数
+  // 根据模型类型获取图标
   const getTypeIcon = (modelType) => {
     switch (modelType) {
       case 'OpenAI':

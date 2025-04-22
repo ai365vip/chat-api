@@ -12,6 +12,7 @@ import (
 	"one-api/relay/channel/mistral"
 	"one-api/relay/channel/moonshot"
 	"one-api/relay/channel/togetherai"
+	"one-api/relay/channel/xai"
 )
 
 var CompatibleChannels = []int{
@@ -52,6 +53,8 @@ func GetCompatibleChannelMeta(channelType int) (string, []string) {
 		return "togetherai", togetherai.ModelList
 	case common.ChannelTypeDouBao:
 		return "doubao", doubao.ModelList
+	case common.ChannelTypeXAI:
+		return "XAI", xai.ModelList
 	default:
 		return "OpenAI", ModelList
 	}

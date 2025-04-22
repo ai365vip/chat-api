@@ -7,18 +7,86 @@ import Chart from 'react-apexcharts';
 import SkeletonTotalGrowthBarChart from 'ui-component/cards/Skeleton/TotalGrowthBarChart';
 import MainCard from 'ui-component/cards/MainCard';
 import { gridSpacing } from 'store/constant';
+import { useTheme } from '@mui/material/styles';
 
 const StatisticalBarChart = ({ isLoading, isRefreshing, chartDatas, startDate, endDate, onDateChange }) => {
+  const theme = useTheme();
+
+  const getChartOptions = () => ({
+    ...defaultChartData.options,
+    chart: {
+      ...defaultChartData.options.chart,
+      background: 'transparent',
+      foreColor: theme.palette.text.primary,
+    },
+    theme: {
+      mode: theme.palette.mode
+    },
+    tooltip: {
+      theme: theme.palette.mode,
+      fixed: {
+        enabled: false
+      },
+      y: {
+        formatter: function (val) {
+          return '$' + val;
+        }
+      },
+      marker: {
+        show: false
+      }
+    },
+    legend: {
+      ...defaultChartData.options.legend,
+      labels: {
+        colors: theme.palette.text.primary
+      }
+    },
+    grid: {
+      borderColor: theme.palette.divider,
+      strokeDashArray: 4,
+      show: true
+    },
+    xaxis: {
+      ...defaultChartData.options.xaxis,
+      labels: {
+        style: {
+          colors: theme.palette.text.secondary
+        }
+      },
+      axisBorder: {
+        color: theme.palette.divider
+      },
+      axisTicks: {
+        color: theme.palette.divider
+      }
+    },
+    yaxis: {
+      labels: {
+        style: {
+          colors: theme.palette.text.secondary
+        }
+      }
+    }
+  });
+
   const renderChart = () => {
-    if (!chartDatas || !chartDatas.xaxis || !chartDatas.data) {
-      return <Typography variant="body2">无可用数据</Typography>;
+    if (!chartDatas || !chartDatas.xaxis || !chartDatas.data || chartDatas.data.length === 0 || chartDatas.data.every(series => series.data.length === 0)) {
+      return (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+          <Typography variant="h6" color="textSecondary">无可用数据</Typography>
+        </Box>
+      );
     }
   
     const updatedChartData = {
       ...defaultChartData,
       options: {
-        ...defaultChartData.options,
-        xaxis: { ...defaultChartData.options.xaxis, categories: chartDatas.xaxis },
+        ...getChartOptions(),
+        xaxis: { 
+          ...getChartOptions().xaxis,
+          categories: chartDatas.xaxis 
+        },
       },
       series: chartDatas.data,
     };
@@ -64,7 +132,7 @@ const StatisticalBarChart = ({ isLoading, isRefreshing, chartDatas, startDate, e
                   <Typography variant="h3">统计</Typography>
                 </Grid>
                 <Grid item>
-                  <Grid container spacing={2}>
+                  <Grid container spacing={2} sx={{ mb: 2 }}>
                     <Grid item>
                       <LocalizationProvider dateAdapter={AdapterDateFns}>
                         <DatePicker
@@ -156,47 +224,11 @@ const defaultChartData = {
       type: 'category',
       categories: []
     },
-    legend: {
-      show: true,
-      fontSize: '14px',
-      fontFamily: `'Roboto', sans-serif`,
-      position: 'bottom',
-      offsetX: 20,
-      labels: {
-        useSeriesColors: false
-      },
-      markers: {
-        width: 16,
-        height: 16,
-        radius: 5
-      },
-      itemMargin: {
-        horizontal: 15,
-        vertical: 8
-      }
-    },
     fill: {
       type: 'solid'
     },
     dataLabels: {
       enabled: false
-    },
-    grid: {
-      show: true
-    },
-    tooltip: {
-      theme: 'dark',
-      fixed: {
-        enabled: false
-      },
-      y: {
-        formatter: function (val) {
-          return '$' + val;
-        }
-      },
-      marker: {
-        show: false
-      }
     }
   },
   series: []

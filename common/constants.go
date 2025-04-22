@@ -133,6 +133,7 @@ const (
 	ChannelTypeDeepL          = 40
 	ChannelTypeDouBao         = 41
 	ChannelTypeGCP            = 42
+	ChannelTypeXAI            = 43
 )
 
 var ChannelBaseURLs = []string{
@@ -178,7 +179,8 @@ var ChannelBaseURLs = []string{
 	"https://api.together.xyz",          // 39
 	"https://api-free.deepl.com",        // 40
 	"https://ark.cn-beijing.volces.com", // 41
-	"",                                  //42
+	"",                                  // 42
+	"https://api.x.ai",                  // 43
 }
 
 const (

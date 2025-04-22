@@ -47,7 +47,7 @@ const commonButtonSx = {
 };
 
 const MODEL_CATEGORIES = [
-  { key: 'OpenAI', includes: ['gpt-3', 'gpt-4', 'o1', 'o3', 'chatgpt', 'tts', 'dall-e', 'whisper', 'omni-', 'text-embedding','text-moderation-','davinci','babbage'] },
+  { key: 'OpenAI', includes: ['gpt-3', 'gpt-4', 'o1', 'o3', 'o4', 'chatgpt', 'tts', 'dall-e', 'whisper', 'omni-', 'text-embedding','text-moderation-','davinci','babbage'] },
   { key: 'Claude', includes: ['claude'] },
   { key: 'Gemini', includes: ['gemini'] },
   { key: 'Deep Seek', includes: ['deepseek'] },

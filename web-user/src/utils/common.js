@@ -301,7 +301,7 @@ export const getModelIcon = (modelName) => {
     return <OpenAI.Avatar size={20} type="gpt3" />;
   } else if (modelName.startsWith('gpt-4') || modelName.startsWith('chatgpt')) {
     return <OpenAI.Avatar size={20} type="gpt4" />;
-  } else if (modelName.startsWith('o1') || modelName.startsWith('o3')) {
+  } else if (modelName.startsWith('o1') || modelName.startsWith('o3') || modelName.startsWith('o4')) {
     return <OpenAI.Avatar size={20} type="o1" />;
   } else if (modelName.startsWith('tts') || modelName.startsWith('dall-e') || 
   modelName.startsWith('whisper') || modelName.startsWith('omni-') || 

@@ -28,7 +28,7 @@ export const getDaysBetween = (startDate, endDate) => {
 
   return days;
 };
-export function generateChartOptions(data, unit) {
+export function generateChartOptions(data, unit, theme) {
   const dates = data.map((item) => item.date);
   const values = data.map((item) => item.value);
 
@@ -56,14 +56,15 @@ export function generateChartOptions(data, unit) {
       dataLabels: {
         enabled: false
       },
-      colors: ['#fff'],
+      colors: [theme.palette.mode === 'dark' ? '#fff' : theme.palette.error.main],
       fill: {
         type: 'solid',
         opacity: 1
       },
       stroke: {
         curve: 'smooth',
-        width: 3
+        width: 3,
+        colors: [theme.palette.mode === 'dark' ? '#fff' : theme.palette.error.main]
       },
       xaxis: {
         categories: dates,
@@ -81,7 +82,7 @@ export function generateChartOptions(data, unit) {
         }
       },
       tooltip: {
-        theme: 'dark',
+        theme: theme.palette.mode === 'dark' ? 'dark' : 'light',
         fixed: {
           enabled: false
         },
