@@ -56,21 +56,24 @@ const Detail = (props) => {
         type: 'common',
         data: [
             {
-                id: 'hourlyData',
+                id: 'countData',
+                values: []
+            },
+            {
+                id: 'quotaData',
                 values: []
             }
         ],
         series: [
             {
                 type: 'line',
-                dataId: 'hourlyData',
+                dataId: 'countData',
                 xField: 'hour',
                 yField: 'value',
-                seriesField: 'type',
+                name: '调用次数',
                 line: { 
                     smooth: true,
-                    style: {}
-                 },
+                },
                 point: {
                     visible: true,
                     size: 4,
@@ -80,13 +83,34 @@ const Detail = (props) => {
                         }
                     }
                 }
+            },
+            {
+                type: 'line',
+                dataId: 'quotaData',
+                xField: 'hour',
+                yField: 'value',
+                name: '消费额',
+                line: { 
+                    smooth: true,
+                    
+                },
+                point: {
+                    visible: true,
+                    size: 4,
+                    state: {
+                        hover: {
+                            size: 6
+                        }
+                    },
+                    
+                }
             }
         ],
         axes: [
             { orient: 'bottom', type: 'band' },
             {
                 orient: 'left',
-                seriesIndex: [0],
+                seriesIndex: 0,  // 调用次数使用左轴
                 title: {
                     visible: true,
                     text: '调用次数'
@@ -95,7 +119,7 @@ const Detail = (props) => {
             },
             {
                 orient: 'right',
-                seriesIndex: [1],
+                seriesIndex: 1,  // 消费金额使用右轴
                 title: {
                     visible: true,
                     text: '消费金额'
@@ -110,9 +134,9 @@ const Detail = (props) => {
             mark: {
                 content: [
                     {
-                        key: datum => `${datum['type']}`,
+                        key: datum => datum.hasOwnProperty('name') ? datum.name : '调用次数',
                         value: datum => {
-                            if (datum['type'] === '消费额') {
+                            if (datum.hasOwnProperty('name') && datum.name === '消费额') {
                                 return `$${renderQuotaNumberWithDigit(datum['value'], 3)}`;
                             } else {
                                 return `${datum['value']} 次`;
@@ -367,7 +391,8 @@ const Detail = (props) => {
                     calculateStatsData(data);
                 } else {
                     if (hourlyChart) {
-                        hourlyChart.updateData('hourlyData', []);
+                        hourlyChart.updateData('countData', []);
+                        hourlyChart.updateData('quotaData', []);
                         hourlyChart.reLayout();
                     }
                     setStatsData({ totalSales: 0, totalCount: 0, promptTokens: 0, completionTokens: 0 });
@@ -436,7 +461,8 @@ const Detail = (props) => {
         });
 
         // Generate chart data points for every hour within the range
-        const chartData = [];
+        const countData = [];
+        const quotaData = [];
         let currentTimestamp = startTime * 1000;
         const endTimestampMs = endTime * 1000;
 
@@ -453,25 +479,25 @@ const Detail = (props) => {
 
             const aggregatedData = hourlyConsumptionMap.get(key) || { quota: 0, count: 0 };
 
-            chartData.push({
+            countData.push({
                 hour: label, 
-                type: '消费额',
-                value: Number(aggregatedData.quota.toFixed(3)),
-                seriesIndex: 0  // 指向左轴
-            });
-            chartData.push({
-                hour: label,
-                type: '调用次数',
                 value: aggregatedData.count,
-                seriesIndex: 1  // 指向右轴
+                name: '调用次数'
+            });
+            
+            quotaData.push({
+                hour: label,
+                value: Number(aggregatedData.quota.toFixed(3)),
+                name: '消费额'
             });
 
             // Move to the next hour
             currentTimestamp += 3600 * 1000;
         }
 
-        // Update VChart
-        hourlyChart.updateData('hourlyData', chartData);
+        // Update VChart with two separate datasets
+        hourlyChart.updateData('countData', countData);
+        hourlyChart.updateData('quotaData', quotaData);
         hourlyChart.reLayout();
     };
 
@@ -625,13 +651,14 @@ const Detail = (props) => {
             current.count += item.count;
         });
 
-        const chartData = [];
+        const countData = [];
+        const quotaData = [];
         let currentTimestamp = startTime * 1000;
         const endTimestampMs = endTime * 1000;
 
         while (currentTimestamp < endTimestampMs) {
             const date = new Date(currentTimestamp);
-             const year = date.getFullYear();
+            const year = date.getFullYear();
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
             const hour = date.getHours();
@@ -641,8 +668,8 @@ const Detail = (props) => {
 
             const aggregatedData = hourlyConsumptionMap.get(key) || { value: 0, count: 0 };
 
-            chartData.push({ time: label, value: Number(aggregatedData.value.toFixed(3)), type: '金额', seriesIndex: 0 });
-            chartData.push({ time: label, value: aggregatedData.count, type: '次数', seriesIndex: 1 });
+            countData.push({ time: label, value: aggregatedData.count, name: '次数' });
+            quotaData.push({ time: label, value: Number(aggregatedData.value.toFixed(3)), name: '金额' });
 
             currentTimestamp += 3600 * 1000;
         }
@@ -652,17 +679,21 @@ const Detail = (props) => {
             type: 'common',
             data: [
                 {
-                    id: 'userHourlyData',
-                    values: chartData
+                    id: 'userCountData',
+                    values: countData
+                },
+                {
+                    id: 'userQuotaData',
+                    values: quotaData
                 }
             ],
             series: [
                 {
                     type: 'line',
-                    dataId: 'userHourlyData',
-                    xField: 'time', // Use 'time' as xField
+                    dataId: 'userCountData',
+                    xField: 'time',
                     yField: 'value',
-                    seriesField: 'type',
+                    name: '次数',
                     line: { smooth: true },
                     point: {
                         visible: true,
@@ -673,18 +704,38 @@ const Detail = (props) => {
                             }
                         }
                     }
+                },
+                {
+                    type: 'line',
+                    dataId: 'userQuotaData',
+                    xField: 'time',
+                    yField: 'value',
+                    name: '金额',
+                    line: { 
+                        smooth: true,
+                        
+                    },
+                    point: {
+                        visible: true,
+                        size: 3,
+                        state: {
+                            hover: {
+                                size: 5
+                            }
+                        },
+                        
+                    }
                 }
             ],
             axes: [
-                 { 
+                { 
                     orient: 'bottom', 
-                    type: 'band', // Use band axis for discrete hourly labels
+                    type: 'band',
                     label: { rotate: 45 },
-                    // tick: { tickCount: 24 } // Let VChart decide ticks for dynamic range
                 },
                 {
                     orient: 'left',
-                    seriesIndex: [0],
+                    seriesIndex: 0,
                     title: {
                         visible: true,
                         text: '调用次数'
@@ -693,22 +744,22 @@ const Detail = (props) => {
                 },
                 {
                     orient: 'right',
-                    seriesIndex: [1],
+                    seriesIndex: 1,
                     title: {
                         visible: true,
-                        text: '调用次数'
+                        text: '消费金额'
                     },
                     type: 'linear'
                 }
             ],
-             legends: { visible: true },
+            legends: { visible: true },
             tooltip: {
                 mark: {
                     content: [
                         {
-                            key: datum => `${datum['type']}`,
+                            key: datum => datum.name,
                             value: datum => {
-                                if (datum['type'] === '金额') {
+                                if (datum.name === '金额') {
                                     return `$${renderQuotaNumberWithDigit(datum['value'], 3)}`;
                                 } else {
                                     return `${datum['value']} 次`;
@@ -776,15 +827,15 @@ const Detail = (props) => {
     };
     
     const modelHourlyChart = (modelData, startTime, endTime) => {
-         // Filter data further by the provided time range
-         const timeFilteredModelData = modelData.filter(item => 
+        // Filter data further by the provided time range
+        const timeFilteredModelData = modelData.filter(item => 
             item.created_at >= startTime && item.created_at < endTime
         );
 
         const hourlyConsumptionMap = new Map();
         timeFilteredModelData.forEach(item => {
             const date = new Date(item.created_at * 1000);
-             const year = date.getFullYear();
+            const year = date.getFullYear();
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
             const hour = date.getHours();
@@ -798,13 +849,14 @@ const Detail = (props) => {
             current.count += item.count;
         });
 
-        const chartData = [];
+        const countData = [];
+        const quotaData = [];
         let currentTimestamp = startTime * 1000;
         const endTimestampMs = endTime * 1000;
 
         while (currentTimestamp < endTimestampMs) {
-             const date = new Date(currentTimestamp);
-             const year = date.getFullYear();
+            const date = new Date(currentTimestamp);
+            const year = date.getFullYear();
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
             const hour = date.getHours();
@@ -814,8 +866,8 @@ const Detail = (props) => {
 
             const aggregatedData = hourlyConsumptionMap.get(key) || { value: 0, count: 0 };
 
-            chartData.push({ time: label, value: Number(aggregatedData.value.toFixed(6)), type: '金额', seriesIndex: 0 });
-            chartData.push({ time: label, value: aggregatedData.count, type: '次数', seriesIndex: 1 });
+            countData.push({ time: label, value: aggregatedData.count, name: '次数' });
+            quotaData.push({ time: label, value: Number(aggregatedData.value.toFixed(6)), name: '金额' });
 
             currentTimestamp += 3600 * 1000;
         }
@@ -824,17 +876,21 @@ const Detail = (props) => {
             type: 'common',
             data: [
                 {
-                    id: 'modelHourlyData',
-                    values: chartData
+                    id: 'modelCountData',
+                    values: countData
+                },
+                {
+                    id: 'modelQuotaData',
+                    values: quotaData
                 }
             ],
             series: [
                 {
                     type: 'line',
-                    dataId: 'modelHourlyData',
-                    xField: 'time', // Use 'time' as xField
+                    dataId: 'modelCountData',
+                    xField: 'time',
                     yField: 'value',
-                    seriesField: 'type',
+                    name: '次数',
                     line: { smooth: true },
                     point: {
                         visible: true,
@@ -845,18 +901,38 @@ const Detail = (props) => {
                             }
                         }
                     }
+                },
+                {
+                    type: 'line',
+                    dataId: 'modelQuotaData',
+                    xField: 'time',
+                    yField: 'value',
+                    name: '金额',
+                    line: { 
+                        smooth: true,
+                       
+                    },
+                    point: {
+                        visible: true,
+                        size: 3,
+                        state: {
+                            hover: {
+                                size: 5
+                            }
+                        },
+                        
+                    }
                 }
             ],
             axes: [
-                 { 
+                { 
                     orient: 'bottom', 
-                    type: 'band', // Use band axis for discrete hourly labels
+                    type: 'band',
                     label: { rotate: 45 },
-                    // tick: { tickCount: 24 } // Let VChart decide ticks
                 },
                 {
                     orient: 'left',
-                    seriesIndex: [0],
+                    seriesIndex: 0,
                     title: {
                         visible: true,
                         text: '调用次数'
@@ -865,7 +941,7 @@ const Detail = (props) => {
                 },
                 {
                     orient: 'right',
-                    seriesIndex: [1],
+                    seriesIndex: 1,
                     title: {
                         visible: true,
                         text: '消费金额'
@@ -873,14 +949,14 @@ const Detail = (props) => {
                     type: 'linear'
                 }
             ],
-             legends: { visible: true }, 
+            legends: { visible: true }, 
             tooltip: {
                 mark: {
                     content: [
                         {
-                            key: datum => `${datum['type']}`,
+                            key: datum => datum.name,
                             value: datum => {
-                                if (datum['type'] === '金额') {
+                                if (datum.name === '金额') {
                                     return `$${renderQuotaNumberWithDigit(datum['value'], 3)}`;
                                 } else {
                                     return `${datum['value']} 次`;
@@ -898,8 +974,8 @@ const Detail = (props) => {
             console.error(`Container with id "${CONTAINER_ID}" not found`);
             return;
         }
-         // Clear previous chart instance if exists?
-         // Might need VChart instance management if re-rendering
+        // Clear previous chart instance if exists?
+        // Might need VChart instance management if re-rendering
         let vchart = new VChart(spec, { dom: container }); 
         vchart.renderSync();
         window['vchart_model'] = vchart; // Use different debug name
