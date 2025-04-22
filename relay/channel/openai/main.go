@@ -229,6 +229,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	}
 	if strings.HasPrefix(modelName, "gpt") ||
 		strings.HasPrefix(modelName, "o3") ||
+		strings.HasPrefix(modelName, "o4") ||
 		strings.HasPrefix(modelName, "o1") ||
 		strings.HasPrefix(modelName, "chatgpt") ||
 		strings.HasPrefix(modelName, "claude") {

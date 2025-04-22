@@ -88,7 +88,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *util.RelayMeta, request *
 			IncludeUsage: true,
 		}
 	}
-	if strings.HasPrefix(request.Model, "o1") || strings.HasPrefix(request.Model, "o3") {
+	if strings.HasPrefix(request.Model, "o1") || strings.HasPrefix(request.Model, "o3") || strings.HasPrefix(request.Model, "o4") {
 		if request.MaxCompletionTokens == 0 && request.MaxTokens != 0 {
 			request.MaxCompletionTokens = request.MaxTokens
 			request.MaxTokens = 0
