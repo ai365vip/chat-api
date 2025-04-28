@@ -243,7 +243,7 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 				usage.PromptTokens += meta.Usage.InputTokens
 				usage.CompletionTokens += meta.Usage.OutputTokens
 				if len(meta.Id) > 0 { // only message_start has an id, otherwise it's a finish_reason event.
-					id = fmt.Sprintf("chatcmpl-%s", meta.Id)
+					id = meta.Id
 					return true
 				} else { // finish_reason case
 					anthropic.ProcessToolCalls(&lastToolCallChoice, response)
