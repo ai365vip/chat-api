@@ -556,6 +556,8 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 	case "message_start":
 		if claudeResponse.Message != nil {
 			response = &Response{
+				Id:    claudeResponse.Message.Id,
+				Model: claudeResponse.Message.Model,
 				Usage: Usage{
 					InputTokens:  claudeResponse.Message.Usage.InputTokens,
 					OutputTokens: 0,
@@ -693,7 +695,8 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 				usage.PromptTokens += meta.Usage.InputTokens
 				usage.CompletionTokens += meta.Usage.OutputTokens
 				if len(meta.Id) > 0 { // only message_start has an id, otherwise it's a finish_reason event.
-					id = fmt.Sprintf("chatcmpl-%s", meta.Id)
+					id = meta.Id
+					modelName = meta.Model
 					return true
 				} else { // finish_reason case
 					ProcessToolCalls(&lastToolCallChoice, response)
