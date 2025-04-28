@@ -139,11 +139,6 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 	return &geminiRequest
 }
 
-type ChatResponse struct {
-	Candidates     []ChatCandidate    `json:"candidates"`
-	PromptFeedback ChatPromptFeedback `json:"promptFeedback"`
-}
-
 func (g *ChatResponse) GetResponseText() string {
 	if g == nil {
 		return ""
@@ -152,22 +147,6 @@ func (g *ChatResponse) GetResponseText() string {
 		return g.Candidates[0].Content.Parts[0].Text
 	}
 	return ""
-}
-
-type ChatCandidate struct {
-	Content       ChatContent        `json:"content"`
-	FinishReason  string             `json:"finishReason"`
-	Index         int64              `json:"index"`
-	SafetyRatings []ChatSafetyRating `json:"safetyRatings"`
-}
-
-type ChatSafetyRating struct {
-	Category    string `json:"category"`
-	Probability string `json:"probability"`
-}
-
-type ChatPromptFeedback struct {
-	SafetyRatings []ChatSafetyRating `json:"safetyRatings"`
 }
 
 func getToolCalls(candidate *ChatCandidate) []model.Tool {
@@ -196,11 +175,27 @@ func getToolCalls(candidate *ChatCandidate) []model.Tool {
 
 func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 	fullTextResponse := openai.TextResponse{
-		Id:      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
-		Object:  "chat.completion",
-		Created: helper.GetTimestamp(),
-		Choices: make([]openai.TextResponseChoice, 0, len(response.Candidates)),
+		Id:                fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
+		Object:            "chat.completion",
+		Created:           helper.GetTimestamp(),
+		SystemFingerprint: response.ModelVersion,
+		Choices:           make([]openai.TextResponseChoice, 0, len(response.Candidates)),
 	}
+
+	// 处理Usage
+	fullTextResponse.Usage = model.Usage{
+		PromptTokens:     response.UsageMetadata.PromptTokenCount,
+		CompletionTokens: response.UsageMetadata.CandidatesTokenCount + response.UsageMetadata.ThoughtsTokenCount,
+		TotalTokens:      response.UsageMetadata.TotalTokenCount,
+	}
+
+	// 如果有ThoughtsTokenCount，添加到CompletionTokensDetails
+	if response.UsageMetadata.ThoughtsTokenCount > 0 {
+		fullTextResponse.Usage.CompletionTokensDetails = &model.CompletionTokensDetails{
+			ReasoningTokens: response.UsageMetadata.ThoughtsTokenCount,
+		}
+	}
+
 	for i, candidate := range response.Candidates {
 		choice := openai.TextResponseChoice{
 			Index: i,
@@ -227,13 +222,50 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatCompletionsStreamResponse {
 	var choice openai.ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = geminiResponse.GetResponseText()
-	//choice.FinishReason = &constant.StopFinishReason
+
+	// 处理finishReason
+	if len(geminiResponse.Candidates) > 0 && geminiResponse.Candidates[0].FinishReason != "" {
+		// 将Gemini的finishReason映射到OpenAI的格式
+		var finishReason string
+		if geminiResponse.Candidates[0].FinishReason == "STOP" {
+			finishReason = "stop"
+		} else {
+			finishReason = "stop"
+		}
+		choice.FinishReason = &finishReason
+	}
+
 	var response openai.ChatCompletionsStreamResponse
 	response.Id = fmt.Sprintf("chatcmpl-%s", random.GetUUID())
 	response.Created = helper.GetTimestamp()
 	response.Object = "chat.completion.chunk"
-	response.Model = "gemini"
+	response.Model = geminiResponse.ModelVersion
 	response.Choices = []openai.ChatCompletionsStreamResponseChoice{choice}
+
+	// 如果有UsageMetadata，添加到response
+	if len(geminiResponse.Candidates) > 0 && geminiResponse.Candidates[0].FinishReason == "STOP" {
+		completionTokens := geminiResponse.UsageMetadata.CandidatesTokenCount
+		// 安全地添加ThoughtsTokenCount
+		if geminiResponse.UsageMetadata.ThoughtsTokenCount > 0 {
+			completionTokens += geminiResponse.UsageMetadata.ThoughtsTokenCount
+		}
+
+		usage := &model.Usage{
+			PromptTokens:     geminiResponse.UsageMetadata.PromptTokenCount,
+			CompletionTokens: completionTokens,
+			TotalTokens:      geminiResponse.UsageMetadata.TotalTokenCount,
+		}
+
+		// 只有当ThoughtsTokenCount大于0时才添加CompletionTokensDetails
+		if geminiResponse.UsageMetadata.ThoughtsTokenCount > 0 {
+			usage.CompletionTokensDetails = &model.CompletionTokensDetails{
+				ReasoningTokens: geminiResponse.UsageMetadata.ThoughtsTokenCount,
+			}
+		}
+
+		response.Usage = usage
+	}
+
 	return &response
 }
 
@@ -348,14 +380,11 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse)
 	fullTextResponse.Model = modelName
-	completionTokens := openai.CountTokenText(geminiResponse.GetResponseText(), modelName)
 	responseText = geminiResponse.GetResponseText()
-	usage := model.Usage{
-		PromptTokens:     promptTokens,
-		CompletionTokens: completionTokens,
-		TotalTokens:      promptTokens + completionTokens,
-	}
-	fullTextResponse.Usage = usage
+
+	// 获取Usage，不再重新计算
+	usage := fullTextResponse.Usage
+
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
 		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil, responseText
