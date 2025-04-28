@@ -219,7 +219,7 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 	return &fullTextResponse
 }
 
-func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatCompletionsStreamResponse {
+func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) (*openai.ChatCompletionsStreamResponse, *model.Usage) {
 	var choice openai.ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = geminiResponse.GetResponseText()
 
@@ -242,6 +242,7 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 	response.Model = geminiResponse.ModelVersion
 	response.Choices = []openai.ChatCompletionsStreamResponseChoice{choice}
 
+	var usage *model.Usage
 	// 如果有UsageMetadata，添加到response
 	if len(geminiResponse.Candidates) > 0 && geminiResponse.Candidates[0].FinishReason == "STOP" {
 		completionTokens := geminiResponse.UsageMetadata.CandidatesTokenCount
@@ -250,7 +251,7 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 			completionTokens += geminiResponse.UsageMetadata.ThoughtsTokenCount
 		}
 
-		usage := &model.Usage{
+		usage = &model.Usage{
 			PromptTokens:     geminiResponse.UsageMetadata.PromptTokenCount,
 			CompletionTokens: completionTokens,
 			TotalTokens:      geminiResponse.UsageMetadata.TotalTokenCount,
@@ -266,7 +267,7 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 		response.Usage = usage
 	}
 
-	return &response
+	return &response, usage
 }
 
 func embeddingResponseGemini2OpenAI(response *EmbeddingResponse) *openai.EmbeddingResponse {
@@ -286,7 +287,7 @@ func embeddingResponseGemini2OpenAI(response *EmbeddingResponse) *openai.Embeddi
 	return &openAIEmbeddingResponse
 }
 
-func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, string) {
+func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, string, *model.Usage) {
 	responseText := ""
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -317,6 +318,9 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 		stopChan <- true
 	}()
 	common.SetEventStreamHeaders(c)
+	var finalUsage *model.Usage
+	var responseId string
+	var modelVersion string
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case data := <-dataChan:
@@ -326,10 +330,24 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 				logger.SysError("error unmarshalling stream response: " + err.Error())
 				return true
 			}
-			response := streamResponseGeminiChat2OpenAI(&geminiResponse)
+			response, usage := streamResponseGeminiChat2OpenAI(&geminiResponse)
 			if response == nil {
 				return true
 			}
+
+			// 保存用于最终返回的usage信息
+			if usage != nil {
+				finalUsage = usage
+			}
+
+			// 保存响应ID和模型版本，用于最后的usage消息
+			if responseId == "" && response.Id != "" {
+				responseId = response.Id
+			}
+			if modelVersion == "" && response.Model != "" {
+				modelVersion = response.Model
+			}
+
 			responseText += fmt.Sprintf("%v", response.Choices[0].Delta.Content)
 			jsonResponse, err := json.Marshal(response)
 			if err != nil {
@@ -339,6 +357,22 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonResponse)})
 			return true
 		case <-stopChan:
+			// 在[DONE]之前发送带有usage信息的消息
+			if finalUsage != nil && responseId != "" {
+				usageResponse := openai.ChatCompletionsStreamResponse{
+					Id:      responseId,
+					Object:  "chat.completion.chunk",
+					Created: helper.GetTimestamp(),
+					Model:   modelVersion,
+					Choices: []openai.ChatCompletionsStreamResponseChoice{},
+					Usage:   finalUsage,
+				}
+
+				usageJsonStr, err := json.Marshal(usageResponse)
+				if err == nil {
+					c.Render(-1, common.CustomEvent{Data: "data: " + string(usageJsonStr)})
+				}
+			}
 
 			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 			return false
@@ -346,9 +380,9 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	})
 	err := resp.Body.Close()
 	if err != nil {
-		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), ""
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), "", nil
 	}
-	return nil, responseText
+	return nil, responseText, finalUsage
 }
 
 func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage, string) {

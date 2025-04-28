@@ -205,6 +205,25 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 		event, ok := <-stream.Events()
 		if !ok {
 			if responseText != "" {
+				// 直接只发送一条带有usage信息的消息，不产生额外的空消息
+				usageResponse := openai.ChatCompletionsStreamResponse{
+					Id:      id,
+					Object:  "chat.completion.chunk",
+					Created: createdTime,
+					Model:   c.GetString(ctxkey.OriginalModel),
+					Choices: []openai.ChatCompletionsStreamResponseChoice{},
+					Usage: &relaymodel.Usage{
+						PromptTokens:     usage.PromptTokens,
+						CompletionTokens: usage.CompletionTokens,
+						TotalTokens:      usage.PromptTokens + usage.CompletionTokens,
+					},
+				}
+
+				usageJsonStr, err := json.Marshal(usageResponse)
+				if err == nil {
+					c.Render(-1, common.CustomEvent{Data: "data: " + string(usageJsonStr)})
+				}
+
 				c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 			}
 			return false

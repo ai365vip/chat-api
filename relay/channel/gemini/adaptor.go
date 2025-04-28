@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"one-api/relay/channel"
-	"one-api/relay/channel/openai"
 	"one-api/relay/constant"
 	"one-api/relay/model"
 	"one-api/relay/util"
@@ -82,11 +81,9 @@ func (a *Adaptor) ConvertImageRequest(request *model.ImageRequest) (any, error) 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.RelayMeta) (aitext string, usage *model.Usage, err *model.ErrorWithStatusCode) {
 	if meta.IsStream {
 		var responseText string
-		err, responseText = StreamHandler(c, resp)
+		err, responseText, usage = StreamHandler(c, resp)
 		aitext = responseText
-		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 	} else {
-
 		switch meta.Mode {
 		case constant.RelayModeEmbeddings:
 			err, usage = EmbeddingHandler(c, resp)

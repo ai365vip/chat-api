@@ -614,10 +614,20 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 		choice.Delta.ToolCalls = tools
 	}
 	choice.Delta.Role = "assistant"
-	finishReason := stopReasonClaude2OpenAI(&stopReason)
-	if finishReason != "null" {
-		choice.FinishReason = &finishReason
+
+	// 只有当stopReason不为空且responseText为空时才设置finishReason
+	if stopReason != "" && responseText == "" {
+		finishReason := stopReasonClaude2OpenAI(&stopReason)
+		if finishReason != "null" {
+			choice.FinishReason = &finishReason
+		}
 	}
+
+	// 如果没有内容且没有工具，则不生成响应
+	if responseText == "" && len(tools) == 0 && stopReason == "" {
+		return nil, response
+	}
+
 	var openaiResponse openai.ChatCompletionsStreamResponse
 	openaiResponse.Object = "chat.completion.chunk"
 	openaiResponse.Choices = []openai.ChatCompletionsStreamResponseChoice{choice}
@@ -718,6 +728,25 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			return true
 		case <-stopChan:
 			if responseTextBuilder.String() != "" {
+				// 直接只发送一条带有usage信息的消息，不产生额外的空消息
+				usageResponse := openai.ChatCompletionsStreamResponse{
+					Id:      id,
+					Object:  "chat.completion.chunk",
+					Created: createdTime,
+					Model:   modelName,
+					Choices: []openai.ChatCompletionsStreamResponseChoice{},
+					Usage: &model.Usage{
+						PromptTokens:     usage.PromptTokens,
+						CompletionTokens: usage.CompletionTokens,
+						TotalTokens:      usage.PromptTokens + usage.CompletionTokens,
+					},
+				}
+
+				usageJsonStr, err := json.Marshal(usageResponse)
+				if err == nil {
+					c.Render(-1, common.CustomEvent{Data: "data: " + string(usageJsonStr)})
+				}
+
 				c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 			}
 			return false
