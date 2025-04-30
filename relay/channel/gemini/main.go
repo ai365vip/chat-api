@@ -227,9 +227,18 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) (*openai.Chat
 	if len(geminiResponse.Candidates) > 0 && geminiResponse.Candidates[0].FinishReason != "" {
 		// 将Gemini的finishReason映射到OpenAI的格式
 		var finishReason string
-		if geminiResponse.Candidates[0].FinishReason == "STOP" {
+		switch geminiResponse.Candidates[0].FinishReason {
+		case "STOP":
 			finishReason = "stop"
-		} else {
+		case "MAX_TOKENS":
+			finishReason = "length"
+		case "SAFETY":
+			finishReason = "content_filter"
+		case "RECITATION":
+			finishReason = "stop"
+		case "OTHER":
+			finishReason = "stop"
+		default:
 			finishReason = "stop"
 		}
 		choice.FinishReason = &finishReason
@@ -244,7 +253,7 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) (*openai.Chat
 
 	var usage *model.Usage
 	// 如果有UsageMetadata，添加到response
-	if len(geminiResponse.Candidates) > 0 && geminiResponse.Candidates[0].FinishReason == "STOP" {
+	if len(geminiResponse.Candidates) > 0 {
 		completionTokens := geminiResponse.UsageMetadata.CandidatesTokenCount
 		// 安全地添加ThoughtsTokenCount
 		if geminiResponse.UsageMetadata.ThoughtsTokenCount > 0 {

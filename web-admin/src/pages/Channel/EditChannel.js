@@ -95,7 +95,7 @@ const EditChannel = (props) => {
     const [priority, setPriority] = useState(0);
     const [weight, setWeight] = useState(0);
     const [rateLimited, setRateLimited] = useState(false);
-    const [rateLimitedConut, setRateLimitedConut] = useState(0);
+    const [rateLimitedConut, setRateLimitedConut] = useState(3);
     const [istools, setIstools] = useState(true);
     const [isimageurenabled, setIsImageURLEnabled] = useState(false);
     const [claudeoriginalrequest, setClaudeOriginalRequest] = useState(false);
