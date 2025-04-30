@@ -21,7 +21,7 @@ var ModelList = []string{
 	"o3", "o3-2025-04-16",
 	"text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large",
 	"text-moderation-latest", "text-moderation-stable",
-	"dall-e-2", "dall-e-3",
+	"dall-e-2", "dall-e-3", "gpt-image-1",
 	"whisper-1",
 	"tts-1", "tts-1-1106", "tts-1-hd", "tts-1-hd-1106",
 	"gpt-4o-audio-preview", "gpt-4o-audio-preview-2024-10-01",

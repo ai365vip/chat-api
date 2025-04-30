@@ -94,7 +94,7 @@ func getImageCostRatio(imageRequest *relaymodel.ImageRequest) (float64, error) {
 	if !hasValidSize {
 		return 0, fmt.Errorf("size not supported for this image model: %s", imageRequest.Size)
 	}
-	if imageRequest.Quality == "hd" && imageRequest.Model == "dall-e-3" {
+	if imageRequest.Quality == "hd" && (imageRequest.Model == "dall-e-3" || imageRequest.Model == "gpt-image-1") {
 		if imageRequest.Size == "1024x1024" {
 			imageCostRatio *= 2
 		} else {
