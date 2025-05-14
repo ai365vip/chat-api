@@ -65,10 +65,29 @@ func getImageRequest(c *gin.Context, relayMode int) (*relaymodel.ImageRequest, e
 
 func validateImageRequest(imageRequest *relaymodel.ImageRequest, meta *util.RelayMeta) *relaymodel.ErrorWithStatusCode {
 	// model validation
-	_, hasValidSize := constant.DalleSizeRatios[imageRequest.Model][imageRequest.Size]
-	if !hasValidSize {
-		return openai.ErrorWrapper(errors.New("size not supported for this image model"), "size_not_supported", http.StatusBadRequest)
+	if imageRequest.Model == "gpt-image-1" {
+		// 对于gpt-image-1模型，需要特殊处理尺寸和质量的组合验证
+		quality := "medium" // 默认质量为medium
+		if imageRequest.Quality != "" {
+			quality = strings.ToLower(imageRequest.Quality)
+		}
+
+		// 构建尺寸和质量组合的键
+		sizeQualityKey := fmt.Sprintf("%s_%s", imageRequest.Size, quality)
+
+		// 检查此组合是否在配置中
+		_, hasValidSize := constant.DalleSizeRatios[imageRequest.Model][sizeQualityKey]
+		if !hasValidSize {
+			return openai.ErrorWrapper(errors.New("size and quality combination not supported for this model"), "size_not_supported", http.StatusBadRequest)
+		}
+	} else {
+		// 其他模型使用常规尺寸验证
+		_, hasValidSize := constant.DalleSizeRatios[imageRequest.Model][imageRequest.Size]
+		if !hasValidSize {
+			return openai.ErrorWrapper(errors.New("size not supported for this image model"), "size_not_supported", http.StatusBadRequest)
+		}
 	}
+
 	// check prompt length
 	if imageRequest.Prompt == "" {
 		return openai.ErrorWrapper(errors.New("prompt is required"), "prompt_missing", http.StatusBadRequest)
@@ -76,25 +95,44 @@ func validateImageRequest(imageRequest *relaymodel.ImageRequest, meta *util.Rela
 	if len(imageRequest.Prompt) > constant.DalleImagePromptLengthLimitations[imageRequest.Model] {
 		return openai.ErrorWrapper(errors.New("prompt is too long"), "prompt_too_long", http.StatusBadRequest)
 	}
-	// Number of generated images validation
-	if !isWithinRange(imageRequest.Model, imageRequest.N) {
-		// channel not azure
-		if meta.ChannelType != common.ChannelTypeAzure {
-			return openai.ErrorWrapper(errors.New("invalid value of n"), "n_not_within_range", http.StatusBadRequest)
-		}
-	}
+
 	return nil
 }
 
 func getImageCostRatio(imageRequest *relaymodel.ImageRequest) (float64, error) {
+	// 检查请求是否为空
 	if imageRequest == nil {
 		return 0, errors.New("imageRequest is nil")
 	}
+
+	// 对于 gpt-image-1 模型，需要特殊处理质量和尺寸的组合
+	if imageRequest.Model == "gpt-image-1" {
+		// 默认使用中等质量
+		quality := "medium"
+		if imageRequest.Quality != "" {
+			quality = strings.ToLower(imageRequest.Quality)
+		}
+
+		// 构建尺寸和质量组合的键
+		sizeQualityKey := fmt.Sprintf("%s_%s", imageRequest.Size, quality)
+
+		// 获取对应的成本比率
+		imageCostRatio, hasValidSize := constant.DalleSizeRatios[imageRequest.Model][sizeQualityKey]
+		if !hasValidSize {
+			return 0, fmt.Errorf("size and quality combination not supported for gpt-image-1: %s, quality: %s",
+				imageRequest.Size, quality)
+		}
+		return imageCostRatio, nil
+	}
+
+	// 对于其他模型，保持原有的处理逻辑
 	imageCostRatio, hasValidSize := constant.DalleSizeRatios[imageRequest.Model][imageRequest.Size]
 	if !hasValidSize {
 		return 0, fmt.Errorf("size not supported for this image model: %s", imageRequest.Size)
 	}
-	if imageRequest.Quality == "hd" && (imageRequest.Model == "dall-e-3" || imageRequest.Model == "gpt-image-1") {
+
+	// 针对 DALL-E 3 的高清选项进行成本调整
+	if imageRequest.Quality == "hd" && (imageRequest.Model == "dall-e-3") {
 		if imageRequest.Size == "1024x1024" {
 			imageCostRatio *= 2
 		} else {

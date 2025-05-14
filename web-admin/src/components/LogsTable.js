@@ -92,7 +92,7 @@ const LogsTable = () => {
             dataIndex: 'channel',
             className: isAdmin() ? 'tableShow' : 'tableHiddle',
             render: (text, record, index) => {
-                let channelName = record.channel_name || '未知渠道名称'; // 若不存在，则默认显示“未知渠道名称”
+                let channelName = record.channel_name || '未知渠道名称'; // 若不存在，则默认显示"未知渠道名称"
                 return (
                     isAdminUser ?
                         (record.type === 0 || record.type === 2 || record.type === 5) ?
@@ -253,6 +253,56 @@ const LogsTable = () => {
                 if (!text) return '-';
                 
                 try {
+                    // 检查是否为图像相关模型
+                    const isImageModel = record.model_name && 
+                        (record.model_name.includes('gpt-image') );
+                         
+                    // 检查文本是否包含图像生成特征
+                    const hasImageText = typeof text === 'string' && 
+                        (text.includes('imageToken') || 
+                         text.includes('图像输出') || 
+                         text.includes('image_output') ||
+                         text.match(/\d+x\d+/));
+                         
+                    // 判断是否为图像生成记录
+                    if (isImageModel || hasImageText) {
+                        // 提取图像尺寸信息
+                        let sizeInfo = '';
+                        if (typeof text === 'string') {
+                            const sizeMatch = text.match(/(\d+)x(\d+)/);
+                            if (sizeMatch) {
+                                sizeInfo = sizeMatch[0];
+                            }
+                        }
+                        
+                        const displayText = sizeInfo ? 
+                            `图像生成(${sizeInfo})` : 
+                            `图像生成`;
+                            
+                        return (
+                            <Popover
+                                content={
+                                    <pre style={{ 
+                                        margin: 0, 
+                                        whiteSpace: 'pre-line', 
+                                        maxWidth: '450px',
+                                        maxHeight: '300px',
+                                        overflow: 'auto'
+                                    }}>
+                                        {text}
+                                    </pre>
+                                }
+                                trigger="click"
+                                position="bottom"
+                            >
+                                <span style={{ cursor: 'pointer' }}>
+                                    {displayText} <span style={{ color: '#1890ff' }}>(点击详情)</span>
+                                </span>
+                            </Popover>
+                        );
+                    }
+                    
+                    // 常规模型处理部分保持不变
                     const multiplierObj = typeof text === 'string' ? JSON.parse(text) : text;
 
                     // 格式化显示内容，包含倍率和消耗信息
@@ -270,20 +320,36 @@ const LogsTable = () => {
                         multiplierObj.text_output ? `文本输出消耗: ${multiplierObj.text_output}` : null,
                         multiplierObj.audio_input ? `音频输入消耗: ${multiplierObj.audio_input}` : null,
                         multiplierObj.audio_output ? `音频输出消耗: ${multiplierObj.audio_output}` : null,
-                       
-                        // WebSocket标记
+                                               // WebSocket标记
                         multiplierObj.ws ? `WebSocket: 是` : null
                     ].filter(Boolean).join('\n');
 
                     return (
-                        <Tooltip content={<pre style={{ margin: 0 }}>{formattedContent}</pre>}>
+                        <Popover
+                            content={<pre style={{ margin: 0, whiteSpace: 'pre-line' }}>{formattedContent}</pre>}
+                            trigger="click"
+                        >
                             <span style={{ cursor: 'pointer' }}>
-                                {`模型倍率: ${multiplierObj.model_ratio || 0}倍`}
+                                {`模型倍率: ${multiplierObj.model_ratio || 0}倍`} <span style={{ color: '#1890ff' }}>(点击展开)</span>
                             </span>
-                        </Tooltip>
+                        </Popover>
                     );
                 } catch (e) {
-                    return <span>{text}</span>;
+                    // 如果解析JSON失败，直接显示原始文本
+                    if (typeof text === 'string' && text.length > 50) {
+                        return (
+                            <Popover
+                                content={<pre style={{ margin: 0, whiteSpace: 'pre-line' }}>{text}</pre>}
+                                trigger="click"
+                            >
+                                <span style={{ cursor: 'pointer' }}>
+                                    {`${text.substring(0, 50)}...`} <span style={{ color: '#1890ff' }}>(点击查看)</span>
+                                </span>
+                            </Popover>
+                        );
+                    } else {
+                        return <span>{text}</span>;
+                    }
                 }
             },
         },

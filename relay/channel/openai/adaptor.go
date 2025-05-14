@@ -156,9 +156,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *util.Rel
 	} else {
 		switch meta.Mode {
 		case constant.RelayModeImagesGenerations:
-			err, _ = ImageHandler(c, resp)
+			err, usage = ImageHandler(c, resp)
 		case constant.RelayModeEdits:
-			err, _ = ImagesEditsHandler(c, resp)
+			err, usage = ImagesEditsHandler(c, resp)
 		case constant.RelayResponses:
 			err, usage, aitext = ResponsesHandler(c, resp, meta.PromptTokens, meta.OriginModelName)
 

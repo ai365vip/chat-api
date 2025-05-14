@@ -89,7 +89,7 @@ var ModelRatio = map[string]float64{
 	"text-moderation-latest":             0.1,
 	"dall-e-2":                           8,  // $0.016 - $0.020 / image
 	"dall-e-3":                           20, // $0.040 - $0.120 / image
-	"gpt-image-1":                        20, // $0.040 - $0.120 / image
+	"gpt-image-1":                        5,  // $0.040 - $0.120 / image
 	"gpt-4o-realtime-preview":            2.5,
 	"gpt-4o-realtime-preview-2024-10-01": 2.5,
 	"gpt-4o-realtime-preview-2024-12-17": 2.5,

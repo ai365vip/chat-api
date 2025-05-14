@@ -10,3 +10,12 @@ type ImageRequest struct {
 	Style          string `json:"style,omitempty" form:"style"`
 	User           string `json:"user,omitempty" form:"user"`
 }
+type ImageTokenUsage struct {
+	InputTokens       int `json:"input_tokens"`
+	InputTokenDetails struct {
+		ImageTokens int `json:"image_tokens"`
+		TextTokens  int `json:"text_tokens"`
+	} `json:"input_tokens_details"`
+	OutputTokens int `json:"output_tokens"`
+	TotalTokens  int `json:"total_tokens"`
+}
