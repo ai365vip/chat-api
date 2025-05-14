@@ -214,12 +214,30 @@ export default function LogTableRow({ item }) {
       <TableCell>
         {item.multiplier ? (
           <Tooltip title={
-            <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+            <pre style={{ margin: 0, whiteSpace: 'pre-wrap', maxWidth: '400px', maxHeight: '300px', overflow: 'auto' }}>
               {(() => {
                 try {
+                  // 检查是否为图像相关模型
+                  const isImageModel = item.model_name && 
+                    (item.model_name.includes('gpt-image'));
+                  
+                  // 检查文本是否包含图像生成特征
+                  const hasImageText = typeof item.multiplier === 'string' && 
+                    (item.multiplier.includes('imageToken') || 
+                     item.multiplier.includes('图像输出') || 
+                     item.multiplier.includes('image_output') ||
+                     item.multiplier.match(/\d+x\d+/));
+                  
+                  // 图像生成模型直接显示原始信息
+                  if (isImageModel || hasImageText) {
+                    return item.multiplier;
+                  }
+                  
+                  // 常规模型处理逻辑
                   const multiplierObj = typeof item.multiplier === 'string' 
                     ? JSON.parse(item.multiplier) 
                     : item.multiplier;
+                  
                   return [
                     `模型倍率: ${multiplierObj.model_ratio || 0}`,
                     `分组倍率: ${multiplierObj.group_ratio || 0}`,
@@ -231,7 +249,6 @@ export default function LogTableRow({ item }) {
                     multiplierObj.text_output ? `文本输出消耗: ${multiplierObj.text_output}` : null,
                     multiplierObj.audio_input ? `音频输入消耗: ${multiplierObj.audio_input}` : null,
                     multiplierObj.audio_output ? `音频输出消耗: ${multiplierObj.audio_output}` : null,
-                   
                     multiplierObj.ws ? `WebSocket: 是` : null
                   ].filter(Boolean).join('\n');
                 } catch (e) {
@@ -249,12 +266,41 @@ export default function LogTableRow({ item }) {
             >
               {(() => {
                 try {
+                  // 检查是否为图像相关模型
+                  const isImageModel = item.model_name && 
+                    (item.model_name.includes('gpt-image') || 
+                     item.model_name.includes('dall-e'));
+                  
+                  // 检查文本是否包含图像生成特征
+                  const hasImageText = typeof item.multiplier === 'string' && 
+                    (item.multiplier.includes('imageToken') || 
+                     item.multiplier.includes('图像输出') || 
+                     item.multiplier.includes('image_output') ||
+                     item.multiplier.match(/\d+x\d+/));
+                  
+                  // 针对图像生成的特殊显示
+                  if (isImageModel || hasImageText) {
+                    // 提取图像尺寸信息
+                    let sizeInfo = '';
+                    if (typeof item.multiplier === 'string') {
+                      const sizeMatch = item.multiplier.match(/(\d+)x(\d+)/);
+                      if (sizeMatch) {
+                        sizeInfo = sizeMatch[0];
+                      }
+                    }
+                    
+                    return sizeInfo ? `图像生成(${sizeInfo})` : `图像生成`;
+                  }
+                  
+                  // 常规模型显示
                   const multiplierObj = typeof item.multiplier === 'string' 
                     ? JSON.parse(item.multiplier) 
                     : item.multiplier;
                   return `模型倍率: ${multiplierObj.model_ratio || 0}倍`;
                 } catch (e) {
-                  return item.multiplier;
+                  return typeof item.multiplier === 'string' && item.multiplier.length > 30 
+                    ? `${item.multiplier.substring(0, 30)}...` 
+                    : item.multiplier;
                 }
               })()}
             </Label>
