@@ -77,6 +77,21 @@ func ShouldDisableChannel(err *relaymodel.Error, statusCode int, channelAutoBan 
 	if strings.Contains(err.Message, "ValidationException: Operation not allowed") {
 		return true
 	}
+	if strings.Contains(err.Message, "You exceeded your current quota") {
+		return true
+	}
+	if strings.Contains(err.Message, "Permission denied") {
+		return true
+	}
+	if strings.Contains(err.Message, "The security token included in the request is invalid") {
+		return true
+	}
+	if strings.Contains(err.Message, "Operation not allowed") {
+		return true
+	}
+	if strings.Contains(err.Message, "Your account is not authorized") {
+		return true
+	}
 	//if strings.Contains(err.Message, "quota") {
 	//	return true
 	//}
