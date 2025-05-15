@@ -23,10 +23,7 @@ import (
 
 func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	modelMap := map[string]string{
-		"claude-3-haiku": "claude-3-haiku-20240307",
-		"claude-3-opus":  "claude-3-opus-20240229",
-		"gpt-4-vision":   "gpt-4-turbo",
-		"glm-v4":         "glm-4v",
+		"gpt-4-vision": "gpt-4o",
 	}
 	ctx := c.Request.Context()
 	meta := util.GetRelayMeta(c)
@@ -81,9 +78,7 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	adaptor.Init(meta)
 	// get request body
 	var requestBody io.Reader
-	if meta.ActualModelName == "gpt-4-vision" || meta.ActualModelName == "claude-3-haiku" ||
-		meta.ActualModelName == "claude-3-opus" ||
-		meta.ActualModelName == "glm-v4" {
+	if meta.ActualModelName == "gpt-4-vision" {
 		var buf bytes.Buffer
 		_, err := buf.ReadFrom(c.Request.Body)
 		if err != nil {
