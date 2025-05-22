@@ -215,18 +215,27 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	}
 	err = resp.Body.Close()
 	if err != nil {
-		return ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
+		// 即使关闭失败，也尝试继续处理，因为响应体可能已成功读取
+		common.SysError("error closing response body (read_response_body_failed): " + err.Error())
 	}
+
 	err = json.Unmarshal(responseBody, &textResponse)
 	if err != nil {
 		return ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil, ""
 	}
+
 	if textResponse.Error.Type != "" {
-		return &model.ErrorWithStatusCode{
+		// 直接将原始错误信息透传回去，因为已经是JSON格式
+		// 不需要重新封装 ErrorWithStatusCode，除非需要修改状态码
+		// 但这里resp.StatusCode应该是原始错误的状态码
+		sendHTTPResponse(c, resp.StatusCode, resp.Header, bytes.NewBuffer(responseBody))
+		return &model.ErrorWithStatusCode{ // 仍然返回一个错误标记，但响应已发送
 			Error:      textResponse.Error,
 			StatusCode: resp.StatusCode,
 		}, nil, ""
 	}
+
+	// 为特定模型预先构建 responseText
 	if strings.HasPrefix(modelName, "gpt") ||
 		strings.HasPrefix(modelName, "o3") ||
 		strings.HasPrefix(modelName, "o4") ||
@@ -235,54 +244,40 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 		strings.HasPrefix(modelName, "claude") {
 		for _, choice := range textResponse.Choices {
 			if choice.Message.ReasoningContent != "" {
-				responseText = "<think>" + choice.Message.ReasoningContent + "</think>\n\n"
+				responseText = "<think>" + choice.Message.ReasoningContent + "</think>\\n\\n"
 			}
 			responseText += choice.Message.StringContent()
 		}
 	}
-	needModify := false
+
+	needReasoningModify := false
 	for _, choice := range textResponse.Choices {
 		if choice.Message.ReasoningContent != "" {
-			needModify = true
+			needReasoningModify = true
 			break
 		}
 	}
 
-	if needModify {
+	if needReasoningModify {
 		for i, choice := range textResponse.Choices {
 			content := choice.Message.StringContent()
 			if choice.Message.ReasoningContent != "" {
-				content = "<think>" + choice.Message.ReasoningContent + "</think>\n\n" + content
-				// 更新 choice 中的内容
+				content = "<think>" + choice.Message.ReasoningContent + "</think>\\n\\n" + content
 				textResponse.Choices[i].Message.Content = content
-				// 清空 ReasoningContent
 				textResponse.Choices[i].Message.ReasoningContent = ""
 			}
 		}
 
-		// 重新序列化修改后的响应
 		modifiedResponseBody, err := json.Marshal(textResponse)
 		if err != nil {
-			return ErrorWrapper(err, "remarshal_response_body_failed", http.StatusInternalServerError), nil, ""
+			return ErrorWrapper(err, "remarshal_response_body_failed_reasoning", http.StatusInternalServerError), nil, ""
 		}
-
-		// 更新 Content-Length
+		// 更新原始resp的Header，因为sendHTTPResponse会用到
 		resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedResponseBody)))
-		// 重设 resp.Body
-		resp.Body = io.NopCloser(bytes.NewBuffer(modifiedResponseBody))
-
-		// 发送修改后的响应
-		for k, v := range resp.Header {
-			c.Writer.Header().Set(k, v[0])
-		}
-		c.Writer.WriteHeader(resp.StatusCode)
-		_, err = io.Copy(c.Writer, resp.Body)
-		if err != nil {
-			return ErrorWrapper(err, "write_modified_response_body_failed", http.StatusInternalServerError), nil, ""
-		}
-
+		sendHTTPResponse(c, resp.StatusCode, resp.Header, bytes.NewBuffer(modifiedResponseBody))
 		return nil, &textResponse.Usage, responseText
 	}
+
 	if textResponse.Usage.TotalTokens == 0 {
 		completionTokens := 0
 		for _, choice := range textResponse.Choices {
@@ -295,55 +290,51 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 		}
 	}
 
-	// 在响应文本中插入固定内容，并构建包含 fixedContent 的 responseText
 	if fixedContent != "" && strings.HasPrefix(modelName, "gpt") {
 		for i, choice := range textResponse.Choices {
-			modifiedContent := choice.Message.StringContent() + "\n\n" + fixedContent
-
-			// 使用json.Marshal确保字符串被正确编码为JSON
+			modifiedContent := choice.Message.StringContent() + "\\n\\n" + fixedContent
 			encodedContent, err := json.Marshal(modifiedContent)
 			if err != nil {
 				return ErrorWrapper(err, "encode_modified_content_failed", http.StatusInternalServerError), nil, ""
 			}
 			textResponse.Choices[i].Message.Content = json.RawMessage(encodedContent)
 		}
-		// 将更新后的响应发送给客户端
 
 		modifiedResponseBody, err := json.Marshal(textResponse)
-		// 更新 Content-Length
+		if err != nil {
+			return ErrorWrapper(err, "remarshal_response_body_failed_fixedcontent", http.StatusInternalServerError), nil, ""
+		}
 		resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedResponseBody)))
-		// 重设 resp.Body
-		resp.Body = io.NopCloser(bytes.NewBuffer(modifiedResponseBody))
-		if err != nil {
-			return ErrorWrapper(err, "remarshal_response_body_failed", http.StatusInternalServerError), nil, ""
-		}
-		for k, v := range resp.Header {
-			c.Writer.Header().Set(k, v[0])
-		}
-		c.Writer.WriteHeader(resp.StatusCode)
-		_, err = io.Copy(c.Writer, resp.Body)
-		if err != nil {
-			return ErrorWrapper(err, "write_modified_response_body_failed", http.StatusInternalServerError), nil, ""
-		}
-
-	} else {
-		resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
-		for k, v := range resp.Header {
-			c.Writer.Header().Set(k, v[0])
-		}
-		c.Writer.WriteHeader(resp.StatusCode)
-		_, err = io.Copy(c.Writer, resp.Body)
-		if err != nil {
-			return ErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil, ""
-		}
-		err = resp.Body.Close()
-		if err != nil {
-			return ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil, ""
-		}
+		sendHTTPResponse(c, resp.StatusCode, resp.Header, bytes.NewBuffer(modifiedResponseBody))
+		// responseText 在这种情况下可能不是最新的，但我们主要关心的是响应体
+		// 如果需要，可以在这里更新 responseText
+		return nil, &textResponse.Usage, responseText // or generate new responseText if needed
 	}
 
+	// 如果没有任何修改，则发送原始响应体
+	sendHTTPResponse(c, resp.StatusCode, resp.Header, bytes.NewBuffer(responseBody))
 	return nil, &textResponse.Usage, responseText
 }
+
+// sendHTTPResponse 是一个辅助函数，用于将响应发送给客户端
+func sendHTTPResponse(c *gin.Context, statusCode int, headers http.Header, body io.Reader) {
+	for k, v := range headers {
+		if len(v) > 0 { // 确保v有元素
+			c.Writer.Header().Set(k, v[0])
+		}
+	}
+	c.Writer.WriteHeader(statusCode)
+	_, err := io.Copy(c.Writer, body)
+	if err != nil {
+		// 记录复制响应体到Writer时的错误
+		common.SysError("error copying response body to writer: " + err.Error())
+		// 此时可能无法向客户端发送更多信息，因为头部可能已发送
+	}
+	// 如果body实现了io.Closer，例如*os.File，理论上应该关闭它
+	// 但这里传入的是bytes.NewBuffer，其NopCloser的Close是无操作的。
+	// 而原始的resp.Body已经在Handler的开头关闭了。
+}
+
 func GenerateFixedContentMessage(fixedContent string, modelName string) string {
 	// 在 fixedContent 的开始处添加换行符
 	modifiedFixedContent := "\n\n" + fixedContent
