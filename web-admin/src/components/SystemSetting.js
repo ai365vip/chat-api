@@ -9,6 +9,9 @@ const SystemSetting = () => {
         PasswordLoginEnabled: '',
         PasswordRegisterEnabled: '',
         EmailVerificationEnabled: '',
+        DiscordOAuthEnabled: '',
+        DiscordClientId: '',
+        DiscordClientSecret: '',
         GitHubOAuthEnabled: '',
         GitHubClientId: '',
         GitHubClientSecret: '',
@@ -123,6 +126,7 @@ const SystemSetting = () => {
     const submitRegister = async () => {
         await updateOption('PasswordRegisterEnabled', inputs.PasswordRegisterEnabled);
         await updateOption('EmailVerificationEnabled', inputs.EmailVerificationEnabled);
+        await updateOption('DiscordOAuthEnabled', inputs.DiscordOAuthEnabled);
         await updateOption('GitHubOAuthEnabled', inputs.GitHubOAuthEnabled);
         await updateOption('WeChatAuthEnabled', inputs.WeChatAuthEnabled);
         await updateOption('RegisterEnabled', inputs.RegisterEnabled);
@@ -211,6 +215,19 @@ const SystemSetting = () => {
             await updateOption('WeChatServerToken', inputs.WeChatServerToken);
         }
         setOriginInputs(inputs);
+    };
+  
+    const submitDiscordOAuth = async () => {
+      if (originInputs['DiscordClientId'] !== inputs.DiscordClientId) {
+        await updateOption('DiscordClientId', inputs.DiscordClientId);
+      }
+      if (
+        originInputs['DiscordClientSecret'] !== inputs.DiscordClientSecret &&
+        inputs.DiscordClientSecret !== ''
+      ) {
+        await updateOption('DiscordClientSecret', inputs.DiscordClientSecret);
+      }
+      setOriginInputs(inputs);
     };
 
     const submitGitHubOAuth = async () => {
@@ -320,6 +337,14 @@ const SystemSetting = () => {
                                     onChange={(e) => handleCheckboxChange('RegisterEnabled', e.target.checked)}
                                 />
                                 <Typography.Text>允许新用户注册（此项为否时，新用户将无法以任何方式进行注册）</Typography.Text>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexBasis: '100%' }}>
+                                <Checkbox
+                                    checked={inputs.DiscordOAuthEnabled === 'true'}
+                                    name='DiscordOAuthEnabled'
+                                    onChange={(e) => handleCheckboxChange('DiscordOAuthEnabled', e.target.checked)}
+                                />
+                                <Typography.Text>允许通过 Discord 账户登录 & 注册</Typography.Text>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexBasis: '100%' }}>
                                 <Checkbox
@@ -537,6 +562,38 @@ const SystemSetting = () => {
 
                 <Divider style={{ marginTop: '20px' , marginBottom: '10px' }}/>
                 <Form widths={3}>
+                <Typography.Title style={{ marginBottom: '10px' }} heading={5}>配置 Discord OAuth App</Typography.Title>
+                <Typography.Text style={{ marginBottom: '10px' }}>
+                    用以支持通过 Discord 进行登录注册，<a href='https://discord.com/developers/applications' target='_blank'>点击此处</a>管理你的 Discord OAuth App
+                </Typography.Text>
+                <Card style={{ padding: '20px',width: '80%' , marginBottom: '20px', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                        redirects URL 填 <code>{`${inputs.ServerAddress}/oauth/discord`}</code>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+                        <div style={{ flex: '1 1 calc(50% - 20px)' }}>
+                            <Typography.Text strong>Discord Client ID</Typography.Text>
+                            <Input
+                                placeholder='输入你注册的 Discord OAuth APP 的 ID'
+                                value={inputs.DiscordClientId}
+                                name='DiscordClientId'
+                                onChange={(value) => handleInputChange('DiscordClientId', value)}
+                            />
+                        </div>
+                        <div style={{ flex: '1 1 calc(50% - 20px)' }}>
+                            <Typography.Text strong>Discord Client Secret</Typography.Text>
+                            <Input
+                                placeholder='敏感信息不会发送到前端显示'
+                                value={inputs.DiscordClientSecret}
+                                name='DiscordClientSecret'
+                                onChange={(value) => handleInputChange('DiscordClientSecret', value)}
+                            />
+                        </div>
+                    </div>
+                </Card>
+                <Button onClick={submitDiscordOAuth} style={{ width: '10%', padding: '10px 0', borderRadius: '8px', backgroundColor: '#1890ff', color: '#fff', fontWeight: 'bold', marginBottom: '20px' }}>保存 Discord 设置</Button>
+                <Divider style={{ marginTop: '20px', marginBottom: '10px' }} />
+
                 <Typography.Title style={{ marginBottom: '10px' }} heading={5}>配置 GitHub OAuth App</Typography.Title>
                 <Typography.Text style={{ marginBottom: '10px' }}>
                     用以支持通过 GitHub 进行登录注册，<a href='https://github.com/settings/developers' target='_blank'>点击此处</a>管理你的 GitHub OAuth App

@@ -10,6 +10,7 @@ import Setting from './pages/Setting';
 import EditUser from './pages/User/EditUser';
 import { API, getLogo,isAdmin, getSystemName, showError, showNotice } from './helpers';
 import PasswordResetForm from './components/PasswordResetForm';
+import DiscordOAuth from './components/DiscordOAuth';
 import GitHubOAuth from './components/GitHubOAuth';
 import PasswordResetConfirm from './components/PasswordResetConfirm';
 import { UserContext } from './context/User';
@@ -186,6 +187,14 @@ function App() {
                     element={
                         <Suspense fallback={<Loading></Loading>}>
                             <PasswordResetForm />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path='/admin/oauth/discord'
+                    element={
+                        <Suspense fallback={<Loading></Loading>}>
+                            <DiscordOAuth />
                         </Suspense>
                     }
                 />

@@ -33,9 +33,10 @@ import WechatModal from 'views/Authentication/AuthForms/WechatModal';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
+import Discord from 'assets/images/icons/discord.svg';
 import Github from 'assets/images/icons/github.svg';
 import Wechat from 'assets/images/icons/wechat.svg';
-import { onGitHubOAuthClicked } from 'utils/common';
+import { onDiscordOAuthClicked, onGitHubOAuthClicked } from 'utils/common';
 import Turnstile from "react-turnstile";
 // ============================|| FIREBASE - LOGIN ||============================ //
 
@@ -65,7 +66,7 @@ const LoginForm = ({ ...others }) => {
   }, []);
 
   let tripartiteLogin = false;
-  if (siteInfo.github_oauth || siteInfo.wechat_login) {
+  if (siteInfo.discord_oauth || siteInfo.github_oauth || siteInfo.wechat_login) {
     tripartiteLogin = true;
   }
 
@@ -91,6 +92,29 @@ const LoginForm = ({ ...others }) => {
     <>
       {tripartiteLogin && (
         <Grid container direction="column" justifyContent="center" spacing={2}>
+          {siteInfo.discord_oauth && (
+            <Grid item xs={12}>
+              <AnimateButton>
+                <Button
+                  disableElevation
+                  fullWidth
+                  onClick={() => onDiscordOAuthClicked(siteInfo.discord_client_id)}
+                  size="large"
+                  variant="outlined"
+                  sx={{
+                    color: 'grey.700',
+                    backgroundColor: theme.palette.grey[50],
+                    borderColor: theme.palette.grey[100]
+                  }}
+                >
+                  <Box sx={{ mr: { xs: 1, sm: 2, width: 20 }, display: 'flex', alignItems: 'center' }}>
+                    <img src={Discord} alt="discord" width={25} height={25} style={{ marginRight: matchDownSM ? 8 : 16 }} />
+                  </Box>
+                  使用 Discord 登录
+                </Button>
+              </AnimateButton>
+            </Grid>
+          )}
           {siteInfo.github_oauth && (
             <Grid item xs={12}>
               <AnimateButton>
