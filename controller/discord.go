@@ -1,20 +1,20 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"one-api/common"
 	"one-api/common/config"
 	"one-api/model"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/ravener/discord-oauth2"
+	"golang.org/x/oauth2"
 )
 
 type DiscordOAuthResponse struct {
@@ -37,57 +37,30 @@ func getDiscordUserInfoByCode(code string) (*DiscordUser, error) {
 		return nil, errors.New("无效的参数")
 	}
 
-	values := url.Values{}
-	values.Set("client_id", config.DiscordClientId)
-	values.Set("client_secret", config.DiscordClientSecret)
-	values.Set("code", code)
-	values.Set("grant_type", "authorization_code")
-	values.Set("redirect_uri", fmt.Sprintf("%s/oauth/discord", config.ServerAddress))
-	formData := values.Encode()
-	req, err := http.NewRequest("POST", "https://discord.com/api/v10/oauth2/token", strings.NewReader(formData))
-	if err != nil {
-		return nil, err
+	conf := &oauth2.Config{
+		RedirectURL:  fmt.Sprintf("%s/oauth/discord", config.ServerAddress),
+		ClientID:     config.DiscordClientId,
+		ClientSecret: config.DiscordClientSecret,
+		Scopes:       []string{"identify", "openid"},
+		Endpoint:     discord.Endpoint,
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
-	client := http.Client{
-		Timeout: 5 * time.Second,
-	}
-	res, err := client.Do(req)
-	if err != nil {
-		common.SysLog(err.Error())
-		return nil, errors.New("无法连接至 Discord 服务器，请稍后重试！")
-	}
-	defer res.Body.Close()
-	var discordOAuthResponse DiscordOAuthResponse
-	err = json.NewDecoder(res.Body).Decode(&discordOAuthResponse)
+	token, err := conf.Exchange(context.Background(), code)
 	if err != nil {
 		return nil, err
 	}
 
-	if discordOAuthResponse.AccessToken == "" {
-		common.SysError("Discord 获取 Token 失败，请检查设置！")
-		return nil, errors.New("Discord 获取 Token 失败，请检查设置！")
-	}
-
-	req, err = http.NewRequest("GET", "https://discord.com/api/v10/users/@me", nil)
+	res, err := conf.Client(context.Background(), token).Get("https://discord.com/api/users/@me")
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+discordOAuthResponse.AccessToken)
-	res2, err := client.Do(req)
-	if err != nil {
-		common.SysLog(err.Error())
-		return nil, errors.New("无法连接至 Discord 服务器，请稍后重试！")
-	}
-	defer res2.Body.Close()
-	if res2.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK {
 		common.SysError("Discord 获取用户信息失败！请检查设置！")
 		return nil, errors.New("Discord 获取用户信息失败！请检查设置！")
 	}
+	defer res.Body.Close()
 
 	var discordUser DiscordUser
-	err = json.NewDecoder(res2.Body).Decode(&discordUser)
+	err = json.NewDecoder(res.Body).Decode(&discordUser)
 	if err != nil {
 		return nil, err
 	}
