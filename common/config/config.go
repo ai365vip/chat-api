@@ -52,6 +52,7 @@ var MaxRecentItems = 100
 var PasswordLoginEnabled = true
 var PasswordRegisterEnabled = true
 var EmailVerificationEnabled = false
+var DiscordOAuthEnabled = false
 var GitHubOAuthEnabled = false
 var WeChatAuthEnabled = false
 var TurnstileCheckEnabled = false
@@ -80,6 +81,9 @@ var SMTPToken = ""
 
 var AppToken = ""
 var Uids = ""
+
+var DiscordClientId = ""
+var DiscordClientSecret = ""
 
 var GitHubClientId = ""
 var GitHubClientSecret = ""

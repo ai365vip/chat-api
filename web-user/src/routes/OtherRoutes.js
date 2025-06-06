@@ -7,6 +7,7 @@ import MinimalLayout from 'layout/MinimalLayout';
 // login option 3 routing
 const AuthLogin = Loadable(lazy(() => import('views/Authentication/Auth/Login')));
 const AuthRegister = Loadable(lazy(() => import('views/Authentication/Auth/Register')));
+const DiscordOAuth = Loadable(lazy(() => import('views/Authentication/Auth/DiscordOAuth')));
 const GitHubOAuth = Loadable(lazy(() => import('views/Authentication/Auth/GitHubOAuth')));
 const ForgetPassword = Loadable(lazy(() => import('views/Authentication/Auth/ForgetPassword')));
 const ResetPassword = Loadable(lazy(() => import('views/Authentication/Auth/ResetPassword')));
@@ -44,6 +45,10 @@ const OtherRoutes = {
     {
       path: '/user/reset',
       element: <ResetPassword />
+    },
+    {
+      path: '/oauth/discord',
+      element: <DiscordOAuth />
     },
     {
       path: '/oauth/github',

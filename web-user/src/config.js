@@ -10,6 +10,8 @@ const config = {
     display_in_currency: true,
     email_verification: false,
     footer_html: '',
+    discord_client_id: '',
+    discord_oauth: false,
     github_client_id: '',
     github_oauth: false,
     logo: '',

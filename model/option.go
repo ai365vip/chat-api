@@ -30,6 +30,7 @@ func InitOptionMap() {
 	config.OptionMap["PasswordLoginEnabled"] = strconv.FormatBool(config.PasswordLoginEnabled)
 	config.OptionMap["PasswordRegisterEnabled"] = strconv.FormatBool(config.PasswordRegisterEnabled)
 	config.OptionMap["EmailVerificationEnabled"] = strconv.FormatBool(config.EmailVerificationEnabled)
+	config.OptionMap["DiscordOAuthEnabled"] = strconv.FormatBool(config.DiscordOAuthEnabled)
 	config.OptionMap["GitHubOAuthEnabled"] = strconv.FormatBool(config.GitHubOAuthEnabled)
 	config.OptionMap["WeChatAuthEnabled"] = strconv.FormatBool(config.WeChatAuthEnabled)
 	config.OptionMap["TurnstileCheckEnabled"] = strconv.FormatBool(config.TurnstileCheckEnabled)
@@ -73,6 +74,8 @@ func InitOptionMap() {
 	config.OptionMap["TopupAmount"] = common.TopupAmountJSONString()
 	config.OptionMap["GroupUserRatio"] = common.GroupUserRatioJSONString()
 	config.OptionMap["UserGroupEnabled"] = strconv.FormatBool(config.UserGroupEnabled)
+	config.OptionMap["DiscordClientId"] = ""
+	config.OptionMap["DiscordClientSecret"] = ""
 	config.OptionMap["GitHubClientId"] = ""
 	config.OptionMap["GitHubClientSecret"] = ""
 	config.OptionMap["WeChatServerAddress"] = ""
@@ -180,6 +183,8 @@ func updateOptionMap(key string, value string) (err error) {
 			config.PasswordLoginEnabled = boolValue
 		case "EmailVerificationEnabled":
 			config.EmailVerificationEnabled = boolValue
+		case "DiscordOAuthEnabled":
+			config.DiscordOAuthEnabled = boolValue
 		case "GitHubOAuthEnabled":
 			config.GitHubOAuthEnabled = boolValue
 		case "WeChatAuthEnabled":
@@ -265,6 +270,10 @@ func updateOptionMap(key string, value string) (err error) {
 		err = common.UpdateTopupRatioByJSONString(value)
 	case "TopupAmount":
 		err = common.UpdateAmountRatioByJSONString(value)
+	case "DiscordClientId":
+		config.DiscordClientId = value
+	case "DiscordClientSecret":
+		config.DiscordClientSecret = value
 	case "GitHubClientId":
 		config.GitHubClientId = value
 	case "GitHubClientSecret":

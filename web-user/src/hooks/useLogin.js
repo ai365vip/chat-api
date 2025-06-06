@@ -32,6 +32,28 @@ const useLogin = () => {
     }
   };
 
+  const discordLogin = async (code, state) => {
+    try {
+      const res = await API.get(`/api/oauth/discord?code=${code}&state=${state}`);
+      const { success, message, data } = res.data;
+      if (success) {
+        if (message === 'bind') {
+          showSuccess('绑定成功！');
+          navigate('/');
+        } else {
+          dispatch({ type: LOGIN, payload: data });
+          localStorage.setItem('user', JSON.stringify(data));
+          showSuccess('登录成功！');
+          navigate('/');
+        }
+      }
+      return { success, message };
+    } catch (err) {
+      // 请求失败，设置错误信息
+      return { success: false, message: '' };
+    }
+  };
+
   const githubLogin = async (code, state) => {
     try {
       const res = await API.get(`/api/oauth/github?code=${code}&state=${state}`);
@@ -78,7 +100,7 @@ const useLogin = () => {
     navigate('/login');
   };
 
-  return { login, logout, githubLogin, wechatLogin };
+  return { login, logout, discordLogin, githubLogin, wechatLogin };
 };
 
 export default useLogin;

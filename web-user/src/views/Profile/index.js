@@ -16,10 +16,10 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 import SubCard from 'ui-component/cards/SubCard';
-import { IconBrandWechat, IconBrandGithub, IconMail } from '@tabler/icons-react';
+import { IconBrandWechat, IconBrandGithub, IconBrandDiscord, IconMail } from '@tabler/icons-react';
 import Label from 'ui-component/Label';
 import { API } from 'utils/api';
-import { showError, showSuccess,onGitHubOAuthClicked } from 'utils/common';
+import { showError, showSuccess, onGitHubOAuthClicked, onDiscordOAuthClicked } from 'utils/common';
 import * as Yup from 'yup';
 import WechatModal from 'views/Authentication/AuthForms/WechatModal';
 import { useSelector } from 'react-redux';
@@ -225,6 +225,9 @@ export default function Profile() {
               </Label>
               <Label variant="ghost" color={inputs.github_id ? 'primary' : 'default'}>
                 <IconBrandGithub /> {inputs.github_id || '未绑定'}
+              </Label>
+              <Label variant="ghost" color={inputs.discord_id ? 'primary' : 'default'}>
+                <IconBrandDiscord /> {inputs.discord_id || '未绑定'}
               </Label>
               <Label variant="ghost" color={inputs.email ? 'primary' : 'default'}>
                 <IconMail /> {inputs.email || '未绑定'}
@@ -504,6 +507,13 @@ export default function Profile() {
                   <Grid xs={12} md={4}>
                     <Button variant="contained" onClick={() => onGitHubOAuthClicked(status.github_client_id, true)}>
                       绑定GitHub账号
+                    </Button>
+                  </Grid>
+                )}
+                {status.discord_oauth && !inputs.discord_id && (
+                  <Grid xs={12} md={4}>
+                    <Button variant="contained" onClick={() => onDiscordOAuthClicked(status.discord_client_id, true)}>
+                      绑定Discord账号
                     </Button>
                   </Grid>
                 )}

@@ -85,6 +85,12 @@ const Home = () => {
                                                     : '未启用'}
                                             </p>
                                             <p>
+                                                Discord 身份验证：
+                                                {statusState?.status?.discord_oauth === true
+                                                    ? '已启用'
+                                                    : '未启用'}
+                                            </p>
+                                            <p>
                                                 GitHub 身份验证：
                                                 {statusState?.status?.github_oauth === true
                                                     ? '已启用'

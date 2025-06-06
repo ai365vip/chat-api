@@ -20,6 +20,8 @@ func GetStatus(c *gin.Context) {
 			"version":             common.Version,
 			"start_time":          common.StartTime,
 			"email_verification":  config.EmailVerificationEnabled,
+			"discord_oauth":       config.DiscordOAuthEnabled,
+			"discord_client_id":   config.DiscordClientId,
 			"github_oauth":        config.GitHubOAuthEnabled,
 			"github_client_id":    config.GitHubClientId,
 			"system_name":         config.SystemName,

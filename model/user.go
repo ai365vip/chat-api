@@ -24,6 +24,7 @@ type User struct {
 	Role             int            `json:"role" gorm:"type:int;default:1"`   // admin, common
 	Status           int            `json:"status" gorm:"type:int;default:1"` // enabled, disabled
 	Email            string         `json:"email" gorm:"index" validate:"max=50"`
+	DiscordId        string         `json:"discord_id" gorm:"column:discord_id;index"`
 	GitHubId         string         `json:"github_id" gorm:"column:github_id;index"`
 	WeChatId         string         `json:"wechat_id" gorm:"column:wechat_id;index"`
 	VerificationCode string         `json:"verification_code" gorm:"-:all"`                                    // this field is only for Email verification, don't save it to database!
@@ -427,6 +428,14 @@ func (user *User) FillUserByEmail() error {
 	return nil
 }
 
+func (user *User) FillUserByDiscordId() error {
+	if user.DiscordId == "" {
+		return errors.New("Discord id 为空！")
+	}
+	DB.Where(User{DiscordId: user.DiscordId}).First(user)
+	return nil
+}
+
 func (user *User) FillUserByGitHubId() error {
 	if user.GitHubId == "" {
 		return errors.New("GitHub id 为空！")
@@ -457,6 +466,10 @@ func IsEmailAlreadyTaken(email string) bool {
 
 func IsWeChatIdAlreadyTaken(wechatId string) bool {
 	return DB.Where("wechat_id = ?", wechatId).Find(&User{}).RowsAffected == 1
+}
+
+func IsDiscordIdAlreadyTaken(discordId string) bool {
+	return DB.Where("discord_id = ?", discordId).Find(&User{}).RowsAffected == 1
 }
 
 func IsGitHubIdAlreadyTaken(githubId string) bool {
