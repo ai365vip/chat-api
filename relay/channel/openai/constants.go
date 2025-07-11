@@ -19,6 +19,7 @@ var ModelList = []string{
 	"o3-mini", "o3-mini-2025-01-31",
 	"o4-mini", "o4-mini-2025-04-16",
 	"o3", "o3-2025-04-16",
+	"o3-pro-2025-06-10", "o3-pro",
 	"text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large",
 	"text-moderation-latest", "text-moderation-stable",
 	"dall-e-2", "dall-e-3", "gpt-image-1",
