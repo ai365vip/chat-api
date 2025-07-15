@@ -69,6 +69,14 @@ func UpdateOption(c *gin.Context) {
 		return
 	}
 	switch option.Key {
+	case "DiscordOAuthEnabled":
+		if option.Value == "true" && config.ServerAddress == "" && config.DiscordClientId == "" && config.DiscordClientSecret == "" {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "无法启用 Discord OAuth，请先填入服务器地址，Discord Client Id 以及 Discord Client Secret！",
+			})
+			return
+		}
 	case "GitHubOAuthEnabled":
 		if option.Value == "true" && config.GitHubClientId == "" {
 			c.JSON(http.StatusOK, gin.H{

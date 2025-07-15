@@ -1,19 +1,39 @@
-import React from 'react';
-import { enqueueSnackbar, closeSnackbar, SnackbarContent } from 'notistack';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle,Box,Typography   } from '@mui/material';
+import {
+  Ai360,
+  AlibabaCloud,
+  Baichuan,
+  BaiduCloud,
+  Claude,
+  Cohere,
+  DeepSeek,
+  Doubao,
+  Flux,
+  Gemini,
+  Grok,
+  Groq,
+  Hunyuan,
+  Kimi,
+  Midjourney,
+  Minimax,
+  Ollama,
+  OpenAI,
+  Pika,
+  Spark,
+  Suno,
+  Vidu,
+  Yi,
+  Zhipu
+} from '@lobehub/icons';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 import { snackbarConstants } from 'constants/SnackbarConstants';
+import { closeSnackbar, enqueueSnackbar, SnackbarContent } from 'notistack';
+import React from 'react';
 import { API } from './api';
 export function getSystemName() {
   let system_name = localStorage.getItem('system_name');
   if (!system_name) return 'Chat API';
   return system_name;
 }
-import { 
-  OpenAI, Claude, Gemini, DeepSeek, Zhipu, Hunyuan, 
-  Spark, Minimax, Yi, Groq, Ollama, 
-  Doubao, Ai360, Midjourney, Flux, Grok, Suno,
-  Pika, Vidu,BaiduCloud,AlibabaCloud,Cohere,Baichuan,Kimi
-} from '@lobehub/icons';
 
 
 export function isMobile() {
@@ -164,6 +184,17 @@ export async function getOAuthState() {
   } else {
     showError(message);
     return '';
+  }
+}
+
+export async function onDiscordOAuthClicked(discord_client_id, openInNewTab = false) {
+  const state = await getOAuthState();
+  if (!state) return;
+  let url = `https://discord.com/oauth2/authorize?client_id=${discord_client_id}&redirect_uri=${window.location.origin}/oauth/discord&response_type=code&scope=identify+openid&state=${state}`;
+  if (openInNewTab) {
+    window.open(url);
+  } else {
+    window.location.href = url;
   }
 }
 
